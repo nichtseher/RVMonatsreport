@@ -1,0 +1,6 @@
+{
+  "name": "RV Mobil",
+  "description": "Ein barrierefreier Monatsreport für den Außendienst, optimiert für blinde und sehbehinderte Menschen.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
