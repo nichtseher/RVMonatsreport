@@ -38,8 +38,6 @@ export default function HistoryModal({
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
 
-  if (!isOpen) return null;
-
   const records = Object.values(history || {})
     .filter((r): r is HistoryRecord & { month: string } => typeof r?.month === "string")
     .sort((a, b) => b.month.localeCompare(a.month));
@@ -55,6 +53,8 @@ export default function HistoryModal({
     }
     return years;
   });
+
+  if (!isOpen) return null;
 
   const toggleYear = (year: string) => {
     const isNowExpanded = !expandedYears[year];
