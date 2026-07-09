@@ -5,24 +5,128 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
-@layer base {
-  body {
-    @apply bg-zinc-50 text-zinc-900 antialiased selection:bg-zinc-200 selection:text-zinc-900;
-    overscroll-behavior-y: none;
-    -webkit-tap-highlight-color: transparent;
-  }
+:root {
+  /* Default Light Theme */
+  --bg-color: #f8fafc;
+  --card-bg: #ffffff;
+  --primary: #1e293b;
+  --primary-text: #ffffff;
+  --accent: #15803d;
+  --accent-hover: #166534;
+  --text-color: #0f172a;
+  --text-muted: #475569;
+  --border-color: #cbd5e1;
+  --border-focus: #2563eb;
+  --danger: #dc2626;
+  --alert-bg: #fef9c3;
+  --alert-border: #eab308;
+  --alert-text: #854d0e;
+  --input-bg: #ffffff;
+  --total-bg: #f0fdf4;
+  --total-text: #15803d;
+  --custom-bg: #f8fafc;
+  --modal-bg: rgba(15, 23, 42, 0.75);
   
-  .dark body {
-    @apply bg-zinc-950 text-zinc-100 selection:bg-zinc-800 selection:text-zinc-50;
-  }
+  /* Font Size Multipliers */
+  --font-scale: 1;
+}
 
-  button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible {
-    @apply outline-none ring-2 ring-zinc-900 ring-offset-2 ring-offset-zinc-50;
-  }
-  
-  .dark button:focus-visible, .dark a:focus-visible, .dark input:focus-visible, .dark textarea:focus-visible {
-    @apply ring-zinc-100 ring-offset-zinc-950;
-  }
+/* Dark Theme */
+[data-theme="dark"] {
+  --bg-color: #020617;
+  --card-bg: #0f172a;
+  --primary: #3b82f6;
+  --primary-text: #ffffff;
+  --accent: #22c55e;
+  --accent-hover: #4ade80;
+  --text-color: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-color: #1e293b;
+  --border-focus: #60a5fa;
+  --danger: #ef4444;
+  --alert-bg: #0f172a;
+  --alert-border: #3b82f6;
+  --alert-text: #93c5fd;
+  --input-bg: #020617;
+  --total-bg: #020617;
+  --total-text: #22c55e;
+  --custom-bg: #0f172a;
+  --modal-bg: rgba(2, 6, 23, 0.9);
+}
+
+/* High Contrast Dark Theme */
+[data-theme="high-contrast-dark"] {
+  --bg-color: #000000;
+  --card-bg: #000000;
+  --primary: #ffffff;
+  --primary-text: #000000;
+  --accent: #ffffff;
+  --accent-hover: #e5e5e5;
+  --text-color: #ffffff;
+  --text-muted: #e5e5e5;
+  --border-color: #ffffff;
+  --border-focus: #ffff00;
+  --danger: #ff3333;
+  --alert-bg: #000000;
+  --alert-border: #ffffff;
+  --alert-text: #ffffff;
+  --input-bg: #000000;
+  --total-bg: #000000;
+  --total-text: #ffffff;
+  --custom-bg: #000000;
+  --modal-bg: rgba(0, 0, 0, 0.95);
+}
+
+/* High Contrast Yellow Theme */
+[data-theme="high-contrast-yellow"] {
+  --bg-color: #000000;
+  --card-bg: #000000;
+  --primary: #ffff00;
+  --primary-text: #000000;
+  --accent: #ffff00;
+  --accent-hover: #cccc00;
+  --text-color: #ffff00;
+  --text-muted: #ffff00;
+  --border-color: #ffff00;
+  --border-focus: #ffffff;
+  --danger: #ff3333;
+  --alert-bg: #000000;
+  --alert-border: #ffff00;
+  --alert-text: #ffff00;
+  --input-bg: #000000;
+  --total-bg: #000000;
+  --total-text: #ffff00;
+  --custom-bg: #000000;
+  --modal-bg: rgba(0, 0, 0, 0.95);
+}
+
+/* Font Size Overrides */
+[data-size="large"] {
+  --font-scale: 1.25;
+}
+[data-size="extra-large"] {
+  --font-scale: 1.5;
+}
+
+html {
+  font-size: calc(100% * var(--font-scale));
+  overscroll-behavior-y: none;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  overscroll-behavior-y: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* Hide scrollbars for a cleaner native look */
@@ -34,11 +138,20 @@
   scrollbar-width: none;  /* Firefox */
 }
 
-/* Accessible Interactive Focus */
-*:focus-visible {
-  outline: none;
+/* Allow text selection in inputs and textareas */
+input, textarea {
+  -webkit-user-select: auto;
+  user-select: auto;
 }
 
+/* Accessible Interactive Focus */
+*:focus-visible {
+  outline: 4px solid var(--border-focus) !important;
+  outline-offset: 4px !important;
+  border-radius: 4px !important;
+}
+
+/* Utility to hide elements visually but keep them readable by screen readers */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -51,3 +164,12 @@
   border-width: 0;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-delay: 0s !important;
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}

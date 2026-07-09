@@ -8,18 +8,16 @@ interface Props {
 interface State {
   hasError: boolean;
   errorMsg: string;
-  confirmReset: boolean;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
-    errorMsg: "",
-    confirmReset: false
+    errorMsg: ""
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, errorMsg: error.message, confirmReset: false };
+    return { hasError: true, errorMsg: error.message };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -27,20 +25,14 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleHardReset = () => {
-    localStorage.clear();
-    window.location.reload();
+    if (confirm("Möchten Sie die App wirklich komplett zurücksetzen? Alle gespeicherten Daten (inkl. RV Archiv) werden gelöscht!")) {
+      localStorage.clear();
+      window.location.reload();
+    }
   };
 
   private handleSoftReset = () => {
     window.location.reload();
-  };
-
-  private handleCancelReset = () => {
-    (this as any).setState({ confirmReset: false });
-  };
-
-  private handleTriggerConfirm = () => {
-    (this as any).setState({ confirmReset: true });
   };
 
   public render() {
@@ -75,30 +67,13 @@ export class ErrorBoundary extends Component<Props, State> {
                 <span>App neu laden</span>
               </button>
 
-              {this.state.confirmReset ? (
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={this.handleHardReset}
-                    className="flex-1 flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-3.5 px-4 rounded-xl border border-red-700 hover:bg-red-700 transition-all active:scale-95 text-sm"
-                  >
-                    <span>Sicher? Alles wird gelöscht</span>
-                  </button>
-                  <button 
-                    onClick={this.handleCancelReset}
-                    className="flex-1 flex items-center justify-center gap-2 bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold py-3.5 px-4 rounded-xl hover:opacity-90 transition-all active:scale-95 text-sm"
-                  >
-                    <span>Abbruch</span>
-                  </button>
-                </div>
-              ) : (
-                <button 
-                  onClick={this.handleTriggerConfirm}
-                  className="w-full flex items-center justify-center gap-2 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 font-bold py-3.5 px-4 rounded-xl border border-red-200 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 transition-all active:scale-95 text-sm"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Kompletten Reset durchführen</span>
-                </button>
-              )}
+              <button 
+                onClick={this.handleHardReset}
+                className="w-full flex items-center justify-center gap-2 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 font-bold py-3.5 px-4 rounded-xl border border-red-200 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 transition-all active:scale-95 text-sm"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Kompletten Reset durchführen</span>
+              </button>
             </div>
             
             <p className="mt-5 text-[10px] text-slate-400 font-medium">
