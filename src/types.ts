@@ -52,14 +52,10 @@ export interface HistoryRecord {
   timeLogs?: TimeLog[];
 }
 
-export type AccessibilityTheme = 
-  | "light" 
-  | "dark" 
-  | "forest" 
-  | "ocean" 
-  | "sunset" 
-  | "cyberpunk" 
-  | "high-contrast-dark" 
+export type AccessibilityTheme =
+  | "light"
+  | "dark"
+  | "high-contrast-dark"
   | "high-contrast-yellow";
 
 export interface AccessibilitySettings {
@@ -69,4 +65,3 @@ export interface AccessibilitySettings {
   audioFeedback: boolean;
   speechRate: number;
 }
-

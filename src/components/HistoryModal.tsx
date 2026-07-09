@@ -13,7 +13,6 @@ import {
   Search,
   Filter
 } from "lucide-react";
-import * as XLSX from "xlsx";
 import { SectionsConfig, HistoryRecord } from "../types";
 
 interface HistoryModalProps {
@@ -100,8 +99,9 @@ export default function HistoryModal({
   };
 
   // Direct Excel export from history without loading it first!
-  const handleDirectExport = (record: HistoryRecord) => {
+  const handleDirectExport = async (record: HistoryRecord) => {
     announceToAriaAndSpeech(`Direkt-Export für ${formatMonthGerman(record.month)} wird vorbereitet.`);
+    const XLSX = await import("xlsx");
     
     const monthVal = record.month || "Monat";
     const nameVal = record.name || "Mitarbeitende_r";
@@ -185,7 +185,8 @@ export default function HistoryModal({
     announceToAriaAndSpeech(`Excel RV Report für ${formatMonthGerman(monthVal)} heruntergeladen.`);
   };
 
-  const handleDirectExportTimeLogs = (record: HistoryRecord) => {
+  const handleDirectExportTimeLogs = async (record: HistoryRecord) => {
+    const XLSX = await import("xlsx");
     const monthVal = record.month || "Monat";
     const nameVal = record.name || "Mitarbeitende_r";
     const logs = (Array.isArray(record.timeLogs) ? [...record.timeLogs] : []).sort((a, b) => a.date.localeCompare(b.date));
@@ -367,7 +368,7 @@ export default function HistoryModal({
         <div className="p-5 overflow-y-auto space-y-4 flex-1">
           {/* Storage Information box */}
           <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/20 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-900 text-xs font-bold leading-relaxed">
-            💡 <strong>Sichere lokale Speicherung:</strong> Alle Ihre Monatsdaten werden direkt auf Ihrem Gerät gesichert. Es werden keine Daten ins Internet übertragen (DSGVO-konform).
+            💡 <strong>Ihre Daten sind sicher:</strong> Alle Ihre Monatsdaten werden direkt auf Ihrem Gerät gespeichert. Es werden keine Daten ins Internet übertragen.
           </div>
 
           {/* Search bar integration for clutter-free scaling */}
@@ -397,10 +398,10 @@ export default function HistoryModal({
             <div className="text-center py-10 space-y-3">
               <div className="text-4xl">📁</div>
               <p className="text-sm font-extrabold text-[var(--text-muted)]">
-                Noch keine Monate im RV Archiv.
+                Noch keine Monate im Archiv.
               </p>
               <p className="text-xs text-[var(--text-muted)] max-w-xs mx-auto leading-relaxed">
-                Sobald Sie auf <strong>"Nächsten Monat starten"</strong> klicken, wird Ihr aktueller Monat mit allen Zählerständen (RV Report) und Schichten (RV Zeit) automatisch hier gesichert!
+                Sobald Sie auf <strong>"Nächsten Monat starten"</strong> klicken, wird Ihr aktueller Monat mit allen Zählerständen und Schichten automatisch hier gesichert!
               </p>
             </div>
           ) : filteredRecords.length === 0 ? (

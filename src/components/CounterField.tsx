@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import { FieldConfig } from "../types";
 import { Plus, Minus } from "lucide-react";
+import { getIconForString } from "../utils/iconMap";
 
 interface CounterFieldProps {
   key?: React.Key;
@@ -170,7 +171,7 @@ export default function CounterField({
 
   return (
     <div 
-      className={`flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 dark:border-slate-800 last:border-b-0 ${parentPadding}`}
+      className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl bg-slate-50 dark:bg-slate-800/30 p-3 sm:p-4 border border-slate-100 dark:border-slate-800/60 transition-all focus-within:ring-2 focus-within:ring-blue-500/50 hover:border-blue-500/30 gap-3`}
     >
       <div className="flex-1 pr-2">
         <label 
@@ -178,7 +179,12 @@ export default function CounterField({
           htmlFor={inputId} 
           className={`${labelSize} text-[var(--text-color)] flex items-start gap-2.5 leading-snug`}
         >
-          {config.icon && <span className="text-xl flex-shrink-0 mt-0.5" aria-hidden="true">{config.icon}</span>}
+          {(() => {
+            const Icon = getIconForString(config.icon);
+            if (Icon) return <Icon className="w-5 h-5 flex-shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" aria-hidden="true" />;
+            if (config.icon) return <span className="text-xl flex-shrink-0 mt-0.5" aria-hidden="true">{config.icon}</span>;
+            return null;
+          })()}
           <span>{config.label}</span>
         </label>
         {config.isCustom && (

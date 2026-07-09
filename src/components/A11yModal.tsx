@@ -20,6 +20,7 @@ interface A11yModalProps {
   setNewFieldIcon: (val: string) => void;
   onAddCustomField: (e: React.FormEvent) => void;
   onOpenManage: () => void;
+  onOpenBackup?: () => void;
 }
 
 export default function A11yModal({
@@ -37,7 +38,8 @@ export default function A11yModal({
   newFieldIcon,
   setNewFieldIcon,
   onAddCustomField,
-  onOpenManage
+  onOpenManage,
+  onOpenBackup
 }: A11yModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -105,11 +107,7 @@ export default function A11yModal({
 
   const designThemes: { id: AccessibilityTheme; label: string; bg: string; text: string; border: string }[] = [
     { id: "light", label: "Hell (Standard)", bg: "bg-white", text: "text-slate-900", border: "border-slate-300" },
-    { id: "dark", label: "Dunkel (Augenschonend)", bg: "bg-slate-900", text: "text-white", border: "border-slate-700" },
-    { id: "forest", label: "🌿 Waldgrün (Bio-Vibe)", bg: "bg-[#f4f6f4]", text: "text-[#14532d]", border: "border-[#14532d]/30" },
-    { id: "ocean", label: "🌊 Ozeanblau (Modern)", bg: "bg-[#1c2541]", text: "text-sky-400", border: "border-sky-500/30" },
-    { id: "sunset", label: "🌅 Terrakotta (Warm)", bg: "bg-[#fdfaf7]", text: "text-[#c2410c]", border: "border-[#c2410c]/30" },
-    { id: "cyberpunk", label: "⚡ Cyberpunk (Futurisch)", bg: "bg-[#141424]", text: "text-[#00f0ff]", border: "border-[#ff007f]" },
+    { id: "dark", label: "Dunkel (Augenschonend)", bg: "bg-slate-900", text: "text-white", border: "border-slate-700" }
   ];
 
   const contrastThemes: { id: AccessibilityTheme; label: string; bg: string; text: string; border: string }[] = [
@@ -144,7 +142,7 @@ export default function A11yModal({
         <div className="flex items-center gap-3 mb-2">
           <Eye className="w-8 h-8 text-[var(--accent)]" aria-hidden="true" />
           <h2 id="a11y-modal-title" className="text-2xl font-extrabold tracking-tight">
-            Barrierefreiheit & Anzeige
+            Design & Barrierefreiheit
           </h2>
         </div>
 
@@ -185,60 +183,68 @@ export default function A11yModal({
               <span className="block text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">
                 🎨 Kreative & Klassische Designs:
               </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label="Kreative & Klassische Designs">
+              <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-2" aria-label="Kreative & Klassische Designs">
                 {designThemes.map((t) => {
                   const isActive = settings.theme === t.id;
                   return (
-                    <button
+                    <label
                       key={t.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={isActive}
-                      onClick={() => updateSetting("theme", t.id)}
-                      className={`py-2.5 px-3.5 text-xs font-bold rounded-xl border-2 transition-all cursor-pointer text-left flex items-center justify-between h-12 ${
+                      className={`relative py-2.5 px-3.5 text-xs font-bold rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between h-12 ${
                         isActive
                           ? "border-[var(--border-focus)] ring-2 ring-[var(--border-focus)]"
                           : "border-[var(--border-color)] hover:border-[var(--border-focus)]"
                       } ${t.bg} ${t.text}`}
                     >
+                      <input
+                        type="radio"
+                        name="theme"
+                        value={t.id}
+                        checked={isActive}
+                        onChange={() => updateSetting("theme", t.id)}
+                        className="sr-only"
+                      />
                       <span className="font-extrabold">{t.label}</span>
                       <span className={`w-3.5 h-3.5 rounded-full border ${t.border} flex items-center justify-center flex-shrink-0 ml-2`}>
                         {isActive && <span className="w-2 h-2 rounded-full bg-current" />}
                       </span>
-                    </button>
+                    </label>
                   );
                 })}
-              </div>
+              </fieldset>
             </div>
 
             <div className="space-y-2">
               <span className="block text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">
                 👁️ Barrierefreie Kontrast-Themen:
               </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label="Barrierefreie Kontrast-Themen">
+              <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-2" aria-label="Barrierefreie Kontrast-Themen">
                 {contrastThemes.map((t) => {
                   const isActive = settings.theme === t.id;
                   return (
-                    <button
+                    <label
                       key={t.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={isActive}
-                      onClick={() => updateSetting("theme", t.id)}
-                      className={`py-2.5 px-3.5 text-xs font-bold rounded-xl border-2 transition-all cursor-pointer text-left flex items-center justify-between h-12 ${
+                      className={`relative py-2.5 px-3.5 text-xs font-bold rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between h-12 ${
                         isActive
                           ? "border-[var(--border-focus)] ring-2 ring-[var(--border-focus)]"
                           : "border-[var(--border-color)] hover:border-[var(--border-focus)]"
                       } ${t.bg} ${t.text}`}
                     >
+                      <input
+                        type="radio"
+                        name="theme"
+                        value={t.id}
+                        checked={isActive}
+                        onChange={() => updateSetting("theme", t.id)}
+                        className="sr-only"
+                      />
                       <span className="font-extrabold">{t.label}</span>
                       <span className={`w-3.5 h-3.5 rounded-full border ${t.border} flex items-center justify-center flex-shrink-0 ml-2`}>
                         {isActive && <span className="w-2 h-2 rounded-full bg-current" />}
                       </span>
-                    </button>
+                    </label>
                   );
                 })}
-              </div>
+              </fieldset>
             </div>
           </div>
 
@@ -272,7 +278,9 @@ export default function A11yModal({
                 )}
               </button>
               <p id="narration-description" className="text-xs text-[var(--text-muted)] leading-normal">
-                Liest jeden geänderten Wert laut vor (hilfreich bei Sehbehinderung).
+                App liest Zählerstände und Buttons laut vor. 
+                <strong className="block mt-1 text-[var(--danger)]">Hinweis:</strong> 
+                Bitte DEAKTIVIERT lassen, falls ein Screenreader (wie VoiceOver) aktiv ist.
               </p>
             </div>
 
@@ -332,7 +340,7 @@ export default function A11yModal({
               <span className="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-wider">Schnell (2.4x)</span>
             </div>
             <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-              Reguliert das Sprechtempo der automatischen Zähleransagen sowie des Audio-Auditors. Erfahrene Screenreader-Nutzer können hiermit die Verarbeitungsgeschwindigkeit deutlich erhöhen.
+              Legt fest, wie schnell der Bericht und die Zählerstände vorgelesen werden.
             </p>
           </div>
         </div>
@@ -451,27 +459,41 @@ export default function A11yModal({
         </div>
 
         {/* Help & Backup Integration */}
-        {onOpenHelp && (
-          <div className="p-4 rounded-xl border border-blue-100 dark:border-blue-900/30 bg-blue-50/50 dark:bg-blue-950/10 space-y-2.5">
-            <h4 className="text-xs font-black text-blue-700 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
-              <HelpCircle className="w-4 h-4" />
-              <span>Anleitung &amp; Datensicherung (Backup)</span>
-            </h4>
-            <p className="text-xs text-[var(--text-muted)] leading-relaxed font-semibold">
-              Hier finden Sie die detaillierten Richtlinien des Außendienstes, nützliche Tastenkombinationen und die Möglichkeit, Ihre lokalen Daten sicher in eine Textdatei zu sichern oder zu übertragen.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onOpenHelp();
-              }}
-              className="w-full py-2.5 px-4 rounded-xl font-extrabold bg-blue-600 hover:bg-blue-700 text-white text-xs cursor-pointer transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-md shadow-blue-500/10"
-            >
-              Anleitung &amp; Backup öffnen
-            </button>
+        <div className="p-4 rounded-xl border border-blue-100 dark:border-blue-900/30 bg-blue-50/50 dark:bg-blue-950/10 space-y-2.5">
+          <h4 className="text-xs font-black text-blue-700 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+            <HelpCircle className="w-4 h-4" />
+            <span>Anleitung &amp; Datensicherung</span>
+          </h4>
+          <p className="text-xs text-[var(--text-muted)] leading-relaxed font-semibold">
+            Hier finden Sie die detaillierten Richtlinien des Außendienstes, nützliche Tastenkombinationen und die Möglichkeit, Ihre lokalen Daten sicher in eine verschlüsselte Datei zu sichern oder zu übertragen.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            {onOpenHelp && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenHelp();
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl font-extrabold bg-blue-600 hover:bg-blue-700 text-white text-xs cursor-pointer transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-md shadow-blue-500/10"
+              >
+                Anleitung
+              </button>
+            )}
+            {onOpenBackup && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenBackup();
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl font-extrabold bg-indigo-600 hover:bg-indigo-700 text-white text-xs cursor-pointer transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-md shadow-indigo-500/10"
+              >
+                🔒 Datensicherung (Backup)
+              </button>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Footer-like closing action */}
         <div className="mt-8 pt-4 border-t border-[var(--border-color)] text-right">

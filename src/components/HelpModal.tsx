@@ -111,7 +111,11 @@ export default function HelpModal({ isOpen, onClose, appFields, onRestore }: Hel
     try {
       // Encode as safe Base64
       const utf8Bytes = new TextEncoder().encode(jsonString);
-      const base64 = btoa(String.fromCharCode(...Array.from(utf8Bytes)));
+      let binary = "";
+      for (let i = 0; i < utf8Bytes.length; i++) {
+        binary += String.fromCharCode(utf8Bytes[i]);
+      }
+      const base64 = btoa(binary);
       setBackupCode(base64);
       setRestoreSuccess(false);
       setRestoreError("");
@@ -183,9 +187,11 @@ export default function HelpModal({ isOpen, onClose, appFields, onRestore }: Hel
       } catch {
         // Fallback: decode base64
         const binaryString = atob(trimmed);
-        const bytes = new Uint8Array(
-          binaryString.split("").map((char) => char.charCodeAt(0))
-        );
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
         const decodedString = new TextDecoder().decode(bytes);
         parsed = JSON.parse(decodedString);
       }
@@ -260,7 +266,7 @@ export default function HelpModal({ isOpen, onClose, appFields, onRestore }: Hel
           type="button"
           onClick={onClose}
           aria-label="Hilfe schließen"
-          className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] cursor-pointer z-10 transition-colors"
+          className="absolute top-4 right-4 w-11 h-11 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] cursor-pointer z-10 transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
@@ -319,21 +325,21 @@ export default function HelpModal({ isOpen, onClose, appFields, onRestore }: Hel
               {/* Section Descriptions */}
               <div className="space-y-4">
                 <h3 className="text-xs font-black text-[var(--accent)] uppercase tracking-wider">
-                  Detaillierte Erfassungsrichtlinien (VL-Vorgaben)
+                  So füllen Sie den Bericht richtig aus
                 </h3>
                 
                 <div className="space-y-3">
                   <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] text-xs space-y-2">
                     <span className="font-extrabold text-[var(--text-color)] flex items-center gap-1.5">
                       <Eye className="w-4 h-4 text-blue-500" />
-                      1. Vorführungen &amp; Auslieferungen (Kernaktivitäten)
+                      1. Vorführungen &amp; Auslieferungen
                     </span>
                     <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                      Hier werden alle Vor-Ort-Kundentermine zur praktischen Gerätedemonstration, Erprobung oder formellen Übergabe (Auslieferung) dokumentiert:
+                      Tragen Sie hier alle Kundentermine vor Ort ein, bei denen Sie Geräte zeigen, testen oder übergeben:
                     </p>
                     <ul className="list-disc pl-4 text-[10.5px] text-[var(--text-muted)] space-y-1">
-                      <li><strong>Schule/Bildung:</strong> Termine an Regelschulen, Förderzentren, Universitäten sowie Berufsbildungswerken (BBW) zur Erprobung schulspezifischer Hilfsmittel.</li>
-                      <li><strong>Arbeitsplatz:</strong> Termine direkt beim Arbeitgeber des Versicherten, an Integrationsämtern oder Berufsförderungswerken (BfW) zur Einrichtung beruflicher Arbeitsplatzausstattungen.</li>
+                      <li><strong>Schule/Bildung:</strong> Termine an Schulen, Unis und Bildungswerken.</li>
+                      <li><strong>Arbeitsplatz:</strong> Termine direkt am Arbeitsplatz oder bei Integrationsämtern.</li>
                     </ul>
                   </div>
 
@@ -343,28 +349,28 @@ export default function HelpModal({ isOpen, onClose, appFields, onRestore }: Hel
                       2. Schulung, Support &amp; Akquise
                     </span>
                     <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                      Sämtliche Dienstleistungen und Multiplikatoren-Kontakte zur Marktpflege und Kundenbefähigung:
+                      Hier zählen Sie alle Beratungen und Schulungen:
                     </p>
                     <ul className="list-disc pl-4 text-[10.5px] text-[var(--text-muted)] space-y-1">
-                      <li><strong>Schulungen &amp; Support (Vor-Ort):</strong> Reine Hilfsmittel-Einweisungen und technischer Vor-Ort-Support ohne physische Neuauslieferung.</li>
-                      <li><strong>Telefon-Support:</strong> Komplexere telefonische Beratung, Problemlösung oder Fernwartung bei Software-Fragen.</li>
-                      <li><strong>Akquise &amp; Multiplikatoren:</strong> Beratungsbesuche bei Augenärzten, Beratungsstellen (z.B. BSV-Regionalgruppen) und Optikern.</li>
-                      <li><strong>Messen &amp; Ausstellungen:</strong> Aktive Standbetreuung oder geführte Messerundgänge (Teilnahme in Tagen oder Anzahl Terminen).</li>
+                      <li><strong>Schulungen (Vor-Ort):</strong> Hilfe vor Ort, ohne dass ein neues Gerät übergeben wird.</li>
+                      <li><strong>Telefon-Support:</strong> Beratung und Hilfe am Telefon.</li>
+                      <li><strong>Akquise:</strong> Besuche bei Ärzten, Beratungsstellen oder Optikern.</li>
+                      <li><strong>Messen:</strong> Ihre Teilnahme an Messen oder Ausstellungen.</li>
                     </ul>
                   </div>
 
                   <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] text-xs space-y-2">
                     <span className="font-extrabold text-[var(--text-color)] flex items-center gap-1.5">
                       <Sparkles className="w-4 h-4 text-amber-500" />
-                      3. Spezialprodukte (Fokus-Produkte)
+                      3. Spezialprodukte
                     </span>
                     <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                      Gezielte Zählung unserer innovativen Fokus-Systeme. Jeder Kundenkontakt mit diesen Systemen muss separat erfasst werden:
+                      Jeder Kontakt mit diesen speziellen Geräten muss hier extra gezählt werden:
                     </p>
                     <ul className="list-disc pl-4 text-[10.5px] text-[var(--text-muted)] space-y-1">
-                      <li><strong>Tactonom:</strong> Taktile Grafikausgabegeräte für blinde Menschen.</li>
-                      <li><strong>Feelspace:</strong> Vibrations-Navigationsgurte zur taktilen Orientierung.</li>
-                      <li><strong>WeWalk:</strong> Smarte Blindenlangstöcke mit Ultraschall-Hinderniserkennung.</li>
+                      <li><strong>Tactonom:</strong> Tast-Grafikgeräte für blinde Menschen.</li>
+                      <li><strong>Feelspace:</strong> Navigationsgürtel mit Vibration.</li>
+                      <li><strong>WeWalk:</strong> Smarte Blindenstöcke.</li>
                     </ul>
                     {appFields.s3 && appFields.s3.length > 0 && (
                       <div className="flex flex-wrap gap-1 pt-1">
@@ -391,72 +397,51 @@ export default function HelpModal({ isOpen, onClose, appFields, onRestore }: Hel
                       4. Arbeitszeit &amp; Büro
                     </span>
                     <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                      Genaue Zeiterfassung der administrativen Tätigkeiten und Netto-Arbeitstage:
+                      Hier tragen Sie Ihre Arbeitszeit ein:
                     </p>
                     <ul className="list-disc pl-4 text-[10.5px] text-[var(--text-muted)] space-y-1">
-                      <li><strong>Arbeitstage:</strong> Tatsächlich geleistete Arbeitstage (Urlaubs-, Krankheits- und Feiertage abziehen).</li>
-                      <li><strong>Bürostunden ca.:</strong> Erstellung von Berichten, Terminplanung, E-Mail-Korrespondenz und Telefonate mit der Zentrale.</li>
+                      <li><strong>Arbeitstage:</strong> Die Tage, an denen Sie wirklich gearbeitet haben (ohne Urlaub, Krankheit oder Feiertage).</li>
+                      <li><strong>Bürostunden:</strong> Zeit für Berichte, Termine, E-Mails und Telefonate.</li>
                     </ul>
                   </div>
                 </div>
               </div>
 
-              {/* RV Archiv & Monatsverwaltung */}
               <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] text-xs space-y-2">
                 <span className="font-extrabold text-[var(--text-color)] flex items-center gap-1.5">
-                  <BookOpen className="w-4 h-4 text-emerald-500" />
-                  📂 RV Archiv &amp; Monats-Sicherung (Verwaltung)
+                  <HelpCircle className="w-4 h-4 text-emerald-500" />
+                  Wie funktioniert die App?
                 </span>
-                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                  Die App ermöglicht Ihnen die parallele Verwaltung mehrerer Berichtsmonate:
-                </p>
-                <ul className="list-disc pl-4 text-[10.5px] text-[var(--text-muted)] space-y-1">
-                  <li><strong>Automatisches Archivieren:</strong> Sobald Sie am Monatsende auf <strong>"Nächsten Monat starten"</strong> klicken, wird Ihr aktueller Monat mit allen Zählerständen (RV Report) und Schichten (RV Zeit) automatisch im RV Archiv gesichert.</li>
-                  <li><strong>Monate wechseln:</strong> Über den Kalender-Wähler oben links können Sie jederzeit zu einem anderen Berichtsmonat springen.</li>
-                  <li><strong>Archiv-Zugriff:</strong> Unterhalb der Monatsanzeige finden Sie den Link <strong>"Gespeicherte Monate ansehen"</strong>. Dort können Sie alle archivierten Monate über eine übersichtliche Ausklappliste einsehen, Reports löschen, wieder in die Live-Ansicht laden oder direkt exportieren und teilen.</li>
-                </ul>
-              </div>
-
-              {/* Security & Local Sandbox */}
-              <div className="p-4 rounded-xl border border-dashed border-emerald-500/30 bg-emerald-500/5 space-y-2">
-                <h4 className="text-xs font-black text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-                  <span>🔒 DSGVO-konformer Datenschutz (Offline-First)</span>
-                </h4>
-                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                  Dieses Berichtssystem arbeitet nach dem <strong>Strict-Local-Privacy-Prinzip</strong>. Ihre Daten (Name, Zählerstände, persönliche Anmerkungen) verbleiben ausschließlich verschlüsselt in der lokalen Sandbox Ihres Browsers. Es erfolgt keinerlei Übertragung an Cloud-Server oder Analysetools. Erst durch Ihren bewussten Excel-Export oder Datei-Export geben Sie die Daten kontrolliert frei.
-                </p>
-              </div>
-
-              {/* Keyboard Accessibility shortcuts */}
-              <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] space-y-2">
-                <h4 className="text-xs font-black text-[var(--text-color)] flex items-center gap-1.5">
-                  <Accessibility className="w-4 h-4 text-purple-500" />
-                  Effiziente Tastaturbedienung (Hintergrund-Hilfe)
-                </h4>
-                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                  Für maximale Arbeitsgeschwindigkeit ohne Maus und Touch:
-                </p>
-                <ul className="list-disc pl-4 text-[10.5px] text-[var(--text-muted)] space-y-1">
-                  <li><strong>Wert ändern:</strong> Nutzen Sie im fokussierten Eingabefeld die Tasten <kbd className="px-1 bg-slate-100 dark:bg-slate-800 border rounded font-mono text-[9px]">↑</kbd> und <kbd className="px-1 bg-slate-100 dark:bg-slate-800 border rounded font-mono text-[9px]">↓</kbd>, um Zählerstände sekundenschnell anzupassen.</li>
-                  <li><strong>Feld-Wechsel:</strong> Drücken Sie einfach <kbd className="px-1 bg-slate-100 dark:bg-slate-800 border rounded font-mono text-[9px]">Enter</kbd>, um zum nächsten Zähler zu springen, oder <kbd className="px-1 bg-slate-100 dark:bg-slate-800 border rounded font-mono text-[9px]">Shift+Enter</kbd>, um zum vorherigen zurückzukehren.</li>
-                  <li><strong>Automatische Text-Kommentare:</strong> Verwenden Sie das Sprach-Diktat (Mikrofon) oder drücken Sie <strong>Datumstempel</strong>, um Notizen blitzschnell zu gliedern.</li>
-                </ul>
-              </div>
-
-              {/* WCAG Accessibility features */}
-              <div className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] space-y-2">
-                <h4 className="text-xs font-black text-[var(--text-color)] flex items-center gap-1.5">
-                  <Volume2 className="w-4 h-4 text-sky-500" />
-                  Barrierefreiheit (WCAG 2.2 Standard)
-                </h4>
-                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                  Die App ist speziell für assistive Technologien optimiert:
-                </p>
-                <ul className="list-disc pl-4 text-[10.5px] text-[var(--text-muted)] space-y-1">
-                  <li><strong>Acoustic Feedback:</strong> Zähler-Beeps verändern ihre Tonhöhe proportional zum Zählerstand (höhere Werte klingen höher), was Sehbehinderten intuitive Orientierung ermöglicht.</li>
-                  <li><strong>Live Regionen:</strong> Screenreader wie JAWS, NVDA oder VoiceOver erhalten sofortige, verständliche Updates bei jeder Zähleränderung.</li>
-                  <li><strong>Audio-Auditor:</strong> Die Schaltfläche <strong>🔊 Vorlesen</strong> liest Ihnen den gesamten fertigen Monatsbericht zusammenfassend vor, bevor Sie ihn versenden.</li>
-                </ul>
+                
+                <div className="space-y-4 mt-3">
+                  <div>
+                    <strong className="text-[var(--text-color)]">📂 Monate speichern (Archiv):</strong>
+                    <p className="text-[10.5px] text-[var(--text-muted)] mt-1">
+                      Wenn Sie am Ende des Monats auf <strong>"Nächsten Monat starten"</strong> klicken, wird der aktuelle Monat sicher gespeichert. Sie können alte Monate jederzeit über <strong>"Gespeicherte Monate ansehen"</strong> (unten links) aufrufen.
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <strong className="text-[var(--text-color)]">🔒 Datenschutz:</strong>
+                    <p className="text-[10.5px] text-[var(--text-muted)] mt-1">
+                      Ihre Daten bleiben nur auf Ihrem Gerät. Nichts wird ins Internet gesendet. Nur wenn Sie die Daten exportieren (als Excel oder Backup), werden sie geteilt.
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <strong className="text-[var(--text-color)]">⌨️ Einfache Bedienung:</strong>
+                    <p className="text-[10.5px] text-[var(--text-muted)] mt-1">
+                      Nutzen Sie die Pfeiltasten <kbd className="px-1 bg-slate-100 dark:bg-slate-800 border rounded font-mono text-[9px]">↑</kbd> und <kbd className="px-1 bg-slate-100 dark:bg-slate-800 border rounded font-mono text-[9px]">↓</kbd>, um Werte schnell zu ändern. Mit <kbd className="px-1 bg-slate-100 dark:bg-slate-800 border rounded font-mono text-[9px]">Enter</kbd> springen Sie zum nächsten Feld.
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <strong className="text-[var(--text-color)]">🔊 Vorlese-Funktion:</strong>
+                    <p className="text-[10.5px] text-[var(--text-muted)] mt-1">
+                      Mit der Schaltfläche <strong>"Vorlesen"</strong> können Sie sich den ganzen Bericht vor dem Senden anhören.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -470,10 +455,10 @@ export default function HelpModal({ isOpen, onClose, appFields, onRestore }: Hel
                 <div>
                   <h4 className="text-xs font-black text-[var(--text-color)] flex items-center gap-1.5">
                     <Share2 className="w-4 h-4 text-[var(--accent)]" />
-                    Backup teilen &amp; sichern (Daten exportieren)
+                    Daten sichern &amp; teilen
                   </h4>
                   <p className="text-[11px] text-[var(--text-muted)] leading-relaxed mt-1">
-                    Erstellt eine gesicherte Textdatei (.txt) mit all Ihren Zählerständen und benutzerdefinierten Feldern. Sie können diese Datei direkt über <strong>Airdrop</strong>, E-Mail, WhatsApp oder Dateitransfer an Ihr neues Gerät senden.
+                    Speichern Sie alle Ihre Zählerstände als Datei ab. Diese können Sie per E-Mail, Messenger oder AirDrop an ein neues Gerät schicken.
                   </p>
                 </div>
 
@@ -484,7 +469,7 @@ export default function HelpModal({ isOpen, onClose, appFields, onRestore }: Hel
                     className="flex-1 py-3 px-4 rounded-xl font-bold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-xs cursor-pointer transition-all flex items-center justify-center gap-1.5 active:scale-95"
                   >
                     <Share2 className="w-4 h-4" />
-                    <span>Backup-Datei teilen / herunterladen</span>
+                    <span>Datei speichern / teilen</span>
                   </button>
 
                   <button
@@ -493,7 +478,7 @@ export default function HelpModal({ isOpen, onClose, appFields, onRestore }: Hel
                     className="py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] hover:bg-[var(--bg-color)] text-xs cursor-pointer transition-all flex items-center justify-center gap-1.5 active:scale-95"
                   >
                     <FileText className="w-4 h-4 text-[var(--accent)]" />
-                    <span>Als Code-Text anzeigen</span>
+                    <span>Als Code anzeigen</span>
                   </button>
                 </div>
 
@@ -523,10 +508,10 @@ export default function HelpModal({ isOpen, onClose, appFields, onRestore }: Hel
                 <div>
                   <h4 className="text-xs font-black text-[var(--text-color)] flex items-center gap-1.5">
                     <UploadCloud className="w-4 h-4 text-emerald-500" />
-                    Backup einspielen (Daten importieren)
+                    Daten wiederherstellen
                   </h4>
                   <p className="text-[11px] text-[var(--text-muted)] leading-relaxed mt-1">
-                    Laden Sie Ihre exportierte Backup-Textdatei (.txt) direkt von Ihrem Gerät hoch, um alle Zählerstände und Kategorien wiederherzustellen.
+                    Wählen Sie Ihre gespeicherte Backup-Datei aus, um alle Daten und Kategorien wieder in die App zu laden.
                   </p>
                 </div>
 
@@ -534,7 +519,7 @@ export default function HelpModal({ isOpen, onClose, appFields, onRestore }: Hel
                 <div className="space-y-2">
                   <label className="py-3 px-4 rounded-xl text-xs font-extrabold border-2 border-dashed border-[var(--border-color)] bg-[var(--card-bg)] hover:bg-[var(--bg-color)] hover:border-emerald-500 cursor-pointer transition-all flex flex-col items-center justify-center gap-2 text-center">
                     <UploadCloud className="w-6 h-6 text-emerald-500" />
-                    <span className="font-extrabold text-[var(--text-color)]">Backup-Textdatei auswählen</span>
+                    <span className="font-extrabold text-[var(--text-color)]">Datei auswählen</span>
                     <span className="text-[10px] text-[var(--text-muted)] font-medium">Klicken Sie hier, um eine Datei auszuwählen</span>
                     <input
                       ref={fileInputRef}
@@ -549,7 +534,7 @@ export default function HelpModal({ isOpen, onClose, appFields, onRestore }: Hel
                 {/* Manual Text Import (Fallback) */}
                 <div className="border-t border-dashed border-[var(--border-color)] pt-3.5 space-y-2.5">
                   <label htmlFor="restore-code-textarea" className="text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider block">
-                    Alternativ als Text einspielen:
+                    Alternativ als Text-Code einfügen:
                   </label>
                   <textarea
                     id="restore-code-textarea"

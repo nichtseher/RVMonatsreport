@@ -116,7 +116,7 @@ export default function ManageModal({
         </div>
 
         <p className="text-sm text-[var(--text-muted)] mb-5 leading-relaxed">
-          Hier können Sie benutzerdefinierte oder Standard-Kategorien dauerhaft aus der App löschen. Bitte beachten Sie, dass dies auch die dazugehörigen Zählerstände entfernt.
+          Hier können Sie Kategorien löschen. <strong>Vorsicht:</strong> Wenn Sie eine Kategorie löschen, werden auch die eingetragenen Zahlen dafür gelöscht.
         </p>
 
         {/* Categories List */}
@@ -172,7 +172,7 @@ export default function ManageModal({
             <span>Formular auf Standard-Felder zurücksetzen</span>
           </button>
           <p className="text-[11px] text-[var(--text-muted)] text-center mt-2 leading-relaxed">
-            Warnung: Dies stellt alle originalen Felder wieder her. Alle Ihre selbst erstellten Kategorien werden unwiderruflich gelöscht.
+            Warnung: Dies stellt den Anfangszustand der App wieder her. Ihre selbst erstellten Kategorien werden dabei gelöscht.
           </p>
         </div>
       </div>

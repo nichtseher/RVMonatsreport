@@ -131,7 +131,7 @@ export default function CarryoverModal({
         <div className="p-3.5 mb-5 rounded-xl bg-blue-500/5 border border-blue-500/10 flex gap-2.5 items-start text-xs font-semibold leading-relaxed">
           <Info className="w-4 h-4 flex-shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" aria-hidden="true" />
           <p className="flex-1">
-            Da Sie unterjährig mit der App starten oder Restansprüche aus dem Vorjahr mitnehmen möchten, können Sie hier Ihre Initial-Werte hinterlegen. Diese bilden die Basis für Ihre Urlaubs- und Überstundenkonten.
+            Hier können Sie Ihre Startwerte für Urlaub und Überstunden eintragen.
           </p>
         </div>
 

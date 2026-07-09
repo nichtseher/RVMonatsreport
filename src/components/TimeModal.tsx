@@ -255,10 +255,10 @@ export default function TimeModal({
           <Clock className="w-8 h-8 text-[var(--accent)]" aria-hidden="true" />
           <div>
             <h2 id="time-modal-title" className="text-2xl font-extrabold tracking-tight">
-              RV Zeit &amp; Stempeluhr
+              Zeiterfassung
             </h2>
             <p className="text-xs text-[var(--text-muted)] font-semibold mt-0.5">
-              Verwalten Sie Ihre Schichtaufzeichnungen, Pausenzeiten und Ihr Arbeitszeitkonto.
+              Hier erfassen Sie Ihre Arbeitszeiten und sehen Ihr Arbeitszeitkonto.
             </p>
           </div>
         </div>
