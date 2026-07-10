@@ -2476,6 +2476,12 @@ export default function App() {
             >
               4. Arbeitszeit & Büro
             </h2>
+            {accessibility.enableTimeTracking !== false && (
+              <div className="mb-4 p-3 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-700 dark:text-teal-400 text-xs font-bold flex items-start gap-2">
+                <Clock className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <p>Diese Werte werden automatisch aus Ihrer Stempeluhr (RV Zeit) berechnet und beim Ausstempeln hier eingetragen.</p>
+              </div>
+            )}
             <div className="flex flex-col gap-3">
               {filterFields(appFields.s4).map((field) => (
                 <CounterField
@@ -2627,6 +2633,31 @@ export default function App() {
         />
       </section>
 
+      {/* EXPORT ACTION AREA */}
+      <section className="mb-8 space-y-3" aria-label="Daten exportieren">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            className="w-full py-3.5 px-4 rounded-xl border border-emerald-600/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400 font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer hover:bg-emerald-500/10 active:scale-95 transition-all shadow-sm focus-visible:ring-4"
+          >
+            <FileSpreadsheet className="w-5 h-5" aria-hidden="true" />
+            <span>Monatsreport als Excel teilen / speichern</span>
+          </button>
+          
+          {accessibility.enableTimeTracking !== false && reportData.timeLogs && reportData.timeLogs.length > 0 && (
+            <button
+              type="button"
+              onClick={handleExportTimeLogsExcel}
+              className="w-full py-3.5 px-4 rounded-xl border border-teal-600/30 bg-teal-500/5 text-teal-700 dark:text-teal-400 font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer hover:bg-teal-500/10 active:scale-95 transition-all shadow-sm focus-visible:ring-4"
+            >
+              <Clock className="w-5 h-5" aria-hidden="true" />
+              <span>Zeiterfassung als Excel teilen / speichern</span>
+            </button>
+          )}
+        </div>
+      </section>
+
       {/* FINAL ACTION AREA */}
       <section
         className="space-y-3.5"
@@ -2677,7 +2708,6 @@ export default function App() {
             isOpen={true}
             onClose={() => setActiveTab("options")}
             appFields={appFields}
-            onRestore={handleRestoreFromBackup}
           />
         </div>
       )}
@@ -2888,12 +2918,14 @@ export default function App() {
         >
           <div className="flex items-center justify-between gap-1">
             {[
-              { id: "form", label: "RV Report", icon: LayoutGrid, active: activeTab === "form" },
-              { id: "time", label: "RV Zeit", icon: Clock, active: activeTab === "time" || activeTab === "carryover" },
-              { id: "stats", label: "RV Analyse", icon: BarChart3, active: activeTab === "stats" },
-              { id: "history", label: "RV Archiv", icon: History, active: activeTab === "history" },
-              { id: "options", label: "Optionen", icon: Settings, active: activeTab === "options" || activeTab === "help" || activeTab === "backup" || activeTab === "manage" },
-            ].map((tab) => {
+              { id: "form", label: "RV Report", icon: LayoutGrid, active: activeTab === "form", visible: true },
+              { id: "time", label: "RV Zeit", icon: Clock, active: activeTab === "time" || activeTab === "carryover", visible: accessibility.enableTimeTracking !== false },
+              { id: "stats", label: "RV Analyse", icon: BarChart3, active: activeTab === "stats", visible: true },
+              { id: "history", label: "RV Archiv", icon: History, active: activeTab === "history", visible: true },
+              { id: "options", label: "Optionen", icon: Settings, active: activeTab === "options" || activeTab === "help" || activeTab === "backup" || activeTab === "manage", visible: true },
+            ]
+            .filter(tab => tab.visible)
+            .map((tab) => {
               const IconComp = tab.icon;
               const isSelected = tab.active;
 

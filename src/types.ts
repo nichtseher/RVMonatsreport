@@ -64,4 +64,5 @@ export interface AccessibilitySettings {
   screenReaderNarration: boolean;
   audioFeedback: boolean;
   speechRate: number;
+  enableTimeTracking?: boolean;
 }

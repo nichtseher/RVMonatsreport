@@ -32,6 +32,7 @@ export default function HistoryModal({
 }: HistoryModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const records = Object.values(history || {})
     .filter((r): r is HistoryRecord & { month: string } => typeof r?.month === "string")
@@ -298,12 +299,13 @@ export default function HistoryModal({
     announceToAriaAndSpeech(`Zeiterfassungs-Protokoll für ${formatMonthGerman(monthVal)} heruntergeladen.`);
   };
 
-  const handleDeleteWithConfirm = (monthStr: string) => {
-    const formatted = formatMonthGerman(monthStr);
-    if (confirm(`Möchten Sie alle Monatsdaten für "${formatted}" wirklich unwiderruflich aus dem RV Archiv löschen?`)) {
-      onDeleteRecord(monthStr);
+  const executeDelete = () => {
+    if (deleteConfirm) {
+      const formatted = formatMonthGerman(deleteConfirm);
+      onDeleteRecord(deleteConfirm);
       triggerToast(`Eintrag für ${formatted} gelöscht.`);
       announceToAriaAndSpeech(`Eintrag für ${formatted} aus dem RV Archiv gelöscht.`);
+      setDeleteConfirm(null);
     }
   };
 
@@ -481,14 +483,35 @@ export default function HistoryModal({
                                         <span>Laden / Editieren</span>
                                       </button>
 
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDeleteWithConfirm(record.month)}
-                                        aria-label={`${formatMonthGerman(record.month)} aus RV Archiv löschen`}
-                                        className="col-span-1 h-11 rounded-xl border border-red-200 dark:border-red-950/40 bg-red-50/20 text-red-600 dark:text-red-400 font-extrabold text-xs flex items-center justify-center cursor-pointer hover:bg-red-50 dark:hover:bg-red-950/20 active:scale-95 transition-all focus-visible:ring-4"
-                                      >
-                                        <Trash2 className="w-4 h-4" aria-hidden="true" />
-                                      </button>
+                                      {deleteConfirm === record.month ? (
+                                        <div className="col-span-1 h-11 flex gap-1">
+                                          <button
+                                            type="button"
+                                            onClick={() => executeDelete()}
+                                            className="flex-1 rounded-xl border border-red-600 bg-red-500 text-white font-extrabold text-xs flex items-center justify-center cursor-pointer hover:bg-red-600 active:scale-95 transition-all focus-visible:ring-4"
+                                            aria-label="Wirklich löschen? Ja"
+                                          >
+                                            Ja
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => setDeleteConfirm(null)}
+                                            className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-[var(--text-color)] font-extrabold text-xs flex items-center justify-center cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all focus-visible:ring-4"
+                                            aria-label="Abbrechen"
+                                          >
+                                            <X className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => setDeleteConfirm(record.month)}
+                                          aria-label={`${formatMonthGerman(record.month)} aus RV Archiv löschen`}
+                                          className="col-span-1 h-11 rounded-xl border border-red-200 dark:border-red-950/40 bg-red-50/20 text-red-600 dark:text-red-400 font-extrabold text-xs flex items-center justify-center cursor-pointer hover:bg-red-50 dark:hover:bg-red-950/20 active:scale-95 transition-all focus-visible:ring-4"
+                                        >
+                                          <Trash2 className="w-4 h-4" aria-hidden="true" />
+                                        </button>
+                                      )}
                                     </div>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

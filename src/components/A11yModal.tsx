@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { AccessibilitySettings, AccessibilityTheme, SectionsConfig } from "../types";
-import { Type, Eye, Volume2, VolumeX, Sparkles, HelpCircle, Lock, Settings2, ChevronRight, ArrowLeft } from "lucide-react";
+import { Type, Eye, Volume2, VolumeX, Sparkles, HelpCircle, Lock, Settings2, ChevronRight, ArrowLeft, Clock, Sliders } from "lucide-react";
 
 interface A11yModalProps {
   settings: AccessibilitySettings;
@@ -96,11 +96,11 @@ export default function A11yModal({
         >
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-[var(--input-bg)] text-[var(--accent)] flex items-center justify-center border border-[var(--border-color)] group-hover:bg-[var(--accent)] group-hover:text-white transition-colors">
-              <Eye className="w-6 h-6" />
+              <Sliders className="w-6 h-6" />
             </div>
             <div>
-              <span className="block font-black text-[var(--text-color)] text-lg">Barrierefreiheit & Design</span>
-              <span className="block text-sm font-semibold text-[var(--text-muted)] mt-0.5">Schrift, Kontrast, Sprachansage</span>
+              <span className="block font-black text-[var(--text-color)] text-lg">App-Einstellungen</span>
+              <span className="block text-sm font-semibold text-[var(--text-muted)] mt-0.5">Zeiterfassung, Kontrast, Ansagen</span>
             </div>
           </div>
           <ChevronRight className="w-6 h-6 text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
@@ -281,6 +281,37 @@ export default function A11yModal({
 
         {/* Voice Feedback */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-3">
+            <label id="label-timetracking" className="block text-base font-extrabold text-[var(--text-color)]">
+              Modul: Zeiterfassung (Stempeluhr)
+            </label>
+            <button
+              type="button"
+              onClick={() => updateSetting("enableTimeTracking", settings.enableTimeTracking === false ? true : false)}
+              aria-pressed={settings.enableTimeTracking !== false}
+              className={`w-full py-5 px-5 rounded-2xl border-2 transition-all cursor-pointer font-extrabold flex items-center justify-center gap-3 active:scale-95 shadow-sm ${
+                settings.enableTimeTracking !== false
+                  ? "bg-[var(--accent)] border-[var(--accent)] text-white"
+                  : "bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
+              }`}
+            >
+              {settings.enableTimeTracking !== false ? (
+                <>
+                  <Clock className="w-6 h-6" aria-hidden="true" />
+                  <span className="text-base">Zeiterfassung AKTIV</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-6 h-6" aria-hidden="true" />
+                  <span className="text-base">Zeiterfassung INAKTIV</span>
+                </>
+              )}
+            </button>
+            <p id="timetracking-description" className="text-sm font-semibold text-[var(--text-muted)] leading-relaxed">
+              Stempeluhr und Pausenerfassung aktivieren. Falls deaktiviert, können Bürozeiten manuell im Monatsreport erfasst werden.
+            </p>
+          </div>
+
           <div className="space-y-3">
             <label id="label-narration" className="block text-base font-extrabold text-[var(--text-color)]">
               Sprach-Feedback (Ansage):
