@@ -45,18 +45,23 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
   };
 
   const setupSocketAndRelay = (room: string, key: string, isInitiator: boolean) => {
-    const newSocket = io({ transports: ["websocket"] });
+    const newSocket = io({ transports: ["polling", "websocket"] });
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
       newSocket.emit("join-room", room);
       if (isInitiator) {
-        // The one scanning the code joins and notifies the host
         setStatus({ type: "success", msg: "Geräte erfolgreich gekoppelt!" });
         setMode("connected");
         if (scannerRef.current) {
           scannerRef.current.stop().catch(() => {});
         }
+      } else {
+        setStatus((prev) => 
+          prev?.type === "success" && prev.msg.includes("gekoppelt") 
+            ? prev 
+            : { type: "info", msg: "Mit Server verbunden. Warte auf anderes Gerät..." }
+        );
       }
     });
 
@@ -89,7 +94,6 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
     newSocket.on("connect_error", (err) => {
       console.error("Socket connect_error", err);
       setStatus({ type: "error", msg: "Verbindungsfehler zum Server. Versuche erneut..." });
-      // Removed setMode("select") to keep the QR code visible
     });
   };
 
