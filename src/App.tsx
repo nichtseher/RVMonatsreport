@@ -2509,7 +2509,7 @@ export default function App() {
         </div>
       </div>
 
-      <div {...swipeHandlers} className={`w-full ${isDesktop ? 'lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start' : ''}`}>
+      <div {...swipeHandlers} className="w-full">
         {/* SECTION 1: VORFÜHRUNGEN & AUSLIEFERUNGEN */}
         {(activeSectionTab === "all" || activeSectionTab === "s1") &&
           hasVisibleFields(appFields.s1) && (
@@ -2523,7 +2523,7 @@ export default function App() {
             >
               1. Vorführungen & Auslieferungen
             </h2>
-            <div className="flex flex-col gap-3">
+            <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-2 lg:gap-5' : 'gap-3'}`}>
               {filterFields(appFields.s1).map((field) => (
                 <CounterField
                   key={field.id}
@@ -2572,7 +2572,7 @@ export default function App() {
             >
               2. Schulung, Support & Akquise
             </h2>
-            <div className="flex flex-col gap-3">
+            <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-2 lg:gap-5' : 'gap-3'}`}>
               {filterFields(appFields.s2).map((field) => (
                 <CounterField
                   key={field.id}
@@ -2609,7 +2609,7 @@ export default function App() {
             >
               3. Spezialprodukte (Fokus)
             </h2>
-            <div className="flex flex-col gap-3">
+            <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-2 lg:gap-5' : 'gap-3'}`}>
               {filterFields(appFields.s3).map((field) => (
                 <CounterField
                   key={field.id}
@@ -2652,7 +2652,7 @@ export default function App() {
                 <p>Diese Werte werden automatisch aus Ihrer Stempeluhr (RV Zeit) berechnet und beim Ausstempeln hier eingetragen.</p>
               </div>
             )}
-            <div className="flex flex-col gap-3">
+            <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-2 lg:gap-5' : 'gap-3'}`}>
               {filterFields(appFields.s4).map((field) => (
                 <CounterField
                   key={field.id}
@@ -2699,7 +2699,7 @@ export default function App() {
 
       {/* SECTION 5: NOTES & ANMERKUNGEN */}
       <section
-        className={`p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)] ${isDesktop ? 'lg:mt-6' : ''}`}
+        className={`p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]`}
         aria-labelledby="notes-heading"
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b-2 border-slate-100 dark:border-slate-800">
