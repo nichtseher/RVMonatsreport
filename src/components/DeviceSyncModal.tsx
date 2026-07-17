@@ -45,7 +45,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
   };
 
   const setupSocketAndRelay = (room: string, key: string, isInitiator: boolean) => {
-    const newSocket = io({ path: '/socket.io' }); // Explicitly use socket.io path
+    const newSocket = io();
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
@@ -86,9 +86,10 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
       }
     });
 
-    newSocket.on("connect_error", () => {
-      setStatus({ type: "error", msg: "Verbindungsfehler zum Server." });
-      setMode("select");
+    newSocket.on("connect_error", (err) => {
+      console.error("Socket connect_error", err);
+      setStatus({ type: "error", msg: "Verbindungsfehler zum Server. Versuche erneut..." });
+      // Removed setMode("select") to keep the QR code visible
     });
   };
 

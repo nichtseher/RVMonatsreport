@@ -275,7 +275,7 @@ export default function A11yModal({
               </div>
               <div>
                 <span className="block font-black text-[var(--text-color)] text-lg">Was gibt's Neues?</span>
-                <span className="block text-sm font-semibold text-[var(--text-muted)] mt-0.5">Version 0.1.0 Beta</span>
+                <span className="block text-sm font-semibold text-[var(--text-muted)] mt-0.5">Version 0.2.0 Beta</span>
               </div>
             </div>
             <ChevronRight className="w-6 h-6 text-[var(--text-muted)] group-hover:text-purple-600 transition-colors" />
