@@ -25,6 +25,19 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
   useEffect(() => {
     if (!isOpen) {
       resetState();
+    } else {
+      // Check if opened via URL hash
+      if (window.location.hash.startsWith("#sync=")) {
+        const hashData = window.location.hash.replace("#sync=", "");
+        if (hashData.includes(":")) {
+          const [scannedRoom, scannedKey] = hashData.split(":");
+          setRoomId(scannedRoom);
+          setEncryptionKey(scannedKey);
+          setupSocketAndRelay(scannedRoom, scannedKey, true);
+          // Clean up hash so it doesn't trigger again on reload
+          window.history.replaceState(null, "", window.location.pathname);
+        }
+      }
     }
   }, [isOpen]);
 
@@ -45,7 +58,10 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
   };
 
   const setupSocketAndRelay = (room: string, key: string, isInitiator: boolean) => {
-    const newSocket = io({ transports: ["polling", "websocket"] });
+    const newSocket = io({ 
+      path: "/socket.io",
+      transports: ["polling", "websocket"] 
+    });
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
@@ -92,8 +108,8 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
     });
 
     newSocket.on("connect_error", (err) => {
-      console.error("Socket connect_error", err);
-      setStatus({ type: "error", msg: "Verbindungsfehler zum Server. Versuche erneut..." });
+      console.error("Socket connect_error:", err.message, err.description, err.context);
+      setStatus({ type: "error", msg: `Verbindungsfehler: ${err.message}. Versuche erneut...` });
     });
   };
 
@@ -223,10 +239,10 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
           {mode === "host" && (
             <div className="flex flex-col items-center justify-center py-6">
               <div className="bg-white p-4 rounded-xl shadow-sm mb-6">
-                <QRCodeSVG value={`${roomId}:${encryptionKey}`} size={200} />
+                <QRCodeSVG value={`${window.location.href.split('#')[0]}#sync=${roomId}:${encryptionKey}`} size={200} />
               </div>
-              <p className="text-sm text-center text-[var(--text-muted)] max-w-[250px]">
-                Öffnen Sie diese App auf dem anderen Gerät, wählen Sie "Anderes Gerät scannen" und scannen Sie diesen Code.
+              <p className="text-sm text-center text-[var(--text-muted)] max-w-[280px]">
+                Scannen Sie diesen Code mit der normalen <strong>Kamera-App Ihres Smartphones</strong>, um die App automatisch zu öffnen und zu verbinden.
               </p>
               <button onClick={resetState} className="mt-8 text-sm text-[var(--accent)] font-semibold hover:underline">
                 Abbrechen

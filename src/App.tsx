@@ -1807,6 +1807,13 @@ export default function App() {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [reportData]);
 
+  // Check for sync hash on load
+  useEffect(() => {
+    if (window.location.hash.startsWith("#sync=")) {
+      setIsSyncModalOpen(true);
+    }
+  }, []);
+
   if (!reportData || !history) {
     return <div className="flex h-screen w-screen items-center justify-center bg-gray-100 text-gray-500">Lade Daten...</div>;
   }
