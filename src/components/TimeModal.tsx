@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { formatMonthGerman } from "../utils/dateUtils";
 import { 
   X, 
   Clock, 
@@ -62,7 +63,7 @@ export default function TimeModal({
     return count;
   };
 
-  const calculateYearlyOvertime = () => {
+  const yearlyOvertime = React.useMemo(() => {
     const [activeYearStr] = selectedMonth ? selectedMonth.split("-") : ["2026"];
     const activeYear = parseInt(activeYearStr, 10);
     
@@ -117,9 +118,9 @@ export default function TimeModal({
       totalOvertimeAccumulated,
       monthsCalculated
     };
-  };
+  }, [history, selectedMonth, reportData, carryover]);
 
-  const calculateYearlyVacation = () => {
+  const yearlyVacation = React.useMemo(() => {
     const [activeYearStr] = selectedMonth ? selectedMonth.split("-") : ["2026"];
     const activeYear = parseInt(activeYearStr, 10);
     
@@ -155,19 +156,9 @@ export default function TimeModal({
       totalKrankDays,
       totalFeiertage
     };
-  };
+  }, [history, selectedMonth, reportData, carryover]);
 
-  const formatMonthGerman = (monthStr: string) => {
-    if (!monthStr) return "";
-    const [year, month] = monthStr.split("-");
-    const months = [
-      "Januar", "Februar", "März", "April", "Mai", "Juni",
-      "Juli", "August", "September", "Oktober", "November", "Dezember"
-    ];
-    const idx = parseInt(month, 10) - 1;
-    return isNaN(idx) || idx < 0 || idx > 11 ? monthStr : `${months[idx]} ${year}`;
-  };
-
+  
   const activeYear = selectedMonth ? selectedMonth.split("-")[0] : "2026";
 
   return (
@@ -284,19 +275,19 @@ export default function TimeModal({
                     <div className="flex justify-between text-xs font-semibold">
                       <span className="text-[var(--text-muted)]">Aufbau im Jahr:</span>
                       <span className="font-mono font-bold">
-                        {calculateYearlyOvertime().totalOvertimeAccumulated >= 0 ? "+" : ""}{calculateYearlyOvertime().totalOvertimeAccumulated.toFixed(2)}h
+                        {yearlyOvertime.totalOvertimeAccumulated >= 0 ? "+" : ""}{yearlyOvertime.totalOvertimeAccumulated.toFixed(2)}h
                       </span>
                     </div>
                     <div className="border-t border-dashed border-[var(--border-color)] pt-2 mt-2 flex justify-between items-baseline">
                       <span className="text-xs font-bold text-[var(--text-color)]">Gesamt-Saldo:</span>
                       <span className={`text-xl font-black font-mono ${
-                        calculateYearlyOvertime().totalBalance > 0 
+                        yearlyOvertime.totalBalance > 0 
                           ? "text-emerald-600 dark:text-emerald-400" 
-                          : calculateYearlyOvertime().totalBalance < 0 
+                          : yearlyOvertime.totalBalance < 0 
                             ? "text-red-600 dark:text-red-400" 
                             : "text-[var(--text-color)]"
                       }`}>
-                        {calculateYearlyOvertime().totalBalance >= 0 ? "+" : ""}{calculateYearlyOvertime().totalBalance.toFixed(2)}h
+                        {yearlyOvertime.totalBalance >= 0 ? "+" : ""}{yearlyOvertime.totalBalance.toFixed(2)}h
                       </span>
                     </div>
                   </div>
@@ -333,12 +324,12 @@ export default function TimeModal({
                     </div>
                     <div className="flex justify-between text-xs font-semibold">
                       <span className="text-[var(--text-muted)]">Genommen (YTD):</span>
-                      <span className="font-mono font-bold text-red-600 dark:text-red-400">-{calculateYearlyVacation().totalUrlaubTaken} Tage</span>
+                      <span className="font-mono font-bold text-red-600 dark:text-red-400">-{yearlyVacation.totalUrlaubTaken} Tage</span>
                     </div>
                     <div className="border-t border-dashed border-[var(--border-color)] pt-2 mt-2 flex justify-between items-baseline">
                       <span className="text-xs font-bold text-[var(--text-color)]">Resturlaub aktuell:</span>
                       <span className="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                        {calculateYearlyVacation().remainingVacation} Tage
+                        {yearlyVacation.remainingVacation} Tage
                       </span>
                     </div>
                   </div>
@@ -348,10 +339,10 @@ export default function TimeModal({
                   <span>Fehltage (YTD):</span>
                   <span className="flex gap-2">
                     <span className="bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-extrabold">
-                      Krank: {calculateYearlyVacation().totalKrankDays}
+                      Krank: {yearlyVacation.totalKrankDays}
                     </span>
                     <span className="bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-extrabold">
-                      Feiertag: {calculateYearlyVacation().totalFeiertage}
+                      Feiertag: {yearlyVacation.totalFeiertage}
                     </span>
                   </span>
                 </div>
@@ -377,7 +368,7 @@ export default function TimeModal({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-muted)] font-semibold">
-                      {calculateYearlyOvertime().monthsCalculated.map((mRow, idx) => (
+                      {yearlyOvertime.monthsCalculated.map((mRow, idx) => (
                         <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/10">
                           <td className="p-2.5 font-black text-[var(--text-color)]">{formatMonthGerman(mRow.month)}</td>
                           <td className="p-2.5 text-right font-bold font-mono text-[var(--text-color)]">

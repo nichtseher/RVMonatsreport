@@ -1,6 +1,17 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { AccessibilitySettings, AccessibilityTheme, SectionsConfig } from "../types";
-import { Type, Eye, Volume2, VolumeX, Sparkles, HelpCircle, Lock, Settings2, ChevronRight, ArrowLeft, Clock, Sliders } from "lucide-react";
+import { Type, Eye, Volume2, VolumeX, Sparkles, HelpCircle, Lock, Settings2, ChevronRight, ArrowLeft, Clock, Sliders, Smartphone, Bell, BellOff } from "lucide-react";
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
 interface A11yModalProps {
   settings: AccessibilitySettings;
@@ -19,6 +30,8 @@ interface A11yModalProps {
   onAddCustomField: (e: React.FormEvent) => void;
   onOpenManage: () => void;
   onOpenBackup?: () => void;
+  onOpenSync?: () => void;
+  onOpenChangelog?: () => void;
 }
 
 export default function A11yModal({
@@ -35,10 +48,82 @@ export default function A11yModal({
   setNewFieldIcon,
   onAddCustomField,
   onOpenManage,
-  onOpenBackup
+  onOpenBackup,
+  onOpenSync,
+  onOpenChangelog
 }: A11yModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeMenu, setActiveMenu] = useState<"main" | "a11y" | "form">("main");
+
+  const [isPushEnabled, setIsPushEnabled] = useState(false);
+  const [isPushSupported, setIsPushSupported] = useState(false);
+  const [isPushLoading, setIsPushLoading] = useState(false);
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      setIsPushSupported(true);
+      navigator.serviceWorker.ready.then(reg => {
+        reg.pushManager.getSubscription().then(sub => {
+          setIsPushEnabled(!!sub);
+        });
+      });
+    }
+  }, []);
+
+  const handleTogglePush = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      alert('Push-Benachrichtigungen werden von diesem Browser nicht unterstützt.');
+      return;
+    }
+    
+    setIsPushLoading(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      
+      if (isPushEnabled) {
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await sub.unsubscribe();
+          await fetch('/api/push/unsubscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: sub.endpoint })
+          });
+        }
+        setIsPushEnabled(false);
+      } else {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          alert('Die Berechtigung für Benachrichtigungen wurde verweigert.');
+          setIsPushLoading(false);
+          return;
+        }
+        
+        const response = await fetch('/api/push/public-key');
+        if (!response.ok) throw new Error('Could not fetch public key');
+        const { publicKey } = await response.json();
+        
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey)
+        });
+        
+        await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(sub)
+        });
+        
+        setIsPushEnabled(true);
+        alert('Erfolgreich! Sie werden am 8. jedes Monats an Ihren Monatsbericht erinnert.');
+      }
+    } catch (err) {
+      console.error('Push toggle error:', err);
+      alert('Fehler beim Ändern der Push-Benachrichtigungen.');
+    } finally {
+      setIsPushLoading(false);
+    }
+  };
 
   const updateSetting = <K extends keyof AccessibilitySettings>(
     key: K,
@@ -156,6 +241,44 @@ export default function A11yModal({
               </div>
             </div>
             <ChevronRight className="w-6 h-6 text-[var(--text-muted)] group-hover:text-slate-800 transition-colors" />
+          </button>
+        )}
+
+        {onOpenSync && (
+          <button
+            type="button"
+            onClick={onOpenSync}
+            className="w-full flex items-center justify-between p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)] hover:border-[var(--accent)] transition-all text-left group active:scale-95 cursor-pointer shadow-sm mt-4"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md">
+                <Smartphone className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="block font-black text-[var(--text-color)] text-lg">Geräte-Sync (QR Code)</span>
+                <span className="block text-sm font-semibold text-[var(--text-muted)] mt-0.5">PC und Handy verbinden</span>
+              </div>
+            </div>
+            <ChevronRight className="w-6 h-6 text-[var(--text-muted)] group-hover:text-blue-600 transition-colors" />
+          </button>
+        )}
+
+        {onOpenChangelog && (
+          <button
+            type="button"
+            onClick={onOpenChangelog}
+            className="w-full flex items-center justify-between p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)] hover:border-[var(--accent)] transition-all text-left group active:scale-95 cursor-pointer shadow-sm mt-4"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-md">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="block font-black text-[var(--text-color)] text-lg">Was gibt's Neues?</span>
+                <span className="block text-sm font-semibold text-[var(--text-muted)] mt-0.5">Version 0.1.0 Beta</span>
+              </div>
+            </div>
+            <ChevronRight className="w-6 h-6 text-[var(--text-muted)] group-hover:text-purple-600 transition-colors" />
           </button>
         )}
       </div>
@@ -401,6 +524,41 @@ export default function A11yModal({
             />
             <span className="text-xs font-black uppercase text-[var(--text-muted)]">Schnell</span>
           </div>
+        </div>
+
+        {/* Push Notifications Setup */}
+        <div className="space-y-3">
+          <label id="label-pushnotifications" className="block text-base font-extrabold text-[var(--text-color)]">
+            Erinnerung für Monatsbericht (Push):
+          </label>
+          <button
+            type="button"
+            onClick={handleTogglePush}
+            disabled={!isPushSupported || isPushLoading}
+            aria-pressed={isPushEnabled}
+            aria-describedby="pushnotifications-description"
+            className={`w-full py-5 px-5 rounded-2xl border-2 transition-all cursor-pointer font-extrabold flex items-center justify-center gap-3 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
+              isPushEnabled
+                ? "bg-[var(--accent)] border-[var(--accent)] text-white"
+                : "bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
+            }`}
+          >
+            {isPushEnabled ? (
+              <>
+                <Bell className="w-6 h-6" aria-hidden="true" />
+                <span className="text-base">{isPushLoading ? "Wird geladen..." : "Erinnerung AKTIV"}</span>
+              </>
+            ) : (
+              <>
+                <BellOff className="w-6 h-6" aria-hidden="true" />
+                <span className="text-base">{!isPushSupported ? "Nicht unterstützt" : isPushLoading ? "Wird geladen..." : "Erinnerung INAKTIV"}</span>
+              </>
+            )}
+          </button>
+          <p id="pushnotifications-description" className="text-sm font-semibold text-[var(--text-muted)] leading-relaxed">
+            Aktivieren Sie diese Option, um am 8. des Monats eine Push-Benachrichtigung als Erinnerung zur Abgabe des Monatsberichts zu erhalten. 
+            {!isPushSupported && <strong className="block mt-1 text-[var(--danger)]">Ihr Browser oder Gerät unterstützt leider keine Push-Benachrichtigungen.</strong>}
+          </p>
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { formatMonthGerman } from "../utils/dateUtils";
 import { 
    X, 
    BarChart3, 
@@ -38,22 +39,12 @@ export default function StatsModal({
   };
 
   // Helper to format German Month Name
-  const formatMonthGerman = (monthStr: string) => {
-    if (!monthStr) return "";
-    const [year, month] = monthStr.split("-");
-    const months = [
-      "Januar", "Februar", "März", "April", "Mai", "Juni",
-      "Juli", "August", "September", "Oktober", "November", "Dezember"
-    ];
-    const idx = parseInt(month, 10) - 1;
-    return isNaN(idx) || idx < 0 || idx > 11 ? monthStr : `${months[idx]} ${year}`;
-  };
-
+  
   // --- CALCULATION HELPER FUNCTIONS FOR MAIN TOTALS ---
-  const getS1Total = (data: ReportData | HistoryRecord) => {
+  const getSectionTotal = (data: ReportData | HistoryRecord, sectionKey: keyof SectionsConfig) => {
     let total = 0;
     if (!data || !data.values) return 0;
-    const fields = ("fieldsSnapshot" in data && data.fieldsSnapshot) ? data.fieldsSnapshot.s1 : appFields.s1;
+    const fields = ("fieldsSnapshot" in data && data.fieldsSnapshot) ? data.fieldsSnapshot[sectionKey] : appFields[sectionKey];
     if (!fields) return 0;
     fields.forEach((f) => {
       const v = data.values[f.id];
@@ -62,29 +53,9 @@ export default function StatsModal({
     return total;
   };
 
-  const getS2Total = (data: ReportData | HistoryRecord) => {
-    let total = 0;
-    if (!data || !data.values) return 0;
-    const fields = ("fieldsSnapshot" in data && data.fieldsSnapshot) ? data.fieldsSnapshot.s2 : appFields.s2;
-    if (!fields) return 0;
-    fields.forEach((f) => {
-      const v = data.values[f.id];
-      if (typeof v === "number") total += v;
-    });
-    return total;
-  };
-
-  const getS3Total = (data: ReportData | HistoryRecord) => {
-    let total = 0;
-    if (!data || !data.values) return 0;
-    const fields = ("fieldsSnapshot" in data && data.fieldsSnapshot) ? data.fieldsSnapshot.s3 : appFields.s3;
-    if (!fields) return 0;
-    fields.forEach((f) => {
-      const v = data.values[f.id];
-      if (typeof v === "number") total += v;
-    });
-    return total;
-  };
+  const getS1Total = (data: ReportData | HistoryRecord) => getSectionTotal(data, 's1');
+  const getS2Total = (data: ReportData | HistoryRecord) => getSectionTotal(data, 's2');
+  const getS3Total = (data: ReportData | HistoryRecord) => getSectionTotal(data, 's3');
 
   const getS4Hours = (data: ReportData | HistoryRecord) => {
     // Specifically return hours (std_buero or custom hours in s4)

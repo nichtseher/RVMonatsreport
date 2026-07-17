@@ -14,8 +14,11 @@ import {
   Filter
 } from "lucide-react";
 import { SectionsConfig, HistoryRecord } from "../types";
+import { exportReportToExcel, exportTimeLogsToExcel, triggerFileDownload } from "../utils/excelUtils";
+import { formatMonthGerman } from "../utils/dateUtils";
 
 interface HistoryModalProps {
+  appFields: SectionsConfig;
   history: Record<string, HistoryRecord>;
   onLoadMonth: (monthStr: string) => void;
   onDeleteRecord: (monthStr: string) => void;
@@ -24,6 +27,7 @@ interface HistoryModalProps {
 }
 
 export default function HistoryModal({
+  appFields,
   history,
   onLoadMonth,
   onDeleteRecord,
@@ -96,207 +100,43 @@ export default function HistoryModal({
   // Direct Excel export from history without loading it first!
   const handleDirectExport = async (record: HistoryRecord) => {
     announceToAriaAndSpeech(`Direkt-Export für ${formatMonthGerman(record.month)} wird vorbereitet.`);
-    const XLSX = await import("xlsx");
-    
-    const monthVal = record.month || "Monat";
-    const nameVal = record.name || "Mitarbeitende_r";
-    const getVal = (id: string) => {
-      if (!record.values) return 0;
-      const val = record.values[id];
-      return typeof val === "number" ? val : 0;
-    };
-
-    const fields = record.fieldsSnapshot || { s1: [], s2: [], s3: [], s4: [] };
-    const startRowS1 = 10;
-    const endRowS1 = startRowS1 + fields.s1.length - 1;
-
-    // Excel structure
-    const excelRows = [
-      ["MONATSÜBERSICHT AUßENDIENST - HISTORISCH"],
-      ["Erstellt mit der barrierefreien RV Mobil App (Archiv)"],
-      [],
-      ["Monat / Jahr:", formatMonthGerman(monthVal)],
-      ["Name (Mitarbeiter/in):", nameVal],
-      [],
-      ["1. VORFÜHRUNGEN & AUSLIEFERUNGEN", "Anzahl / Zählerstand"],
-      ...fields.s1.map((i) => [i.label, getVal(i.id)]),
-      ["Gesamt (Bereich 1)", { t: "n", f: `SUM(B${startRowS1}:B${endRowS1})` }],
-      [],
-      ["2. SCHULUNG, SUPPORT & AKQUISE", "Anzahl / Zählerstand"],
-      ...fields.s2.map((i) => [i.label, getVal(i.id)]),
-      [],
-      ["3. SPEZIALPRODUKTE (DETAILS)", "Anzahl / Zählerstand"],
-      ...fields.s3.map((i) => [i.label, getVal(i.id)]),
-      [],
-      ["4. ARBEITSZEIT & BÜRO", "Wert / Stunden"],
-      ...fields.s4.map((i) => [i.label, getVal(i.id)]),
-      [],
-      ["Anmerkungen & Kommentare:"],
-      [record.notes || "Keine Anmerkungen eingetragen."]
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet(excelRows);
-    ws["!cols"] = [{ wch: 54 }, { wch: 22 }];
-    
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Monatsreport");
-
-    const cleanName = nameVal.replace(/\s+/g, "_") || "Mitarbeiter";
-    const formattedMonthName = formatMonthGerman(monthVal).replace(/\s+/g, "_");
-    const fileName = `RV_Mobil_Report_${cleanName}_${formattedMonthName}_Archiv.xlsx`;
-
-    // Try web sharing API first (for iOS and Android support)
-    if (navigator.share && navigator.canShare) {
-      try {
-        const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-        const file = new File([wbout], fileName, {
-          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        });
-        
-        if (navigator.canShare({ files: [file] })) {
-          navigator.share({
-            title: "RV Mobil Report (Archiv)",
-            text: `Anbei der archivierte RV Report für ${formatMonthGerman(monthVal)}`,
-            files: [file],
-          }).then(() => {
-            triggerToast("RV Report erfolgreich geteilt!");
-            announceToAriaAndSpeech("Teilen-Dialog erfolgreich geöffnet.");
-          }).catch((err) => {
-            console.log("Sharing cancelled or failed, falling back to download", err);
-            XLSX.writeFile(wb, fileName);
-            triggerToast("Excel RV Report heruntergeladen!");
-            announceToAriaAndSpeech("Excel RV Report heruntergeladen.");
-          });
-          return;
-        }
-      } catch (e) {
-        console.warn("Share API was blocked, using standard download.", e);
-      }
+    try {
+      const { wbout, monthVal, nameVal } = await exportReportToExcel(record, appFields, true);
+      const cleanName = nameVal.replace(/\s+/g, "_") || "Mitarbeiter";
+      const formattedMonthName = formatMonthGerman(monthVal).replace(/\s+/g, "_");
+      const fileName = `RV_Mobil_Report_${cleanName}_${formattedMonthName}_Archiv.xlsx`;
+      
+      await triggerFileDownload(wbout, fileName);
+      triggerToast(`Excel RV Report für ${formatMonthGerman(monthVal)} exportiert!`);
+      announceToAriaAndSpeech(`Excel RV Report für ${formatMonthGerman(monthVal)} exportiert.`);
+    } catch (err) {
+      console.error(err);
+      triggerToast("Fehler beim Exportieren des Reports.");
     }
-
-    // Fallback direct download
-    XLSX.writeFile(wb, fileName);
-    triggerToast(`Excel RV Report für ${formatMonthGerman(monthVal)} heruntergeladen!`);
-    announceToAriaAndSpeech(`Excel RV Report für ${formatMonthGerman(monthVal)} heruntergeladen.`);
   };
 
   const handleDirectExportTimeLogs = async (record: HistoryRecord) => {
-    const XLSX = await import("xlsx");
-    const monthVal = record.month || "Monat";
-    const nameVal = record.name || "Mitarbeitende_r";
-    const logs = (Array.isArray(record.timeLogs) ? [...record.timeLogs] : []).sort((a, b) => a.date.localeCompare(b.date));
-
-    if (logs.length === 0) {
-      triggerToast("Keine Zeiterfassungsdaten in diesem Monat vorhanden!");
-      announceToAriaAndSpeech("Keine Zeiterfassungsdaten zum Exportieren vorhanden.");
-      return;
-    }
-
     announceToAriaAndSpeech(`Zeiterfassungs-Export für ${formatMonthGerman(record.month)} wird vorbereitet.`);
-
-    const excelRows: any[][] = [];
-    excelRows.push(["ARBEITSZEITERFASSUNG & STEMPELUHR - RV AUßENDIENST (HISTORISCH)"]);
-    excelRows.push(["Erstellt mit der barrierefreien RV Mobil App (Archiv)"]);
-    excelRows.push([]);
-    excelRows.push(["Mitarbeiter/in:", nameVal]);
-    excelRows.push(["Berichtsmonat:", formatMonthGerman(monthVal)]);
-    excelRows.push([]);
-
-    // Table Headers
-    excelRows.push([
-      "Datum",
-      "Kommen",
-      "Gehen",
-      "Abzug Pause (Min)",
-      "Netto-Stunden (h)",
-      "Anteil Büro (h)",
-      "Anteil Außendienst (h)",
-      "Kommentar / Ort / Besuchte Schule"
-    ]);
-
-    const startRow = excelRows.length + 1;
-    logs.forEach((log) => {
-      const [y, m, d] = log.date.split("-");
-      const formattedDate = y && m && d ? `${d}.${m}.${y}` : log.date;
-      excelRows.push([
-        formattedDate,
-        log.clockIn,
-        log.clockOut,
-        log.breakMinutes,
-        log.duration,
-        log.officeHours,
-        log.fieldHours,
-        log.notes || ""
-      ]);
-    });
-    const endRow = excelRows.length;
-
-    // Sums Row
-    excelRows.push([
-      "GESAMT",
-      "",
-      "",
-      "",
-      { t: "n", f: `SUM(E${startRow}:E${endRow})` },
-      { t: "n", f: `SUM(F${startRow}:F${endRow})` },
-      { t: "n", f: `SUM(G${startRow}:G${endRow})` },
-      ""
-    ]);
-
-    const ws = XLSX.utils.aoa_to_sheet(excelRows);
-    
-    // Set widths
-    ws["!cols"] = [
-      { wch: 12 }, // Datum
-      { wch: 10 }, // Kommen
-      { wch: 10 }, // Gehen
-      { wch: 18 }, // Pause
-      { wch: 18 }, // Netto
-      { wch: 16 }, // Büro
-      { wch: 22 }, // Außendienst
-      { wch: 45 }  // Kommentar
-    ];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Arbeitszeiten");
-
-    const cleanName = nameVal.replace(/\s+/g, "_") || "Mitarbeiter";
-    const formattedMonthName = formatMonthGerman(monthVal).replace(/\s+/g, "_");
-    const fileName = `RV_Zeiterfassung_${cleanName}_${formattedMonthName}_Archiv.xlsx`;
-
-    // Try web sharing API first (for iOS and Android support)
-    if (navigator.share && navigator.canShare) {
-      try {
-        const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-        const file = new File([wbout], fileName, {
-          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        });
-        
-        if (navigator.canShare({ files: [file] })) {
-          navigator.share({
-            title: "RV Zeiterfassung (Archiv)",
-            text: `Anbei das archivierte Zeiterfassungs-Protokoll für ${formatMonthGerman(monthVal)}`,
-            files: [file],
-          }).then(() => {
-            triggerToast("Zeiterfassung erfolgreich geteilt!");
-            announceToAriaAndSpeech("Zeiterfassungs-Teilen-Dialog erfolgreich geöffnet.");
-          }).catch((err) => {
-            console.log("Sharing cancelled or failed, falling back to download", err);
-            XLSX.writeFile(wb, fileName);
-            triggerToast("Excel RV Zeit heruntergeladen!");
-            announceToAriaAndSpeech("Zeiterfassung heruntergeladen.");
-          });
-          return;
-        }
-      } catch (e) {
-        console.warn("Share API was blocked, using standard download.", e);
+    try {
+      const result = await exportTimeLogsToExcel(record, true);
+      if (!result) {
+        triggerToast("Keine Zeiterfassungsdaten vorhanden!");
+        announceToAriaAndSpeech("Keine Zeiterfassungsdaten zum Exportieren vorhanden.");
+        return;
       }
+      
+      const { wbout, monthVal, nameVal } = result;
+      const cleanName = nameVal.replace(/\s+/g, "_") || "Mitarbeiter";
+      const formattedMonthName = formatMonthGerman(monthVal).replace(/\s+/g, "_");
+      const fileName = `RV_Zeiterfassung_${cleanName}_${formattedMonthName}_Archiv.xlsx`;
+      
+      await triggerFileDownload(wbout, fileName);
+      triggerToast(`Zeiterfassung für ${formatMonthGerman(monthVal)} exportiert!`);
+      announceToAriaAndSpeech(`Zeiterfassungs-Protokoll für ${formatMonthGerman(monthVal)} exportiert.`);
+    } catch (err) {
+      console.error(err);
+      triggerToast("Fehler beim Exportieren der Zeiterfassung.");
     }
-
-    // Fallback direct download
-    XLSX.writeFile(wb, fileName);
-    triggerToast(`Zeiterfassung für ${formatMonthGerman(monthVal)} heruntergeladen!`);
-    announceToAriaAndSpeech(`Zeiterfassungs-Protokoll für ${formatMonthGerman(monthVal)} heruntergeladen.`);
   };
 
   const executeDelete = () => {

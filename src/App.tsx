@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSwipeable } from "react-swipeable";
+import { get, set } from "idb-keyval";
 import {
   Calendar,
   CalendarPlus,
@@ -49,6 +50,8 @@ import CarryoverModal from "./components/CarryoverModal";
 import ClockInWidget from "./components/ClockInWidget";
 import TimeModal from "./components/TimeModal";
 import SecureBackupModal from "./components/SecureBackupModal";
+import DeviceSyncModal from "./components/DeviceSyncModal";
+import { ChangelogModal } from "./components/ChangelogModal";
 
 const safeSetItem = (key: string, value: string) => {
   try {
@@ -180,9 +183,11 @@ const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
   ],
 };
 
+
+
 export default function App() {
   // --- ROUTING / NAVIGATION STATE ---
-  const [activeTab, setActiveTab] = useState<"form" | "time" | "stats" | "history" | "options" | "help" | "backup" | "manage" | "carryover">("form");
+  const [activeTab, setActiveTab] = useState<"form" | "time" | "stats" | "history" | "options" | "help" | "backup" | "manage" | "carryover" | "sync" | "changelog">("form");
 
   // --- STATE ---
   const [appFields, setAppFields] = useState<SectionsConfig>(() => {
@@ -289,34 +294,7 @@ export default function App() {
     return fields;
   });
 
-  const [reportData, setReportData] = useState<ReportData>(() => {
-    const saved = localStorage.getItem("aussendienst_pwa_data");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return {
-          month: parsed.month || "",
-          name: parsed.name || "",
-          notes: parsed.notes || "",
-          values: parsed.values || {},
-          timeLogs: parsed.timeLogs || [],
-        };
-      } catch (e) {
-        console.error("Failed to parse report data", e);
-      }
-    }
-
-    // Default initial date
-    const d = new Date();
-    const currentMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    return {
-      month: currentMonthStr,
-      name: "",
-      notes: "",
-      values: {},
-      timeLogs: [],
-    };
-  });
+  const [reportData, setReportData] = useState<ReportData | null>(null);
 
   const [accessibility, setAccessibility] = useState<AccessibilitySettings>(
     () => {
@@ -340,17 +318,7 @@ export default function App() {
   );
 
   // History State
-  const [history, setHistory] = useState<Record<string, HistoryRecord>>(() => {
-    const saved = localStorage.getItem("aussendienst_pwa_history");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return {};
-      }
-    }
-    return {};
-  });
+  const [history, setHistory] = useState<Record<string, HistoryRecord> | null>(null);
 
   // Ergonomic Field Service states
   const [isCompactView, setIsCompactView] = useState<boolean>(() => {
@@ -588,7 +556,7 @@ export default function App() {
   useEffect(() => {
     setSaveStatus("saving");
     const t = setTimeout(() => {
-      safeSetItem("aussendienst_pwa_data", JSON.stringify(reportData));
+      if (reportData) set("aussendienst_pwa_data", reportData);
       setSaveStatus("saved");
       const now = new Date();
       setLastSavedTime(
@@ -642,38 +610,38 @@ export default function App() {
 
   // Automatic saving into history list upon any relevant data changes
   useEffect(() => {
-    if (!reportData.month) return;
+    if (!reportData?.month) return;
 
     // Only save if we have some data in the form to avoid empty spamming
     const hasData =
-      reportData.name ||
-      reportData.notes ||
-      Object.values(reportData.values).some((v) => v !== "" && v !== 0) ||
-      (reportData.timeLogs && reportData.timeLogs.length > 0);
+      reportData?.name ||
+      reportData?.notes ||
+      Object.values(reportData?.values || {}).some((v) => v !== "" && v !== 0) ||
+      (reportData?.timeLogs && reportData?.timeLogs.length > 0);
     if (!hasData) return;
 
     setHistory((prev) => {
       const updated = {
         ...prev,
-        [reportData.month]: {
-          month: reportData.month,
-          name: reportData.name,
-          notes: reportData.notes,
-          values: reportData.values,
-          timeLogs: reportData.timeLogs || [],
+        [reportData?.month]: {
+          month: reportData?.month,
+          name: reportData?.name,
+          notes: reportData?.notes,
+          values: reportData?.values,
+          timeLogs: reportData?.timeLogs || [],
           fieldsSnapshot: appFields,
           savedAt: new Date().toISOString(),
         },
       };
-      safeSetItem("aussendienst_pwa_history", JSON.stringify(updated));
+      set("aussendienst_pwa_history", updated);
       return updated;
     });
   }, [
-    reportData.name,
-    reportData.notes,
-    reportData.values,
-    reportData.month,
-    reportData.timeLogs,
+    reportData?.name,
+    reportData?.notes,
+    reportData?.values,
+    reportData?.month,
+    reportData?.timeLogs,
     appFields,
   ]);
 
@@ -688,12 +656,12 @@ export default function App() {
 
   // Set default month on load if empty
   useEffect(() => {
-    if (!reportData.month) {
+    if (!reportData?.month) {
       const d = new Date();
       const currentMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       setReportData((prev) => ({ ...prev, month: currentMonthStr }));
     }
-  }, [reportData.month]);
+  }, [reportData?.month]);
 
   // --- DEADLINE LOGIC ---
   const getDeadlineAlert = () => {
@@ -702,15 +670,15 @@ export default function App() {
     const realCurrentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 
     // Check if we have any counts registered in the values
-    const hasValues = Object.values(reportData.values).some(
+    const hasValues = Object.values(reportData?.values || {}).some(
       (v) => typeof v === "number" && v > 0,
     );
-    const isPastDeadlineMonth = reportData.month !== realCurrentMonthStr;
+    const isPastDeadlineMonth = reportData?.month !== realCurrentMonthStr;
 
     if (currentDay <= 8 && isPastDeadlineMonth && hasValues) {
       return {
         isUrgent: true,
-        message: `🚨 Achtung Abgabefrist: Sie haben ungesendete Zählerstände für den Monat ${reportData.month}! Bitte exportieren Sie den Report sofort als Excel und senden ihn an die Vertriebsleitung (VL)!`,
+        message: `🚨 Achtung Abgabefrist: Sie haben ungesendete Zählerstände für den Monat ${reportData?.month}! Bitte exportieren Sie den Report sofort als Excel und senden ihn an die Vertriebsleitung (VL)!`,
       };
     }
 
@@ -870,31 +838,28 @@ export default function App() {
     if (!newMonth) return;
 
     // 1. Save current active month state to history first if it has any meaningful content
-    const currentMonth = reportData.month;
+    const currentMonth = reportData?.month;
     const hasData =
-      reportData.name ||
-      reportData.notes ||
-      Object.values(reportData.values).some(
+      reportData?.name ||
+      reportData?.notes ||
+      Object.values(reportData?.values || {}).some(
         (v) => typeof v === "number" && v > 0,
       ) ||
-      (reportData.timeLogs && reportData.timeLogs.length > 0);
+      (reportData?.timeLogs && reportData?.timeLogs.length > 0);
 
     let updatedHistory = { ...history };
     if (hasData && currentMonth) {
       updatedHistory[currentMonth] = {
         month: currentMonth,
-        name: reportData.name,
-        notes: reportData.notes,
-        values: reportData.values,
-        timeLogs: reportData.timeLogs || [],
+        name: reportData?.name,
+        notes: reportData?.notes,
+        values: reportData?.values,
+        timeLogs: reportData?.timeLogs || [],
         fieldsSnapshot: appFields,
         savedAt: new Date().toISOString(),
       };
       setHistory(updatedHistory);
-      safeSetItem(
-        "aussendienst_pwa_history",
-        JSON.stringify(updatedHistory),
-      );
+      set("aussendienst_pwa_history", updatedHistory);
     }
 
     // 2. Load the target month state from history or start fresh
@@ -902,7 +867,7 @@ export default function App() {
     if (savedRecord) {
       setReportData({
         month: newMonth,
-        name: savedRecord.name || reportData.name,
+        name: savedRecord.name || reportData?.name,
         notes: savedRecord.notes || "",
         values: savedRecord.values || {},
         timeLogs: savedRecord.timeLogs || [],
@@ -919,7 +884,7 @@ export default function App() {
       // Start a fresh month template, but retain user name
       setReportData({
         month: newMonth,
-        name: reportData.name,
+        name: reportData?.name,
         notes: "",
         values: {},
         timeLogs: [],
@@ -943,14 +908,14 @@ export default function App() {
     setHistory((prev) => {
       const updated = { ...prev };
       delete updated[monthStr];
-      safeSetItem("aussendienst_pwa_history", JSON.stringify(updated));
+      set("aussendienst_pwa_history", updated);
       return updated;
     });
   };
 
   const getPreviousSavedMonthRecord = (): HistoryRecord | null => {
     const savedMonths = Object.keys(history).filter(
-      (m) => m !== reportData.month,
+      (m) => m !== reportData?.month,
     );
     if (savedMonths.length === 0) return null;
     // Sort descending to get the closest chronologically saved month
@@ -1027,7 +992,7 @@ export default function App() {
       if (text) {
         handleMetaChange(
           "notes",
-          reportData.notes + (reportData.notes ? " " : "") + text,
+          reportData?.notes + (reportData?.notes ? " " : "") + text,
         );
         triggerToast("✓ Sprache erfolgreich in Text umgewandelt!");
         announceToAriaAndSpeech(`Eingefügter Text: ${text}`, true);
@@ -1070,11 +1035,11 @@ export default function App() {
     }
 
     // Compile summary text
-    const formattedMonth = formatMonthGerman(reportData.month);
+    const formattedMonth = formatMonthGerman(reportData?.month);
     const parts: string[] = [];
     parts.push(`Zusammenfassung für ${formattedMonth}.`);
-    if (reportData.name) {
-      parts.push(`Mitarbeiter: ${reportData.name}.`);
+    if (reportData?.name) {
+      parts.push(`Mitarbeiter: ${reportData?.name}.`);
     }
 
     // Iterate through sections and find values > 0
@@ -1084,7 +1049,7 @@ export default function App() {
     const getSectionSummaryText = (title: string, fields: FieldConfig[]) => {
       const sectionParts: string[] = [];
       fields.forEach((f) => {
-        const val = reportData.values[f.id];
+        const val = (reportData?.values || {})[f.id];
         if (typeof val === "number" && val > 0) {
           sectionParts.push(`${f.label}: ${val}`);
           valueFound = true;
@@ -1114,8 +1079,8 @@ export default function App() {
     const s4Text = getSectionSummaryText("Arbeitszeit und Büro", appFields.s4);
     if (s4Text) parts.push(s4Text);
 
-    if (reportData.notes && reportData.notes.trim()) {
-      parts.push(`Notizen: ${reportData.notes}.`);
+    if (reportData?.notes && reportData?.notes.trim()) {
+      parts.push(`Notizen: ${reportData?.notes}.`);
       valueFound = true;
     }
 
@@ -1169,7 +1134,7 @@ export default function App() {
     const dStr = `[${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.] `;
     handleMetaChange(
       "notes",
-      reportData.notes + (reportData.notes ? "\n" : "") + dStr,
+      reportData?.notes + (reportData?.notes ? "\n" : "") + dStr,
     );
     triggerToast("Datumstempel eingefügt");
     announceToAriaAndSpeech("Datumstempel im Kommentarfeld eingefügt.", true);
@@ -1177,8 +1142,8 @@ export default function App() {
 
   const handleApplyNoteTemplate = (templateText: string) => {
     triggerHaptic(15);
-    const updatedNotes = reportData.notes
-      ? `${reportData.notes}\n${templateText}`
+    const updatedNotes = reportData?.notes
+      ? `${reportData?.notes}\n${templateText}`
       : templateText;
     handleMetaChange("notes", updatedNotes);
     triggerToast("Vorlage angehängt!");
@@ -1244,11 +1209,11 @@ export default function App() {
     }
   };
 
-  // --- CALC SECTION 1 TOTAL ---
-  const getSection1Total = () => {
+  // --- CALC SECTION TOTALS HELPER ---
+  const getSectionTotal = (sectionFields: typeof appFields.s1) => {
     let total = 0;
-    appFields.s1.forEach((field) => {
-      const val = reportData.values[field.id];
+    sectionFields.forEach((field) => {
+      const val = (reportData?.values || {})[field.id];
       if (typeof val === "number") total += val;
     });
     return total;
@@ -1302,7 +1267,7 @@ export default function App() {
       }));
 
       // Also clean up value
-      const updatedValues = { ...reportData.values };
+      const updatedValues = { ...(reportData?.values || {}) };
       delete updatedValues[fieldId];
       setReportData((prev) => ({ ...prev, values: updatedValues }));
 
@@ -1331,7 +1296,7 @@ export default function App() {
   // --- START NEW MONTH (ARCHIVE & RESET) ---
   const handleStartNewMonth = () => {
     triggerHaptic(40);
-    const currentMonth = reportData.month;
+    const currentMonth = reportData?.month;
     if (!currentMonth) return;
 
     // Calculate next month
@@ -1381,14 +1346,115 @@ export default function App() {
     announceToAriaAndSpeech("Backup erfolgreich wiederhergestellt.");
   };
 
+  
+  // --- OFFLINE SYNC (Send to VL) ---
+  useEffect(() => {
+    if (typeof navigator !== "undefined" && navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data && event.data.type === 'SYNC_SUCCESS') {
+          triggerToast("Bericht " + event.data.month + " wurde erfolgreich im Hintergrund versendet!");
+          announceToAriaAndSpeech("Bericht erfolgreich versendet.");
+        }
+      });
+    }
+  }, []);
+
+  const handleSendToVL = async () => {
+    triggerHaptic(25);
+    if (!reportData) return;
+    
+    const request = indexedDB.open('rv-sync-db', 1);
+    
+    request.onupgradeneeded = (e: any) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('sync-queue')) {
+        db.createObjectStore('sync-queue', { keyPath: 'id' });
+      }
+    };
+    
+    request.onsuccess = async (e: any) => {
+      const db = e.target.result;
+      const tx = db.transaction('sync-queue', 'readwrite');
+      const store = tx.objectStore('sync-queue');
+      const syncRecord = {
+        id: Date.now().toString(),
+        data: JSON.parse(JSON.stringify(reportData)),
+        timestamp: new Date().toISOString()
+      };
+      store.add(syncRecord);
+      
+      tx.oncomplete = async () => {
+        if ('serviceWorker' in navigator && 'SyncManager' in window) {
+          try {
+            const registration = await navigator.serviceWorker.ready;
+            await (registration as any).sync.register('sync-reports');
+            triggerToast("Report wurde in die Sende-Warteschlange (Offline-Sync) gestellt.");
+            announceToAriaAndSpeech("Report zum Senden eingereiht.");
+          } catch (err) {
+            console.error("Background sync failed to register", err);
+            triggerToast("Report in der Warteschlange gespeichert.");
+          }
+        } else {
+          // Fallback if background sync is not supported
+          triggerToast("Ihr Browser unterstützt keinen Background Sync. Gespeichert für späteren Versand.");
+        }
+      };
+    };
+    
+    request.onerror = (e) => {
+      console.error("Failed to open sync DB", e);
+      triggerToast("Fehler beim Vorbereiten des Versands.");
+    };
+  };
+
+  
+  // --- TEMPLATES ---
+  const applyTemplate = (templateName: string) => {
+    triggerHaptic(20);
+    if (!reportData) return;
+    
+    let newValues = { ...(reportData.values || {}) };
+    let newNotes = reportData.notes || "";
+
+    switch (templateName) {
+      case "Geraete-Erprobung":
+        newValues["vf_arbeit"] = (newValues["vf_arbeit"] || 0) + 1;
+        newValues["std_aussendienst"] = (newValues["std_aussendienst"] || 0) + 2.5;
+        newNotes = (newNotes ? newNotes + "\n" : "") + "Standard Geräte-Erprobung durchgeführt.";
+        announceToAriaAndSpeech("Template Geräte-Erprobung angewendet.");
+        triggerToast("🚀 Template: Geräte-Erprobung geladen");
+        break;
+      case "Buerotag":
+        newValues["std_buero"] = (newValues["std_buero"] || 0) + 8;
+        newValues["tage_arbeit"] = (newValues["tage_arbeit"] || 0) + 1;
+        newNotes = (newNotes ? newNotes + "\n" : "") + "Regulärer Bürotag.";
+        announceToAriaAndSpeech("Template Bürotag angewendet.");
+        triggerToast("☕ Template: Bürotag geladen");
+        break;
+      case "Schulung":
+        newValues["schul_vorort"] = (newValues["schul_vorort"] || 0) + 1;
+        newValues["std_aussendienst"] = (newValues["std_aussendienst"] || 0) + 4;
+        newNotes = (newNotes ? newNotes + "\n" : "") + "Schulung vor Ort durchgeführt.";
+        announceToAriaAndSpeech("Template Schulung angewendet.");
+        triggerToast("🎓 Template: Schulung geladen");
+        break;
+    }
+
+    setReportData({
+      ...reportData,
+      values: newValues,
+      notes: newNotes,
+    });
+  };
+
   // --- EXPORT TO EXCEL ---
   const handleExportExcel = async () => {
     triggerHaptic(25);
     const XLSX = await import("xlsx");
-    const monthVal = reportData.month || "Monat";
-    const nameVal = reportData.name || "Mitarbeitende_r";
+    const monthVal = reportData?.month || "Monat";
+    const nameVal = reportData?.name || "Mitarbeitende_r";
     const getVal = (id: string) => {
-      const val = reportData.values[id];
+      const val = (reportData?.values || {})[id];
       return typeof val === "number" ? val : 0;
     };
 
@@ -1467,7 +1533,7 @@ export default function App() {
     excelRows.push([]);
 
     excelRows.push(["Anmerkungen & Kommentare:"]);
-    excelRows.push([reportData.notes || "Keine Anmerkungen eingetragen."]);
+    excelRows.push([reportData?.notes || "Keine Anmerkungen eingetragen."]);
 
     const ws = XLSX.utils.aoa_to_sheet(excelRows);
 
@@ -1526,10 +1592,10 @@ export default function App() {
   const handleExportTimeLogsExcel = async () => {
     triggerHaptic(25);
     const XLSX = await import("xlsx");
-    const monthVal = reportData.month || "Monat";
-    const nameVal = reportData.name || "Mitarbeitende_r";
+    const monthVal = reportData?.month || "Monat";
+    const nameVal = reportData?.name || "Mitarbeitende_r";
     const logs = (
-      Array.isArray(reportData.timeLogs) ? [...reportData.timeLogs] : []
+      Array.isArray(reportData?.timeLogs) ? [...reportData?.timeLogs] : []
     ).sort((a, b) => a.date.localeCompare(b.date));
 
     if (logs.length === 0) {
@@ -1654,32 +1720,9 @@ export default function App() {
   };
 
   // --- COMPUTE LIVE TOTALS FOR DASHBOARD ---
-  const s1Total = (() => {
-    let total = 0;
-    appFields.s1.forEach((f) => {
-      const v = reportData.values[f.id];
-      if (typeof v === "number") total += v;
-    });
-    return total;
-  })();
-
-  const s2Total = (() => {
-    let total = 0;
-    appFields.s2.forEach((f) => {
-      const v = reportData.values[f.id];
-      if (typeof v === "number") total += v;
-    });
-    return total;
-  })();
-
-  const s3Total = (() => {
-    let total = 0;
-    appFields.s3.forEach((f) => {
-      const v = reportData.values[f.id];
-      if (typeof v === "number") total += v;
-    });
-    return total;
-  })();
+  const s1Total = getSectionTotal(appFields.s1);
+  const s2Total = getSectionTotal(appFields.s2);
+  const s3Total = getSectionTotal(appFields.s3);
 
   const s4Hours = (() => {
     let hours = 0;
@@ -1689,7 +1732,7 @@ export default function App() {
         f.label.toLowerCase().includes("stunden") ||
         f.step === 0.5
       ) {
-        const v = reportData.values[f.id];
+        const v = (reportData?.values || {})[f.id];
         if (typeof v === "number") hours += v;
       }
     });
@@ -1706,6 +1749,67 @@ export default function App() {
   const hasVisibleFields = (fields: FieldConfig[]): boolean => {
     return filterFields(fields).length > 0;
   };
+
+  // Initial loading from idb-keyval
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [savedData, savedHistory] = await Promise.all([
+          get("aussendienst_pwa_data"),
+          get("aussendienst_pwa_history")
+        ]);
+        
+        // Handle emergency synchronous save fallback
+        const emergencyData = localStorage.getItem("aussendienst_pwa_emergency_data");
+        let initialData = savedData;
+        if (emergencyData) {
+          try {
+            initialData = JSON.parse(emergencyData);
+            localStorage.removeItem("aussendienst_pwa_emergency_data");
+          } catch (e) {}
+        }
+
+        if (initialData) {
+          setReportData(initialData);
+        } else {
+          const d = new Date();
+          const currentMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+          setReportData({ month: currentMonthStr, name: "", notes: "", values: {}, timeLogs: [] });
+        }
+
+        if (savedHistory) {
+          setHistory(savedHistory);
+        } else {
+          setHistory({});
+        }
+      } catch (e) {
+        console.error("Failed to load from IDB", e);
+        const d = new Date();
+        const currentMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        setReportData({ month: currentMonthStr, name: "", notes: "", values: {}, timeLogs: [] });
+        setHistory({});
+      }
+    }
+    loadData();
+  }, []);
+
+  // Emergency synchronous save on visibility change
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && reportData) {
+        // Synchronous emergency save to localStorage to prevent data loss on iOS swipe-close
+        localStorage.setItem("aussendienst_pwa_emergency_data", JSON.stringify(reportData));
+        // Also trigger async save just in case
+        set("aussendienst_pwa_data", reportData).catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [reportData]);
+
+  if (!reportData || !history) {
+    return <div className="flex h-screen w-screen items-center justify-center bg-gray-100 text-gray-500">Lade Daten...</div>;
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 pb-32 relative">
@@ -1758,7 +1862,7 @@ export default function App() {
             <input
               id="meta-month-input"
               type="month"
-              value={reportData.month}
+              value={reportData?.month}
               onChange={(e) => handleMonthChange(e.target.value)}
               className="w-full px-2 py-1.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-lg text-xs font-bold focus:border-[var(--border-focus)] outline-none"
               aria-required="true"
@@ -1787,9 +1891,9 @@ export default function App() {
               type="text"
               placeholder="Name..."
               value={
-                typeof reportData.name === "string"
-                  ? reportData.name
-                  : String(reportData.name || "")
+                typeof reportData?.name === "string"
+                  ? reportData?.name
+                  : String(reportData?.name || "")
               }
               onChange={(e) => handleMetaChange("name", e.target.value)}
               className="w-full px-2 py-1.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-lg text-xs font-bold focus:border-[var(--border-focus)] outline-none"
@@ -2359,7 +2463,7 @@ export default function App() {
                 <CounterField
                   key={field.id}
                   config={field}
-                  value={reportData.values[field.id] ?? ""}
+                  value={(reportData?.values || {})[field.id] ?? ""}
                   onChange={(val) => handleValueChange(field.id, val)}
                   onAnnounce={announceToAriaAndSpeech}
                   audioFeedbackEnabled={accessibility.audioFeedback}
@@ -2383,10 +2487,11 @@ export default function App() {
             >
               <span>Bereichs-Gesamtsumme: </span>
               <span className="text-xl md:text-2xl ml-1">
-                {getSection1Total()}
+                {s1Total}
               </span>
             </div>
           </section>
+
         )}
 
       {/* SECTION 2: SCHULUNG, SUPPORT & AKQUISE */}
@@ -2407,7 +2512,7 @@ export default function App() {
                 <CounterField
                   key={field.id}
                   config={field}
-                  value={reportData.values[field.id] ?? ""}
+                  value={(reportData?.values || {})[field.id] ?? ""}
                   onChange={(val) => handleValueChange(field.id, val)}
                   onAnnounce={announceToAriaAndSpeech}
                   audioFeedbackEnabled={accessibility.audioFeedback}
@@ -2444,7 +2549,7 @@ export default function App() {
                 <CounterField
                   key={field.id}
                   config={field}
-                  value={reportData.values[field.id] ?? ""}
+                  value={(reportData?.values || {})[field.id] ?? ""}
                   onChange={(val) => handleValueChange(field.id, val)}
                   onAnnounce={announceToAriaAndSpeech}
                   audioFeedbackEnabled={accessibility.audioFeedback}
@@ -2487,7 +2592,7 @@ export default function App() {
                 <CounterField
                   key={field.id}
                   config={field}
-                  value={reportData.values[field.id] ?? ""}
+                  value={(reportData?.values || {})[field.id] ?? ""}
                   onChange={(val) => handleValueChange(field.id, val)}
                   onAnnounce={announceToAriaAndSpeech}
                   audioFeedbackEnabled={accessibility.audioFeedback}
@@ -2620,12 +2725,12 @@ export default function App() {
           ))}
         </div>
 
-        <textarea
+                  <textarea
           id="meta-notes-textarea"
           value={
-            typeof reportData.notes === "string"
-              ? reportData.notes
-              : String(reportData.notes || "")
+            typeof reportData?.notes === "string"
+              ? reportData?.notes
+              : String(reportData?.notes || "")
           }
           onChange={(e) => handleMetaChange("notes", e.target.value)}
           placeholder="Tragen Sie hier z.B. besondere Vorkommnisse oder Messeergebnisse ein..."
@@ -2633,48 +2738,36 @@ export default function App() {
         />
       </section>
 
-      {/* EXPORT ACTION AREA */}
-      <section className="mb-8 space-y-3" aria-label="Daten exportieren">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={handleExportExcel}
-            className="w-full py-3.5 px-4 rounded-xl border border-emerald-600/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400 font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer hover:bg-emerald-500/10 active:scale-95 transition-all shadow-sm focus-visible:ring-4"
-          >
-            <FileSpreadsheet className="w-5 h-5" aria-hidden="true" />
-            <span>Monatsreport als Excel teilen / speichern</span>
-          </button>
-          
-          {accessibility.enableTimeTracking !== false && reportData.timeLogs && reportData.timeLogs.length > 0 && (
-            <button
-              type="button"
-              onClick={handleExportTimeLogsExcel}
-              className="w-full py-3.5 px-4 rounded-xl border border-teal-600/30 bg-teal-500/5 text-teal-700 dark:text-teal-400 font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer hover:bg-teal-500/10 active:scale-95 transition-all shadow-sm focus-visible:ring-4"
-            >
-              <Clock className="w-5 h-5" aria-hidden="true" />
-              <span>Zeiterfassung als Excel teilen / speichern</span>
-            </button>
-          )}
-        </div>
-      </section>
-
       {/* FINAL ACTION AREA */}
       <section
         className="space-y-3.5"
-        aria-label="Nächsten Berichtsmonat vorbereiten"
+        aria-label="Monat abschließen und exportieren"
       >
         <button
           type="button"
           onClick={handleStartNewMonth}
           aria-label="Nächsten Monat starten. Der aktuelle Monat wird automatisch im RV Archiv gesichert."
-          className="w-full py-4.5 px-6 rounded-2xl font-black bg-[var(--primary)] hover:opacity-90 text-[var(--primary-text)] text-base md:text-lg flex items-center justify-center gap-2.5 shadow-md cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-4"
+          className="w-full py-4 px-6 rounded-2xl font-black bg-[var(--primary)] hover:opacity-90 text-[var(--primary-text)] text-base md:text-lg flex items-center justify-center gap-2.5 shadow-md cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-4 mb-4"
         >
           <CalendarPlus
             className="w-5.5 h-5.5 text-[var(--accent)]"
             aria-hidden="true"
           />
-          <span>Nächsten Monat starten (Automatisch archivieren)</span>
+          <span>Monat abschließen & neu starten (Auto-Archiv)</span>
         </button>
+
+        
+        {/* EXPORT OPTIONS (Reduced) */}
+        <div className="flex justify-center mt-2">
+          <button
+            type="button"
+            onClick={handleSendToVL}
+            className="w-full py-4 px-6 rounded-2xl font-bold bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-base flex items-center justify-center gap-2.5 shadow-sm cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-4"
+          >
+            <span className="text-xl">🚀</span>
+            <span>Direkt an VL senden</span>
+          </button>
+        </div>
       </section>
 
       {/* FOOTER */}
@@ -2724,7 +2817,8 @@ export default function App() {
                 appFields,
                 history,
                 carryover,
-                timeLogs: reportData.month && history[reportData.month] ? history[reportData.month].timeLogs : []
+                reportData,
+                timeLogs: reportData?.month && history[reportData?.month] ? history[reportData?.month].timeLogs : []
               };
               return JSON.stringify(backupData);
             }}
@@ -2734,6 +2828,7 @@ export default function App() {
                 if (parsed.appFields) setAppFields(parsed.appFields);
                 if (parsed.history) setHistory(parsed.history);
                 if (parsed.carryover) setCarryover(parsed.carryover);
+                if (parsed.reportData) setReportData(parsed.reportData);
                 setActiveTab("options");
                 setToastText("Backup erfolgreich geladen!");
               } catch (e) {
@@ -2744,6 +2839,36 @@ export default function App() {
         </div>
       )}
 
+      {activeTab === "sync" && (
+        <DeviceSyncModal
+          isOpen={true}
+          onClose={() => setActiveTab("options")}
+          onExport={() => {
+            const syncData = {
+              appFields,
+              history,
+              carryover,
+              reportData,
+              timeLogs: reportData?.month && history[reportData?.month] ? history[reportData?.month].timeLogs : []
+            };
+            return JSON.stringify(syncData);
+          }}
+          onImport={(dataStr) => {
+            try {
+              const parsed = JSON.parse(dataStr);
+              if (parsed.appFields) setAppFields(parsed.appFields);
+              if (parsed.history) setHistory(parsed.history);
+              if (parsed.carryover) setCarryover(parsed.carryover);
+              if (parsed.reportData) setReportData(parsed.reportData);
+              setActiveTab("options");
+              setToastText("Daten erfolgreich synchronisiert!");
+            } catch (e) {
+              setToastText("Fehler bei der Datensynchronisation.");
+            }
+          }}
+        />
+      )}
+
       {/* TIME MODAL (ZEITBEREICH) */}
       {activeTab === "time" && (
         <div className="max-w-2xl mx-auto px-4 py-6 pb-32 relative">
@@ -2751,13 +2876,13 @@ export default function App() {
             clockInTime={clockInTime}
             onClockIn={handleClockIn}
             onClockOut={handleClockOut}
-            timeLogs={reportData.timeLogs || []}
+            timeLogs={reportData?.timeLogs || []}
             onDeleteLog={handleDeleteLog}
             announceToAriaAndSpeech={announceToAriaAndSpeech}
             carryover={carryover}
             onOpenCarryover={() => setActiveTab("carryover")}
             onExportExcel={handleExportTimeLogsExcel}
-            selectedMonth={reportData.month}
+            selectedMonth={reportData?.month}
             onAddManualLog={handleManualLogAdd}
             history={history}
             reportData={reportData}
@@ -2782,6 +2907,7 @@ export default function App() {
       {activeTab === "history" && (
         <div className="max-w-2xl mx-auto px-4 py-6 pb-32 relative">
           <HistoryModal
+            appFields={appFields}
             history={history}
             onLoadMonth={handleLoadMonthFromHistory}
             onDeleteRecord={handleDeleteRecordFromHistory}
@@ -2825,7 +2951,19 @@ export default function App() {
             onOpenBackup={() => {
               setActiveTab("backup");
             }}
+            onOpenSync={() => {
+              setActiveTab("sync");
+            }}
+            onOpenChangelog={() => {
+              setActiveTab("changelog");
+            }}
           />
+        </div>
+      )}
+      
+      {activeTab === "changelog" && (
+        <div className="max-w-2xl mx-auto px-4 py-6 pb-32 relative">
+          <ChangelogModal onClose={() => setActiveTab("options")} />
         </div>
       )}
       {activeTab === "carryover" && (
@@ -2922,7 +3060,7 @@ export default function App() {
               { id: "time", label: "RV Zeit", icon: Clock, active: activeTab === "time" || activeTab === "carryover", visible: accessibility.enableTimeTracking !== false },
               { id: "stats", label: "RV Analyse", icon: BarChart3, active: activeTab === "stats", visible: true },
               { id: "history", label: "RV Archiv", icon: History, active: activeTab === "history", visible: true },
-              { id: "options", label: "Optionen", icon: Settings, active: activeTab === "options" || activeTab === "help" || activeTab === "backup" || activeTab === "manage", visible: true },
+              { id: "options", label: "Optionen", icon: Settings, active: activeTab === "options" || activeTab === "help" || activeTab === "backup" || activeTab === "manage" || activeTab === "sync" || activeTab === "changelog", visible: true },
             ]
             .filter(tab => tab.visible)
             .map((tab) => {
@@ -2976,4 +3114,5 @@ export default function App() {
       )}
     </div>
   );
+
 }

@@ -29,12 +29,9 @@ self.addEventListener('activate', (e) => {
 });
 
 // Network-First strategy with Cache Fallback
-// This ensures that when the user is online, they ALWAYS fetch the absolute latest build from GitHub Pages instantly.
-// If offline, the cached assets are loaded.
 self.addEventListener('fetch', (e) => {
   // Only handle HTTP/HTTPS (ignore chrome-extension, etc.)
   if (!e.request.url.startsWith('http')) return;
-
   e.respondWith(
     fetch(e.request)
       .then((response) => {
@@ -61,3 +58,100 @@ self.addEventListener('fetch', (e) => {
       })
   );
 });
+
+self.addEventListener('push', (event) => {
+  if (event.data) {
+    const data = event.data.json();
+    const options = {
+      body: data.body,
+      icon: './icon-192.png', // Fallback icon, could use something else if exists
+      badge: './icon-192.png',
+      vibrate: [200, 100, 200, 100, 200],
+      requireInteraction: true,
+      data: {
+        dateOfArrival: Date.now(),
+        primaryKey: '2'
+      }
+    };
+    event.waitUntil(
+      self.registration.showNotification(data.title, options)
+    );
+  }
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then((windowClients) => {
+      // Check if there is already a window/tab open with the target URL
+      for (var i = 0; i < windowClients.length; i++) {
+        var client = windowClients[i];
+        if (client.url.indexOf('/') !== -1 && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // If not, then open the target URL in a new window/tab.
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
+    })
+  );
+});
+
+// Background Sync for offline sending
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-reports') {
+    event.waitUntil(syncReports());
+  }
+});
+
+async function syncReports() {
+  try {
+    const db = await openSyncDB();
+    const tx = db.transaction('sync-queue', 'readonly');
+    const store = tx.objectStore('sync-queue');
+    const allReports = await new Promise((resolve, reject) => {
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+
+    if (allReports.length === 0) return;
+
+    for (const report of allReports) {
+      // Mock sending to backend API
+      console.log('🌐 Background Sync: Sende Report an VL...', report);
+      
+      // We simulate an API call here. In a real app, you would fetch('/api/upload', ...)
+      await new Promise(r => setTimeout(r, 1000));
+      
+      // Remove from queue after success
+      const deleteTx = db.transaction('sync-queue', 'readwrite');
+      deleteTx.objectStore('sync-queue').delete(report.id);
+      
+      // Send message to client to notify success
+      self.clients.matchAll().then(clients => {
+        clients.forEach(client => client.postMessage({
+          type: 'SYNC_SUCCESS',
+          month: report.data.month
+        }));
+      });
+    }
+  } catch (err) {
+    console.error('Background sync failed', err);
+  }
+}
+
+function openSyncDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('rv-sync-db', 1);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('sync-queue')) {
+        db.createObjectStore('sync-queue', { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = (e) => resolve(e.target.result);
+    request.onerror = (e) => reject(e.target.error);
+  });
+}
