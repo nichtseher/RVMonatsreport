@@ -45,7 +45,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
   };
 
   const setupSocketAndRelay = (room: string, key: string, isInitiator: boolean) => {
-    const newSocket = io();
+    const newSocket = io({ transports: ["websocket"] });
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
