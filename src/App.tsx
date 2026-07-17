@@ -187,7 +187,12 @@ const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
 
 export default function App() {
   // --- ROUTING / NAVIGATION STATE ---
-  const [activeTab, setActiveTab] = useState<"form" | "time" | "stats" | "history" | "options" | "help" | "backup" | "manage" | "carryover" | "sync" | "changelog">("form");
+  const [activeTab, setActiveTab] = useState<"form" | "time" | "stats" | "history" | "options" | "help" | "backup" | "manage" | "carryover" | "sync" | "changelog">(() => {
+    if (typeof window !== "undefined" && window.location.hash.startsWith("#sync=")) {
+      return "sync";
+    }
+    return "form";
+  });
 
   // --- STATE ---
   const [appFields, setAppFields] = useState<SectionsConfig>(() => {

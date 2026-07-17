@@ -97,6 +97,7 @@ async function startServer() {
 
   const httpServer = createHttpServer(app);
   const io = new Server(httpServer, {
+    maxHttpBufferSize: 1e7, // 10MB
     cors: {
       origin: "*",
       methods: ["GET", "POST"]

@@ -34,27 +34,30 @@ export async function encryptData(data: string, password: string): Promise<strin
     enc.encode(data)
   );
 
-  // Combine salt, iv, and encrypted data into a single base64 string
   const combined = new Uint8Array(salt.length + iv.length + encrypted.byteLength);
   combined.set(salt, 0);
   combined.set(iv, salt.length);
   combined.set(new Uint8Array(encrypted), salt.length + iv.length);
 
-  let binary = '';
-  const len = combined.byteLength;
-  for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(combined[i]);
-  }
-  return btoa(binary);
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([combined]);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result.split(",")[1]);
+      } else {
+        reject(new Error("Failed to read blob as data URL"));
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
 
 export async function decryptData(encryptedBase64: string, password: string): Promise<string> {
-  const binaryString = atob(encryptedBase64);
-  const len = binaryString.length;
-  const combined = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    combined[i] = binaryString.charCodeAt(i);
-  }
+  const response = await fetch("data:application/octet-stream;base64," + encryptedBase64);
+  const buffer = await response.arrayBuffer();
+  const combined = new Uint8Array(buffer);
 
   const salt = combined.slice(0, 16);
   const iv = combined.slice(16, 28);

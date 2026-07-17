@@ -35,7 +35,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
           setEncryptionKey(scannedKey);
           setupSocketAndRelay(scannedRoom, scannedKey, true);
           // Clean up hash so it doesn't trigger again on reload
-          window.history.replaceState(null, "", window.location.pathname);
+          window.history.replaceState(null, "", window.location.pathname + window.location.search);
         }
       }
     }
@@ -60,7 +60,8 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
   const setupSocketAndRelay = (room: string, key: string, isInitiator: boolean) => {
     const newSocket = io({ 
       path: "/socket.io",
-      transports: ["polling", "websocket"] 
+      transports: ["websocket", "polling"], // prioritize websocket
+      reconnectionAttempts: 10,
     });
     setSocket(newSocket);
 
@@ -239,7 +240,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
           {mode === "host" && (
             <div className="flex flex-col items-center justify-center py-6">
               <div className="bg-white p-4 rounded-xl shadow-sm mb-6">
-                <QRCodeSVG value={`${window.location.href.split('#')[0]}#sync=${roomId}:${encryptionKey}`} size={200} />
+                <QRCodeSVG value={`${window.location.origin}${window.location.pathname}${window.location.search}#sync=${roomId}:${encryptionKey}`} size={200} />
               </div>
               <p className="text-sm text-center text-[var(--text-muted)] max-w-[280px]">
                 Scannen Sie diesen Code mit der normalen <strong>Kamera-App Ihres Smartphones</strong>, um die App automatisch zu öffnen und zu verbinden.
