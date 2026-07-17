@@ -65,4 +65,5 @@ export interface AccessibilitySettings {
   audioFeedback: boolean;
   speechRate: number;
   enableTimeTracking?: boolean;
+  desktopLayout?: boolean;
 }

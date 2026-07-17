@@ -1810,7 +1810,7 @@ export default function App() {
   // Check for sync hash on load
   useEffect(() => {
     if (window.location.hash.startsWith("#sync=")) {
-      setIsSyncModalOpen(true);
+      setActiveTab("sync");
     }
   }, []);
 
@@ -1818,15 +1818,73 @@ export default function App() {
     return <div className="flex h-screen w-screen items-center justify-center bg-gray-100 text-gray-500">Lade Daten...</div>;
   }
 
+  const isDesktop = accessibility.desktopLayout;
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 pb-32 relative">
+    <div className={isDesktop ? "lg:flex lg:h-screen lg:w-screen lg:overflow-hidden bg-[var(--bg-color)]" : ""}>
+      
+      {/* SIDEBAR NAVIGATION (Only visible on Desktop when enabled) */}
+      {isDesktop && (
+        <aside className="hidden lg:flex flex-col w-64 xl:w-72 border-r border-[var(--border-color)] bg-[var(--card-bg)] h-screen shrink-0 sticky top-0 z-[150] shadow-sm">
+          <div className="p-6 pb-4 border-b border-[var(--border-color)]">
+             <h1 className="text-2xl font-black text-[var(--text-color)] flex items-center gap-2">
+               RV Mobil
+             </h1>
+             <p className="text-xs text-[var(--text-muted)] font-bold mt-1 uppercase tracking-wider">Desktop Ansicht</p>
+          </div>
+          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+            {[
+              { id: "form", label: "RV Report", icon: LayoutGrid, active: activeTab === "form", visible: true },
+              { id: "time", label: "RV Zeit", icon: Clock, active: activeTab === "time" || activeTab === "carryover", visible: accessibility.enableTimeTracking !== false },
+              { id: "stats", label: "RV Analyse", icon: BarChart3, active: activeTab === "stats", visible: true },
+              { id: "history", label: "RV Archiv", icon: History, active: activeTab === "history", visible: true },
+              { id: "options", label: "Optionen", icon: Settings, active: activeTab === "options" || activeTab === "help" || activeTab === "backup" || activeTab === "manage" || activeTab === "sync" || activeTab === "changelog", visible: true },
+            ]
+            .filter(tab => tab.visible)
+            .map((tab) => {
+              const IconComp = tab.icon;
+              const isSelected = tab.active;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                     triggerHaptic(12);
+                     setActiveTab(tab.id as any);
+                     if (tab.id === "form") announceToAriaAndSpeech("RV Report Hauptformular angezeigt");
+                     else if (tab.id === "time") announceToAriaAndSpeech("RV Zeit und Stempeluhr geöffnet");
+                     else if (tab.id === "stats") announceToAriaAndSpeech("RV Analyse und Statistiken geöffnet");
+                     else if (tab.id === "history") announceToAriaAndSpeech("RV Archiv geöffnet");
+                     else if (tab.id === "options") announceToAriaAndSpeech("Anzeige-Optionen geöffnet");
+                     window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all cursor-pointer font-bold ${
+                    isSelected ? "bg-[var(--accent)] text-white shadow-md shadow-indigo-500/20" : "text-[var(--text-muted)] hover:bg-[var(--input-bg)] hover:text-[var(--text-color)]"
+                  }`}
+                >
+                  <IconComp className={`w-5 h-5 ${isSelected ? "stroke-[2.5]" : "stroke-[2]"}`} />
+                  <span className="text-sm">{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+          <div className="p-6 text-center border-t border-[var(--border-color)]">
+             <p className="text-[10px] text-[var(--text-muted)] font-bold opacity-70">
+               © 2026 Reinecker Vision
+             </p>
+          </div>
+        </aside>
+      )}
+
+      {/* MAIN CONTENT WRAPPER */}
+      <div className={`w-full relative ${isDesktop ? 'lg:flex-1 lg:overflow-y-auto lg:h-screen lg:px-6' : ''}`}>
+        <div className={`mx-auto px-4 py-6 pb-32 relative ${isDesktop ? 'lg:max-w-5xl lg:pb-12 xl:max-w-6xl' : 'max-w-2xl'}`}>
       {/* Off-screen live announcer region for screen readers */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {ariaAnnouncement}
       </div>
 
       {activeTab === "form" && (
-        <div className="animate-fade-in pb-24">
+        <div className={`animate-fade-in ${isDesktop ? 'lg:pb-8' : 'pb-24'}`}>
           {/* HEADER SECTION (Accessible, modern responsive layout, removed duplicate buttons for clean tidiness) */}
           <header
             className="p-5 mb-4 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)] flex flex-col md:flex-row md:items-center md:justify-between gap-5"
@@ -2451,7 +2509,7 @@ export default function App() {
         </div>
       </div>
 
-      <div {...swipeHandlers} className="w-full">
+      <div {...swipeHandlers} className={`w-full ${isDesktop ? 'lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start' : ''}`}>
         {/* SECTION 1: VORFÜHRUNGEN & AUSLIEFERUNGEN */}
         {(activeSectionTab === "all" || activeSectionTab === "s1") &&
           hasVisibleFields(appFields.s1) && (
@@ -2641,7 +2699,7 @@ export default function App() {
 
       {/* SECTION 5: NOTES & ANMERKUNGEN */}
       <section
-        className="p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]"
+        className={`p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)] ${isDesktop ? 'lg:mt-6' : ''}`}
         aria-labelledby="notes-heading"
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b-2 border-slate-100 dark:border-slate-800">
@@ -3057,7 +3115,7 @@ export default function App() {
       {/* RESPONSIVE BOTTOM NAVIGATION DOCK (FLOATING PILL DOCK FOR ERGONOMY & WCAG ACCESS) */}
       {!focusedFieldId && (
         <div
-          className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-xl z-[200] bg-[var(--card-bg)]/90 dark:bg-[var(--card-bg)]/95 backdrop-blur-md border border-[var(--border-color)] py-2.5 px-4 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.5)] transition-all"
+          className={`fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-xl z-[200] bg-[var(--card-bg)]/90 dark:bg-[var(--card-bg)]/95 backdrop-blur-md border border-[var(--border-color)] py-2.5 px-4 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.5)] transition-all ${isDesktop ? 'lg:hidden' : ''}`}
           role="tablist"
           aria-label="Hauptnavigation"
         >
@@ -3119,6 +3177,8 @@ export default function App() {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 

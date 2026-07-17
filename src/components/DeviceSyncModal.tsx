@@ -108,7 +108,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
     });
 
     newSocket.on("connect_error", (err) => {
-      console.error("Socket connect_error:", err.message, err.description, err.context);
+      console.error("Socket connect_error:", err);
       setStatus({ type: "error", msg: `Verbindungsfehler: ${err.message}. Versuche erneut...` });
     });
   };

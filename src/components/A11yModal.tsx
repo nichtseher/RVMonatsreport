@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { AccessibilitySettings, AccessibilityTheme, SectionsConfig } from "../types";
-import { Type, Eye, Volume2, VolumeX, Sparkles, HelpCircle, Lock, Settings2, ChevronRight, ArrowLeft, Clock, Sliders, Smartphone, Bell, BellOff } from "lucide-react";
+import { Type, Eye, Volume2, VolumeX, Sparkles, HelpCircle, Lock, Settings2, ChevronRight, ArrowLeft, Clock, Sliders, Smartphone, Bell, BellOff, Monitor } from "lucide-react";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -404,6 +404,28 @@ export default function A11yModal({
 
         {/* Voice Feedback */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-3">
+            <label id="label-desktop-layout" className="block text-base font-extrabold text-[var(--text-color)]">
+              PC/Desktop Layout:
+            </label>
+            <button
+              type="button"
+              onClick={() => updateSetting("desktopLayout", !settings.desktopLayout)}
+              aria-pressed={!!settings.desktopLayout}
+              className={`w-full py-5 px-5 rounded-2xl border-2 transition-all cursor-pointer font-extrabold flex items-center justify-center gap-3 active:scale-95 shadow-sm ${
+                settings.desktopLayout
+                  ? "bg-[var(--accent)] border-[var(--accent)] text-white"
+                  : "bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
+              }`}
+            >
+              <Monitor className="w-6 h-6" aria-hidden="true" />
+              <span className="text-base">{settings.desktopLayout ? "Responsive (Aktiv)" : "Immer Mobile-Ansicht"}</span>
+            </button>
+            <p className="text-sm font-semibold text-[var(--text-muted)] leading-relaxed">
+              Wenn aktiviert, nutzt die App am PC den großen Bildschirm besser aus (Sidebar & Spalten-Layout).
+            </p>
+          </div>
+
           <div className="space-y-3">
             <label id="label-timetracking" className="block text-base font-extrabold text-[var(--text-color)]">
               Modul: Zeiterfassung (Stempeluhr)
