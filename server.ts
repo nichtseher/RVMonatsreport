@@ -111,6 +111,10 @@ async function startServer() {
       socket.to(roomId).emit("user-joined", socket.id);
     });
 
+    socket.on("relay-data", ({ roomId, payload }) => {
+      socket.to(roomId).emit("relay-data", payload);
+    });
+
     socket.on("signal", ({ roomId, signalData, to }) => {
       if (to) {
         // Send directly to the target peer

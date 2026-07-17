@@ -4,6 +4,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { Html5Qrcode } from "html5-qrcode";
 import { io, Socket } from "socket.io-client";
 import { motion } from "framer-motion";
+import { encryptData, decryptData } from "../utils/crypto";
 
 interface DeviceSyncModalProps {
   isOpen: boolean;
@@ -15,14 +16,11 @@ interface DeviceSyncModalProps {
 export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }: DeviceSyncModalProps) {
   const [mode, setMode] = useState<"select" | "host" | "scan" | "connected">("select");
   const [roomId, setRoomId] = useState("");
+  const [encryptionKey, setEncryptionKey] = useState("");
   const [status, setStatus] = useState<{ type: "success" | "error" | "info"; msg: string } | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [peerConnection, setPeerConnection] = useState<RTCPeerConnection | null>(null);
-  const [dataChannel, setDataChannel] = useState<RTCDataChannel | null>(null);
   
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  const peerRef = useRef<RTCPeerConnection | null>(null);
-  const channelRef = useRef<RTCDataChannel | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -40,112 +38,68 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
       socket.disconnect();
       setSocket(null);
     }
-    if (peerRef.current) {
-      peerRef.current.close();
-      peerRef.current = null;
-    }
     setMode("select");
     setRoomId("");
+    setEncryptionKey("");
     setStatus(null);
   };
 
-  const setupSocketAndRTC = (room: string, isInitiator: boolean) => {
-    const newSocket = io();
+  const setupSocketAndRelay = (room: string, key: string, isInitiator: boolean) => {
+    const newSocket = io({ path: '/socket.io' }); // Explicitly use socket.io path
     setSocket(newSocket);
-
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" }
-      ]
-    });
-    peerRef.current = pc;
-    setPeerConnection(pc);
-
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        newSocket.emit("signal", { roomId: room, signalData: { type: "candidate", candidate: event.candidate } });
-      }
-    };
-
-    pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "connected") {
-        setMode("connected");
-        setStatus({ type: "success", msg: "Geräte erfolgreich gekoppelt!" });
-        if (scannerRef.current) {
-          scannerRef.current.stop().catch(() => {});
-        }
-      } else if (pc.connectionState === "disconnected" || pc.connectionState === "failed") {
-        setStatus({ type: "error", msg: "Verbindung abgebrochen." });
-        setMode("select");
-      }
-    };
-
-    if (isInitiator) {
-      const dc = pc.createDataChannel("sync");
-      setupDataChannel(dc);
-    } else {
-      pc.ondatachannel = (event) => {
-        setupDataChannel(event.channel);
-      };
-    }
 
     newSocket.on("connect", () => {
       newSocket.emit("join-room", room);
-    });
-
-    newSocket.on("user-joined", async () => {
       if (isInitiator) {
-        try {
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          newSocket.emit("signal", { roomId: room, signalData: { type: "offer", offer } });
-        } catch (e) {
-          console.error(e);
+        // The one scanning the code joins and notifies the host
+        setStatus({ type: "success", msg: "Geräte erfolgreich gekoppelt!" });
+        setMode("connected");
+        if (scannerRef.current) {
+          scannerRef.current.stop().catch(() => {});
         }
       }
     });
 
-    newSocket.on("signal", async ({ signalData }) => {
-      try {
-        if (signalData.type === "offer") {
-          await pc.setRemoteDescription(new RTCSessionDescription(signalData.offer));
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          newSocket.emit("signal", { roomId: room, signalData: { type: "answer", answer } });
-        } else if (signalData.type === "answer") {
-          await pc.setRemoteDescription(new RTCSessionDescription(signalData.answer));
-        } else if (signalData.type === "candidate") {
-          await pc.addIceCandidate(new RTCIceCandidate(signalData.candidate));
-        }
-      } catch (e) {
-        console.error(e);
+    newSocket.on("user-joined", () => {
+      if (!isInitiator) {
+        setStatus({ type: "success", msg: "Geräte erfolgreich gekoppelt!" });
+        setMode("connected");
       }
     });
-  };
 
-  const setupDataChannel = (dc: RTCDataChannel) => {
-    channelRef.current = dc;
-    setDataChannel(dc);
-    
-    dc.onmessage = (event) => {
+    newSocket.on("user-left", () => {
+      setStatus({ type: "error", msg: "Anderes Gerät hat die Verbindung getrennt." });
+      setMode("select");
+    });
+
+    newSocket.on("relay-data", async (encryptedPayload: string) => {
       try {
-        const payload = JSON.parse(event.data);
+        const decryptedStr = await decryptData(encryptedPayload, key);
+        const payload = JSON.parse(decryptedStr);
         if (payload.type === "SYNC_DATA") {
           onImport(payload.data);
           setStatus({ type: "success", msg: "Daten erfolgreich empfangen und angewendet!" });
         }
       } catch (e) {
-        setStatus({ type: "error", msg: "Fehler beim Empfangen der Daten." });
+        console.error("Decryption error:", e);
+        setStatus({ type: "error", msg: "Fehler beim Entschlüsseln der empfangenen Daten." });
       }
-    };
+    });
+
+    newSocket.on("connect_error", () => {
+      setStatus({ type: "error", msg: "Verbindungsfehler zum Server." });
+      setMode("select");
+    });
   };
 
   const startHost = () => {
     const id = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const key = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
     setRoomId(id);
+    setEncryptionKey(key);
     setMode("host");
     setStatus({ type: "info", msg: "Warte auf Verbindung... Bitte QR-Code scannen." });
-    setupSocketAndRTC(id, false);
+    setupSocketAndRelay(id, key, false);
   };
 
   const startScan = async () => {
@@ -161,11 +115,13 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           (decodedText) => {
-            if (decodedText && decodedText.length === 6) {
+            if (decodedText && decodedText.includes(":")) {
               scanner.stop();
               setStatus({ type: "info", msg: "Code erkannt! Verbinde..." });
-              setRoomId(decodedText);
-              setupSocketAndRTC(decodedText, true);
+              const [scannedRoom, scannedKey] = decodedText.split(":");
+              setRoomId(scannedRoom);
+              setEncryptionKey(scannedKey);
+              setupSocketAndRelay(scannedRoom, scannedKey, true);
             }
           },
           (error) => {
@@ -179,13 +135,19 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
     }, 100);
   };
 
-  const sendData = () => {
-    if (channelRef.current && channelRef.current.readyState === "open") {
-      const dataStr = onExport();
-      channelRef.current.send(JSON.stringify({ type: "SYNC_DATA", data: dataStr }));
-      setStatus({ type: "success", msg: "Daten erfolgreich an das andere Gerät gesendet!" });
+  const sendData = async () => {
+    if (socket && socket.connected) {
+      try {
+        const dataStr = onExport();
+        const payloadStr = JSON.stringify({ type: "SYNC_DATA", data: dataStr });
+        const encryptedPayload = await encryptData(payloadStr, encryptionKey);
+        socket.emit("relay-data", { roomId, payload: encryptedPayload });
+        setStatus({ type: "success", msg: "Daten erfolgreich an das andere Gerät gesendet!" });
+      } catch (err) {
+        setStatus({ type: "error", msg: "Fehler beim Verschlüsseln oder Senden." });
+      }
     } else {
-      setStatus({ type: "error", msg: "Keine aktive Verbindung." });
+      setStatus({ type: "error", msg: "Keine aktive Verbindung zum Server." });
     }
   };
 
@@ -256,7 +218,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
           {mode === "host" && (
             <div className="flex flex-col items-center justify-center py-6">
               <div className="bg-white p-4 rounded-xl shadow-sm mb-6">
-                <QRCodeSVG value={roomId} size={200} />
+                <QRCodeSVG value={`${roomId}:${encryptionKey}`} size={200} />
               </div>
               <p className="text-sm text-center text-[var(--text-muted)] max-w-[250px]">
                 Öffnen Sie diese App auf dem anderen Gerät, wählen Sie "Anderes Gerät scannen" und scannen Sie diesen Code.
@@ -287,7 +249,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
                 <Smartphone className="w-8 h-8" />
               </div>
               <p className="text-sm text-center font-medium">
-                Sichere P2P-Verbindung hergestellt!
+                Sichere Verbindung hergestellt!
               </p>
               
               <button
@@ -299,7 +261,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
               </button>
 
               <p className="text-xs text-center text-[var(--text-muted)] mt-4 px-4">
-                Hinweis: Das Empfänger-Gerät wird sofort aktualisiert. Der Transfer erfolgt komplett verschlüsselt und direkt zwischen den Geräten.
+                Hinweis: Das Empfänger-Gerät wird sofort aktualisiert. Der Transfer erfolgt komplett Ende-zu-Ende-verschlüsselt.
               </p>
               
               <button onClick={resetState} className="w-full mt-4 text-sm text-[var(--text-muted)] font-semibold hover:underline">

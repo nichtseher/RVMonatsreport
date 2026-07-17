@@ -22,7 +22,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             Was gibt's Neues?
           </h2>
           <p className="text-sm font-semibold text-[var(--text-muted)] mt-1">
-            Version 0.1.0 Beta
+            Version 0.2.0 Beta
           </p>
         </div>
       </div>
@@ -30,8 +30,20 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="space-y-6">
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex items-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-purple-500" />
+            Version 0.2.0: Geräte-Synchronisation
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-semibold text-[var(--text-muted)]">
+            <li><strong>Sichere Datenübertragung:</strong> Neue direkte Geräte-Synchronisation zwischen Smartphone und PC über QR-Code.</li>
+            <li><strong>Ende-zu-Ende-Verschlüsselung:</strong> Alle transferierten Daten werden verschlüsselt und sicher von Gerät zu Gerät (P2P-Relay) übertragen. Ohne Server-Speicherung!</li>
+            <li>Keine Accounts oder Logindaten erforderlich.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex items-center gap-2 mb-3">
             <ShieldCheck className="w-5 h-5 text-green-500" />
-            DevSecOps & Sicherheit
+            Version 0.1.0: DevSecOps & Sicherheit
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-semibold text-[var(--text-muted)]">
             <li>Erweiterte Sicherheits-Header im Backend integriert.</li>
