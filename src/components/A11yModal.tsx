@@ -155,6 +155,16 @@ export default function A11yModal({
       </div>
 
       <div className="space-y-3">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 dark:border-emerald-900/40 dark:bg-emerald-950/20 p-4 text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+          <div className="flex items-start gap-3">
+            <Lock className="w-5 h-5 mt-0.5 flex-shrink-0" aria-hidden="true" />
+            <div>
+              <p className="font-black">DSGVO-konform und barrierefrei</p>
+              <p className="mt-1 text-xs leading-relaxed">Alle Daten bleiben lokal auf dem Gerät. Geräte-Sync läuft nur verschlüsselt und ohne zentrale Speicherung.</p>
+            </div>
+          </div>
+        </div>
+
         {onOpenHelp && (
           <button
             type="button"

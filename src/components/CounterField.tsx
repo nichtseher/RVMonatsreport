@@ -26,7 +26,9 @@ export default React.memo(function CounterField({
   onBlur
 }: CounterFieldProps) {
   const inputId = `input-${config.id}`;
+  const instructionsId = `${inputId}-instructions`;
   const displayVal = value === "" ? "" : value;
+  const currentNumericValue = typeof value === "number" ? value : 0;
 
   const triggerHaptic = () => {
     if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
@@ -221,11 +223,18 @@ export default React.memo(function CounterField({
           <input
             id={inputId}
             type="number"
+            role="spinbutton"
             step={config.step}
             inputMode={config.step % 1 === 0 ? "numeric" : "decimal"}
             min="0"
             max="999"
             value={displayVal}
+            aria-label={config.label}
+            aria-describedby={instructionsId}
+            aria-valuemin={0}
+            aria-valuemax={999}
+            aria-valuenow={typeof value === "number" ? value : undefined}
+            aria-valuetext={displayVal === "" ? "leer" : `${displayVal} Einheiten`}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             onFocus={(e) => {
@@ -236,6 +245,9 @@ export default React.memo(function CounterField({
             placeholder="0"
             className={`${inputSize} text-center font-black border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] focus:border-[var(--border-focus)] outline-none touch-manipulation`}
           />
+          <p id={instructionsId} className="sr-only">
+            {`Eingabefeld für ${config.label}. Verwenden Sie die Pfeiltasten oder die Plus- und Minus-Tasten. Mit Enter springen Sie zum nächsten Feld.`}
+          </p>
         </div>
 
         {/* Increment Button (Optimized for Touch-Only) */}

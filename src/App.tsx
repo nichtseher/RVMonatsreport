@@ -329,6 +329,9 @@ export default function App() {
   const [isCompactView, setIsCompactView] = useState<boolean>(() => {
     return localStorage.getItem("aussendienst_pwa_compact") === "true";
   });
+  const [mobileComfortMode, setMobileComfortMode] = useState<boolean>(() => {
+    return localStorage.getItem("aussendienst_pwa_mobile_comfort") === "true";
+  });
   const [activeSectionTab, setActiveSectionTab] = useState<
     "all" | "s1" | "s2" | "s3" | "s4"
   >("all");
@@ -389,6 +392,10 @@ export default function App() {
 
   // Real-time live search query for products/categories
   const [searchQuery, setSearchQuery] = useState("");
+
+  const monthInputRef = useRef<HTMLInputElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const notesInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Goals configuration state with local storage persistence
   const [goalsConfig, setGoalsConfig] = useState<{
@@ -533,6 +540,58 @@ export default function App() {
     }
   }, [accessibility.screenReaderNarration, accessibility.speechRate]);
 
+  const focusAndAnnounce = useCallback((target: "month" | "name" | "notes") => {
+    if (target === "month") {
+      monthInputRef.current?.focus();
+      monthInputRef.current?.select();
+      announceToAriaAndSpeech("Berichtsmonat-Feld aktiviert.", true);
+    } else if (target === "name") {
+      nameInputRef.current?.focus();
+      nameInputRef.current?.select();
+      announceToAriaAndSpeech("Mitarbeiter-Feld aktiviert.", true);
+    } else {
+      notesInputRef.current?.focus();
+      notesInputRef.current?.select();
+      announceToAriaAndSpeech("Notizenfeld aktiviert.", true);
+    }
+  }, [announceToAriaAndSpeech]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!event.altKey || !event.shiftKey) return;
+
+      if (event.key.toLowerCase() === "m") {
+        event.preventDefault();
+        focusAndAnnounce("month");
+      } else if (event.key.toLowerCase() === "n") {
+        event.preventDefault();
+        focusAndAnnounce("name");
+      } else if (event.key.toLowerCase() === "o") {
+        event.preventDefault();
+        focusAndAnnounce("notes");
+      } else if (event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        setAccessibility((prev) => ({ ...prev, screenReaderNarration: !prev.screenReaderNarration }));
+        announceToAriaAndSpeech("Sprachansagen aktualisiert.", true);
+      } else if (event.key.toLowerCase() === "l") {
+        event.preventDefault();
+        setMobileComfortMode((prev) => !prev);
+        announceToAriaAndSpeech("Ein-Hand-Modus aktualisiert.", true);
+      } else if (event.key.toLowerCase() === "t") {
+        event.preventDefault();
+        setActiveTab("time");
+        announceToAriaAndSpeech("Zeiterfassung geöffnet.", true);
+      } else if (event.key.toLowerCase() === "h") {
+        event.preventDefault();
+        setActiveTab("history");
+        announceToAriaAndSpeech("Archiv geöffnet.", true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [announceToAriaAndSpeech, focusAndAnnounce]);
+
   // --- TRIGGER HAPTIC VIBRATION ---
   const triggerHaptic = (ms = 12) => {
     if (
@@ -658,6 +717,10 @@ export default function App() {
     document.documentElement.setAttribute("data-theme", accessibility.theme);
     document.documentElement.setAttribute("data-size", accessibility.fontSize);
   }, [accessibility]);
+
+  useEffect(() => {
+    safeSetItem("aussendienst_pwa_mobile_comfort", mobileComfortMode ? "true" : "false");
+  }, [mobileComfortMode]);
 
   // Set default month on load if empty
   useEffect(() => {
@@ -1824,9 +1887,12 @@ export default function App() {
   }
 
   const isDesktop = accessibility.desktopLayout;
+  const shouldUseCompactFields = isCompactView && !(mobileComfortMode && !isDesktop);
 
   return (
-    <div className={isDesktop ? "lg:flex lg:h-screen lg:w-screen lg:overflow-hidden bg-[var(--bg-color)]" : ""}>
+    <>
+      <a href="#main-content" className="skip-link">Zum Hauptinhalt springen</a>
+      <div className={isDesktop ? "lg:flex lg:h-screen lg:w-screen lg:overflow-hidden bg-[var(--bg-color)]" : ""}>
       
       {/* SIDEBAR NAVIGATION (Only visible on Desktop when enabled) */}
       {isDesktop && (
@@ -1881,7 +1947,7 @@ export default function App() {
       )}
 
       {/* MAIN CONTENT WRAPPER */}
-      <div className={`w-full relative ${isDesktop ? 'lg:flex-1 lg:overflow-y-auto lg:h-screen lg:px-6' : ''}`}>
+      <div id="main-content" className={`w-full relative ${isDesktop ? 'lg:flex-1 lg:overflow-y-auto lg:h-screen lg:px-6' : ''}`}>
         <div className={`mx-auto px-4 py-6 pb-32 relative ${isDesktop ? 'lg:max-w-5xl lg:pb-12 xl:max-w-6xl' : 'max-w-2xl'}`}>
       {/* Off-screen live announcer region for screen readers */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">
@@ -1892,7 +1958,7 @@ export default function App() {
         <div className={`animate-fade-in ${isDesktop ? 'lg:pb-8' : 'pb-24'}`}>
           {/* HEADER SECTION (Accessible, modern responsive layout, removed duplicate buttons for clean tidiness) */}
           <header
-            className="p-5 mb-4 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)] flex flex-col md:flex-row md:items-center md:justify-between gap-5"
+            className="p-5 mb-4 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)] flex flex-col md:flex-row md:items-center md:justify-between gap-5 shadow-sm"
             role="banner"
           >
         <div className="space-y-1.5 flex-1 min-w-0">
@@ -1900,6 +1966,9 @@ export default function App() {
             <h1 className="text-xl md:text-2xl font-black tracking-tight text-[var(--text-color)]">
               RV Mobil
             </h1>
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">
+              DSGVO & barrierefrei
+            </span>
           </div>
 
           {/* Offline Auto-Save live status feedback */}
@@ -1919,7 +1988,7 @@ export default function App() {
         </div>
 
         {/* Right side: Compact inline Stammdaten inputs for ultra-clear visibility */}
-        <div className="flex flex-col sm:flex-row items-stretch gap-3 w-full md:w-auto md:max-w-md bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-dashed border-[var(--border-color)]">
+        <div className="flex flex-col sm:flex-row items-stretch gap-3 w-full md:w-auto md:max-w-md bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-dashed border-[var(--border-color)]" role="group" aria-label="Berichtsmetadaten">
           {/* Month input */}
           <div className="flex-1 min-w-[130px] space-y-1">
             <label
@@ -1930,6 +1999,7 @@ export default function App() {
               Berichtsmonat:
             </label>
             <input
+              ref={monthInputRef}
               id="meta-month-input"
               type="month"
               value={reportData?.month}
@@ -1957,6 +2027,7 @@ export default function App() {
               <User className="w-3 h-3 text-[var(--accent)]" /> Mitarbeiter/in:
             </label>
             <input
+              ref={nameInputRef}
               id="meta-name-input"
               type="text"
               placeholder="Name..."
@@ -1976,6 +2047,71 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {/* ACCESSIBILITY & WORKFLOW QUICK HELP */}
+      <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/40" role="region" aria-label="Kurzhilfe für barrierefreie Bedienung">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Barrierefreie Arbeitsweise</p>
+            <p className="mt-1 text-sm font-semibold text-[var(--text-color)]">Mit Enter zwischen Feldern wechseln, mit Pfeiltasten Werte ändern und die Sprachansagen aktivieren.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setAccessibility((prev) => ({ ...prev, screenReaderNarration: !prev.screenReaderNarration }));
+                announceToAriaAndSpeech("Sprachansagen wurden aktualisiert.", true);
+              }}
+              className={`rounded-full px-3 py-1.5 text-xs font-black transition-all ${accessibility.screenReaderNarration ? "bg-emerald-600 text-white" : "bg-[var(--bg-color)] text-[var(--text-color)] border border-[var(--border-color)]"}`}
+            >
+              {accessibility.screenReaderNarration ? "Sprachansagen AN" : "Sprachansagen AUS"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMobileComfortMode((prev) => !prev);
+                announceToAriaAndSpeech("Ein-Hand-Modus aktualisiert.", true);
+              }}
+              className={`rounded-full px-3 py-1.5 text-xs font-black transition-all ${mobileComfortMode ? "bg-indigo-600 text-white" : "bg-[var(--bg-color)] text-[var(--text-color)] border border-[var(--border-color)]"}`}
+            >
+              {mobileComfortMode ? "Ein-Hand AN" : "Ein-Hand AUS"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* MOBILE COMFORT ACTION BAR */}
+      {mobileComfortMode && !isDesktop && (
+        <div className="mb-4 rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-3 shadow-sm" role="toolbar" aria-label="Schnellzugriffe für den Ein-Hand-Modus">
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={() => focusAndAnnounce("month")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-3 py-1.5 text-xs font-black">Monat</button>
+            <button type="button" onClick={() => focusAndAnnounce("name")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-3 py-1.5 text-xs font-black">Name</button>
+            <button type="button" onClick={() => focusAndAnnounce("notes")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-3 py-1.5 text-xs font-black">Notizen</button>
+            <button type="button" onClick={() => setActiveTab("time")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-3 py-1.5 text-xs font-black">Zeit</button>
+          </div>
+        </div>
+      )}
+
+      {/* DESKTOP WORKFLOW SUMMARY */}
+      {isDesktop && (
+        <div className="mb-4 rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4 shadow-sm" role="region" aria-label="Desktop-Übersicht">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Desktop-Workflow</p>
+              <h2 className="text-lg font-black text-[var(--text-color)]">Schneller Überblick für Tagesarbeit</h2>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => setActiveTab("time")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-3 py-1.5 text-xs font-black">Zeit erfassen</button>
+              <button type="button" onClick={() => setActiveTab("history")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-3 py-1.5 text-xs font-black">Archiv öffnen</button>
+            </div>
+          </div>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-sm font-semibold text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300">Aktueller Monat: {reportData?.month}</div>
+            <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3 text-sm font-semibold text-sky-800 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-300">Mitarbeiter: {reportData?.name || "Noch nicht erfasst"}</div>
+            <div className="rounded-xl border border-violet-200 bg-violet-50/70 p-3 text-sm font-semibold text-violet-800 dark:border-violet-900/40 dark:bg-violet-950/20 dark:text-violet-300">Schnellzugriff: Notizen, Zeit, Archiv</div>
+          </div>
+        </div>
+      )}
 
       {/* DEADLINE NOTIFICATION BANNER (Sleeker & more compact) */}
       <div
@@ -2537,7 +2673,7 @@ export default function App() {
                   onChange={(val) => handleValueChange(field.id, val)}
                   onAnnounce={announceToAriaAndSpeech}
                   audioFeedbackEnabled={accessibility.audioFeedback}
-                  isCompact={isCompactView}
+                  isCompact={shouldUseCompactFields}
                   onFocus={() => setFocusedFieldId(field.id)}
                   onBlur={() => {
                     setTimeout(() => {
@@ -2586,7 +2722,7 @@ export default function App() {
                   onChange={(val) => handleValueChange(field.id, val)}
                   onAnnounce={announceToAriaAndSpeech}
                   audioFeedbackEnabled={accessibility.audioFeedback}
-                  isCompact={isCompactView}
+                  isCompact={shouldUseCompactFields}
                   onFocus={() => setFocusedFieldId(field.id)}
                   onBlur={() => {
                     setTimeout(() => {
@@ -2623,7 +2759,7 @@ export default function App() {
                   onChange={(val) => handleValueChange(field.id, val)}
                   onAnnounce={announceToAriaAndSpeech}
                   audioFeedbackEnabled={accessibility.audioFeedback}
-                  isCompact={isCompactView}
+                  isCompact={shouldUseCompactFields}
                   onFocus={() => setFocusedFieldId(field.id)}
                   onBlur={() => {
                     setTimeout(() => {
@@ -2666,7 +2802,7 @@ export default function App() {
                   onChange={(val) => handleValueChange(field.id, val)}
                   onAnnounce={announceToAriaAndSpeech}
                   audioFeedbackEnabled={accessibility.audioFeedback}
-                  isCompact={isCompactView}
+                  isCompact={shouldUseCompactFields}
                   onFocus={() => setFocusedFieldId(field.id)}
                   onBlur={() => {
                     setTimeout(() => {
@@ -2796,6 +2932,7 @@ export default function App() {
         </div>
 
                   <textarea
+          ref={notesInputRef}
           id="meta-notes-textarea"
           value={
             typeof reportData?.notes === "string"
@@ -3184,7 +3321,7 @@ export default function App() {
       )}
         </div>
       </div>
-    </div>
+    </>
   );
 
 }
