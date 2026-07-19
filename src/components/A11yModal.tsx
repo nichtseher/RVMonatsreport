@@ -1,17 +1,6 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import { AccessibilitySettings, AccessibilityTheme, SectionsConfig } from "../types";
 import { Type, Eye, Volume2, VolumeX, Sparkles, HelpCircle, Lock, Settings2, ChevronRight, ArrowLeft, Clock, Sliders, Smartphone, Bell, BellOff, Monitor } from "lucide-react";
-
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
 
 interface A11yModalProps {
   settings: AccessibilitySettings;
@@ -55,74 +44,28 @@ export default function A11yModal({
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeMenu, setActiveMenu] = useState<"main" | "a11y" | "form">("main");
 
-  const [isPushEnabled, setIsPushEnabled] = useState(false);
-  const [isPushSupported, setIsPushSupported] = useState(false);
-  const [isPushLoading, setIsPushLoading] = useState(false);
+  // Lokale Erinnerung (serverlos): Die App erinnert ab dem 8. des Monats beim
+  // Öffnen an den Monatsbericht. Es wird bewusst KEIN Push-Server verwendet.
+  const [isReminderEnabled, setIsReminderEnabled] = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("aussendienst_pwa_reminder") === "true"
+  );
 
-  useEffect(() => {
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      setIsPushSupported(true);
-      navigator.serviceWorker.ready.then(reg => {
-        reg.pushManager.getSubscription().then(sub => {
-          setIsPushEnabled(!!sub);
-        });
-      });
-    }
-  }, []);
-
-  const handleTogglePush = async () => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      alert('Push-Benachrichtigungen werden von diesem Browser nicht unterstützt.');
+  const handleToggleReminder = async () => {
+    if (isReminderEnabled) {
+      localStorage.setItem("aussendienst_pwa_reminder", "false");
+      setIsReminderEnabled(false);
       return;
     }
-    
-    setIsPushLoading(true);
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      
-      if (isPushEnabled) {
-        const sub = await reg.pushManager.getSubscription();
-        if (sub) {
-          await sub.unsubscribe();
-          await fetch('/api/push/unsubscribe', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ endpoint: sub.endpoint })
-          });
-        }
-        setIsPushEnabled(false);
-      } else {
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-          alert('Die Berechtigung für Benachrichtigungen wurde verweigert.');
-          setIsPushLoading(false);
-          return;
-        }
-        
-        const response = await fetch('/api/push/public-key');
-        if (!response.ok) throw new Error('Could not fetch public key');
-        const { publicKey } = await response.json();
-        
-        const sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(publicKey)
-        });
-        
-        await fetch('/api/push/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(sub)
-        });
-        
-        setIsPushEnabled(true);
-        alert('Erfolgreich! Sie werden am 8. jedes Monats an Ihren Monatsbericht erinnert.');
+    // Optional: System-Benachrichtigung zusätzlich zur In-App-Erinnerung.
+    if ("Notification" in window && Notification.permission === "default") {
+      try {
+        await Notification.requestPermission();
+      } catch {
+        // In-App-Erinnerung funktioniert auch ohne Benachrichtigungs-Erlaubnis.
       }
-    } catch (err) {
-      console.error('Push toggle error:', err);
-      alert('Fehler beim Ändern der Push-Benachrichtigungen.');
-    } finally {
-      setIsPushLoading(false);
     }
+    localStorage.setItem("aussendienst_pwa_reminder", "true");
+    setIsReminderEnabled(true);
   };
 
   const updateSetting = <K extends keyof AccessibilitySettings>(
@@ -160,7 +103,7 @@ export default function A11yModal({
             <Lock className="w-5 h-5 mt-0.5 flex-shrink-0" aria-hidden="true" />
             <div>
               <p className="font-black">DSGVO-konform und barrierefrei</p>
-              <p className="mt-1 text-xs leading-relaxed">Alle Daten bleiben lokal auf dem Gerät. Geräte-Sync läuft nur verschlüsselt und ohne zentrale Speicherung.</p>
+              <p className="mt-1 text-xs leading-relaxed">Alle Daten bleiben lokal auf dem Gerät. Der Geräte-Sync überträgt Daten ausschließlich offline per QR-Code von Gerät zu Gerät – ohne Server und ohne Internet.</p>
             </div>
           </div>
         </div>
@@ -558,38 +501,36 @@ export default function A11yModal({
           </div>
         </div>
 
-        {/* Push Notifications Setup */}
+        {/* Lokale Erinnerung fuer den Monatsbericht (ohne Push-Server) */}
         <div className="space-y-3">
-          <label id="label-pushnotifications" className="block text-base font-extrabold text-[var(--text-color)]">
-            Erinnerung für Monatsbericht (Push):
+          <label id="label-reminder" className="block text-base font-extrabold text-[var(--text-color)]">
+            Erinnerung für Monatsbericht:
           </label>
           <button
             type="button"
-            onClick={handleTogglePush}
-            disabled={!isPushSupported || isPushLoading}
-            aria-pressed={isPushEnabled}
-            aria-describedby="pushnotifications-description"
-            className={`w-full py-5 px-5 rounded-2xl border-2 transition-all cursor-pointer font-extrabold flex items-center justify-center gap-3 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
-              isPushEnabled
+            onClick={handleToggleReminder}
+            aria-pressed={isReminderEnabled}
+            aria-describedby="reminder-description"
+            className={`w-full py-5 px-5 rounded-2xl border-2 transition-all cursor-pointer font-extrabold flex items-center justify-center gap-3 active:scale-95 shadow-sm ${
+              isReminderEnabled
                 ? "bg-[var(--accent)] border-[var(--accent)] text-white"
                 : "bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
             }`}
           >
-            {isPushEnabled ? (
+            {isReminderEnabled ? (
               <>
                 <Bell className="w-6 h-6" aria-hidden="true" />
-                <span className="text-base">{isPushLoading ? "Wird geladen..." : "Erinnerung AKTIV"}</span>
+                <span className="text-base">Erinnerung AKTIV</span>
               </>
             ) : (
               <>
                 <BellOff className="w-6 h-6" aria-hidden="true" />
-                <span className="text-base">{!isPushSupported ? "Nicht unterstützt" : isPushLoading ? "Wird geladen..." : "Erinnerung INAKTIV"}</span>
+                <span className="text-base">Erinnerung INAKTIV</span>
               </>
             )}
           </button>
-          <p id="pushnotifications-description" className="text-sm font-semibold text-[var(--text-muted)] leading-relaxed">
-            Aktivieren Sie diese Option, um am 8. des Monats eine Push-Benachrichtigung als Erinnerung zur Abgabe des Monatsberichts zu erhalten. 
-            {!isPushSupported && <strong className="block mt-1 text-[var(--danger)]">Ihr Browser oder Gerät unterstützt leider keine Push-Benachrichtigungen.</strong>}
+          <p id="reminder-description" className="text-sm font-semibold text-[var(--text-muted)] leading-relaxed">
+            Erinnert Sie ab dem 8. des Monats beim Öffnen der App an die Abgabe des Monatsberichts – komplett lokal auf diesem Gerät, ohne Server und ohne Datenübertragung ins Internet.
           </p>
         </div>
       </div>

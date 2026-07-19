@@ -60,7 +60,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <ul className="list-disc list-inside space-y-2 text-sm font-semibold text-[var(--text-muted)]">
             <li>Vollständig barrierefreie Bedienung (Screenreader-optimiert).</li>
             <li>Neuer Changelog-Bereich (Was gibt's Neues).</li>
-            <li>Push-Benachrichtigungen für die Abgabe am 8. des Monats.</li>
+            <li>Lokale Erinnerung an die Abgabe am 8. des Monats (komplett ohne Push-Server).</li>
             <li>Geräte-Synchronisierung per QR-Code.</li>
           </ul>
         </div>

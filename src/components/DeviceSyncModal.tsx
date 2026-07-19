@@ -1,10 +1,21 @@
-import React, { useState, useEffect, useRef } from "react";
-import { X, QrCode, Camera, Smartphone, Laptop, CheckCircle2, AlertTriangle, ArrowRightLeft, Copy, Check } from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import {
+  X,
+  Smartphone,
+  Monitor,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowRightLeft,
+  Play,
+  Pause,
+  ChevronLeft,
+  ChevronRight,
+  ShieldCheck,
+  Camera,
+} from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Html5Qrcode } from "html5-qrcode";
-import { io, Socket } from "socket.io-client";
 import { motion } from "framer-motion";
-import { encryptData, decryptData } from "../utils/crypto";
 
 interface DeviceSyncModalProps {
   isOpen: boolean;
@@ -13,372 +24,578 @@ interface DeviceSyncModalProps {
   onImport: (data: string) => void;
 }
 
-export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }: DeviceSyncModalProps) {
-  const [mode, setMode] = useState<"select" | "host" | "scan" | "connected">("select");
-  const [roomId, setRoomId] = useState("");
-  const [encryptionKey, setEncryptionKey] = useState("");
-  const [status, setStatus] = useState<{ type: "success" | "error" | "info"; msg: string } | null>(null);
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [copied, setCopied] = useState(false);
-  
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+/**
+ * Serverloser Geräte-Sync:
+ * Die Daten werden ausschließlich optisch per QR-Code von Bildschirm zu
+ * Kamera übertragen – komplett offline, ohne Server, ohne Internet.
+ * Große Datenmengen werden komprimiert und in mehrere QR-Codes aufgeteilt,
+ * die automatisch durchrotieren ("animierter QR-Code").
+ */
 
+const PROTOCOL = "RV1";
+const CHUNK_SIZE = 450; // Zeichen pro QR-Code (zuverlässig scannbar)
+const CYCLE_MS = 650; // Rotationsgeschwindigkeit der QR-Codes
+
+// --- Hilfsfunktionen ---------------------------------------------------
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+async function compressString(input: string): Promise<{ data: string; compressed: boolean }> {
+  const raw = new TextEncoder().encode(input);
+  if (typeof CompressionStream === "undefined") {
+    return { data: bytesToBase64(raw), compressed: false };
+  }
+  try {
+    const stream = new Blob([raw]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+    const buffer = await new Response(stream).arrayBuffer();
+    return { data: bytesToBase64(new Uint8Array(buffer)), compressed: true };
+  } catch {
+    return { data: bytesToBase64(raw), compressed: false };
+  }
+}
+
+async function decompressString(base64: string, compressed: boolean): Promise<string> {
+  const bytes = base64ToBytes(base64);
+  if (!compressed) {
+    return new TextDecoder().decode(bytes);
+  }
+  if (typeof DecompressionStream === "undefined") {
+    throw new Error("Dieses Gerät unterstützt die Dekomprimierung nicht.");
+  }
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  const buffer = await new Response(stream).arrayBuffer();
+  return new TextDecoder().decode(new Uint8Array(buffer));
+}
+
+/** Kryptografisch sichere, kurze Transfer-ID */
+function secureTransferId(): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const random = new Uint8Array(4);
+  crypto.getRandomValues(random);
+  return Array.from(random, (b) => alphabet[b % alphabet.length]).join("");
+}
+
+interface ParsedChunk {
+  id: string;
+  seq: number;
+  total: number;
+  compressed: boolean;
+  data: string;
+}
+
+function parseChunk(text: string): ParsedChunk | null {
+  // Format: RV1|<id>|<seq>|<total>|<z|u>|<daten>
+  if (!text.startsWith(PROTOCOL + "|")) return null;
+  const parts = text.split("|");
+  if (parts.length < 6) return null;
+  const seq = parseInt(parts[2], 10);
+  const total = parseInt(parts[3], 10);
+  if (!Number.isFinite(seq) || !Number.isFinite(total) || seq < 1 || total < 1 || seq > total) return null;
+  return {
+    id: parts[1],
+    seq,
+    total,
+    compressed: parts[4] === "z",
+    data: parts.slice(5).join("|"),
+  };
+}
+
+// --- Komponente --------------------------------------------------------
+
+export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }: DeviceSyncModalProps) {
+  const [mode, setMode] = useState<"select" | "send" | "receive" | "confirm">("select");
+  const [status, setStatus] = useState<{ type: "success" | "error" | "info"; msg: string } | null>(null);
+
+  // Sender-Zustand
+  const [chunks, setChunks] = useState<string[]>([]);
+  const [currentChunk, setCurrentChunk] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+
+  // Empfänger-Zustand
+  const [receivedCount, setReceivedCount] = useState(0);
+  const [expectedTotal, setExpectedTotal] = useState(0);
+  const [pendingImport, setPendingImport] = useState<string | null>(null);
+
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const receivedRef = useRef<Map<number, ParsedChunk>>(new Map());
+  const modalRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previouslyActiveRef = useRef<HTMLElement | null>(null);
+
+  const stopScanner = useCallback(() => {
+    if (scannerRef.current) {
+      scannerRef.current.stop().catch(() => {});
+      try {
+        scannerRef.current.clear();
+      } catch {
+        /* ignore */
+      }
+      scannerRef.current = null;
+    }
+  }, []);
+
+  const resetState = useCallback(() => {
+    stopScanner();
+    receivedRef.current = new Map();
+    setMode("select");
+    setStatus(null);
+    setChunks([]);
+    setCurrentChunk(0);
+    setIsPlaying(true);
+    setReceivedCount(0);
+    setExpectedTotal(0);
+    setPendingImport(null);
+  }, [stopScanner]);
+
+  // Fokus-Falle + Escape (Barrierefreiheit)
+  useEffect(() => {
+    if (!isOpen) return;
+    previouslyActiveRef.current = document.activeElement as HTMLElement | null;
+    setTimeout(() => closeButtonRef.current?.focus(), 50);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key === "Tab" && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex="0"]'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          last.focus();
+          e.preventDefault();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          first.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      previouslyActiveRef.current?.focus();
+    };
+  }, [isOpen, onClose]);
+
+  // Aufräumen beim Schließen
   useEffect(() => {
     if (!isOpen) {
       resetState();
-    } else {
-      // Check if opened via URL hash
-      if (window.location.hash.startsWith("#sync=")) {
-        const parsedSync = parseSyncValue(window.location.hash);
-        if (parsedSync) {
-          const { room, key } = parsedSync;
-          setRoomId(room);
-          setEncryptionKey(key);
-          setupSocketAndRelay(room, key, true);
-          // Clean up hash so it doesn't trigger again on reload
-          window.history.replaceState(null, "", window.location.pathname + window.location.search);
-        }
-      }
     }
-  }, [isOpen]);
+  }, [isOpen, resetState]);
 
-  const parseSyncValue = (value: string): { room: string; key: string } | null => {
-    if (!value) return null;
+  // QR-Code-Rotation (Sender)
+  useEffect(() => {
+    if (mode !== "send" || chunks.length <= 1 || !isPlaying) return;
+    const interval = setInterval(() => {
+      setCurrentChunk((prev) => (prev + 1) % chunks.length);
+    }, CYCLE_MS);
+    return () => clearInterval(interval);
+  }, [mode, chunks.length, isPlaying]);
 
-    const normalized = value.trim();
-    const hashValue = normalized.startsWith("#") ? normalized.slice(1) : normalized;
-    const syncValue = hashValue.startsWith("sync=") ? hashValue.slice("sync=".length) : hashValue;
-
-    if (!syncValue) return null;
-
+  // --- Sender ---
+  const startSend = async () => {
     try {
-      const parsedUrl = new URL(syncValue, window.location.origin);
-      const hashFragment = parsedUrl.hash.startsWith("#") ? parsedUrl.hash.slice(1) : parsedUrl.hash;
-      const decodedSyncValue = hashFragment.startsWith("sync=") ? hashFragment.slice("sync=".length) : hashFragment;
-      const separatorIndex = decodedSyncValue.lastIndexOf(":");
-      if (separatorIndex <= 0 || separatorIndex === decodedSyncValue.length - 1) return null;
-      return {
-        room: decodedSyncValue.slice(0, separatorIndex),
-        key: decodedSyncValue.slice(separatorIndex + 1),
-      };
-    } catch {
-      const separatorIndex = syncValue.lastIndexOf(":");
-      if (separatorIndex <= 0 || separatorIndex === syncValue.length - 1) return null;
-      return {
-        room: syncValue.slice(0, separatorIndex),
-        key: syncValue.slice(separatorIndex + 1),
-      };
-    }
-  };
-
-  const resetState = () => {
-    if (scannerRef.current) {
-      scannerRef.current.stop().catch(() => {});
-      scannerRef.current.clear();
-      scannerRef.current = null;
-    }
-    if (socket) {
-      socket.disconnect();
-      setSocket(null);
-    }
-    setMode("select");
-    setRoomId("");
-    setEncryptionKey("");
-    setStatus(null);
-    setCopied(false);
-  };
-
-  const copySyncLink = async () => {
-    const link = `${window.location.origin}${window.location.pathname}${window.location.search}#sync=${roomId}:${encryptionKey}`;
-    try {
-      await navigator.clipboard.writeText(link);
-      setCopied(true);
-      setStatus({ type: "success", msg: "Synchronisations-Link in die Zwischenablage kopiert." });
-    } catch {
-      setStatus({ type: "info", msg: "Kopieren nicht möglich. Bitte den Link manuell aus dem QR-Code übernehmen." });
-    }
-  };
-
-  const sendPayload = async (socketToUse: Socket | null, roomToUse: string, keyToUse: string) => {
-    if (!socketToUse || !socketToUse.connected) {
-      setStatus({ type: "error", msg: "Keine aktive Verbindung zum Server." });
-      return;
-    }
-
-    try {
+      setStatus({ type: "info", msg: "Daten werden vorbereitet..." });
       const dataStr = onExport();
-      const payloadStr = JSON.stringify({ type: "SYNC_DATA", data: dataStr });
-      const encryptedPayload = await encryptData(payloadStr, keyToUse);
-      socketToUse.emit("relay-data", { roomId: roomToUse, payload: encryptedPayload });
-      setStatus({ type: "success", msg: "Daten erfolgreich an das andere Gerät gesendet!" });
+      const { data, compressed } = await compressString(dataStr);
+      const id = secureTransferId();
+      const total = Math.max(1, Math.ceil(data.length / CHUNK_SIZE));
+      const flag = compressed ? "z" : "u";
+      const parts: string[] = [];
+      for (let i = 0; i < total; i++) {
+        const slice = data.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+        parts.push(`${PROTOCOL}|${id}|${i + 1}|${total}|${flag}|${slice}`);
+      }
+      setChunks(parts);
+      setCurrentChunk(0);
+      setIsPlaying(true);
+      setMode("send");
+      setStatus({
+        type: "info",
+        msg:
+          total === 1
+            ? "Bereit. Scannen Sie den QR-Code mit dem anderen Gerät (in der App unter Sync → Empfangen)."
+            : `Bereit. ${total} QR-Codes rotieren automatisch. Halten Sie die Kamera des anderen Geräts ruhig davor, bis alle Teile empfangen wurden.`,
+      });
     } catch (err) {
-      console.error("Sync send error", err);
-      setStatus({ type: "error", msg: "Fehler beim Verschlüsseln oder Senden." });
+      console.error("Sync prepare error", err);
+      setStatus({ type: "error", msg: "Fehler beim Vorbereiten der Daten." });
     }
   };
 
-  const setupSocketAndRelay = (room: string, key: string, isInitiator: boolean) => {
-    const newSocket = io(window.location.origin, { 
-      path: "/socket.io",
-      transports: ["polling"],
-      reconnectionAttempts: 10,
-    });
-    setSocket(newSocket);
-
-    newSocket.on("connect", () => {
-      newSocket.emit("join-room", room);
-      if (isInitiator) {
-        setStatus({ type: "success", msg: "Geräte erfolgreich gekoppelt! Sende Daten jetzt..." });
-        setMode("connected");
-        if (scannerRef.current) {
-          scannerRef.current.stop().catch(() => {});
-        }
-        setTimeout(() => {
-          void sendPayload(newSocket, room, key);
-        }, 400);
-      } else {
-        setStatus((prev) => 
-          prev?.type === "success" && prev.msg.includes("gekoppelt") 
-            ? prev 
-            : { type: "info", msg: "Mit Server verbunden. Warte auf anderes Gerät..." }
-        );
-      }
-    });
-
-    newSocket.on("user-joined", () => {
-      if (!isInitiator) {
-        setStatus({ type: "success", msg: "Geräte erfolgreich gekoppelt!" });
-        setMode("connected");
-      } else {
-        setTimeout(() => {
-          void sendPayload(newSocket, room, key);
-        }, 300);
-      }
-    });
-
-    newSocket.on("user-left", () => {
-      setStatus({ type: "error", msg: "Anderes Gerät hat die Verbindung getrennt." });
-      setMode("select");
-    });
-
-    newSocket.on("relay-data", async (encryptedPayload: string) => {
-      try {
-        const decryptedStr = await decryptData(encryptedPayload, key);
-        const payload = JSON.parse(decryptedStr);
-        if (payload.type === "SYNC_DATA") {
-          onImport(payload.data);
-          setStatus({ type: "success", msg: "Daten erfolgreich empfangen und angewendet!" });
-        }
-      } catch (e) {
-        console.error("Decryption error:", e);
-        setStatus({ type: "error", msg: "Fehler beim Entschlüsseln der empfangenen Daten." });
-      }
-    });
-
-    newSocket.on("connect_error", (err) => {
-      console.error("Socket connect_error:", err);
-      setStatus({ type: "error", msg: `Verbindungsfehler: ${err.message}. Versuche erneut...` });
-    });
-  };
-
-  const startHost = () => {
-    const id = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const key = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
-    setRoomId(id);
-    setEncryptionKey(key);
-    setMode("host");
-    setStatus({ type: "info", msg: "Warte auf Verbindung... Bitte QR-Code scannen." });
-    setupSocketAndRelay(id, key, false);
-  };
-
-  const startScan = async () => {
-    setMode("scan");
+  // --- Empfänger ---
+  const startReceive = () => {
+    receivedRef.current = new Map();
+    setReceivedCount(0);
+    setExpectedTotal(0);
+    setPendingImport(null);
+    setMode("receive");
     setStatus({ type: "info", msg: "Kamera wird gestartet..." });
-    
+
     setTimeout(async () => {
       try {
         const scanner = new Html5Qrcode("reader");
         scannerRef.current = scanner;
-        
         await scanner.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 } },
-          (decodedText) => {
-            const parsedSync = parseSyncValue(decodedText);
-            if (parsedSync) {
-              scanner.stop();
-              setStatus({ type: "info", msg: "Code erkannt! Verbinde..." });
-              setRoomId(parsedSync.room);
-              setEncryptionKey(parsedSync.key);
-              setupSocketAndRelay(parsedSync.room, parsedSync.key, true);
-            }
-          },
-          (error) => {
-            // ignore scan errors
+          { fps: 12, qrbox: { width: 260, height: 260 } },
+          (decodedText) => void handleScanResult(decodedText),
+          () => {
+            /* Einzelne Fehlscans ignorieren */
           }
         );
-        setStatus({ type: "info", msg: "Bitte QR-Code des anderen Geräts scannen." });
+        setStatus({
+          type: "info",
+          msg: "Kamera aktiv. Richten Sie sie auf den QR-Code des sendenden Geräts.",
+        });
       } catch (err) {
-        setStatus({ type: "error", msg: "Kamera konnte nicht gestartet werden. Bitte Berechtigungen prüfen." });
+        console.error("Camera error", err);
+        setStatus({
+          type: "error",
+          msg: "Kamera konnte nicht gestartet werden. Bitte Kamera-Berechtigung in den Browser-Einstellungen prüfen.",
+        });
       }
     }, 100);
   };
 
-  const sendData = async () => {
-    await sendPayload(socket, roomId, encryptionKey);
+  const handleScanResult = async (decodedText: string) => {
+    const chunk = parseChunk(decodedText);
+    if (!chunk) return;
+
+    const map = receivedRef.current;
+
+    // Neuer Transfer? Alles zurücksetzen.
+    const existing = map.values().next().value as ParsedChunk | undefined;
+    if (existing && (existing.id !== chunk.id || existing.total !== chunk.total)) {
+      map.clear();
+    }
+
+    if (!map.has(chunk.seq)) {
+      map.set(chunk.seq, chunk);
+      setReceivedCount(map.size);
+      setExpectedTotal(chunk.total);
+      setStatus({
+        type: "info",
+        msg: `Teil ${map.size} von ${chunk.total} empfangen...`,
+      });
+    }
+
+    if (map.size === chunk.total) {
+      stopScanner();
+      try {
+        const sorted = Array.from(map.values()).sort((a, b) => a.seq - b.seq);
+        const base64 = sorted.map((c) => c.data).join("");
+        const jsonStr = await decompressString(base64, sorted[0].compressed);
+        JSON.parse(jsonStr); // Validierung
+        setPendingImport(jsonStr);
+        setMode("confirm");
+        setStatus({
+          type: "success",
+          msg: "Alle Daten vollständig empfangen. Bitte Übernahme bestätigen.",
+        });
+      } catch (err) {
+        console.error("Sync assemble error", err);
+        map.clear();
+        setReceivedCount(0);
+        setStatus({
+          type: "error",
+          msg: "Daten konnten nicht gelesen werden. Bitte Vorgang neu starten.",
+        });
+        setMode("select");
+      }
+    }
   };
 
-  const renderSyncSteps = () => {
-    const currentStep =
-      mode === "select" ? 1 : mode === "host" || mode === "scan" ? 2 : 3;
+  const applyImport = () => {
+    if (!pendingImport) return;
+    onImport(pendingImport);
+    setPendingImport(null);
+  };
 
+  // --- Schritt-Anzeige ---
+  const renderSyncSteps = () => {
+    const currentStep = mode === "select" ? 1 : mode === "confirm" ? 3 : 2;
     return (
-      <div className="mb-5 grid grid-cols-3 gap-2 text-[11px] uppercase font-black tracking-[0.18em] text-[var(--text-muted)]">
+      <ol className="mb-5 grid grid-cols-3 gap-2 text-[11px] uppercase font-black tracking-[0.18em] text-[var(--text-muted)] list-none p-0">
         {[
-          { label: "1. Wahl", active: currentStep === 1, help: "Gerät auswählen" },
-          { label: "2. Verbindung", active: currentStep === 2, help: "QR-Code nutzen" },
-          { label: "3. Sync", active: currentStep === 3, help: "Daten übertragen" },
-        ].map((step) => (
-          <div
+          { label: "1. Wahl", help: "Senden oder Empfangen" },
+          { label: "2. QR-Code", help: "Zeigen & Scannen" },
+          { label: "3. Fertig", help: "Daten übernehmen" },
+        ].map((step, idx) => (
+          <li
             key={step.label}
+            aria-current={currentStep === idx + 1 ? "step" : undefined}
             className={`rounded-2xl border px-3 py-2 text-center ${
-              step.active
+              currentStep === idx + 1
                 ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--text-color)]"
                 : "border-[var(--border-color)] bg-[var(--bg-color)]"
             }`}
           >
             <div className="text-[9px] font-black mb-1">{step.label}</div>
             <div className="text-[10px] font-semibold">{step.help}</div>
-          </div>
+          </li>
         ))}
-      </div>
+      </ol>
     );
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sync-modal-title"
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
+        ref={modalRef}
         className="bg-[var(--card-bg)] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-[var(--border-color)] flex flex-col max-h-[90vh]"
       >
         <div className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-color)]">
-          <h2 className="font-bold text-lg flex items-center gap-2">
-            <ArrowRightLeft className="w-5 h-5 text-[var(--accent)]" />
+          <h2 id="sync-modal-title" className="font-bold text-lg flex items-center gap-2">
+            <ArrowRightLeft className="w-5 h-5 text-[var(--accent)]" aria-hidden="true" />
             Geräte-Synchronisation
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors">
-            <X className="w-5 h-5" />
+          <button
+            ref={closeButtonRef}
+            onClick={onClose}
+            aria-label="Synchronisation schließen"
+            className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
         <div className="p-6 overflow-y-auto">
           {renderSyncSteps()}
-          {status && (
-            <div className={`mb-6 p-4 rounded-xl text-sm flex items-start gap-3 ${
-              status.type === "success" ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" :
-              status.type === "error" ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" :
-              "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-            }`}>
-              {status.type === "success" ? <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> : <AlertTriangle className="w-5 h-5 flex-shrink-0" />}
-              <span className="leading-tight">{status.msg}</span>
-            </div>
-          )}
+
+          {/* Statusmeldung: für Screenreader live mitgelesen */}
+          <div role="status" aria-live="polite" aria-atomic="true">
+            {status && (
+              <div
+                className={`mb-6 p-4 rounded-xl text-sm flex items-start gap-3 ${
+                  status.type === "success"
+                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                    : status.type === "error"
+                      ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                      : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                }`}
+              >
+                {status.type === "success" ? (
+                  <CheckCircle2 className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                )}
+                <span className="leading-tight">{status.msg}</span>
+              </div>
+            )}
+          </div>
 
           {mode === "select" && (
             <div className="space-y-4">
-              <p className="text-sm text-[var(--text-muted)] mb-6">
-                Verbinden Sie Smartphone und Desktop sicher für einen parallelen Arbeitsablauf. Die Daten werden direkt Ende-zu-Ende verschlüsselt übertragen und nicht zentral gespeichert.
-              </p>
-              <button
-                onClick={startHost}
-                className="w-full p-4 rounded-xl border border-[var(--border-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all flex items-center gap-4 text-left group"
-              >
-                <div className="w-12 h-12 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] group-hover:scale-110 transition-transform">
-                  <Laptop className="w-6 h-6" />
-                </div>
-                <div>
-                  <div className="font-bold text-[var(--text-color)]">Dieses Gerät anzeigen</div>
-                  <div className="text-xs text-[var(--text-muted)]">Generiert einen QR-Code zum Scannen</div>
-                </div>
-              </button>
-
-              <button
-                onClick={startScan}
-                className="w-full p-4 rounded-xl border border-[var(--border-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all flex items-center gap-4 text-left group"
-              >
-                <div className="w-12 h-12 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] group-hover:scale-110 transition-transform">
-                  <Smartphone className="w-6 h-6" />
-                </div>
-                <div>
-                  <div className="font-bold text-[var(--text-color)]">Anderes Gerät scannen</div>
-                  <div className="text-xs text-[var(--text-muted)]">Öffnet die Kamera (iOS & Android)</div>
-                </div>
-              </button>
-            </div>
-          )}
-
-          {mode === "host" && (
-            <div className="flex flex-col items-center justify-center py-6">
-              <div className="bg-white p-4 rounded-xl shadow-sm mb-6">
-                <QRCodeSVG value={`${window.location.origin}${window.location.pathname}${window.location.search}#sync=${roomId}:${encryptionKey}`} size={200} />
+              <div className="mb-6 p-4 rounded-xl bg-[var(--bg-color)] border border-[var(--border-color)] flex items-start gap-3">
+                <ShieldCheck className="w-6 h-6 text-[var(--accent)] flex-shrink-0 mt-0.5" aria-hidden="true" />
+                <p className="text-sm text-[var(--text-muted)]">
+                  <strong className="text-[var(--text-color)]">100 % offline &amp; DSGVO-konform:</strong>{" "}
+                  Die Übertragung läuft direkt von Bildschirm zu Kamera – ohne Internet, ohne Server, ohne
+                  Zwischenspeicherung.
+                </p>
               </div>
-              <p className="text-sm text-center text-[var(--text-muted)] max-w-[280px]">
-                Scannen Sie diesen Code mit der normalen <strong>Kamera-App Ihres Smartphones</strong>, um die App automatisch zu öffnen und zu verbinden.
+
+              <button
+                onClick={startSend}
+                className="w-full p-4 rounded-xl border border-[var(--border-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all flex items-center gap-4 text-left group cursor-pointer"
+              >
+                <div className="w-12 h-12 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] group-hover:scale-110 transition-transform">
+                  <Monitor className="w-6 h-6" aria-hidden="true" />
+                </div>
+                <div>
+                  <div className="font-bold text-[var(--text-color)]">Daten senden</div>
+                  <div className="text-xs text-[var(--text-muted)]">
+                    Dieses Gerät zeigt QR-Codes an (z. B. der PC)
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={startReceive}
+                className="w-full p-4 rounded-xl border border-[var(--border-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all flex items-center gap-4 text-left group cursor-pointer"
+              >
+                <div className="w-12 h-12 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] group-hover:scale-110 transition-transform">
+                  <Smartphone className="w-6 h-6" aria-hidden="true" />
+                </div>
+                <div>
+                  <div className="font-bold text-[var(--text-color)]">Daten empfangen</div>
+                  <div className="text-xs text-[var(--text-muted)]">
+                    Dieses Gerät scannt mit der Kamera (iOS &amp; Android)
+                  </div>
+                </div>
+              </button>
+
+              <p className="text-xs text-[var(--text-muted)] pt-2">
+                Tipp: Bei sehr großen Datenmengen können Sie alternativ die verschlüsselte
+                Backup-Datei nutzen (Optionen → Backup).
+              </p>
+            </div>
+          )}
+
+          {mode === "send" && chunks.length > 0 && (
+            <div className="flex flex-col items-center justify-center py-2">
+              <div className="bg-white p-4 rounded-xl shadow-sm mb-4">
+                <QRCodeSVG value={chunks[currentChunk]} size={230} marginSize={1} />
+              </div>
+
+              {chunks.length > 1 && (
+                <>
+                  <p className="text-sm font-bold text-[var(--text-color)] mb-3" aria-hidden="true">
+                    Code {currentChunk + 1} von {chunks.length}
+                  </p>
+                  <div
+                    className="flex items-center gap-2 mb-4"
+                    role="group"
+                    aria-label="Steuerung der QR-Code-Rotation"
+                  >
+                    <button
+                      onClick={() => {
+                        setIsPlaying(false);
+                        setCurrentChunk((prev) => (prev - 1 + chunks.length) % chunks.length);
+                      }}
+                      aria-label="Vorheriger QR-Code"
+                      className="p-3 rounded-full border border-[var(--border-color)] hover:bg-[var(--bg-color)] cursor-pointer"
+                    >
+                      <ChevronLeft className="w-5 h-5" aria-hidden="true" />
+                    </button>
+                    <button
+                      onClick={() => setIsPlaying((p) => !p)}
+                      aria-label={isPlaying ? "Rotation pausieren" : "Rotation fortsetzen"}
+                      aria-pressed={!isPlaying}
+                      className="p-3 rounded-full border border-[var(--border-color)] hover:bg-[var(--bg-color)] cursor-pointer"
+                    >
+                      {isPlaying ? (
+                        <Pause className="w-5 h-5" aria-hidden="true" />
+                      ) : (
+                        <Play className="w-5 h-5" aria-hidden="true" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsPlaying(false);
+                        setCurrentChunk((prev) => (prev + 1) % chunks.length);
+                      }}
+                      aria-label="Nächster QR-Code"
+                      className="p-3 rounded-full border border-[var(--border-color)] hover:bg-[var(--bg-color)] cursor-pointer"
+                    >
+                      <ChevronRight className="w-5 h-5" aria-hidden="true" />
+                    </button>
+                  </div>
+                </>
+              )}
+
+              <p className="text-sm text-center text-[var(--text-muted)] max-w-[300px]">
+                Öffnen Sie auf dem anderen Gerät die App, wählen Sie{" "}
+                <strong>Sync → Daten empfangen</strong> und halten Sie die Kamera vor diesen Bildschirm.
               </p>
               <button
-                type="button"
-                onClick={copySyncLink}
-                className="mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--border-color)] px-4 py-2 text-sm font-semibold text-[var(--text-color)]"
+                onClick={resetState}
+                className="mt-6 text-sm text-[var(--accent)] font-semibold hover:underline cursor-pointer"
               >
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copied ? "Link kopiert" : "Link kopieren"}
-              </button>
-              <button onClick={resetState} className="mt-8 text-sm text-[var(--accent)] font-semibold hover:underline">
                 Abbrechen
               </button>
             </div>
           )}
 
-          {mode === "scan" && (
+          {mode === "receive" && (
             <div className="flex flex-col items-center justify-center">
-              <div id="reader" className="w-full max-w-[300px] overflow-hidden rounded-xl border-2 border-[var(--accent)] mb-6 bg-black" />
-              <p className="text-sm text-center text-[var(--text-muted)] mb-6">
-                Zentrieren Sie den QR-Code des anderen Geräts im Rahmen. Für Screenreader-Nutzer wird der Status direkt mitgelesen.
+              <div
+                id="reader"
+                className="w-full max-w-[300px] overflow-hidden rounded-xl border-2 border-[var(--accent)] mb-4 bg-black"
+                aria-label="Kamera-Vorschau für QR-Code-Scan"
+              />
+
+              {expectedTotal > 1 && (
+                <div className="w-full max-w-[300px] mb-4">
+                  <div
+                    className="h-3 w-full rounded-full bg-[var(--bg-color)] border border-[var(--border-color)] overflow-hidden"
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={expectedTotal}
+                    aria-valuenow={receivedCount}
+                    aria-label={`${receivedCount} von ${expectedTotal} Datenteilen empfangen`}
+                  >
+                    <div
+                      className="h-full bg-[var(--accent)] transition-all"
+                      style={{ width: `${Math.round((receivedCount / expectedTotal) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-center font-bold text-[var(--text-muted)] mt-1.5">
+                    {receivedCount} von {expectedTotal} Teilen
+                  </p>
+                </div>
+              )}
+
+              <p className="text-sm text-center text-[var(--text-muted)] mb-4 flex items-center gap-2">
+                <Camera className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                Zentrieren Sie den QR-Code des anderen Geräts im Rahmen. Der Fortschritt wird laufend angesagt.
               </p>
-              <button onClick={resetState} className="text-sm text-[var(--accent)] font-semibold hover:underline">
+              <button
+                onClick={resetState}
+                className="text-sm text-[var(--accent)] font-semibold hover:underline cursor-pointer"
+              >
                 Abbrechen
               </button>
             </div>
           )}
 
-          {mode === "connected" && (
+          {mode === "confirm" && (
             <div className="space-y-6">
               <div className="flex items-center justify-center gap-4 py-4 text-[var(--accent)]">
-                <Laptop className="w-8 h-8" />
-                <ArrowRightLeft className="w-6 h-6 animate-pulse" />
-                <Smartphone className="w-8 h-8" />
+                <Monitor className="w-8 h-8" aria-hidden="true" />
+                <CheckCircle2 className="w-6 h-6" aria-hidden="true" />
+                <Smartphone className="w-8 h-8" aria-hidden="true" />
               </div>
               <p className="text-sm text-center font-medium">
-                Sichere Verbindung hergestellt!
+                Daten vollständig empfangen. Beim Übernehmen werden die{" "}
+                <strong>lokalen Daten dieses Geräts überschrieben</strong>.
               </p>
-              
+
               <button
-                onClick={sendData}
-                className="w-full py-3.5 px-4 rounded-xl font-bold bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 transition-all flex justify-center items-center gap-2"
+                onClick={applyImport}
+                className="w-full py-3.5 px-4 rounded-xl font-bold bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 transition-all flex justify-center items-center gap-2 cursor-pointer"
               >
-                <ArrowRightLeft className="w-5 h-5" />
-                Meine Daten jetzt dorthin senden
+                <CheckCircle2 className="w-5 h-5" aria-hidden="true" />
+                Daten jetzt übernehmen
               </button>
 
-              <p className="text-xs text-center text-[var(--text-muted)] mt-4 px-4">
-                Hinweis: Die Daten werden automatisch gesendet, sobald die Verbindung steht. Der Transfer erfolgt komplett Ende-zu-Ende-verschlüsselt.
-              </p>
-              
-              <button onClick={resetState} className="w-full mt-4 text-sm text-[var(--text-muted)] font-semibold hover:underline">
-                Verbindung trennen
+              <button
+                onClick={resetState}
+                className="w-full text-sm text-[var(--text-muted)] font-semibold hover:underline cursor-pointer"
+              >
+                Verwerfen und zurück
               </button>
             </div>
           )}

@@ -2,16 +2,19 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <!-- Barrierefreiheit: Zoom muss erlaubt bleiben (WCAG 1.4.4) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>RV Monatsreport - Barrierefrei</title>
-    
+
     <meta name="theme-color" content="#1e293b">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="RV Monatsreport">
-    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExNSIgZmlsbD0iIzFlMjkzYiIvPjxyZWN0IHg9IjE1MCIgeT0iMjgwIiB3aWR0aD0iNTAiIGhlaWdodD0iMTIwIiByeD0iMTAiIGZpbGw9IiMxNTgwM2QiLz48cmVjdCB4PSIyMzAiIHk9IjIwMCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjIwMCIgcng9IjEwIiBmaWxsPSIjMTU4MDNkIi8+PHJlY3QgeD0iMzEwIiB5PSIxMjAiIHdpZHRoPSI1MCIgaGVpZ2h0PSIyODAiIHJ4PSIjMTU4MDNkIi8+PHRleHQgeD0iMjU2IiB5PSI0NjAiIGZvbnQtZmFtaWx5PSItYXBwbGUtc3lzdGVtLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iODAwIiBmb250LXNpemU9IjYwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5SViBSRVBPUlQ8L3RleHQ+PC9zdmc+">
-    
-    <link rel="manifest" href='data:application/manifest+json;utf-8,{"name":"RV Monatsreport","short_name":"RV Report","start_url":".","display":"standalone","background_color":"#f8fafc","theme_color":"#1e293b","icons":[{"src":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExNSIgZmlsbD0iIzFlMjkzYiIvPjxyZWN0IHg9IjE1MCIgeT0iMjgwIiB3aWR0aD0iNTAiIGhlaWdodD0iMTIwIiByeD0iMTAiIGZpbGw9IiMxNTgwM2QiLz48cmVjdCB4PSIyMzAiIHk9IjIwMCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjIwMCIgcng9IjEwIiBmaWxsPSIjMTU4MDNkIi8+PHJlY3QgeD0iMzEwIiB5PSIxMjAiIHdpZHRoPSI1MCIgaGVpZ2h0PSIyODAiIHJ4PSIjMTU4MDNkIi8+PHRleHQgeD0iMjU2IiB5PSI0NjAiIGZvbnQtZmFtaWx5PSItYXBwbGUtc3lzdGVtLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iODAwIiBmb250LXNpemU9IjYwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5SViBSRVBPUlQ8L3RleHQ+PC9zdmc+==\u003d","sizes":"512x512","type":"image/svg+xml"}]}'>
+    <!-- iOS benoetigt echte PNG-Dateien (data:-URLs werden ignoriert) -->
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+
+    <link rel="manifest" href="./manifest.webmanifest">
   </head>
   <body>
     <div id="root"></div>
@@ -21,15 +24,15 @@
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('./sw.js').then((reg) => {
             console.log('PWA ServiceWorker registered successfully:', reg.scope);
-            
-            // Check for updates
+
+            // Sanfter Update-Flow: Nutzer entscheidet selbst, wann neu geladen
+            // wird (kein erzwungener Reload mitten in der Dateneingabe).
             reg.addEventListener('updatefound', () => {
               const newWorker = reg.installing;
               if (newWorker) {
                 newWorker.addEventListener('statechange', () => {
                   if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    console.log('New content available, reloading...');
-                    window.location.reload();
+                    showUpdateToast(newWorker);
                   }
                 });
               }
@@ -39,7 +42,7 @@
           });
         });
 
-        // Ensure refreshing the page when the service worker is activated
+        // Seite neu laden, sobald der neue Service Worker aktiv ist
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           if (!refreshing) {
@@ -47,8 +50,30 @@
             window.location.reload();
           }
         });
+
+        function showUpdateToast(worker) {
+          if (document.getElementById('sw-update-toast')) return;
+          const toast = document.createElement('div');
+          toast.id = 'sw-update-toast';
+          toast.setAttribute('role', 'alert');
+          toast.style.cssText = 'position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);z-index:99999;background:#1e293b;color:#fff;padding:0.9rem 1.1rem;border-radius:9999px;display:flex;gap:0.75rem;align-items:center;font-family:system-ui,sans-serif;font-size:0.9rem;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,0.35);max-width:92vw;';
+          const text = document.createElement('span');
+          text.textContent = 'Neue Version verf\u00fcgbar.';
+          const btn = document.createElement('button');
+          btn.textContent = 'Jetzt aktualisieren';
+          btn.style.cssText = 'background:#22c55e;color:#052e16;border:0;border-radius:9999px;padding:0.5rem 0.9rem;font-weight:800;cursor:pointer;font-size:0.85rem;';
+          btn.addEventListener('click', () => {
+            worker.postMessage({ type: 'SKIP_WAITING' });
+          });
+          const later = document.createElement('button');
+          later.textContent = 'Sp\u00e4ter';
+          later.setAttribute('aria-label', 'Update sp\u00e4ter installieren');
+          later.style.cssText = 'background:transparent;color:#cbd5e1;border:0;font-weight:700;cursor:pointer;font-size:0.85rem;';
+          later.addEventListener('click', () => toast.remove());
+          toast.append(text, btn, later);
+          document.body.appendChild(toast);
+        }
       }
     </script>
   </body>
 </html>
-

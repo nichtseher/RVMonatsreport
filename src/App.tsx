@@ -187,12 +187,7 @@ const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
 
 export default function App() {
   // --- ROUTING / NAVIGATION STATE ---
-  const [activeTab, setActiveTab] = useState<"form" | "time" | "stats" | "history" | "options" | "help" | "backup" | "manage" | "carryover" | "sync" | "changelog">(() => {
-    if (typeof window !== "undefined" && window.location.hash.startsWith("#sync=")) {
-      return "sync";
-    }
-    return "form";
-  });
+  const [activeTab, setActiveTab] = useState<"form" | "time" | "stats" | "history" | "options" | "help" | "backup" | "manage" | "carryover" | "sync" | "changelog">("form");
 
   // --- STATE ---
   const [appFields, setAppFields] = useState<SectionsConfig>(() => {
@@ -1415,67 +1410,43 @@ export default function App() {
   };
 
   
-  // --- OFFLINE SYNC (Send to VL) ---
-  useEffect(() => {
-    if (typeof navigator !== "undefined" && navigator.serviceWorker) {
-      navigator.serviceWorker.addEventListener("message", (event) => {
-        if (event.data && event.data.type === 'SYNC_SUCCESS') {
-          triggerToast("Bericht " + event.data.month + " wurde erfolgreich im Hintergrund versendet!");
-          announceToAriaAndSpeech("Bericht erfolgreich versendet.");
-        }
-      });
-    }
-  }, []);
-
+  // --- BERICHT AN VL SENDEN (serverlos über den Teilen-Dialog) ---
   const handleSendToVL = async () => {
     triggerHaptic(25);
     if (!reportData) return;
-    
-    const request = indexedDB.open('rv-sync-db', 1);
-    
-    request.onupgradeneeded = (e: any) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains('sync-queue')) {
-        db.createObjectStore('sync-queue', { keyPath: 'id' });
-      }
-    };
-    
-    request.onsuccess = async (e: any) => {
-      const db = e.target.result;
-      const tx = db.transaction('sync-queue', 'readwrite');
-      const store = tx.objectStore('sync-queue');
-      const syncRecord = {
-        id: Date.now().toString(),
-        data: JSON.parse(JSON.stringify(reportData)),
-        timestamp: new Date().toISOString()
-      };
-      store.add(syncRecord);
-      
-      tx.oncomplete = async () => {
-        if ('serviceWorker' in navigator && 'SyncManager' in window) {
-          try {
-            const registration = await navigator.serviceWorker.ready;
-            await (registration as any).sync.register('sync-reports');
-            triggerToast("Report wurde in die Sende-Warteschlange (Offline-Sync) gestellt.");
-            announceToAriaAndSpeech("Report zum Senden eingereiht.");
-          } catch (err) {
-            console.error("Background sync failed to register", err);
-            triggerToast("Report in der Warteschlange gespeichert.");
-          }
-        } else {
-          // Fallback if background sync is not supported
-          triggerToast("Ihr Browser unterstützt keinen Background Sync. Gespeichert für späteren Versand.");
-        }
-      };
-    };
-    
-    request.onerror = (e) => {
-      console.error("Failed to open sync DB", e);
-      triggerToast("Fehler beim Vorbereiten des Versands.");
-    };
+    // DSGVO-konform ohne Server: Der Bericht wird als Excel-Datei über den
+    // System-Teilen-Dialog (z. B. E-Mail an die VL) weitergegeben.
+    announceToAriaAndSpeech("Teilen-Dialog wird geöffnet, um den Bericht an die VL zu senden.");
+    await handleExportExcel();
   };
 
-  
+  // --- LOKALE MONATSBERICHT-ERINNERUNG (serverlos, ohne Push-Dienst) ---
+  useEffect(() => {
+    if (!reportData) return;
+    if (localStorage.getItem("aussendienst_pwa_reminder") !== "true") return;
+    const now = new Date();
+    if (now.getDate() < 8) return;
+    const monthKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+    const doneKey = "aussendienst_pwa_reminder_done_" + monthKey;
+    if (localStorage.getItem(doneKey)) return;
+    localStorage.setItem(doneKey, "1");
+    const reminderText = "Erinnerung: Bitte denken Sie an die Abgabe des Monatsberichts an die VL.";
+    triggerToast(reminderText);
+    announceToAriaAndSpeech(reminderText);
+    if ("Notification" in window && Notification.permission === "granted" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.ready
+        .then((reg) =>
+          reg.showNotification("RV Monatsreport", {
+            body: reminderText,
+            icon: "./icon-192.png",
+            badge: "./icon-192.png",
+          }),
+        )
+        .catch(() => {});
+    }
+    // Läuft bewusst nur einmal pro Monat (doneKey-Sperre in localStorage).
+  }, [reportData?.month]);
+
   // --- TEMPLATES ---
   const applyTemplate = (templateName: string) => {
     triggerHaptic(20);
@@ -1875,13 +1846,7 @@ export default function App() {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [reportData]);
 
-  // Check for sync hash on load
-  useEffect(() => {
-    if (window.location.hash.startsWith("#sync=")) {
-      setActiveTab("sync");
-    }
-  }, []);
-
+  
   if (!reportData || !history) {
     return <div className="flex h-screen w-screen items-center justify-center bg-gray-100 text-gray-500">Lade Daten...</div>;
   }
@@ -2972,7 +2937,7 @@ export default function App() {
             className="w-full py-4 px-6 rounded-2xl font-bold bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-base flex items-center justify-center gap-2.5 shadow-sm cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-4"
           >
             <span className="text-xl">🚀</span>
-            <span>Direkt an VL senden</span>
+            <span>Bericht an VL senden (Teilen/E-Mail)</span>
           </button>
         </div>
       </section>

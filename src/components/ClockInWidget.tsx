@@ -74,7 +74,7 @@ export default React.memo(function ClockInWidget({
     useState<string>("");
 
   // Month calculation for manual date boundaries
-  const currentYearMonth = new Date().toISOString().substring(0, 7); // e.g., "2026-07"
+  const currentYearMonth = new Date().toLocaleDateString("sv-SE").substring(0, 7); // lokale Zeit statt UTC (Fix: falscher Monat nachts)
   const monthToUse = selectedMonth || currentYearMonth;
   const [year, month] = monthToUse.split("-");
   const minDate = `${monthToUse}-01`;
@@ -277,7 +277,7 @@ export default React.memo(function ClockInWidget({
       outMinutes += 24 * 60;
     }
 
-    const rawDiffMinutes = outMinutes - inMinutes;
+    const rawDiffMinutes = outMinutes >= inMinutes ? outMinutes - inMinutes : outMinutes + 24 * 60 - inMinutes; // Nachtschicht über Mitternacht
     const netMinutes = Math.max(0, rawDiffMinutes - breaks);
     return Math.round((netMinutes / 60) * 100) / 100;
   };

@@ -126,7 +126,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   title="Kann ich die App auf Handy und Laptop gleichzeitig nutzen?"
                 >
                   <p>Da die App offline arbeitet, synchronisieren sich Handy und Laptop <strong>nicht automatisch</strong> miteinander. Ein Eintrag auf dem Handy taucht nicht automatisch auf dem Laptop auf.</p>
-                  <p><strong>Tipp:</strong> Nutzen Sie am besten ein Hauptgerät (z.B. Ihr Diensthandy) für die tägliche Eingabe. Wenn Sie die Daten auf den Laptop übertragen möchten, nutzen Sie die Funktion "Sicheres Backup" unter "Optionen". Exportieren Sie dort die Datei auf dem Handy und importieren Sie sie auf dem Laptop.</p>
+                  <p><strong>Tipp:</strong> Nutzen Sie am besten ein Hauptgerät (z.B. Ihr Diensthandy) für die tägliche Eingabe. Wenn Sie die Daten auf den Laptop übertragen möchten, nutzen Sie den Geräte-Sync per QR-Code (Optionen → Sync) oder die Funktion "Sicheres Backup" unter "Optionen". Beides funktioniert komplett offline – ganz ohne Server.</p>
                 </FAQItem>
               </div>
             </div>
