@@ -2013,36 +2013,32 @@ export default function App() {
         </div>
       </header>
 
-      {/* ACCESSIBILITY & WORKFLOW QUICK HELP */}
-      <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/40" role="region" aria-label="Kurzhilfe für barrierefreie Bedienung">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Barrierefreie Arbeitsweise</p>
-            <p className="mt-1 text-sm font-semibold text-[var(--text-color)]">Mit Enter zwischen Feldern wechseln, mit Pfeiltasten Werte ändern und die Sprachansagen aktivieren.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setAccessibility((prev) => ({ ...prev, screenReaderNarration: !prev.screenReaderNarration }));
-                announceToAriaAndSpeech("Sprachansagen wurden aktualisiert.", true);
-              }}
-              className={`rounded-full px-3 py-1.5 text-xs font-black transition-all ${accessibility.screenReaderNarration ? "bg-emerald-600 text-white" : "bg-[var(--bg-color)] text-[var(--text-color)] border border-[var(--border-color)]"}`}
-            >
-              {accessibility.screenReaderNarration ? "Sprachansagen AN" : "Sprachansagen AUS"}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMobileComfortMode((prev) => !prev);
-                announceToAriaAndSpeech("Ein-Hand-Modus aktualisiert.", true);
-              }}
-              className={`rounded-full px-3 py-1.5 text-xs font-black transition-all ${mobileComfortMode ? "bg-indigo-600 text-white" : "bg-[var(--bg-color)] text-[var(--text-color)] border border-[var(--border-color)]"}`}
-            >
-              {mobileComfortMode ? "Ein-Hand AN" : "Ein-Hand AUS"}
-            </button>
-          </div>
-        </div>
+      {/* Schnell-Umschalter (kompakt): Sprachansage & Ein-Hand-Modus */}
+      <div className="mb-4 flex flex-wrap items-center gap-2" role="toolbar" aria-label="Schnell-Einstellungen">
+        <button
+          type="button"
+          aria-pressed={accessibility.screenReaderNarration}
+          onClick={() => {
+            setAccessibility((prev) => ({ ...prev, screenReaderNarration: !prev.screenReaderNarration }));
+            announceToAriaAndSpeech("Sprachansagen wurden aktualisiert.", true);
+          }}
+          className={`rounded-full px-3 py-1.5 text-xs font-black transition-all cursor-pointer ${accessibility.screenReaderNarration ? "bg-emerald-600 text-white" : "bg-[var(--bg-color)] text-[var(--text-color)] border border-[var(--border-color)]"}`}
+        >
+          {accessibility.screenReaderNarration ? "Sprachansagen AN" : "Sprachansagen AUS"}
+        </button>
+        {!isDesktop && (
+          <button
+            type="button"
+            aria-pressed={mobileComfortMode}
+            onClick={() => {
+              setMobileComfortMode((prev) => !prev);
+              announceToAriaAndSpeech("Ein-Hand-Modus aktualisiert.", true);
+            }}
+            className={`rounded-full px-3 py-1.5 text-xs font-black transition-all cursor-pointer ${mobileComfortMode ? "bg-indigo-600 text-white" : "bg-[var(--bg-color)] text-[var(--text-color)] border border-[var(--border-color)]"}`}
+          >
+            {mobileComfortMode ? "Ein-Hand AN" : "Ein-Hand AUS"}
+          </button>
+        )}
       </div>
 
       {/* MOBILE COMFORT ACTION BAR */}
@@ -2057,28 +2053,7 @@ export default function App() {
         </div>
       )}
 
-      {/* DESKTOP WORKFLOW SUMMARY */}
-      {isDesktop && (
-        <div className="mb-4 rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-4 shadow-sm" role="region" aria-label="Desktop-Übersicht">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Desktop-Workflow</p>
-              <h2 className="text-lg font-black text-[var(--text-color)]">Schneller Überblick für Tagesarbeit</h2>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => setActiveTab("time")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-3 py-1.5 text-xs font-black">Zeit erfassen</button>
-              <button type="button" onClick={() => setActiveTab("history")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-3 py-1.5 text-xs font-black">Archiv öffnen</button>
-            </div>
-          </div>
-          <div className="mt-3 grid gap-3 md:grid-cols-3">
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-sm font-semibold text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300">Aktueller Monat: {reportData?.month}</div>
-            <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3 text-sm font-semibold text-sky-800 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-300">Mitarbeiter: {reportData?.name || "Noch nicht erfasst"}</div>
-            <div className="rounded-xl border border-violet-200 bg-violet-50/70 p-3 text-sm font-semibold text-violet-800 dark:border-violet-900/40 dark:bg-violet-950/20 dark:text-violet-300">Schnellzugriff: Notizen, Zeit, Archiv</div>
-          </div>
-        </div>
-      )}
-
-      {/* DEADLINE NOTIFICATION BANNER (Sleeker & more compact) */}
+            {/* DEADLINE NOTIFICATION BANNER (Sleeker & more compact) */}
       <div
         role="alert"
         className={`p-3.5 mb-4 rounded-xl border flex gap-2.5 items-center text-xs font-semibold leading-snug ${
