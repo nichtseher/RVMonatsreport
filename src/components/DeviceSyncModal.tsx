@@ -12,6 +12,10 @@ import {
   ChevronRight,
   ShieldCheck,
   Camera,
+  Radio,
+  Link2,
+  Unplug,
+  GitMerge,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Html5Qrcode } from "html5-qrcode";
@@ -21,20 +25,29 @@ interface DeviceSyncModalProps {
   isOpen: boolean;
   onClose: () => void;
   onExport: () => string;
-  onImport: (data: string) => void;
+  onImport: (data: string, strategy: "merge" | "replace") => void | boolean;
+  onLiveMerge: (data: string) => void | boolean;
 }
 
 /**
  * Serverloser Geräte-Sync:
- * Die Daten werden ausschließlich optisch per QR-Code von Bildschirm zu
- * Kamera übertragen – komplett offline, ohne Server, ohne Internet.
- * Große Datenmengen werden komprimiert und in mehrere QR-Codes aufgeteilt,
- * die automatisch durchrotieren ("animierter QR-Code").
+ *
+ * 1. Einmal-Übertragung per QR-Code (Bildschirm → Kamera, komplett offline).
+ *    Beim Empfang kann gewählt werden: Zusammenführen (empfohlen) oder Ersetzen.
+ *
+ * 2. Live-Verbindung (WebRTC): Beide Geräte koppeln sich per QR-Code und
+ *    verbinden sich dann DIREKT miteinander (Peer-to-Peer, DTLS-verschlüsselt).
+ *    Bewusst ohne STUN-/TURN-Server konfiguriert: Es werden keine externen
+ *    Dienste kontaktiert, die Verbindung funktioniert im gleichen (W)LAN –
+ *    auch ganz ohne Internet. Solange die Verbindung steht, gleichen sich
+ *    beide Geräte automatisch ab (Zusammenführen, kein Überschreiben).
  */
 
 const PROTOCOL = "RV1";
 const CHUNK_SIZE = 450; // Zeichen pro QR-Code (zuverlässig scannbar)
 const CYCLE_MS = 650; // Rotationsgeschwindigkeit der QR-Codes
+const LIVE_SEND_INTERVAL_MS = 3000; // Abgleich-Intervall der Live-Verbindung
+const CHANNEL_PART_SIZE = 60000; // Zeichen pro DataChannel-Nachricht
 
 // --- Hilfsfunktionen ---------------------------------------------------
 
@@ -116,13 +129,16 @@ function parseChunk(text: string): ParsedChunk | null {
   };
 }
 
+type ScanPurpose = "data" | "offer" | "answer";
+type LiveStep = "offer" | "scan-answer" | "scan-offer" | "answer";
+
 // --- Komponente --------------------------------------------------------
 
-export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }: DeviceSyncModalProps) {
-  const [mode, setMode] = useState<"select" | "send" | "receive" | "confirm">("select");
+export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, onLiveMerge }: DeviceSyncModalProps) {
+  const [mode, setMode] = useState<"select" | "send" | "receive" | "confirm" | "live-host" | "live-join">("select");
   const [status, setStatus] = useState<{ type: "success" | "error" | "info"; msg: string } | null>(null);
 
-  // Sender-Zustand
+  // Sender-Zustand (QR-Anzeige, auch für Live-Kopplungscodes)
   const [chunks, setChunks] = useState<string[]>([]);
   const [currentChunk, setCurrentChunk] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -132,11 +148,29 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
   const [expectedTotal, setExpectedTotal] = useState(0);
   const [pendingImport, setPendingImport] = useState<string | null>(null);
 
+  // Live-Verbindung
+  const [liveStep, setLiveStep] = useState<LiveStep | null>(null);
+  const [liveConnected, setLiveConnected] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scanPurposeRef = useRef<ScanPurpose>("data");
   const receivedRef = useRef<Map<number, ParsedChunk>>(new Map());
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previouslyActiveRef = useRef<HTMLElement | null>(null);
+
+  const pcRef = useRef<RTCPeerConnection | null>(null);
+  const channelRef = useRef<RTCDataChannel | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastSentRef = useRef<string | null>(null);
+  const incomingPartsRef = useRef<{ id: string; total: number; parts: Map<number, string> } | null>(null);
+
+  // Props in Refs spiegeln, damit Intervalle/Callbacks immer den aktuellen Stand nutzen
+  const onExportRef = useRef(onExport);
+  onExportRef.current = onExport;
+  const onLiveMergeRef = useRef(onLiveMerge);
+  onLiveMergeRef.current = onLiveMerge;
 
   const stopScanner = useCallback(() => {
     if (scannerRef.current) {
@@ -150,8 +184,37 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
     }
   }, []);
 
+  const teardownLive = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+    if (channelRef.current) {
+      try {
+        channelRef.current.close();
+      } catch {
+        /* ignore */
+      }
+      channelRef.current = null;
+    }
+    if (pcRef.current) {
+      try {
+        pcRef.current.close();
+      } catch {
+        /* ignore */
+      }
+      pcRef.current = null;
+    }
+    lastSentRef.current = null;
+    incomingPartsRef.current = null;
+    setLiveConnected(false);
+    setLiveStep(null);
+    setLastSyncTime(null);
+  }, []);
+
   const resetState = useCallback(() => {
     stopScanner();
+    teardownLive();
     receivedRef.current = new Map();
     setMode("select");
     setStatus(null);
@@ -161,7 +224,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
     setReceivedCount(0);
     setExpectedTotal(0);
     setPendingImport(null);
-  }, [stopScanner]);
+  }, [stopScanner, teardownLive]);
 
   // Fokus-Falle + Escape (Barrierefreiheit)
   useEffect(() => {
@@ -205,29 +268,42 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
     }
   }, [isOpen, resetState]);
 
-  // QR-Code-Rotation (Sender)
+  // Beim Unmount Verbindung und Kamera sicher freigeben
   useEffect(() => {
-    if (mode !== "send" || chunks.length <= 1 || !isPlaying) return;
+    return () => {
+      stopScanner();
+      teardownLive();
+    };
+  }, [stopScanner, teardownLive]);
+
+  // QR-Code-Rotation (für Daten- und Kopplungscodes)
+  useEffect(() => {
+    if (chunks.length <= 1 || !isPlaying) return;
     const interval = setInterval(() => {
       setCurrentChunk((prev) => (prev + 1) % chunks.length);
     }, CYCLE_MS);
     return () => clearInterval(interval);
-  }, [mode, chunks.length, isPlaying]);
+  }, [chunks.length, isPlaying]);
 
-  // --- Sender ---
+  // --- QR-Chunks bauen (gemeinsam für Daten und Live-Kopplung) ---
+  const buildChunks = async (payloadStr: string): Promise<string[]> => {
+    const { data, compressed } = await compressString(payloadStr);
+    const id = secureTransferId();
+    const total = Math.max(1, Math.ceil(data.length / CHUNK_SIZE));
+    const flag = compressed ? "z" : "u";
+    const parts: string[] = [];
+    for (let i = 0; i < total; i++) {
+      const slice = data.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+      parts.push(`${PROTOCOL}|${id}|${i + 1}|${total}|${flag}|${slice}`);
+    }
+    return parts;
+  };
+
+  // --- Sender (Einmal-Übertragung) ---
   const startSend = async () => {
     try {
       setStatus({ type: "info", msg: "Daten werden vorbereitet..." });
-      const dataStr = onExport();
-      const { data, compressed } = await compressString(dataStr);
-      const id = secureTransferId();
-      const total = Math.max(1, Math.ceil(data.length / CHUNK_SIZE));
-      const flag = compressed ? "z" : "u";
-      const parts: string[] = [];
-      for (let i = 0; i < total; i++) {
-        const slice = data.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-        parts.push(`${PROTOCOL}|${id}|${i + 1}|${total}|${flag}|${slice}`);
-      }
+      const parts = await buildChunks(onExport());
       setChunks(parts);
       setCurrentChunk(0);
       setIsPlaying(true);
@@ -235,9 +311,9 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
       setStatus({
         type: "info",
         msg:
-          total === 1
+          parts.length === 1
             ? "Bereit. Scannen Sie den QR-Code mit dem anderen Gerät (in der App unter Sync → Empfangen)."
-            : `Bereit. ${total} QR-Codes rotieren automatisch. Halten Sie die Kamera des anderen Geräts ruhig davor, bis alle Teile empfangen wurden.`,
+            : `Bereit. ${parts.length} QR-Codes rotieren automatisch. Halten Sie die Kamera des anderen Geräts ruhig davor, bis alle Teile empfangen wurden.`,
       });
     } catch (err) {
       console.error("Sync prepare error", err);
@@ -245,13 +321,12 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
     }
   };
 
-  // --- Empfänger ---
-  const startReceive = () => {
+  // --- Scanner (gemeinsam für Daten, Verbindungs- und Antwort-Codes) ---
+  const beginScan = (purpose: ScanPurpose) => {
+    scanPurposeRef.current = purpose;
     receivedRef.current = new Map();
     setReceivedCount(0);
     setExpectedTotal(0);
-    setPendingImport(null);
-    setMode("receive");
     setStatus({ type: "info", msg: "Kamera wird gestartet..." });
 
     setTimeout(async () => {
@@ -268,7 +343,12 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
         );
         setStatus({
           type: "info",
-          msg: "Kamera aktiv. Richten Sie sie auf den QR-Code des sendenden Geräts.",
+          msg:
+            purpose === "data"
+              ? "Kamera aktiv. Richten Sie sie auf den QR-Code des sendenden Geräts."
+              : purpose === "offer"
+                ? "Kamera aktiv. Richten Sie sie auf den Verbindungscode von Gerät A."
+                : "Kamera aktiv. Richten Sie sie auf den Antwort-Code von Gerät B.",
         });
       } catch (err) {
         console.error("Camera error", err);
@@ -278,6 +358,12 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
         });
       }
     }, 100);
+  };
+
+  const startReceive = () => {
+    setPendingImport(null);
+    setMode("receive");
+    beginScan("data");
   };
 
   const handleScanResult = async (decodedText: string) => {
@@ -308,13 +394,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
         const sorted = (Array.from(map.values()) as ParsedChunk[]).sort((a, b) => a.seq - b.seq);
         const base64 = sorted.map((c) => c.data).join("");
         const jsonStr = await decompressString(base64, sorted[0].compressed);
-        JSON.parse(jsonStr); // Validierung
-        setPendingImport(jsonStr);
-        setMode("confirm");
-        setStatus({
-          type: "success",
-          msg: "Alle Daten vollständig empfangen. Bitte Übernahme bestätigen.",
-        });
+        handleAssembled(jsonStr);
       } catch (err) {
         console.error("Sync assemble error", err);
         map.clear();
@@ -328,13 +408,249 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
     }
   };
 
-  const applyImport = () => {
+  const handleAssembled = (jsonStr: string) => {
+    const purpose = scanPurposeRef.current;
+    let parsed: any;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch {
+      setStatus({ type: "error", msg: "Daten konnten nicht gelesen werden. Bitte Vorgang neu starten." });
+      setMode("select");
+      return;
+    }
+
+    if (purpose === "data") {
+      if (parsed && (parsed.k === "rvw-offer" || parsed.k === "rvw-answer")) {
+        setStatus({
+          type: "error",
+          msg: "Das war ein Kopplungscode für die Live-Verbindung. Bitte nutzen Sie dafür 'Live-Verbindung beitreten'.",
+        });
+        setMode("select");
+        return;
+      }
+      setPendingImport(jsonStr);
+      setMode("confirm");
+      setStatus({
+        type: "success",
+        msg: "Alle Daten vollständig empfangen. Bitte wählen Sie, wie die Daten übernommen werden sollen.",
+      });
+    } else if (purpose === "offer") {
+      void handleOfferScanned(parsed);
+    } else {
+      void handleAnswerScanned(parsed);
+    }
+  };
+
+  // --- Bestätigen (Einmal-Übertragung) ---
+  const applyImport = (strategy: "merge" | "replace") => {
     if (!pendingImport) return;
-    onImport(pendingImport);
+    onImport(pendingImport, strategy);
     setPendingImport(null);
   };
 
-  // --- Schritt-Anzeige ---
+  // --- Live-Verbindung (WebRTC, Peer-to-Peer, ohne externe Server) ---
+
+  const createPeer = (): RTCPeerConnection => {
+    // Bewusst OHNE STUN/TURN: keine externen Dienste (DSGVO).
+    // Dadurch funktioniert die Verbindung im gleichen (W)LAN – auch offline.
+    const pc = new RTCPeerConnection({ iceServers: [] });
+    pcRef.current = pc;
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
+        setLiveConnected(false);
+        setStatus({
+          type: "error",
+          msg: "Live-Verbindung getrennt. Sind beide Geräte im gleichen WLAN? Bitte neu koppeln.",
+        });
+      }
+    };
+    return pc;
+  };
+
+  const waitForIce = (pc: RTCPeerConnection): Promise<void> =>
+    new Promise((resolve) => {
+      if (pc.iceGatheringState === "complete") {
+        resolve();
+        return;
+      }
+      const timeout = setTimeout(resolve, 2500);
+      pc.onicegatheringstatechange = () => {
+        if (pc.iceGatheringState === "complete") {
+          clearTimeout(timeout);
+          resolve();
+        }
+      };
+    });
+
+  const sendFullState = useCallback(() => {
+    const ch = channelRef.current;
+    if (!ch || ch.readyState !== "open") return;
+    const data = onExportRef.current();
+    if (data === lastSentRef.current) return;
+    lastSentRef.current = data;
+    const id = secureTransferId();
+    const total = Math.max(1, Math.ceil(data.length / CHANNEL_PART_SIZE));
+    for (let i = 0; i < total; i++) {
+      ch.send(
+        JSON.stringify({
+          type: "full",
+          id,
+          seq: i + 1,
+          total,
+          data: data.slice(i * CHANNEL_PART_SIZE, (i + 1) * CHANNEL_PART_SIZE),
+        })
+      );
+    }
+  }, []);
+
+  const handleChannelMessage = useCallback((raw: string) => {
+    let msg: any;
+    try {
+      msg = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    if (!msg || msg.type !== "full" || typeof msg.data !== "string") return;
+
+    const buf = incomingPartsRef.current;
+    if (!buf || buf.id !== msg.id) {
+      incomingPartsRef.current = { id: msg.id, total: msg.total, parts: new Map() };
+    }
+    const current = incomingPartsRef.current!;
+    current.parts.set(msg.seq, msg.data);
+    if (current.parts.size < current.total) return;
+
+    const fullData = Array.from({ length: current.total }, (_, i) => current.parts.get(i + 1) || "").join("");
+    incomingPartsRef.current = null;
+
+    // Zusammenführen, ohne die eigene Antwort erneut zurückzuspiegeln:
+    // Nach dem Merge ändert sich der eigene Export – das Intervall sendet
+    // den neuen Stand automatisch. Identische Stände werden nicht erneut gesendet.
+    onLiveMergeRef.current(fullData);
+    const time = new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    setLastSyncTime(time);
+    setStatus({
+      type: "success",
+      msg: `Änderungen vom anderen Gerät übernommen (${time} Uhr). Beide Geräte sind auf dem gleichen Stand.`,
+    });
+  }, []);
+
+  const setupChannel = useCallback(
+    (ch: RTCDataChannel) => {
+      channelRef.current = ch;
+      ch.onopen = () => {
+        setLiveConnected(true);
+        setChunks([]);
+        stopScanner();
+        setStatus({
+          type: "success",
+          msg: "Live-Verbindung hergestellt! Die Daten beider Geräte werden jetzt automatisch zusammengeführt.",
+        });
+        sendFullState();
+        if (pollRef.current) clearInterval(pollRef.current);
+        pollRef.current = setInterval(sendFullState, LIVE_SEND_INTERVAL_MS);
+      };
+      ch.onmessage = (ev) => {
+        if (typeof ev.data === "string") handleChannelMessage(ev.data);
+      };
+      ch.onclose = () => {
+        setLiveConnected(false);
+      };
+    },
+    [sendFullState, handleChannelMessage, stopScanner]
+  );
+
+  /** Gerät A: Verbindung anbieten */
+  const startLiveHost = async () => {
+    try {
+      setMode("live-host");
+      setLiveStep("offer");
+      setStatus({ type: "info", msg: "Verbindungscode wird erstellt..." });
+      const pc = createPeer();
+      setupChannel(pc.createDataChannel("rvsync"));
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await waitForIce(pc);
+      const payload = JSON.stringify({ k: "rvw-offer", sdp: pc.localDescription });
+      const parts = await buildChunks(payload);
+      setChunks(parts);
+      setCurrentChunk(0);
+      setIsPlaying(true);
+      setStatus({
+        type: "info",
+        msg: "Schritt 1: Scannen Sie diesen Verbindungscode mit dem anderen Gerät (Sync → Live-Verbindung beitreten). Wählen Sie danach hier 'Antwort-Code scannen'.",
+      });
+    } catch (err) {
+      console.error("Live host error", err);
+      setStatus({ type: "error", msg: "Live-Verbindung konnte nicht vorbereitet werden." });
+      resetState();
+    }
+  };
+
+  /** Gerät A: Antwort von Gerät B scannen */
+  const startScanAnswer = () => {
+    setChunks([]);
+    setLiveStep("scan-answer");
+    beginScan("answer");
+  };
+
+  const handleAnswerScanned = async (parsed: any) => {
+    if (!parsed || parsed.k !== "rvw-answer" || !parsed.sdp) {
+      setStatus({
+        type: "error",
+        msg: "Das war kein Antwort-Code. Bitte scannen Sie den Code, den Gerät B nach dem Beitreten anzeigt.",
+      });
+      return;
+    }
+    try {
+      await pcRef.current?.setRemoteDescription(parsed.sdp as RTCSessionDescriptionInit);
+      setStatus({ type: "info", msg: "Verbindung wird aufgebaut... einen Moment bitte." });
+    } catch (err) {
+      console.error("setRemoteDescription (answer) failed", err);
+      setStatus({ type: "error", msg: "Verbindung fehlgeschlagen. Bitte Kopplung neu starten." });
+    }
+  };
+
+  /** Gerät B: Verbindung beitreten */
+  const startLiveJoin = () => {
+    setMode("live-join");
+    setLiveStep("scan-offer");
+    beginScan("offer");
+  };
+
+  const handleOfferScanned = async (parsed: any) => {
+    if (!parsed || parsed.k !== "rvw-offer" || !parsed.sdp) {
+      setStatus({
+        type: "error",
+        msg: "Das war kein Verbindungscode. Bitte scannen Sie den Code von Gerät A (Live-Verbindung starten).",
+      });
+      return;
+    }
+    try {
+      const pc = createPeer();
+      pc.ondatachannel = (ev) => setupChannel(ev.channel);
+      await pc.setRemoteDescription(parsed.sdp as RTCSessionDescriptionInit);
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      await waitForIce(pc);
+      const payload = JSON.stringify({ k: "rvw-answer", sdp: pc.localDescription });
+      const parts = await buildChunks(payload);
+      setChunks(parts);
+      setCurrentChunk(0);
+      setIsPlaying(true);
+      setLiveStep("answer");
+      setStatus({
+        type: "info",
+        msg: "Schritt 2: Zeigen Sie diesen Antwort-Code dem Gerät A (dort 'Antwort-Code scannen' wählen). Die Verbindung startet dann automatisch.",
+      });
+    } catch (err) {
+      console.error("Live join error", err);
+      setStatus({ type: "error", msg: "Beitritt fehlgeschlagen. Bitte Kopplung neu starten." });
+    }
+  };
+
+  // --- Anzeige-Bausteine -------------------------------------------------
+
   const renderSyncSteps = () => {
     const currentStep = mode === "select" ? 1 : mode === "confirm" ? 3 : 2;
     return (
@@ -360,6 +676,132 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
       </ol>
     );
   };
+
+  const renderChunkDisplay = (label: string) => (
+    <div className="flex flex-col items-center justify-center py-2">
+      <div className="bg-white p-4 rounded-xl shadow-sm mb-4">
+        <QRCodeSVG value={chunks[currentChunk]} size={230} marginSize={1} />
+      </div>
+
+      {chunks.length > 1 && (
+        <>
+          <p className="text-sm font-bold text-[var(--text-color)] mb-3" aria-hidden="true">
+            Code {currentChunk + 1} von {chunks.length}
+          </p>
+          <div
+            className="flex items-center gap-2 mb-4"
+            role="group"
+            aria-label="Steuerung der QR-Code-Rotation"
+          >
+            <button
+              onClick={() => {
+                setIsPlaying(false);
+                setCurrentChunk((prev) => (prev - 1 + chunks.length) % chunks.length);
+              }}
+              aria-label="Vorheriger QR-Code"
+              className="p-3 rounded-full border border-[var(--border-color)] hover:bg-[var(--bg-color)] cursor-pointer"
+            >
+              <ChevronLeft className="w-5 h-5" aria-hidden="true" />
+            </button>
+            <button
+              onClick={() => setIsPlaying((p) => !p)}
+              aria-label={isPlaying ? "Rotation pausieren" : "Rotation fortsetzen"}
+              aria-pressed={!isPlaying}
+              className="p-3 rounded-full border border-[var(--border-color)] hover:bg-[var(--bg-color)] cursor-pointer"
+            >
+              {isPlaying ? (
+                <Pause className="w-5 h-5" aria-hidden="true" />
+              ) : (
+                <Play className="w-5 h-5" aria-hidden="true" />
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setIsPlaying(false);
+                setCurrentChunk((prev) => (prev + 1) % chunks.length);
+              }}
+              aria-label="Nächster QR-Code"
+              className="p-3 rounded-full border border-[var(--border-color)] hover:bg-[var(--bg-color)] cursor-pointer"
+            >
+              <ChevronRight className="w-5 h-5" aria-hidden="true" />
+            </button>
+          </div>
+        </>
+      )}
+
+      <p className="text-sm text-center text-[var(--text-muted)] max-w-[300px]">{label}</p>
+    </div>
+  );
+
+  const renderScannerView = (hint: string) => (
+    <div className="flex flex-col items-center justify-center">
+      <div
+        id="reader"
+        className="w-full max-w-[300px] overflow-hidden rounded-xl border-2 border-[var(--accent)] mb-4 bg-black"
+        aria-label="Kamera-Vorschau für QR-Code-Scan"
+      />
+
+      {expectedTotal > 1 && (
+        <div className="w-full max-w-[300px] mb-4">
+          <div
+            className="h-3 w-full rounded-full bg-[var(--bg-color)] border border-[var(--border-color)] overflow-hidden"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={expectedTotal}
+            aria-valuenow={receivedCount}
+            aria-label={`${receivedCount} von ${expectedTotal} Datenteilen empfangen`}
+          >
+            <div
+              className="h-full bg-[var(--accent)] transition-all"
+              style={{ width: `${Math.round((receivedCount / expectedTotal) * 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-center font-bold text-[var(--text-muted)] mt-1.5">
+            {receivedCount} von {expectedTotal} Teilen
+          </p>
+        </div>
+      )}
+
+      <p className="text-sm text-center text-[var(--text-muted)] mb-4 flex items-center gap-2">
+        <Camera className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+        {hint}
+      </p>
+      <button
+        onClick={resetState}
+        className="text-sm text-[var(--accent)] font-semibold hover:underline cursor-pointer"
+      >
+        Abbrechen
+      </button>
+    </div>
+  );
+
+  const renderConnectedView = () => (
+    <div className="space-y-5">
+      <div className="flex items-center justify-center gap-4 py-3 text-emerald-600 dark:text-emerald-400">
+        <Monitor className="w-8 h-8" aria-hidden="true" />
+        <Link2 className="w-6 h-6 animate-pulse" aria-hidden="true" />
+        <Smartphone className="w-8 h-8" aria-hidden="true" />
+      </div>
+      <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-sm text-emerald-800 dark:text-emerald-300 font-semibold text-center">
+        Live verbunden – beide Geräte gleichen sich automatisch ab.
+        {lastSyncTime && (
+          <span className="block mt-1 text-xs font-bold">Letzter Abgleich: {lastSyncTime} Uhr</span>
+        )}
+      </div>
+      <p className="text-xs text-[var(--text-muted)] text-center leading-relaxed">
+        Sie können jetzt an beiden Geräten arbeiten. Änderungen werden alle paar Sekunden
+        zusammengeführt – es gewinnt pro Monat der zuletzt gespeicherte Stand, erfasste
+        Schichten beider Geräte bleiben erhalten. Lassen Sie dieses Fenster dafür geöffnet.
+      </p>
+      <button
+        onClick={resetState}
+        className="w-full py-3 px-4 rounded-xl font-bold border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex justify-center items-center gap-2 cursor-pointer"
+      >
+        <Unplug className="w-5 h-5" aria-hidden="true" />
+        Verbindung trennen
+      </button>
+    </div>
+  );
 
   if (!isOpen) return null;
 
@@ -392,7 +834,8 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
         </div>
 
         <div className="p-6 overflow-y-auto">
-          {renderSyncSteps()}
+          {(mode === "select" || mode === "send" || mode === "receive" || mode === "confirm") &&
+            renderSyncSteps()}
 
           {/* Statusmeldung: für Screenreader live mitgelesen */}
           <div role="status" aria-live="polite" aria-atomic="true">
@@ -421,11 +864,15 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
               <div className="mb-6 p-4 rounded-xl bg-[var(--bg-color)] border border-[var(--border-color)] flex items-start gap-3">
                 <ShieldCheck className="w-6 h-6 text-[var(--accent)] flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <p className="text-sm text-[var(--text-muted)]">
-                  <strong className="text-[var(--text-color)]">100 % offline &amp; DSGVO-konform:</strong>{" "}
-                  Die Übertragung läuft direkt von Bildschirm zu Kamera – ohne Internet, ohne Server, ohne
-                  Zwischenspeicherung.
+                  <strong className="text-[var(--text-color)]">100 % serverlos &amp; DSGVO-konform:</strong>{" "}
+                  Übertragung nur von Gerät zu Gerät – ohne Cloud, ohne Konten, ohne
+                  Zwischenspeicherung auf fremden Servern.
                 </p>
               </div>
+
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                Einmal-Übertragung per QR-Code
+              </p>
 
               <button
                 onClick={startSend}
@@ -457,139 +904,104 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
                 </div>
               </button>
 
-              <p className="text-xs text-[var(--text-muted)] pt-2">
-                Tipp: Bei sehr großen Datenmengen können Sie alternativ die verschlüsselte
-                Backup-Datei nutzen (Optionen → Backup).
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--text-muted)] pt-2">
+                Live-Verbindung (beide Geräte gleichzeitig)
+              </p>
+
+              <button
+                onClick={startLiveHost}
+                className="w-full p-4 rounded-xl border border-[var(--border-color)] hover:border-emerald-500 hover:bg-emerald-500/5 transition-all flex items-center gap-4 text-left group cursor-pointer"
+              >
+                <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                  <Radio className="w-6 h-6" aria-hidden="true" />
+                </div>
+                <div>
+                  <div className="font-bold text-[var(--text-color)]">Live-Verbindung starten (Gerät A)</div>
+                  <div className="text-xs text-[var(--text-muted)]">
+                    Zeigt den Verbindungscode an – z. B. am PC/Laptop
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={startLiveJoin}
+                className="w-full p-4 rounded-xl border border-[var(--border-color)] hover:border-emerald-500 hover:bg-emerald-500/5 transition-all flex items-center gap-4 text-left group cursor-pointer"
+              >
+                <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                  <Link2 className="w-6 h-6" aria-hidden="true" />
+                </div>
+                <div>
+                  <div className="font-bold text-[var(--text-color)]">Live-Verbindung beitreten (Gerät B)</div>
+                  <div className="text-xs text-[var(--text-muted)]">
+                    Scannt den Code von Gerät A – z. B. mit dem Handy
+                  </div>
+                </div>
+              </button>
+
+              <p className="text-xs text-[var(--text-muted)] pt-2 leading-relaxed">
+                Live-Verbindung: beide Geräte im gleichen WLAN, beide brauchen eine Kamera
+                (Laptop-Webcam reicht). Die Verbindung läuft direkt von Gerät zu Gerät und ist
+                verschlüsselt. Tipp: Bei sehr großen Datenmengen können Sie alternativ die
+                verschlüsselte Backup-Datei nutzen (Optionen → Backup).
               </p>
             </div>
           )}
 
           {mode === "send" && chunks.length > 0 && (
-            <div className="flex flex-col items-center justify-center py-2">
-              <div className="bg-white p-4 rounded-xl shadow-sm mb-4">
-                <QRCodeSVG value={chunks[currentChunk]} size={230} marginSize={1} />
+            <div>
+              {renderChunkDisplay(
+                "Öffnen Sie auf dem anderen Gerät die App, wählen Sie Sync → Daten empfangen und halten Sie die Kamera vor diesen Bildschirm."
+              )}
+              <div className="flex justify-center">
+                <button
+                  onClick={resetState}
+                  className="mt-4 text-sm text-[var(--accent)] font-semibold hover:underline cursor-pointer"
+                >
+                  Abbrechen
+                </button>
               </div>
-
-              {chunks.length > 1 && (
-                <>
-                  <p className="text-sm font-bold text-[var(--text-color)] mb-3" aria-hidden="true">
-                    Code {currentChunk + 1} von {chunks.length}
-                  </p>
-                  <div
-                    className="flex items-center gap-2 mb-4"
-                    role="group"
-                    aria-label="Steuerung der QR-Code-Rotation"
-                  >
-                    <button
-                      onClick={() => {
-                        setIsPlaying(false);
-                        setCurrentChunk((prev) => (prev - 1 + chunks.length) % chunks.length);
-                      }}
-                      aria-label="Vorheriger QR-Code"
-                      className="p-3 rounded-full border border-[var(--border-color)] hover:bg-[var(--bg-color)] cursor-pointer"
-                    >
-                      <ChevronLeft className="w-5 h-5" aria-hidden="true" />
-                    </button>
-                    <button
-                      onClick={() => setIsPlaying((p) => !p)}
-                      aria-label={isPlaying ? "Rotation pausieren" : "Rotation fortsetzen"}
-                      aria-pressed={!isPlaying}
-                      className="p-3 rounded-full border border-[var(--border-color)] hover:bg-[var(--bg-color)] cursor-pointer"
-                    >
-                      {isPlaying ? (
-                        <Pause className="w-5 h-5" aria-hidden="true" />
-                      ) : (
-                        <Play className="w-5 h-5" aria-hidden="true" />
-                      )}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsPlaying(false);
-                        setCurrentChunk((prev) => (prev + 1) % chunks.length);
-                      }}
-                      aria-label="Nächster QR-Code"
-                      className="p-3 rounded-full border border-[var(--border-color)] hover:bg-[var(--bg-color)] cursor-pointer"
-                    >
-                      <ChevronRight className="w-5 h-5" aria-hidden="true" />
-                    </button>
-                  </div>
-                </>
-              )}
-
-              <p className="text-sm text-center text-[var(--text-muted)] max-w-[300px]">
-                Öffnen Sie auf dem anderen Gerät die App, wählen Sie{" "}
-                <strong>Sync → Daten empfangen</strong> und halten Sie die Kamera vor diesen Bildschirm.
-              </p>
-              <button
-                onClick={resetState}
-                className="mt-6 text-sm text-[var(--accent)] font-semibold hover:underline cursor-pointer"
-              >
-                Abbrechen
-              </button>
             </div>
           )}
 
-          {mode === "receive" && (
-            <div className="flex flex-col items-center justify-center">
-              <div
-                id="reader"
-                className="w-full max-w-[300px] overflow-hidden rounded-xl border-2 border-[var(--accent)] mb-4 bg-black"
-                aria-label="Kamera-Vorschau für QR-Code-Scan"
-              />
-
-              {expectedTotal > 1 && (
-                <div className="w-full max-w-[300px] mb-4">
-                  <div
-                    className="h-3 w-full rounded-full bg-[var(--bg-color)] border border-[var(--border-color)] overflow-hidden"
-                    role="progressbar"
-                    aria-valuemin={0}
-                    aria-valuemax={expectedTotal}
-                    aria-valuenow={receivedCount}
-                    aria-label={`${receivedCount} von ${expectedTotal} Datenteilen empfangen`}
-                  >
-                    <div
-                      className="h-full bg-[var(--accent)] transition-all"
-                      style={{ width: `${Math.round((receivedCount / expectedTotal) * 100)}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-center font-bold text-[var(--text-muted)] mt-1.5">
-                    {receivedCount} von {expectedTotal} Teilen
-                  </p>
-                </div>
-              )}
-
-              <p className="text-sm text-center text-[var(--text-muted)] mb-4 flex items-center gap-2">
-                <Camera className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                Zentrieren Sie den QR-Code des anderen Geräts im Rahmen. Der Fortschritt wird laufend angesagt.
-              </p>
-              <button
-                onClick={resetState}
-                className="text-sm text-[var(--accent)] font-semibold hover:underline cursor-pointer"
-              >
-                Abbrechen
-              </button>
-            </div>
-          )}
+          {mode === "receive" &&
+            renderScannerView(
+              "Zentrieren Sie den QR-Code des anderen Geräts im Rahmen. Der Fortschritt wird laufend angesagt."
+            )}
 
           {mode === "confirm" && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-center gap-4 py-4 text-[var(--accent)]">
+            <div className="space-y-5">
+              <div className="flex items-center justify-center gap-4 py-3 text-[var(--accent)]">
                 <Monitor className="w-8 h-8" aria-hidden="true" />
                 <CheckCircle2 className="w-6 h-6" aria-hidden="true" />
                 <Smartphone className="w-8 h-8" aria-hidden="true" />
               </div>
               <p className="text-sm text-center font-medium">
-                Daten vollständig empfangen. Beim Übernehmen werden die{" "}
-                <strong>lokalen Daten dieses Geräts überschrieben</strong>.
+                Daten vollständig empfangen. Wie sollen sie übernommen werden?
               </p>
 
               <button
-                onClick={applyImport}
+                onClick={() => applyImport("merge")}
                 className="w-full py-3.5 px-4 rounded-xl font-bold bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 transition-all flex justify-center items-center gap-2 cursor-pointer"
               >
-                <CheckCircle2 className="w-5 h-5" aria-hidden="true" />
-                Daten jetzt übernehmen
+                <GitMerge className="w-5 h-5" aria-hidden="true" />
+                Zusammenführen (empfohlen)
               </button>
+              <p className="text-xs text-[var(--text-muted)] text-center -mt-2 leading-relaxed">
+                Vereinigt die Daten beider Geräte: Pro Monat gewinnt der zuletzt gespeicherte
+                Stand, erfasste Schichten und eigene Kategorien beider Geräte bleiben erhalten.
+              </p>
+
+              <button
+                onClick={() => applyImport("replace")}
+                className="w-full py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--bg-color)] transition-all flex justify-center items-center gap-2 cursor-pointer"
+              >
+                <AlertTriangle className="w-5 h-5" aria-hidden="true" />
+                Alles ersetzen
+              </button>
+              <p className="text-xs text-[var(--text-muted)] text-center -mt-2 leading-relaxed">
+                Überschreibt <strong>alle</strong> lokalen Daten dieses Geräts mit den
+                empfangenen Daten.
+              </p>
 
               <button
                 onClick={resetState}
@@ -599,6 +1011,63 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
               </button>
             </div>
           )}
+
+          {mode === "live-host" &&
+            (liveConnected
+              ? renderConnectedView()
+              : liveStep === "offer" && chunks.length > 0
+                ? (
+                  <div>
+                    {renderChunkDisplay(
+                      "Scannen Sie diesen Verbindungscode mit dem anderen Gerät (Sync → Live-Verbindung beitreten)."
+                    )}
+                    <div className="space-y-3 mt-4">
+                      <button
+                        onClick={startScanAnswer}
+                        className="w-full py-3.5 px-4 rounded-xl font-bold bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 transition-all flex justify-center items-center gap-2 cursor-pointer"
+                      >
+                        <Camera className="w-5 h-5" aria-hidden="true" />
+                        Antwort-Code scannen (Schritt 2)
+                      </button>
+                      <button
+                        onClick={resetState}
+                        className="w-full text-sm text-[var(--text-muted)] font-semibold hover:underline cursor-pointer"
+                      >
+                        Abbrechen
+                      </button>
+                    </div>
+                  </div>
+                )
+                : liveStep === "scan-answer"
+                  ? renderScannerView("Richten Sie die Kamera auf den Antwort-Code, den Gerät B jetzt anzeigt.")
+                  : (
+                    <p className="text-sm text-center text-[var(--text-muted)]">Verbindung wird vorbereitet...</p>
+                  ))}
+
+          {mode === "live-join" &&
+            (liveConnected
+              ? renderConnectedView()
+              : liveStep === "scan-offer"
+                ? renderScannerView("Richten Sie die Kamera auf den Verbindungscode von Gerät A.")
+                : liveStep === "answer" && chunks.length > 0
+                  ? (
+                    <div>
+                      {renderChunkDisplay(
+                        "Zeigen Sie diesen Antwort-Code dem Gerät A (dort 'Antwort-Code scannen' wählen). Die Verbindung startet automatisch."
+                      )}
+                      <div className="flex justify-center">
+                        <button
+                          onClick={resetState}
+                          className="mt-4 text-sm text-[var(--accent)] font-semibold hover:underline cursor-pointer"
+                        >
+                          Abbrechen
+                        </button>
+                      </div>
+                    </div>
+                  )
+                  : (
+                    <p className="text-sm text-center text-[var(--text-muted)]">Antwort-Code wird erstellt...</p>
+                  ))}
         </div>
       </motion.div>
     </div>

@@ -22,12 +22,24 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             Was gibt's Neues?
           </h2>
           <p className="text-sm font-semibold text-[var(--text-muted)] mt-1">
-            Version 0.2.0 Beta
+            Version 0.3.0 Beta
           </p>
         </div>
       </div>
 
       <div className="space-y-6">
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex items-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-emerald-500" />
+            Version 0.3.0: Live-Sync & Zusammenführen
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-semibold text-[var(--text-muted)]">
+            <li><strong>Live-Verbindung:</strong> PC und Handy koppeln sich per QR-Code und gleichen sich dann automatisch ab – Sie können an beiden Geräten gleichzeitig arbeiten (gleiches WLAN, direkt von Gerät zu Gerät, ohne Server).</li>
+            <li><strong>Intelligentes Zusammenführen:</strong> Der Sync überschreibt nicht mehr alles – Archiv, Schichten und eigene Kategorien beider Geräte werden vereinigt. Beim QR-Empfang können Sie zwischen Zusammenführen (empfohlen) und Ersetzen wählen.</li>
+            <li><strong>Fehlerbehebungen:</strong> Importierte Daten bleiben jetzt auch nach dem Neuladen erhalten; Stempeluhr bucht Nachtschichten auf das richtige Datum; Sicherheitsupdate der Excel-Bibliothek.</li>
+          </ul>
+        </div>
+
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex items-center gap-2 mb-3">
             <Sparkles className="w-5 h-5 text-purple-500" />

@@ -32,6 +32,7 @@ export interface YearlyCarryover {
   vacationCarryover: number; // e.g. 2 (Resturlaub / Übertrag)
   overtimeCarryover: number; // e.g. 15.5 (Überstunden-Übertrag in h)
   dailyTargetHours: number; // e.g. 8.0
+  updatedAt?: string; // ISO-Zeitstempel für den Geräte-Sync (neuerer Stand gewinnt)
 }
 
 export interface ReportData {

@@ -40,6 +40,7 @@ import {
   YearlyCarryover,
   TimeLog,
 } from "./types";
+import { mergeSyncPayload } from "./utils/merge";
 import A11yModal from "./components/A11yModal";
 import CounterField from "./components/CounterField";
 import HelpModal from "./components/HelpModal";
@@ -449,10 +450,11 @@ export default function App() {
   });
 
   const updateCarryover = (newCarryover: YearlyCarryover) => {
-    setCarryover(newCarryover);
+    const stamped = { ...newCarryover, updatedAt: new Date().toISOString() };
+    setCarryover(stamped);
     safeSetItem(
       "aussendienst_pwa_carryover_v2",
-      JSON.stringify(newCarryover),
+      JSON.stringify(stamped),
     );
     triggerToast("Jahreskonto erfolgreich aktualisiert!");
     announceToAriaAndSpeech("Jahreskonto-Einstellungen gespeichert.", true);
@@ -1368,6 +1370,54 @@ export default function App() {
     // Trigger month change - this saves the current month into history and opens the next one fresh (cleared)
     handleMonthChange(nextMonthStr);
   };
+
+  // --- GERÄTE-SYNC: ZUSAMMENFÜHREN ODER ERSETZEN ---
+  const handleSyncImport = useCallback(
+    (dataStr: string, strategy: "merge" | "replace", options?: { silent?: boolean }): boolean => {
+      try {
+        const parsed = JSON.parse(dataStr);
+        if (strategy === "merge") {
+          const merged = mergeSyncPayload(
+            { appFields, history: history || {}, carryover, reportData },
+            parsed,
+          );
+          setAppFields(merged.appFields);
+          setHistory(merged.history);
+          set("aussendienst_pwa_history", merged.history).catch(() => {});
+          setCarryover(merged.carryover);
+          safeSetItem("aussendienst_pwa_carryover_v2", JSON.stringify(merged.carryover));
+          if (merged.reportData) setReportData(merged.reportData);
+        } else {
+          if (parsed.appFields) setAppFields(parsed.appFields);
+          if (parsed.history) {
+            setHistory(parsed.history);
+            set("aussendienst_pwa_history", parsed.history).catch(() => {});
+          }
+          if (parsed.carryover) {
+            setCarryover(parsed.carryover);
+            safeSetItem("aussendienst_pwa_carryover_v2", JSON.stringify(parsed.carryover));
+          }
+          if (parsed.reportData) setReportData(parsed.reportData);
+        }
+        if (!options?.silent) {
+          setActiveTab("options");
+          const msg =
+            strategy === "merge"
+              ? "Daten beider Geräte erfolgreich zusammengeführt!"
+              : "Daten erfolgreich ersetzt!";
+          triggerToast(msg);
+          announceToAriaAndSpeech(msg, true);
+        }
+        return true;
+      } catch (e) {
+        console.error("Sync import failed", e);
+        triggerToast("Fehler bei der Datensynchronisation.");
+        announceToAriaAndSpeech("Fehler bei der Datensynchronisation.", true);
+        return false;
+      }
+    },
+    [appFields, history, carryover, reportData, announceToAriaAndSpeech],
+  );
 
   // --- BERICHT AN VL SENDEN (serverlos über den Teilen-Dialog) ---
   const handleSendToVL = async () => {
@@ -2970,28 +3020,8 @@ export default function App() {
             };
             return JSON.stringify(syncData);
           }}
-          onImport={(dataStr) => {
-            try {
-              const parsed = JSON.parse(dataStr);
-              if (parsed.appFields) setAppFields(parsed.appFields);
-              if (parsed.history) {
-                setHistory(parsed.history);
-                // Direkt in IndexedDB sichern, sonst ist das Archiv nach dem Neuladen weg
-                set("aussendienst_pwa_history", parsed.history).catch(() => {});
-              }
-              if (parsed.carryover) {
-                setCarryover(parsed.carryover);
-                safeSetItem("aussendienst_pwa_carryover_v2", JSON.stringify(parsed.carryover));
-              }
-              if (parsed.reportData) setReportData(parsed.reportData);
-              setActiveTab("options");
-              triggerToast("Daten erfolgreich synchronisiert!");
-              announceToAriaAndSpeech("Daten erfolgreich synchronisiert.", true);
-            } catch (e) {
-              triggerToast("Fehler bei der Datensynchronisation.");
-              announceToAriaAndSpeech("Fehler bei der Datensynchronisation.", true);
-            }
-          }}
+          onImport={(dataStr, strategy) => handleSyncImport(dataStr, strategy)}
+          onLiveMerge={(dataStr) => handleSyncImport(dataStr, "merge", { silent: true })}
         />
       )}
 
