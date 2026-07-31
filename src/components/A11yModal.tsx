@@ -206,7 +206,7 @@ export default function A11yModal({
             onClick={onOpenChangelog}
             className="text-xs font-black px-3 py-1.5 rounded-full bg-purple-600/10 text-purple-600 dark:text-purple-400 border border-purple-600/30 hover:bg-purple-600/20 transition-colors cursor-pointer flex-shrink-0"
           >
-            v0.2.0 – Neues
+            Was gibt's Neues?
           </button>
         )}
       </div>
@@ -215,7 +215,7 @@ export default function A11yModal({
         <Lock className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
         <span>
           DSGVO-konform: Alle Daten bleiben lokal auf dem Gerät. Der Geräte-Sync läuft
-          offline per QR-Code – ohne Server und ohne Internet.
+          offline per QR-Code oder Text-Code – ohne Server und ohne Internet.
         </span>
       </p>
 
@@ -241,8 +241,8 @@ export default function A11yModal({
           <MenuRow
             icon={<Smartphone className="w-5 h-5" />}
             iconClass="bg-blue-600 text-white"
-            label="Geräte-Sync (QR-Code)"
-            hint="Daten offline auf ein zweites Gerät übertragen"
+            label="Geräte-Sync"
+            hint="Daten offline auf ein zweites Gerät übertragen – auch ohne Kamera"
             onClick={onOpenSync}
           />
         )}

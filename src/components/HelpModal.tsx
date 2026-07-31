@@ -121,12 +121,15 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <p>Diese App ist eine "Offline-App". Das bedeutet, es gibt keinen Server, der im Hintergrund mithört oder Daten speichert. Alles, was Sie eintragen, bleibt im Speicher Ihres Browsers (z.B. Safari oder Chrome). Der einzige Moment, wo Daten Ihr Gerät verlassen, ist, wenn Sie selbst auf "Teilen" drücken, z.B. um einen Excel-Report zu versenden.</p>
                 </FAQItem>
 
-                <FAQItem 
+                <FAQItem
                   icon={<Share2 className="text-emerald-500" />}
                   title="Kann ich die App auf Handy und Laptop gleichzeitig nutzen?"
                 >
-                  <p>Da die App offline arbeitet, synchronisieren sich Handy und Laptop <strong>nicht automatisch</strong> miteinander. Ein Eintrag auf dem Handy taucht nicht automatisch auf dem Laptop auf.</p>
-                  <p><strong>Tipp:</strong> Nutzen Sie am besten ein Hauptgerät (z.B. Ihr Diensthandy) für die tägliche Eingabe. Wenn Sie die Daten auf den Laptop übertragen möchten, nutzen Sie den Geräte-Sync per QR-Code (Optionen → Sync) oder die Funktion "Sicheres Backup" unter "Optionen". Beides funktioniert komplett offline – ganz ohne Server.</p>
+                  <p>Ja. Von sich aus synchronisieren sich Handy und Laptop nicht automatisch – ein Eintrag auf dem Handy erscheint erst dann auf dem Laptop, wenn Sie beide Geräte einmal koppeln. Das geht auf zwei Arten unter Optionen → Geräte-Sync:</p>
+                  <p><strong>Einmal-Übertragung:</strong> Ein Gerät zeigt einen Code an, das andere übernimmt ihn – gut, um Daten einmalig zu übertragen. Sie wählen dabei, ob die Daten <em>zusammengeführt</em> (empfohlen) oder <em>ersetzt</em> werden sollen.</p>
+                  <p><strong>Live-Verbindung:</strong> Nach einer einmaligen Kopplung gleichen sich beide Geräte automatisch alle paar Sekunden ab, solange beide im gleichen WLAN und die App geöffnet ist – Sie können dann wirklich an beiden gleichzeitig arbeiten, ohne etwas zu verlieren.</p>
+                  <p><strong>Keine Kamera nötig:</strong> Beide Wege funktionieren normalerweise per QR-Code-Scan, aber jeder Code lässt sich auch antippen, kopieren und am anderen Gerät einfügen – praktisch, wenn der PC keine Webcam hat.</p>
+                  <p>Alternativ steht weiterhin die Funktion "Sicheres Backup" unter "Optionen" zur Verfügung. Alles funktioniert komplett offline – ganz ohne Server.</p>
                 </FAQItem>
               </div>
             </div>

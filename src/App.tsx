@@ -1459,10 +1459,61 @@ export default function App() {
     [appFields, history, carryover, reportData, announceToAriaAndSpeech],
   );
 
+  // --- MONATSABSCHLUSS-CHECK (Plausibilität vor dem Senden an die VL) ---
+  const getReportWarnings = (): string[] => {
+    const warnings: string[] = [];
+    if (!reportData?.name || !String(reportData.name).trim()) {
+      warnings.push("Der Name (Mitarbeiter/in) ist noch nicht eingetragen.");
+    }
+    const vals = reportData?.values || {};
+    const hasValues = Object.values(vals).some((v) => typeof v === "number" && v > 0);
+    if (!hasValues) {
+      warnings.push("Es sind noch keine Zählerstände eingetragen – der Report wäre leer.");
+    }
+    const logs = Array.isArray(reportData?.timeLogs) ? reportData.timeLogs : [];
+    if (accessibility.enableTimeTracking !== false && logs.length > 0) {
+      const shiftDays = new Set(logs.map((l) => l.date)).size;
+      const tageArbeit = typeof vals.tage_arbeit === "number" ? vals.tage_arbeit : 0;
+      if (tageArbeit < shiftDays) {
+        warnings.push(
+          `Es sind nur ${tageArbeit} Arbeitstage eingetragen, aber Schichten an ${shiftDays} Tagen erfasst.`,
+        );
+      }
+      const logHours = logs.reduce((sum, l) => sum + (l.officeHours || 0) + (l.fieldHours || 0), 0);
+      const valueHours =
+        (typeof vals.std_buero === "number" ? vals.std_buero : 0) +
+        (typeof vals.std_aussendienst === "number" ? vals.std_aussendienst : 0);
+      if (Math.abs(logHours - valueHours) > 1) {
+        warnings.push(
+          `Die Stunden im Report (${valueHours.toFixed(1)} h) weichen von der Stempeluhr-Summe (${logHours.toFixed(1)} h) ab.`,
+        );
+      }
+    }
+    return warnings;
+  };
+
   // --- BERICHT AN VL SENDEN (serverlos über den Teilen-Dialog) ---
   const handleSendToVL = async () => {
     triggerHaptic(25);
     if (!reportData) return;
+    // Plausibilitäts-Check: typische Flüchtigkeitsfehler abfangen, bevor
+    // der Bericht bei der Vertriebsleitung landet.
+    const warnings = getReportWarnings();
+    if (warnings.length > 0) {
+      announceToAriaAndSpeech(
+        "Monatsabschluss-Check: " + warnings.join(" "),
+        true,
+      );
+      const proceed = confirm(
+        "Monatsabschluss-Check – bitte kurz prüfen:\n\n• " +
+          warnings.join("\n• ") +
+          "\n\nTrotzdem senden?",
+      );
+      if (!proceed) {
+        announceToAriaAndSpeech("Senden abgebrochen. Sie können die Angaben jetzt korrigieren.", true);
+        return;
+      }
+    }
     // DSGVO-konform ohne Server: Der Bericht wird als Excel-Datei über den
     // System-Teilen-Dialog (z. B. E-Mail an die VL) weitergegeben.
     announceToAriaAndSpeech("Teilen-Dialog wird geöffnet, um den Bericht an die VL zu senden.");

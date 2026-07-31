@@ -16,6 +16,9 @@ import {
   Link2,
   Unplug,
   GitMerge,
+  Copy,
+  ClipboardPaste,
+  RefreshCw,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Html5Qrcode } from "html5-qrcode";
@@ -129,6 +132,27 @@ function parseChunk(text: string): ParsedChunk | null {
   };
 }
 
+/**
+ * Text-Code als kameraloser Übertragungsweg (Kopieren & Einfügen):
+ * gleicher Inhalt wie die QR-Codes, nur als ein einziger String.
+ * Format: RVC1:<z|u>:<base64>
+ */
+async function buildTextCode(payload: string): Promise<string> {
+  const { data, compressed } = await compressString(payload);
+  return `RVC1:${compressed ? "z" : "u"}:${data}`;
+}
+
+async function parseTextCode(text: string): Promise<string | null> {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith("RVC1:")) return null;
+  const firstSep = trimmed.indexOf(":");
+  const secondSep = trimmed.indexOf(":", firstSep + 1);
+  if (secondSep === -1) return null;
+  const flag = trimmed.slice(firstSep + 1, secondSep);
+  const data = trimmed.slice(secondSep + 1).replace(/\s+/g, "");
+  return decompressString(data, flag === "z");
+}
+
 type ScanPurpose = "data" | "offer" | "answer";
 type LiveStep = "offer" | "scan-answer" | "scan-offer" | "answer";
 
@@ -153,6 +177,11 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
   const [liveConnected, setLiveConnected] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
 
+  // Kameraloser Weg: Text-Code kopieren / einfügen
+  const [textCode, setTextCode] = useState<string | null>(null);
+  const [pasteValue, setPasteValue] = useState("");
+  const lastOfferRef = useRef<any>(null);
+
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scanPurposeRef = useRef<ScanPurpose>("data");
   const receivedRef = useRef<Map<number, ParsedChunk>>(new Map());
@@ -174,7 +203,13 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
 
   const stopScanner = useCallback(() => {
     if (scannerRef.current) {
-      scannerRef.current.stop().catch(() => {});
+      try {
+        // stop() wirft synchron, wenn die Kamera nie gestartet wurde
+        // (z. B. PC ohne Webcam) – darf den Einfüge-Weg nicht abbrechen.
+        scannerRef.current.stop().catch(() => {});
+      } catch {
+        /* Scanner lief nicht */
+      }
       try {
         scannerRef.current.clear();
       } catch {
@@ -224,6 +259,9 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
     setReceivedCount(0);
     setExpectedTotal(0);
     setPendingImport(null);
+    setTextCode(null);
+    setPasteValue("");
+    lastOfferRef.current = null;
   }, [stopScanner, teardownLive]);
 
   // Fokus-Falle + Escape (Barrierefreiheit)
@@ -303,7 +341,9 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
   const startSend = async () => {
     try {
       setStatus({ type: "info", msg: "Daten werden vorbereitet..." });
-      const parts = await buildChunks(onExport());
+      const payload = onExport();
+      setTextCode(await buildTextCode(payload));
+      const parts = await buildChunks(payload);
       setChunks(parts);
       setCurrentChunk(0);
       setIsPlaying(true);
@@ -312,8 +352,8 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
         type: "info",
         msg:
           parts.length === 1
-            ? "Bereit. Scannen Sie den QR-Code mit dem anderen Gerät (in der App unter Sync → Empfangen)."
-            : `Bereit. ${parts.length} QR-Codes rotieren automatisch. Halten Sie die Kamera des anderen Geräts ruhig davor, bis alle Teile empfangen wurden.`,
+            ? "Bereit. Scannen Sie den QR-Code mit dem anderen Gerät (dort: Sync → Daten empfangen). Keine Kamera zur Hand? Nutzen Sie stattdessen 'Code kopieren' weiter unten."
+            : `Bereit. ${parts.length} QR-Codes rotieren automatisch. Halten Sie die Kamera des anderen Geräts ruhig davor, bis alle Teile empfangen wurden. Keine Kamera zur Hand? Nutzen Sie stattdessen 'Code kopieren' weiter unten.`,
       });
     } catch (err) {
       console.error("Sync prepare error", err);
@@ -327,7 +367,10 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
     receivedRef.current = new Map();
     setReceivedCount(0);
     setExpectedTotal(0);
-    setStatus({ type: "info", msg: "Kamera wird gestartet..." });
+    setStatus({
+      type: "info",
+      msg: "Kamera wird gestartet... Kein Zugriff oder keine Kamera vorhanden? Nutzen Sie einfach das Feld 'Code einfügen' weiter unten.",
+    });
 
     setTimeout(async () => {
       try {
@@ -354,10 +397,42 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
         console.error("Camera error", err);
         setStatus({
           type: "error",
-          msg: "Kamera konnte nicht gestartet werden. Bitte Kamera-Berechtigung in den Browser-Einstellungen prüfen.",
+          msg: "Keine Kamera verfügbar oder Berechtigung fehlt. Kein Problem: Nutzen Sie unten das Feld 'Code einfügen' – ganz ohne Kamera.",
         });
       }
     }, 100);
+  };
+
+  // --- Kameraloser Weg: Code kopieren / einfügen ---
+  const copyTextCode = async () => {
+    if (!textCode) return;
+    try {
+      await navigator.clipboard.writeText(textCode);
+      setStatus({
+        type: "success",
+        msg: "Code in die Zwischenablage kopiert. Fügen Sie ihn am anderen Gerät unter 'Code einfügen' ein (z. B. per geteilter Zwischenablage, Nachricht an sich selbst oder E-Mail).",
+      });
+    } catch (err) {
+      console.error("Clipboard error", err);
+      setStatus({ type: "error", msg: "Kopieren nicht möglich. Bitte Browser-Berechtigung für die Zwischenablage prüfen." });
+    }
+  };
+
+  const submitPastedCode = async () => {
+    if (!pasteValue.trim()) return;
+    try {
+      const jsonStr = await parseTextCode(pasteValue);
+      if (!jsonStr) {
+        setStatus({ type: "error", msg: "Das ist kein gültiger Code. Bitte den vollständigen Code einfügen (beginnt mit RVC1:)." });
+        return;
+      }
+      stopScanner();
+      setPasteValue("");
+      handleAssembled(jsonStr);
+    } catch (err) {
+      console.error("Paste code error", err);
+      setStatus({ type: "error", msg: "Code konnte nicht gelesen werden. Bitte erneut vollständig kopieren und einfügen." });
+    }
   };
 
   const startReceive = () => {
@@ -460,7 +535,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
         setLiveConnected(false);
         setStatus({
           type: "error",
-          msg: "Live-Verbindung getrennt. Sind beide Geräte im gleichen WLAN? Bitte neu koppeln.",
+          msg: "Verbindung nicht zustande gekommen oder getrennt. Prüfen Sie, ob beide Geräte im gleichen WLAN sind. Auf Gerät B genügt ein Tipp auf 'Neuen Antwort-Code erzeugen', auf Gerät A ggf. die Kopplung neu starten.",
         });
       }
     };
@@ -541,6 +616,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
       ch.onopen = () => {
         setLiveConnected(true);
         setChunks([]);
+        setTextCode(null);
         stopScanner();
         setStatus({
           type: "success",
@@ -572,13 +648,14 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
       await pc.setLocalDescription(offer);
       await waitForIce(pc);
       const payload = JSON.stringify({ k: "rvw-offer", sdp: pc.localDescription });
+      setTextCode(await buildTextCode(payload));
       const parts = await buildChunks(payload);
       setChunks(parts);
       setCurrentChunk(0);
       setIsPlaying(true);
       setStatus({
         type: "info",
-        msg: "Schritt 1: Scannen Sie diesen Verbindungscode mit dem anderen Gerät (Sync → Live-Verbindung beitreten). Wählen Sie danach hier 'Antwort-Code scannen'.",
+        msg: "Schritt 1: Übertragen Sie diesen Verbindungscode auf das andere Gerät – per Scan oder mit 'Code kopieren'. Bei diesem Code gibt es keinen Zeitdruck. Wählen Sie danach hier 'Antwort-Code empfangen'.",
       });
     } catch (err) {
       console.error("Live host error", err);
@@ -587,9 +664,10 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
     }
   };
 
-  /** Gerät A: Antwort von Gerät B scannen */
+  /** Gerät A: Antwort von Gerät B empfangen (Scan oder Einfügen) */
   const startScanAnswer = () => {
     setChunks([]);
+    setTextCode(null);
     setLiveStep("scan-answer");
     beginScan("answer");
   };
@@ -622,10 +700,13 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
     if (!parsed || parsed.k !== "rvw-offer" || !parsed.sdp) {
       setStatus({
         type: "error",
-        msg: "Das war kein Verbindungscode. Bitte scannen Sie den Code von Gerät A (Live-Verbindung starten).",
+        msg: "Das war kein Verbindungscode. Bitte den Code von Gerät A übertragen (Live-Verbindung starten).",
       });
       return;
     }
+    // Verbindungscode merken: Damit lässt sich jederzeit mit einem Tipp
+    // ein frischer Antwort-Code erzeugen, falls die Kopplung abläuft.
+    lastOfferRef.current = parsed;
     try {
       const pc = createPeer();
       pc.ondatachannel = (ev) => setupChannel(ev.channel);
@@ -634,6 +715,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
       await pc.setLocalDescription(answer);
       await waitForIce(pc);
       const payload = JSON.stringify({ k: "rvw-answer", sdp: pc.localDescription });
+      setTextCode(await buildTextCode(payload));
       const parts = await buildChunks(payload);
       setChunks(parts);
       setCurrentChunk(0);
@@ -641,12 +723,28 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
       setLiveStep("answer");
       setStatus({
         type: "info",
-        msg: "Schritt 2: Zeigen Sie diesen Antwort-Code dem Gerät A (dort 'Antwort-Code scannen' wählen). Die Verbindung startet dann automatisch.",
+        msg: "Schritt 2: Übertragen Sie diesen Antwort-Code jetzt zügig auf Gerät A (dort 'Antwort-Code empfangen' wählen) – am besten innerhalb von einer Minute. Zu spät? Einfach 'Neuen Antwort-Code erzeugen' tippen.",
       });
     } catch (err) {
       console.error("Live join error", err);
       setStatus({ type: "error", msg: "Beitritt fehlgeschlagen. Bitte Kopplung neu starten." });
     }
+  };
+
+  /** Gerät B: Frischen Antwort-Code auf denselben Verbindungscode erzeugen */
+  const regenerateAnswer = async () => {
+    const offer = lastOfferRef.current;
+    if (!offer) return;
+    if (channelRef.current) {
+      try { channelRef.current.close(); } catch { /* ignore */ }
+      channelRef.current = null;
+    }
+    if (pcRef.current) {
+      try { pcRef.current.close(); } catch { /* ignore */ }
+      pcRef.current = null;
+    }
+    setStatus({ type: "info", msg: "Neuer Antwort-Code wird erzeugt..." });
+    await handleOfferScanned(offer);
   };
 
   // --- Anzeige-Bausteine -------------------------------------------------
@@ -730,6 +828,16 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
       )}
 
       <p className="text-sm text-center text-[var(--text-muted)] max-w-[300px]">{label}</p>
+
+      {textCode && (
+        <button
+          onClick={copyTextCode}
+          className="mt-4 w-full max-w-[300px] py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all flex justify-center items-center gap-2 cursor-pointer"
+        >
+          <Copy className="w-5 h-5" aria-hidden="true" />
+          Code kopieren (ohne Kamera)
+        </button>
+      )}
     </div>
   );
 
@@ -766,6 +874,30 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
         <Camera className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
         {hint}
       </p>
+
+      {/* Kameraloser Weg: Code einfügen */}
+      <div className="w-full max-w-[300px] mb-4 p-3 rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-color)]">
+        <label htmlFor="paste-code-input" className="block text-xs font-black text-[var(--text-color)] mb-2">
+          Ohne Kamera: Code einfügen
+        </label>
+        <textarea
+          id="paste-code-input"
+          value={pasteValue}
+          onChange={(e) => setPasteValue(e.target.value)}
+          placeholder="Code hier einfügen (beginnt mit RVC1:)..."
+          rows={3}
+          className="w-full p-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-mono focus:border-[var(--border-focus)] outline-none resize-y"
+        />
+        <button
+          onClick={submitPastedCode}
+          disabled={!pasteValue.trim()}
+          className="mt-2 w-full py-2.5 px-4 rounded-lg font-bold bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex justify-center items-center gap-2 cursor-pointer text-sm"
+        >
+          <ClipboardPaste className="w-4 h-4" aria-hidden="true" />
+          Code übernehmen
+        </button>
+      </div>
+
       <button
         onClick={resetState}
         className="text-sm text-[var(--accent)] font-semibold hover:underline cursor-pointer"
@@ -939,8 +1071,9 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
               </button>
 
               <p className="text-xs text-[var(--text-muted)] pt-2 leading-relaxed">
-                Live-Verbindung: beide Geräte im gleichen WLAN, beide brauchen eine Kamera
-                (Laptop-Webcam reicht). Die Verbindung läuft direkt von Gerät zu Gerät und ist
+                Live-Verbindung: beide Geräte im gleichen WLAN. Eine Kamera ist{" "}
+                <strong>nicht</strong> nötig – jeder Code lässt sich auch kopieren und am
+                anderen Gerät einfügen. Die Verbindung läuft direkt von Gerät zu Gerät und ist
                 verschlüsselt. Tipp: Bei sehr großen Datenmengen können Sie alternativ die
                 verschlüsselte Backup-Datei nutzen (Optionen → Backup).
               </p>
@@ -1027,7 +1160,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
                         className="w-full py-3.5 px-4 rounded-xl font-bold bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 transition-all flex justify-center items-center gap-2 cursor-pointer"
                       >
                         <Camera className="w-5 h-5" aria-hidden="true" />
-                        Antwort-Code scannen (Schritt 2)
+                        Antwort-Code empfangen (Schritt 2)
                       </button>
                       <button
                         onClick={resetState}
@@ -1053,12 +1186,19 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
                   ? (
                     <div>
                       {renderChunkDisplay(
-                        "Zeigen Sie diesen Antwort-Code dem Gerät A (dort 'Antwort-Code scannen' wählen). Die Verbindung startet automatisch."
+                        "Übertragen Sie diesen Antwort-Code auf Gerät A (dort 'Antwort-Code empfangen' wählen) – am besten innerhalb von einer Minute. Die Verbindung startet automatisch."
                       )}
-                      <div className="flex justify-center">
+                      <div className="space-y-3 mt-4">
+                        <button
+                          onClick={regenerateAnswer}
+                          className="w-full py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all flex justify-center items-center gap-2 cursor-pointer"
+                        >
+                          <RefreshCw className="w-5 h-5" aria-hidden="true" />
+                          Neuen Antwort-Code erzeugen
+                        </button>
                         <button
                           onClick={resetState}
-                          className="mt-4 text-sm text-[var(--accent)] font-semibold hover:underline cursor-pointer"
+                          className="w-full text-sm text-[var(--text-muted)] font-semibold hover:underline cursor-pointer"
                         >
                           Abbrechen
                         </button>

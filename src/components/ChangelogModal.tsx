@@ -22,12 +22,24 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             Was gibt's Neues?
           </h2>
           <p className="text-sm font-semibold text-[var(--text-muted)] mt-1">
-            Version 0.4.0 Beta
+            Version 0.5.0 Beta
           </p>
         </div>
       </div>
 
       <div className="space-y-6">
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex items-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-sky-500" />
+            Version 0.5.0: Sync ohne Kamera & Abschluss-Check
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-semibold text-[var(--text-muted)]">
+            <li><strong>Sync ohne Kamera:</strong> Jeder Kopplungs- und Datencode lässt sich jetzt auch kopieren und am anderen Gerät einfügen – ideal für PCs ohne Webcam (z. B. über die geteilte Zwischenablage der Windows-Handy-Kopplung).</li>
+            <li><strong>Entspannte Kopplung:</strong> Der Verbindungscode hat keinen Zeitdruck; läuft der Antwort-Code ab, genügt ein Tipp auf „Neuen Antwort-Code erzeugen".</li>
+            <li><strong>Monatsabschluss-Check:</strong> Vor „Bericht an VL senden" prüft die App auf typische Fehler (fehlender Name, leerer Report, Stunden passen nicht zur Stempeluhr) und fragt nach.</li>
+          </ul>
+        </div>
+
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex items-center gap-2 mb-3">
             <Sparkles className="w-5 h-5 text-amber-500" />
