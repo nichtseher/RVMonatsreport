@@ -83,7 +83,7 @@ export default React.memo(function ClockInWidget({
 
   const getDefaultManualDate = (selMonth: string) => {
     const today = new Date();
-    const todayStr = today.toISOString().split("T")[0]; // "2026-07-08"
+    const todayStr = today.toLocaleDateString("sv-SE"); // lokale Zeit statt UTC ("2026-07-08")
     if (todayStr.startsWith(selMonth)) {
       return todayStr;
     }
@@ -99,7 +99,8 @@ export default React.memo(function ClockInWidget({
   };
 
   const formatDateYMD = (date: Date) => {
-    return date.toISOString().split("T")[0];
+    // Lokale Zeit statt UTC: Schichten zwischen 0 und 2 Uhr sonst am Vortag
+    return date.toLocaleDateString("sv-SE");
   };
 
   // Timer loop when clocked in

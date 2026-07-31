@@ -717,15 +717,6 @@ export default function App() {
     safeSetItem("aussendienst_pwa_mobile_comfort", mobileComfortMode ? "true" : "false");
   }, [mobileComfortMode]);
 
-  // Set default month on load if empty
-  useEffect(() => {
-    if (!reportData?.month) {
-      const d = new Date();
-      const currentMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      setReportData((prev) => ({ ...prev, month: currentMonthStr }));
-    }
-  }, [reportData?.month]);
-
   // --- DEADLINE LOGIC ---
   const getDeadlineAlert = () => {
     const today = new Date();
@@ -741,7 +732,7 @@ export default function App() {
     if (currentDay <= 8 && isPastDeadlineMonth && hasValues) {
       return {
         isUrgent: true,
-        message: `🚨 Achtung Abgabefrist: Sie haben ungesendete Zählerstände für den Monat ${reportData?.month}! Bitte exportieren Sie den Report sofort als Excel und senden ihn an die Vertriebsleitung (VL)!`,
+        message: `🚨 Achtung Abgabefrist: Sie haben ungesendete Zählerstände für ${formatMonthGerman(reportData?.month || "")}! Bitte exportieren Sie den Report sofort als Excel und senden ihn an die Vertriebsleitung (VL)!`,
       };
     }
 
@@ -1055,7 +1046,7 @@ export default function App() {
       if (text) {
         handleMetaChange(
           "notes",
-          reportData?.notes + (reportData?.notes ? " " : "") + text,
+          (reportData?.notes || "") + (reportData?.notes ? " " : "") + text,
         );
         triggerToast("✓ Sprache erfolgreich in Text umgewandelt!");
         announceToAriaAndSpeech(`Eingefügter Text: ${text}`, true);
@@ -1197,7 +1188,7 @@ export default function App() {
     const dStr = `[${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.] `;
     handleMetaChange(
       "notes",
-      reportData?.notes + (reportData?.notes ? "\n" : "") + dStr,
+      (reportData?.notes || "") + (reportData?.notes ? "\n" : "") + dStr,
     );
     triggerToast("Datumstempel eingefügt");
     announceToAriaAndSpeech("Datumstempel im Kommentarfeld eingefügt.", true);
@@ -1378,38 +1369,6 @@ export default function App() {
     handleMonthChange(nextMonthStr);
   };
 
-  // --- BACKUP RESTORE ---
-  const handleRestoreFromBackup = (
-    fields: SectionsConfig,
-    restoredReport: any,
-  ) => {
-    setAppFields(fields);
-    setReportData((prev) => {
-      // Compatibility fallback: if restoredReport is just the raw values dictionary
-      if (
-        restoredReport &&
-        typeof restoredReport === "object" &&
-        !("values" in restoredReport)
-      ) {
-        return {
-          ...prev,
-          values: restoredReport || {},
-        };
-      }
-      // If it is the full ReportData object
-      return {
-        month: restoredReport?.month || prev.month,
-        name: restoredReport?.name || prev.name,
-        notes: restoredReport?.notes || prev.notes,
-        values: restoredReport?.values || {},
-      };
-    });
-    setActiveTab("options");
-    triggerToast("Backup erfolgreich geladen!");
-    announceToAriaAndSpeech("Backup erfolgreich wiederhergestellt.");
-  };
-
-  
   // --- BERICHT AN VL SENDEN (serverlos über den Teilen-Dialog) ---
   const handleSendToVL = async () => {
     triggerHaptic(25);
@@ -1808,11 +1767,13 @@ export default function App() {
           } catch (e) {}
         }
 
+        const d = new Date();
+        const currentMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
         if (initialData) {
+          // Monat absichern, falls er im gespeicherten Stand fehlt
+          if (!initialData.month) initialData.month = currentMonthStr;
           setReportData(initialData);
         } else {
-          const d = new Date();
-          const currentMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
           setReportData({ month: currentMonthStr, name: "", notes: "", values: {}, timeLogs: [] });
         }
 
@@ -2973,13 +2934,22 @@ export default function App() {
               try {
                 const parsed = JSON.parse(dataStr);
                 if (parsed.appFields) setAppFields(parsed.appFields);
-                if (parsed.history) setHistory(parsed.history);
-                if (parsed.carryover) setCarryover(parsed.carryover);
+                if (parsed.history) {
+                  setHistory(parsed.history);
+                  // Direkt in IndexedDB sichern, sonst ist das Archiv nach dem Neuladen weg
+                  set("aussendienst_pwa_history", parsed.history).catch(() => {});
+                }
+                if (parsed.carryover) {
+                  setCarryover(parsed.carryover);
+                  safeSetItem("aussendienst_pwa_carryover_v2", JSON.stringify(parsed.carryover));
+                }
                 if (parsed.reportData) setReportData(parsed.reportData);
                 setActiveTab("options");
-                setToastText("Backup erfolgreich geladen!");
+                triggerToast("Backup erfolgreich geladen!");
+                announceToAriaAndSpeech("Backup erfolgreich geladen.", true);
               } catch (e) {
-                setToastText("Fehler beim Laden des Backups.");
+                triggerToast("Fehler beim Laden des Backups.");
+                announceToAriaAndSpeech("Fehler beim Laden des Backups.", true);
               }
             }}
           />
@@ -3004,13 +2974,22 @@ export default function App() {
             try {
               const parsed = JSON.parse(dataStr);
               if (parsed.appFields) setAppFields(parsed.appFields);
-              if (parsed.history) setHistory(parsed.history);
-              if (parsed.carryover) setCarryover(parsed.carryover);
+              if (parsed.history) {
+                setHistory(parsed.history);
+                // Direkt in IndexedDB sichern, sonst ist das Archiv nach dem Neuladen weg
+                set("aussendienst_pwa_history", parsed.history).catch(() => {});
+              }
+              if (parsed.carryover) {
+                setCarryover(parsed.carryover);
+                safeSetItem("aussendienst_pwa_carryover_v2", JSON.stringify(parsed.carryover));
+              }
               if (parsed.reportData) setReportData(parsed.reportData);
               setActiveTab("options");
-              setToastText("Daten erfolgreich synchronisiert!");
+              triggerToast("Daten erfolgreich synchronisiert!");
+              announceToAriaAndSpeech("Daten erfolgreich synchronisiert.", true);
             } catch (e) {
-              setToastText("Fehler bei der Datensynchronisation.");
+              triggerToast("Fehler bei der Datensynchronisation.");
+              announceToAriaAndSpeech("Fehler bei der Datensynchronisation.", true);
             }
           }}
         />

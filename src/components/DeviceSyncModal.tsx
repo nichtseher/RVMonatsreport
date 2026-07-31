@@ -305,7 +305,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
     if (map.size === chunk.total) {
       stopScanner();
       try {
-        const sorted = Array.from(map.values()).sort((a, b) => a.seq - b.seq);
+        const sorted = (Array.from(map.values()) as ParsedChunk[]).sort((a, b) => a.seq - b.seq);
         const base64 = sorted.map((c) => c.data).join("");
         const jsonStr = await decompressString(base64, sorted[0].compressed);
         JSON.parse(jsonStr); // Validierung
