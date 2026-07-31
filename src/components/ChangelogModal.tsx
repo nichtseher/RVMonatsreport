@@ -22,12 +22,24 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             Was gibt's Neues?
           </h2>
           <p className="text-sm font-semibold text-[var(--text-muted)] mt-1">
-            Version 0.3.0 Beta
+            Version 0.4.0 Beta
           </p>
         </div>
       </div>
 
       <div className="space-y-6">
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex items-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-amber-500" />
+            Version 0.4.0: Schnell-Erfassung
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-semibold text-[var(--text-muted)]">
+            <li><strong>Schnell-Erfassung:</strong> Ihre meistgenutzten Kategorien als große Tasten ganz oben im Report – ein Tipp direkt nach dem Termin genügt (+1 mit Ton und Vibration). Kein Suchen, kein Scrollen.</li>
+            <li><strong>Selbst konfigurierbar:</strong> Unter „Anpassen" wählen Sie automatisch (meistgenutzt) oder bis zu 8 eigene Kategorien in Wunsch-Reihenfolge.</li>
+            <li><strong>App-Shortcuts:</strong> App-Symbol gedrückt halten → direkt „Zahlen erfassen" oder „Stempeluhr" öffnen.</li>
+          </ul>
+        </div>
+
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex items-center gap-2 mb-3">
             <Sparkles className="w-5 h-5 text-emerald-500" />

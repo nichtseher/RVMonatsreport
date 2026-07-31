@@ -8,6 +8,22 @@
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#1e293b",
+  "shortcuts": [
+    {
+      "name": "Zahlen erfassen",
+      "short_name": "Erfassen",
+      "description": "Direkt zur Schnell-Erfassung des Monatsreports",
+      "url": "./?tab=form",
+      "icons": [{ "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Stempeluhr",
+      "short_name": "Stempeluhr",
+      "description": "Direkt ein- oder ausstempeln",
+      "url": "./?tab=time",
+      "icons": [{ "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
   "icons": [
     {
       "src": "./icon-192.png",

@@ -43,6 +43,7 @@ import {
 import { mergeSyncPayload } from "./utils/merge";
 import A11yModal from "./components/A11yModal";
 import CounterField from "./components/CounterField";
+import QuickEntryPanel, { QuickEntryConfig, DEFAULT_QUICK_CONFIG } from "./components/QuickEntryPanel";
 import HelpModal from "./components/HelpModal";
 import ManageModal from "./components/ManageModal";
 import HistoryModal from "./components/HistoryModal";
@@ -188,7 +189,16 @@ const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
 
 export default function App() {
   // --- ROUTING / NAVIGATION STATE ---
-  const [activeTab, setActiveTab] = useState<"form" | "time" | "stats" | "history" | "options" | "help" | "backup" | "manage" | "carryover" | "sync" | "changelog">("form");
+  // Start-Ansicht per URL-Parameter (für PWA-Shortcuts, z. B. ./?tab=time)
+  const [activeTab, setActiveTab] = useState<"form" | "time" | "stats" | "history" | "options" | "help" | "backup" | "manage" | "carryover" | "sync" | "changelog">(() => {
+    try {
+      const tab = new URLSearchParams(window.location.search).get("tab");
+      if (tab === "time" || tab === "stats" || tab === "history" || tab === "options") return tab;
+    } catch {
+      /* ignore */
+    }
+    return "form";
+  });
 
   // --- STATE ---
   const [appFields, setAppFields] = useState<SectionsConfig>(() => {
@@ -420,6 +430,24 @@ export default function App() {
   });
 
   const [isGoalsEditorOpen, setIsGoalsEditorOpen] = useState(false);
+
+  // --- SCHNELL-ERFASSUNG (meistgenutzte Kategorien als große Tasten) ---
+  const [quickConfig, setQuickConfig] = useState<QuickEntryConfig>(() => {
+    const saved = localStorage.getItem("aussendienst_pwa_quick_v1");
+    if (saved) {
+      try {
+        return { ...DEFAULT_QUICK_CONFIG, ...JSON.parse(saved) };
+      } catch (e) {
+        return DEFAULT_QUICK_CONFIG;
+      }
+    }
+    return DEFAULT_QUICK_CONFIG;
+  });
+
+  const updateQuickConfig = (newConfig: QuickEntryConfig) => {
+    setQuickConfig(newConfig);
+    safeSetItem("aussendienst_pwa_quick_v1", JSON.stringify(newConfig));
+  };
 
   const updateGoalsConfig = (newConfig: typeof goalsConfig) => {
     setGoalsConfig(newConfig);
@@ -756,6 +784,18 @@ export default function App() {
       },
     }));
   }, []);
+
+  // --- SCHNELL-ERFASSUNG: EIN TIPP = +1 ---
+  const handleQuickIncrement = useCallback((field: FieldConfig) => {
+    triggerHaptic(15);
+    const current =
+      typeof reportData?.values?.[field.id] === "number"
+        ? (reportData.values[field.id] as number)
+        : 0;
+    const newVal = parseFloat((current + field.step).toFixed(1));
+    handleValueChange(field.id, newVal);
+    announceToAriaAndSpeech(`${field.label}: ${newVal}`, false, field.id, newVal);
+  }, [reportData, handleValueChange, announceToAriaAndSpeech]);
 
   // --- STAMPELUHR HANDLERS ---
   const handleClockIn = useCallback(() => {
@@ -2051,6 +2091,18 @@ export default function App() {
           </button>
         )}
       </div>
+
+      {/* SCHNELL-ERFASSUNG: Ein Tipp direkt nach dem Termin */}
+      <QuickEntryPanel
+        appFields={appFields}
+        history={history}
+        values={reportData?.values || {}}
+        config={quickConfig}
+        onConfigChange={updateQuickConfig}
+        onIncrement={handleQuickIncrement}
+        audioFeedbackEnabled={accessibility.audioFeedback}
+        announce={announceToAriaAndSpeech}
+      />
 
       {/* MOBILE COMFORT ACTION BAR */}
       {mobileComfortMode && !isDesktop && (
