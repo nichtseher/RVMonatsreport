@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Barrierefreiheit: Zoom muss erlaubt bleiben (WCAG 1.4.4) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>RV Monatsreport - Barrierefrei</title>
+
+    <meta name="theme-color" content="#1e293b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RV Monatsreport">
+    <!-- iOS benoetigt echte PNG-Dateien (data:-URLs werden ignoriert) -->
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+
+    <link rel="manifest" href="./manifest.webmanifest">
+    <script type="module" crossorigin src="./assets/index-DgTDLmjN.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DEztU7Yo.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').then((reg) => {
+            console.log('PWA ServiceWorker registered successfully:', reg.scope);
+
+            // Sanfter Update-Flow: Nutzer entscheidet selbst, wann neu geladen
+            // wird (kein erzwungener Reload mitten in der Dateneingabe).
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    showUpdateToast(newWorker);
+                  }
+                });
+              }
+            });
+          }).catch((err) => {
+            console.error('PWA ServiceWorker registration failed:', err);
+          });
+        });
+
+        // Seite neu laden, sobald der neue Service Worker aktiv ist
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+          }
+        });
+
+        function showUpdateToast(worker) {
+          if (document.getElementById('sw-update-toast')) return;
+          const toast = document.createElement('div');
+          toast.id = 'sw-update-toast';
+          toast.setAttribute('role', 'alert');
+          toast.style.cssText = 'position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);z-index:99999;background:#1e293b;color:#fff;padding:0.9rem 1.1rem;border-radius:9999px;display:flex;gap:0.75rem;align-items:center;font-family:system-ui,sans-serif;font-size:0.9rem;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,0.35);max-width:92vw;';
+          const text = document.createElement('span');
+          text.textContent = 'Neue Version verf\u00fcgbar.';
+          const btn = document.createElement('button');
+          btn.textContent = 'Jetzt aktualisieren';
+          btn.style.cssText = 'background:#22c55e;color:#052e16;border:0;border-radius:9999px;padding:0.5rem 0.9rem;font-weight:800;cursor:pointer;font-size:0.85rem;';
+          btn.addEventListener('click', () => {
+            worker.postMessage({ type: 'SKIP_WAITING' });
+          });
+          const later = document.createElement('button');
+          later.textContent = 'Sp\u00e4ter';
+          later.setAttribute('aria-label', 'Update sp\u00e4ter installieren');
+          later.style.cssText = 'background:transparent;color:#cbd5e1;border:0;font-weight:700;cursor:pointer;font-size:0.85rem;';
+          later.addEventListener('click', () => toast.remove());
+          toast.append(text, btn, later);
+          document.body.appendChild(toast);
+        }
+      }
+    </script>
+  </body>
+</html>
