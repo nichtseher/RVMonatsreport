@@ -10,6 +10,90 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-01 — v0.6.0: Verlässlicheres Zählen, Sync im Hintergrund, Hilfe korrigiert
+
+### Kritischer Zählfehler (beim Testen entdeckt)
+
+Beim Verifizieren der Live-Verbindung fiel auf, dass **schnelles mehrfaches
+Tippen Zählungen verschluckt**. Reproduziert und gemessen:
+
+- Schnell-Erfassung: 3 Tipps → nur +1 (2 verloren); selbst bei 400 ms
+  Abstand ging einer verloren.
+- Normale Plus-/Minus-Tasten im Formular: 3 Tipps → nur +1.
+
+Ursache: Der neue Wert wurde aus dem React-Zustand berechnet
+(`current + step`). Erfolgen mehrere Tipps, bevor React neu gerendert hat,
+lesen alle denselben alten Stand und schreiben denselben neuen Wert.
+Betroffen waren Plus, Minus, die ±5-Schnelltasten und die Schnell-Erfassung
+– also die Kernfunktion der App. Für eine Erfassungs-App, deren Zweck
+verlässliche Zahlen sind, ist das gravierend, und blinde Nutzer tippen
+erfahrungsgemäß zügig in Serie.
+
+**Fix:** Ein synchron mitgeführter Spiegel der Zählerstände (`valuesRef`)
+plus eine zentrale Funktion `applyValueDelta(id, delta)`, die den neuen Wert
+sofort zurückgibt. `CounterField` bekommt statt der Rechnung nur noch
+`onDelta` und nutzt den Rückgabewert für Ansage und Ton. Direkte
+Tastatureingaben ziehen den Spiegel mit (`handleValueInput`), damit
+anschließende Tipps korrekt weiterzählen.
+**Verifiziert:** 5 schnelle Plus-Tipps → exakt +5; 2 schnelle Minus-Tipps →
+exakt −2; Tastatureingabe „20“ + 2 Tipps → 22.
+
+### Live-Verbindung überlebt jetzt den Fenster-Wechsel
+
+Die im Audit dokumentierte Einschränkung ist behoben: Die WebRTC-Verbindung
+gehört nicht mehr dem Sync-Fenster, sondern einem App-weiten Dienst
+(`src/utils/liveSync.ts`). Vorher riss der Aufräum-Schritt des Fensters die
+Verbindung ab, sobald man den Tab wechselte – womit die Live-Verbindung
+praktisch nutzlos war, weil man zum Eintragen von Zahlen genau dieses
+Fenster verlassen muss.
+
+- Verbindung endet nur noch bei ausdrücklichem Trennen oder App-Schließen
+  (`pagehide`).
+- Neuer Statushinweis **„Live verbunden“** im Kopfbereich (führt zurück zur
+  Verwaltung), mit Zeitpunkt des letzten Abgleichs für Screenreader.
+- Beim erneuten Öffnen des Sync-Fensters wird die bestehende Verbindung
+  angezeigt statt des Startmenüs.
+- DSGVO unverändert: weiterhin keine STUN-/TURN-Server, reine LAN-Verbindung.
+
+**Verifiziert (zwei echte Browser-Tabs):** Kopplung per Text-Code, danach
+beide Tabs zurück ins Formular. Gerät A trägt 3 ein → erscheint auf Gerät B;
+Gerät B tippt 2 dazu → erscheint auf Gerät A – jeweils mit geschlossenem
+Sync-Fenster.
+
+### Hilfebereich: sachliche Fehler korrigiert
+
+Prüfung der Hilfe gegen den echten Code förderte mehrere falsche Angaben
+zutage (alle verifiziert, dann korrigiert):
+
+- **Gefährlichster Fehler:** „Alle Zeiten, Urlaubstage und Krankheitstage aus
+  der Stempeluhr werden automatisch im RV Report addiert. Sie müssen diese
+  nicht doppelt eintragen!“ – Tatsächlich schreibt die Stempeluhr nur
+  Stunden und Arbeitstage. Urlaubs- und Krankheitstage muss der Nutzer
+  selbst eintragen; die Hilfe hätte dazu verleitet, sie wegzulassen, was
+  Jahreskonto und Bericht verfälscht.
+- „Direkt an VL senden … öffnet Ihr E-Mail-Programm, die Adresse der
+  Vertriebsleitung ist bereits voreingestellt“ – es gibt keine hinterlegte
+  Adresse; die App öffnet den System-Teilen-Dialog.
+- Backup: falsche Dateiendung (`.rvbackup` statt `.json` / `.json.enc`),
+  falscher Menüname („Sicheres Backup“ statt „Datensicherung“), falscher
+  Knopfname („Backup erstellen & herunterladen“ statt „Auf Gerät speichern“).
+- Jahreskonto: „Meine Jahresübersicht (Urlaub & Gleitzeit)“ und „Stammdaten &
+  Startwerte bearbeiten“ existierten so nicht (richtig: Reiter „Jahreskonto“,
+  Knopf „Jahreskonto-Einstellungen bearbeiten“).
+
+Ergänzt wurden außerdem: ein Abschnitt zur Schnell-Erfassung (fehlte
+komplett), Tastaturbedienung der Zählerfelder, sowie eine FAQ „Was muss ich
+tun, damit meine Daten nicht verloren gehen?“ inklusive Erklärung der neuen
+Speicher-Warnung.
+
+### Versionierung
+
+Die Versionsnummer wird jetzt zur Bauzeit aus `package.json` übernommen
+(`vite.config.ts` → `__APP_VERSION__` → `src/version.ts`) und im Changelog
+als „Installierte Version“ angezeigt. Vorher stand sie fest im Text und
+widersprach zeitweise der `package.json` (dort 1.0.0, in der App 0.2.0).
+Der Knopf in den Optionen heißt nur noch „Was gibt's Neues?“ ohne Nummer.
+
 ## 2026-08-01 — Stabilitäts-Audit
 
 Anlass: explizite Vorgabe, die App aus Nutzersicht auf Stabilität zu prüfen,

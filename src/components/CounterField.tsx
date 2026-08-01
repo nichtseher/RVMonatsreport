@@ -9,6 +9,8 @@ interface CounterFieldProps {
   config: FieldConfig;
   value: number | "";
   onChange: (val: number | "") => void;
+  /** Ändert den Zähler und gibt den neuen Wert synchron zurück (verlustfrei bei schnellem Tippen) */
+  onDelta: (delta: number) => number;
   onAnnounce: (message: string, immediate?: boolean, fieldId?: string, newValue?: number | "") => void;
   audioFeedbackEnabled: boolean;
   isCompact?: boolean;
@@ -16,12 +18,13 @@ interface CounterFieldProps {
   onBlur?: () => void;
 }
 
-export default React.memo(function CounterField({ 
-  config, 
-  value, 
-  onChange, 
-  onAnnounce, 
-  audioFeedbackEnabled, 
+export default React.memo(function CounterField({
+  config,
+  value,
+  onChange,
+  onDelta,
+  onAnnounce,
+  audioFeedbackEnabled,
   isCompact = false,
   onFocus,
   onBlur
@@ -43,21 +46,22 @@ export default React.memo(function CounterField({
 
   const handleIncrement = () => {
     triggerHaptic();
-    const current = typeof value === "number" ? value : 0;
-    const newVal = Math.max(0, parseFloat((current + config.step).toFixed(1)));
+    // Wert kommt synchron zurück, damit auch schnelles Tippen jede Zählung erfasst
+    const newVal = onDelta(config.step);
     playAudioFeedback("up", newVal);
-    onChange(newVal);
     onAnnounce(`${config.label}: erhöht auf ${newVal}`, false, config.id, newVal);
   };
 
   const handleDecrement = () => {
     triggerHaptic();
-    const current = typeof value === "number" ? value : 0;
-    const newVal = Math.max(0, parseFloat((current - config.step).toFixed(1)));
-    const finalVal = newVal === 0 ? "" : newVal;
+    const newVal = onDelta(-config.step);
     playAudioFeedback("down", newVal);
-    onChange(finalVal);
-    onAnnounce(`${config.label}: verringert auf ${newVal === 0 ? "null" : newVal}`, false, config.id, finalVal);
+    onAnnounce(
+      `${config.label}: verringert auf ${newVal === 0 ? "null" : newVal}`,
+      false,
+      config.id,
+      newVal === 0 ? "" : newVal,
+    );
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,13 +115,14 @@ export default React.memo(function CounterField({
 
   const handleQuickChange = (dir: 1 | -1) => {
     triggerHaptic();
-    const current = typeof value === "number" ? value : 0;
-    const amount = dir * 5 * config.step;
-    const newVal = Math.max(0, parseFloat((current + amount).toFixed(1)));
-    const finalVal = newVal === 0 ? "" : newVal;
+    const newVal = onDelta(dir * 5 * config.step);
     playAudioFeedback(dir > 0 ? "up" : "down", newVal);
-    onChange(finalVal);
-    onAnnounce(`${config.label}: Schnelländerung auf ${newVal === 0 ? "null" : newVal}`, false, config.id, finalVal);
+    onAnnounce(
+      `${config.label}: Schnelländerung auf ${newVal === 0 ? "null" : newVal}`,
+      false,
+      config.id,
+      newVal === 0 ? "" : newVal,
+    );
   };
 
   const parentPadding = isCompact ? "py-1.5 gap-2" : "py-4 gap-3";

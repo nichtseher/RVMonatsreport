@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+﻿import React, { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import { useSwipeable } from "react-swipeable";
 import { get, set } from "idb-keyval";
 import {
@@ -42,6 +42,12 @@ import {
   TimeLog,
 } from "./types";
 import { mergeSyncPayload } from "./utils/merge";
+import {
+  registerLiveSyncHandlers,
+  disconnectLiveSync,
+  subscribeLiveSync,
+  getLiveSyncSnapshot,
+} from "./utils/liveSync";
 import A11yModal from "./components/A11yModal";
 import CounterField from "./components/CounterField";
 import QuickEntryPanel, { QuickEntryConfig, DEFAULT_QUICK_CONFIG } from "./components/QuickEntryPanel";
@@ -56,7 +62,7 @@ import SecureBackupModal from "./components/SecureBackupModal";
 import DeviceSyncModal from "./components/DeviceSyncModal";
 import { ChangelogModal } from "./components/ChangelogModal";
 
-// Kein throw, kein "as any" -- nur eine gemeinsame Stelle für den
+// Kein throw, kein "as any" -- nur eine gemeinsame Stelle fÃ¼r den
 // Fehlerfall, damit alle Archiv-Speicherpunkte gleich reagieren.
 type OnPersistFailure = (context: string, err: unknown) => void;
 const persistHistory = (
@@ -73,7 +79,7 @@ const safeSetItem = (key: string, value: string) => {
   } catch (e: any) {
     console.error(`Error saving to localStorage (key: ${key}):`, e);
     if (e.name === "QuotaExceededError" || e.code === 22) {
-      alert("Speicherlimit erreicht! Bitte exportieren Sie Ihre Daten und löschen Sie alte Monate aus dem Archiv, da sonst keine neuen Daten gespeichert werden können.");
+      alert("Speicherlimit erreicht! Bitte exportieren Sie Ihre Daten und lÃ¶schen Sie alte Monate aus dem Archiv, da sonst keine neuen Daten gespeichert werden kÃ¶nnen.");
     }
   }
 };
@@ -82,27 +88,27 @@ const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
   s1: [
     {
       id: "vf_schule",
-      label: "Anzahl Vorführungen Schule/Bildung",
+      label: "Anzahl VorfÃ¼hrungen Schule/Bildung",
       step: 1,
-      icon: "🏫",
+      icon: "ðŸ«",
     },
     {
       id: "vf_arbeit",
-      label: "Anzahl Vorführungen Arbeitsplatz",
+      label: "Anzahl VorfÃ¼hrungen Arbeitsplatz",
       step: 1,
-      icon: "💼",
+      icon: "ðŸ’¼",
     },
     {
       id: "aus_schule",
       label: "Anzahl Auslieferungen Schule/Bildung",
       step: 1,
-      icon: "🎒",
+      icon: "ðŸŽ’",
     },
     {
       id: "aus_arbeit",
       label: "Anzahl Auslieferungen Arbeitsplatz",
       step: 1,
-      icon: "🏢",
+      icon: "ðŸ¢",
     },
   ],
   s2: [
@@ -110,51 +116,51 @@ const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
       id: "schul_vorort",
       label: "Anzahl Schulungen/Support (ohne Auslieferung)",
       step: 1,
-      icon: "👨‍🏫",
+      icon: "ðŸ‘¨â€ðŸ«",
     },
     {
       id: "schul_tel",
       label: "Anzahl Schulung/Support Telefon",
       step: 1,
-      icon: "📞",
+      icon: "ðŸ“ž",
     },
     {
       id: "akquise",
       label: "Anzahl Akquisetermine / Beratungsstellen / Multiplikator/innen",
       step: 1,
-      icon: "🤝",
+      icon: "ðŸ¤",
     },
     {
       id: "messen",
       label: "Anzahl Teilnahme Veranstaltungen/Messen/Ausstellungen",
       step: 1,
-      icon: "🎪",
+      icon: "ðŸŽª",
     },
   ],
   s3: [
     {
       id: "tac_vf",
-      label: "Anzahl Vorführungen Tactonom",
+      label: "Anzahl VorfÃ¼hrungen Tactonom",
       step: 1,
-      icon: "🎯",
+      icon: "ðŸŽ¯",
     },
     {
       id: "feel_vf",
-      label: "Anzahl Vorführungen Feelspace",
+      label: "Anzahl VorfÃ¼hrungen Feelspace",
       step: 1,
-      icon: "🌍",
+      icon: "ðŸŒ",
     },
     {
       id: "wewalk_vf",
-      label: "Anzahl Vorführungen WeWalk",
+      label: "Anzahl VorfÃ¼hrungen WeWalk",
       step: 1,
-      icon: "🦯",
+      icon: "ðŸ¦¯",
     },
     {
       id: "wewalk_tel",
       label: "Anzahl telefonische Einweisungen WeWalk",
       step: 1,
-      icon: "☎️",
+      icon: "â˜Žï¸",
     },
   ],
   s4: [
@@ -162,37 +168,37 @@ const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
       id: "tage_arbeit",
       label: "Arbeitstage (ohne Urlaub/Krankheit)",
       step: 1,
-      icon: "🗓️",
+      icon: "ðŸ—“ï¸",
     },
     {
       id: "std_buero",
-      label: "Stunden Büro/Innendienst",
+      label: "Stunden BÃ¼ro/Innendienst",
       step: 0.5,
-      icon: "⌨️",
+      icon: "âŒ¨ï¸",
     },
     {
       id: "std_aussendienst",
-      label: "Stunden Außendienst/Reisezeit",
+      label: "Stunden AuÃŸendienst/Reisezeit",
       step: 0.5,
-      icon: "🚗",
+      icon: "ðŸš—",
     },
     {
       id: "tage_urlaub",
       label: "Genommene Urlaubstage",
       step: 0.5,
-      icon: "🌴",
+      icon: "ðŸŒ´",
     },
     {
       id: "tage_krank",
       label: "Krankheitstage (bezahlt)",
       step: 0.5,
-      icon: "🤒",
+      icon: "ðŸ¤’",
     },
     {
       id: "tage_feiertag",
       label: "Feiertage (arbeitsfrei)",
       step: 1,
-      icon: "🎉",
+      icon: "ðŸŽ‰",
     },
   ],
 };
@@ -201,7 +207,7 @@ const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
 
 export default function App() {
   // --- ROUTING / NAVIGATION STATE ---
-  // Start-Ansicht per URL-Parameter (für PWA-Shortcuts, z. B. ./?tab=time)
+  // Start-Ansicht per URL-Parameter (fÃ¼r PWA-Shortcuts, z. B. ./?tab=time)
   const [activeTab, setActiveTab] = useState<"form" | "time" | "stats" | "history" | "options" | "help" | "backup" | "manage" | "carryover" | "sync" | "changelog">(() => {
     try {
       const tab = new URLSearchParams(window.location.search).get("tab");
@@ -232,7 +238,7 @@ export default function App() {
           id: "wewalk_tel",
           label: "Anzahl telefonische Einweisungen WeWalk",
           step: 1,
-          icon: "☎️",
+          icon: "â˜Žï¸",
         });
       }
     }
@@ -242,27 +248,27 @@ export default function App() {
       const requiredS4 = [
         {
           id: "std_aussendienst",
-          label: "Stunden Außendienst/Reisezeit",
+          label: "Stunden AuÃŸendienst/Reisezeit",
           step: 0.5,
-          icon: "🚗",
+          icon: "ðŸš—",
         },
         {
           id: "tage_urlaub",
           label: "Genommene Urlaubstage",
           step: 0.5,
-          icon: "🌴",
+          icon: "ðŸŒ´",
         },
         {
           id: "tage_krank",
           label: "Krankheitstage (bezahlt)",
           step: 0.5,
-          icon: "🤒",
+          icon: "ðŸ¤’",
         },
         {
           id: "tage_feiertag",
           label: "Feiertage (arbeitsfrei)",
           step: 1,
-          icon: "🎉",
+          icon: "ðŸŽ‰",
         },
       ];
       requiredS4.forEach((field) => {
@@ -274,31 +280,31 @@ export default function App() {
       // Update label to be descriptive
       fields.s4 = fields.s4.map((f: FieldConfig) => {
         if (f.id === "std_buero") {
-          return { ...f, label: "Stunden Büro/Innendienst" };
+          return { ...f, label: "Stunden BÃ¼ro/Innendienst" };
         }
         return f;
       });
     }
 
     const iconMap: Record<string, string> = {
-      vf_schule: "🏫",
-      vf_arbeit: "💼",
-      aus_schule: "🎒",
-      aus_arbeit: "🏢",
-      schul_vorort: "👨‍🏫",
-      schul_tel: "📞",
-      akquise: "🤝",
-      messen: "🎪",
-      tac_vf: "🎯",
-      feel_vf: "🌍",
-      wewalk_vf: "🦯",
-      wewalk_tel: "☎️",
-      tage_arbeit: "🗓️",
-      std_buero: "⌨️",
-      std_aussendienst: "🚗",
-      tage_urlaub: "🌴",
-      tage_krank: "🤒",
-      tage_feiertag: "🎉",
+      vf_schule: "ðŸ«",
+      vf_arbeit: "ðŸ’¼",
+      aus_schule: "ðŸŽ’",
+      aus_arbeit: "ðŸ¢",
+      schul_vorort: "ðŸ‘¨â€ðŸ«",
+      schul_tel: "ðŸ“ž",
+      akquise: "ðŸ¤",
+      messen: "ðŸŽª",
+      tac_vf: "ðŸŽ¯",
+      feel_vf: "ðŸŒ",
+      wewalk_vf: "ðŸ¦¯",
+      wewalk_tel: "â˜Žï¸",
+      tage_arbeit: "ðŸ—“ï¸",
+      std_buero: "âŒ¨ï¸",
+      std_aussendienst: "ðŸš—",
+      tage_urlaub: "ðŸŒ´",
+      tage_krank: "ðŸ¤’",
+      tage_feiertag: "ðŸŽ‰",
     };
 
     // Make sure every field in every section has an icon
@@ -307,7 +313,7 @@ export default function App() {
       if (Array.isArray(fields[sec])) {
         fields[sec] = fields[sec].map((f: FieldConfig) => {
           if (!f.icon) {
-            return { ...f, icon: iconMap[f.id] || "⭐" };
+            return { ...f, icon: iconMap[f.id] || "â­" };
           }
           return f;
         });
@@ -363,7 +369,7 @@ export default function App() {
       setActiveSectionTab(nextTab);
       // Using a basic haptic simulation (assuming triggerHaptic exists in scope)
       triggerHaptic && triggerHaptic(15);
-      const tabNames = { s1: "Bereich 1: Vorführungen", s2: "Bereich 2: Schulungen & Support", s3: "Bereich 3: Spezialprodukte", s4: "Bereich 4: Arbeitszeit" };
+      const tabNames = { s1: "Bereich 1: VorfÃ¼hrungen", s2: "Bereich 2: Schulungen & Support", s3: "Bereich 3: Spezialprodukte", s4: "Bereich 4: Arbeitszeit" };
       // Assuming announceToAriaAndSpeech is hoisted or available, otherwise we use a side-effect.
       // Wait, we need to define this later if announceToAriaAndSpeech is defined after.
     }
@@ -386,9 +392,12 @@ export default function App() {
 
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "error">("saved");
   // Sticky, bis ein Speichervorgang wieder erfolgreich war -- damit ein
-  // Außendienstler nie fälschlich "gesichert" sieht, während im Hintergrund
+  // AuÃŸendienstler nie fÃ¤lschlich "gesichert" sieht, wÃ¤hrend im Hintergrund
   // etwas schiefgeht (z. B. Speicher voll, IndexedDB blockiert).
   const [storageWriteFailed, setStorageWriteFailed] = useState(false);
+
+  // Live-Sync-Status (Verbindung lebt auÃŸerhalb dieses Fensters weiter)
+  const liveSync = useSyncExternalStore(subscribeLiveSync, getLiveSyncSnapshot);
   const [lastSavedTime, setLastSavedTime] = useState<string>(() => {
     const now = new Date();
     return now.toLocaleTimeString("de-DE", {
@@ -403,7 +412,7 @@ export default function App() {
   const [newFieldSection, setNewFieldSection] =
     useState<keyof SectionsConfig>("s1");
   const [newFieldStep, setNewFieldStep] = useState<number>(1);
-  const [newFieldIcon, setNewFieldIcon] = useState("⭐");
+  const [newFieldIcon, setNewFieldIcon] = useState("â­");
 
   // Speech Recognition dictation state
   const [isDictating, setIsDictating] = useState(false);
@@ -447,7 +456,7 @@ export default function App() {
 
   const [isGoalsEditorOpen, setIsGoalsEditorOpen] = useState(false);
 
-  // --- SCHNELL-ERFASSUNG (meistgenutzte Kategorien als große Tasten) ---
+  // --- SCHNELL-ERFASSUNG (meistgenutzte Kategorien als groÃŸe Tasten) ---
   const [quickConfig, setQuickConfig] = useState<QuickEntryConfig>(() => {
     const saved = localStorage.getItem("aussendienst_pwa_quick_v1");
     if (saved) {
@@ -582,9 +591,9 @@ export default function App() {
   }, [accessibility.screenReaderNarration, accessibility.speechRate]);
 
   // Zentrale Reaktion, wenn ein Archiv-Schreibvorgang (RV Archiv in
-  // IndexedDB) fehlschlägt -- z. B. Speicher voll, IndexedDB durch
-  // Browser-Richtlinie blockiert. Ohne diese Rückmeldung würde ein
-  // Außendienstler nie erfahren, dass eine Änderung nicht gesichert wurde.
+  // IndexedDB) fehlschlÃ¤gt -- z. B. Speicher voll, IndexedDB durch
+  // Browser-Richtlinie blockiert. Ohne diese RÃ¼ckmeldung wÃ¼rde ein
+  // AuÃŸendienstler nie erfahren, dass eine Ã„nderung nicht gesichert wurde.
   const handleHistoryPersistFailure = useCallback((context: string, err: unknown) => {
     console.error(`Speichern des RV Archivs fehlgeschlagen (${context})`, err);
     setStorageWriteFailed(true);
@@ -634,11 +643,11 @@ export default function App() {
       } else if (event.key.toLowerCase() === "t") {
         event.preventDefault();
         setActiveTab("time");
-        announceToAriaAndSpeech("Zeiterfassung geöffnet.", true);
+        announceToAriaAndSpeech("Zeiterfassung geÃ¶ffnet.", true);
       } else if (event.key.toLowerCase() === "h") {
         event.preventDefault();
         setActiveTab("history");
-        announceToAriaAndSpeech("Archiv geöffnet.", true);
+        announceToAriaAndSpeech("Archiv geÃ¶ffnet.", true);
       }
     };
 
@@ -690,7 +699,7 @@ export default function App() {
         })
         .catch((err) => {
           // Muss dem Nutzer ehrlich angezeigt werden: Ohne diesen Fehlerpfad
-          // hätte die Anzeige weiterhin "gesichert" gemeldet, obwohl die
+          // hÃ¤tte die Anzeige weiterhin "gesichert" gemeldet, obwohl die
           // Eingaben nicht persistiert wurden (z. B. Speicher voll,
           // IndexedDB durch Browser/Richtlinie blockiert).
           console.error("Speichern des Reports fehlgeschlagen", err);
@@ -725,7 +734,7 @@ export default function App() {
     const monthNames = [
       "Januar",
       "Februar",
-      "März",
+      "MÃ¤rz",
       "April",
       "Mai",
       "Juni",
@@ -809,13 +818,13 @@ export default function App() {
     if (currentDay <= 8 && isPastDeadlineMonth && hasValues) {
       return {
         isUrgent: true,
-        message: `🚨 Achtung Abgabefrist: Sie haben ungesendete Zählerstände für ${formatMonthGerman(reportData?.month || "")}! Bitte exportieren Sie den Report sofort als Excel und senden ihn an die Vertriebsleitung (VL)!`,
+        message: `ðŸš¨ Achtung Abgabefrist: Sie haben ungesendete ZÃ¤hlerstÃ¤nde fÃ¼r ${formatMonthGerman(reportData?.month || "")}! Bitte exportieren Sie den Report sofort als Excel und senden ihn an die Vertriebsleitung (VL)!`,
       };
     }
 
     return {
       isUrgent: false,
-      message: `ℹ️ Hinweis für den Monatsabschluss: Bitte senden Sie den Report bis spätestens zum 8. des Folgemonats als Excel-Datei an die Vertriebsleitung (VL).`,
+      message: `â„¹ï¸ Hinweis fÃ¼r den Monatsabschluss: Bitte senden Sie den Report bis spÃ¤testens zum 8. des Folgemonats als Excel-Datei an die Vertriebsleitung (VL).`,
     };
   };
 
@@ -832,17 +841,43 @@ export default function App() {
     }));
   }, []);
 
+  // Synchron mitgefÃ¼hrter Spiegel der ZÃ¤hlerstÃ¤nde.
+  // Grund: Schnelles mehrfaches Tippen darf keine ZÃ¤hlungen verlieren. WÃ¼rde
+  // der neue Wert aus dem React-State gelesen, lÃ¤se jeder Tipp vor dem
+  // nÃ¤chsten Rendern denselben alten Stand ("3x tippen" ergab nur +1).
+  const valuesRef = useRef<Record<string, number | "">>({});
+  useEffect(() => {
+    valuesRef.current = reportData?.values || {};
+  }, [reportData?.values]);
+
+  /**
+   * ZÃ¤hler um einen Betrag Ã¤ndern und den neuen Wert sofort zurÃ¼ckgeben.
+   * Nutzt den synchronen Spiegel, damit auch schnelles Tippen jede einzelne
+   * ZÃ¤hlung erfasst. Gibt den neuen Wert zurÃ¼ck, damit der Aufrufer ihn
+   * direkt ansagen und vertonen kann.
+   */
+  const applyValueDelta = useCallback((id: string, delta: number): number => {
+    const current =
+      typeof valuesRef.current[id] === "number" ? (valuesRef.current[id] as number) : 0;
+    const newVal = Math.max(0, parseFloat((current + delta).toFixed(1)));
+    const stored: number | "" = newVal === 0 ? "" : newVal;
+    valuesRef.current = { ...valuesRef.current, [id]: stored };
+    handleValueChange(id, stored);
+    return newVal;
+  }, [handleValueChange]);
+
+  /** Direkte Eingabe (Tastatur) -- Spiegel mitziehen, damit +/- danach stimmt. */
+  const handleValueInput = useCallback((id: string, val: number | "") => {
+    valuesRef.current = { ...valuesRef.current, [id]: val };
+    handleValueChange(id, val);
+  }, [handleValueChange]);
+
   // --- SCHNELL-ERFASSUNG: EIN TIPP = +1 ---
   const handleQuickIncrement = useCallback((field: FieldConfig) => {
     triggerHaptic(15);
-    const current =
-      typeof reportData?.values?.[field.id] === "number"
-        ? (reportData.values[field.id] as number)
-        : 0;
-    const newVal = parseFloat((current + field.step).toFixed(1));
-    handleValueChange(field.id, newVal);
+    const newVal = applyValueDelta(field.id, field.step);
     announceToAriaAndSpeech(`${field.label}: ${newVal}`, false, field.id, newVal);
-  }, [reportData, handleValueChange, announceToAriaAndSpeech]);
+  }, [applyValueDelta, announceToAriaAndSpeech]);
 
   // --- STAMPELUHR HANDLERS ---
   const handleClockIn = useCallback(() => {
@@ -850,7 +885,7 @@ export default function App() {
     const nowISO = new Date().toISOString();
     setClockInTime(nowISO);
     safeSetItem("aussendienst_pwa_clock_in_time_v2", nowISO);
-    triggerToast("🟢 Eingestempelt!");
+    triggerToast("ðŸŸ¢ Eingestempelt!");
 
     const timeStr = new Date().toLocaleTimeString("de-DE", {
       hour: "2-digit",
@@ -895,9 +930,9 @@ export default function App() {
     setClockInTime(null);
     localStorage.removeItem("aussendienst_pwa_clock_in_time_v2");
 
-    triggerToast("🔴 Ausgestempelt & Schicht verbucht!");
+    triggerToast("ðŸ”´ Ausgestempelt & Schicht verbucht!");
     announceToAriaAndSpeech(
-      `Erfolgreich ausgestempelt. Schicht über ${newLog.duration.toFixed(2)} Stunden wurde verbucht.`,
+      `Erfolgreich ausgestempelt. Schicht Ã¼ber ${newLog.duration.toFixed(2)} Stunden wurde verbucht.`,
       true,
     );
   }, [announceToAriaAndSpeech]);
@@ -928,9 +963,9 @@ export default function App() {
       };
     });
 
-    triggerToast("✓ Schicht gelöscht & Stunden korrigiert!");
+    triggerToast("âœ“ Schicht gelÃ¶scht & Stunden korrigiert!");
     announceToAriaAndSpeech(
-      `Schicht gelöscht. Stunden wurden automatisch korrigiert.`,
+      `Schicht gelÃ¶scht. Stunden wurden automatisch korrigiert.`,
       true,
     );
   }, [announceToAriaAndSpeech]);
@@ -963,9 +998,9 @@ export default function App() {
       };
     });
 
-    triggerToast("✓ Schicht manuell nachgetragen!");
+    triggerToast("âœ“ Schicht manuell nachgetragen!");
     announceToAriaAndSpeech(
-      `Schicht über ${newLog.duration.toFixed(2)} Stunden erfolgreich manuell nachgetragen.`,
+      `Schicht Ã¼ber ${newLog.duration.toFixed(2)} Stunden erfolgreich manuell nachgetragen.`,
       true,
     );
   }, [announceToAriaAndSpeech]);
@@ -1018,9 +1053,9 @@ export default function App() {
       if (savedRecord.fieldsSnapshot) {
         setAppFields(savedRecord.fieldsSnapshot);
       }
-      triggerToast(`Daten für ${formatMonthGerman(newMonth)} geladen!`);
+      triggerToast(`Daten fÃ¼r ${formatMonthGerman(newMonth)} geladen!`);
       announceToAriaAndSpeech(
-        `Daten für ${formatMonthGerman(newMonth)} erfolgreich geladen.`,
+        `Daten fÃ¼r ${formatMonthGerman(newMonth)} erfolgreich geladen.`,
         true,
       );
     } else {
@@ -1033,10 +1068,10 @@ export default function App() {
         timeLogs: [],
       });
       triggerToast(
-        `Neues Formular für ${formatMonthGerman(newMonth)} gestartet!`,
+        `Neues Formular fÃ¼r ${formatMonthGerman(newMonth)} gestartet!`,
       );
       announceToAriaAndSpeech(
-        `Neues leeres Formular für ${formatMonthGerman(newMonth)} gestartet.`,
+        `Neues leeres Formular fÃ¼r ${formatMonthGerman(newMonth)} gestartet.`,
         true,
       );
     }
@@ -1073,7 +1108,7 @@ export default function App() {
     const formattedMonth = formatMonthGerman(prevRecord.month);
     if (
       confirm(
-        `Möchten Sie die Zahlen und Kategorien aus dem Monat "${formattedMonth}" als Vorlage kopieren? Ihre aktuellen Zählerstände für diesen Monat werden überschrieben.`,
+        `MÃ¶chten Sie die Zahlen und Kategorien aus dem Monat "${formattedMonth}" als Vorlage kopieren? Ihre aktuellen ZÃ¤hlerstÃ¤nde fÃ¼r diesen Monat werden Ã¼berschrieben.`,
       )
     ) {
       setReportData((prev) => ({
@@ -1100,10 +1135,10 @@ export default function App() {
       !("SpeechRecognition" in window)
     ) {
       triggerToast(
-        "Spracherkennung wird von diesem Browser leider nicht unterstützt.",
+        "Spracherkennung wird von diesem Browser leider nicht unterstÃ¼tzt.",
       );
       announceToAriaAndSpeech(
-        "Fehler: Spracherkennung nicht unterstützt",
+        "Fehler: Spracherkennung nicht unterstÃ¼tzt",
         true,
       );
       return;
@@ -1126,7 +1161,7 @@ export default function App() {
 
     recognition.onstart = () => {
       setIsDictating(true);
-      triggerToast("🎤 Spracheingabe gestartet... Bitte sprechen Sie jetzt.");
+      triggerToast("ðŸŽ¤ Spracheingabe gestartet... Bitte sprechen Sie jetzt.");
       announceToAriaAndSpeech("Sprachaufnahme gestartet", true);
     };
 
@@ -1137,8 +1172,8 @@ export default function App() {
           "notes",
           (reportData?.notes || "") + (reportData?.notes ? " " : "") + text,
         );
-        triggerToast("✓ Sprache erfolgreich in Text umgewandelt!");
-        announceToAriaAndSpeech(`Eingefügter Text: ${text}`, true);
+        triggerToast("âœ“ Sprache erfolgreich in Text umgewandelt!");
+        announceToAriaAndSpeech(`EingefÃ¼gter Text: ${text}`, true);
       }
     };
 
@@ -1164,7 +1199,7 @@ export default function App() {
 
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       triggerToast(
-        "Sprachausgabe wird in diesem Browser leider nicht unterstützt.",
+        "Sprachausgabe wird in diesem Browser leider nicht unterstÃ¼tzt.",
       );
       return;
     }
@@ -1180,7 +1215,7 @@ export default function App() {
     // Compile summary text
     const formattedMonth = formatMonthGerman(reportData?.month);
     const parts: string[] = [];
-    parts.push(`Zusammenfassung für ${formattedMonth}.`);
+    parts.push(`Zusammenfassung fÃ¼r ${formattedMonth}.`);
     if (reportData?.name) {
       parts.push(`Mitarbeiter: ${reportData?.name}.`);
     }
@@ -1205,7 +1240,7 @@ export default function App() {
     };
 
     const s1Text = getSectionSummaryText(
-      "Vorführungen und Auslieferungen",
+      "VorfÃ¼hrungen und Auslieferungen",
       appFields.s1,
     );
     if (s1Text) parts.push(s1Text);
@@ -1219,7 +1254,7 @@ export default function App() {
     const s3Text = getSectionSummaryText("Spezialprodukte", appFields.s3);
     if (s3Text) parts.push(s3Text);
 
-    const s4Text = getSectionSummaryText("Arbeitszeit und Büro", appFields.s4);
+    const s4Text = getSectionSummaryText("Arbeitszeit und BÃ¼ro", appFields.s4);
     if (s4Text) parts.push(s4Text);
 
     if (reportData?.notes && reportData?.notes.trim()) {
@@ -1228,9 +1263,9 @@ export default function App() {
     }
 
     if (!valueFound) {
-      parts.push("Es wurden noch keine Werte für diesen Monat eingetragen.");
+      parts.push("Es wurden noch keine Werte fÃ¼r diesen Monat eingetragen.");
     } else {
-      parts.push("Bericht vollständig vorgelesen.");
+      parts.push("Bericht vollstÃ¤ndig vorgelesen.");
     }
 
     const textToSpeak = parts.join(" ");
@@ -1243,12 +1278,12 @@ export default function App() {
 
       utterance.onstart = () => {
         setIsReadingSummary(true);
-        triggerToast("🔊 Zusammenfassung wird vorgelesen...");
+        triggerToast("ðŸ”Š Zusammenfassung wird vorgelesen...");
       };
 
       utterance.onend = () => {
         setIsReadingSummary(false);
-        triggerToast("✓ Zusammenfassung beendet.");
+        triggerToast("âœ“ Zusammenfassung beendet.");
       };
 
       utterance.onerror = (e) => {
@@ -1279,8 +1314,8 @@ export default function App() {
       "notes",
       (reportData?.notes || "") + (reportData?.notes ? "\n" : "") + dStr,
     );
-    triggerToast("Datumstempel eingefügt");
-    announceToAriaAndSpeech("Datumstempel im Kommentarfeld eingefügt.", true);
+    triggerToast("Datumstempel eingefÃ¼gt");
+    announceToAriaAndSpeech("Datumstempel im Kommentarfeld eingefÃ¼gt.", true);
   };
 
   const handleApplyNoteTemplate = (templateText: string) => {
@@ -1289,8 +1324,8 @@ export default function App() {
       ? `${reportData?.notes}\n${templateText}`
       : templateText;
     handleMetaChange("notes", updatedNotes);
-    triggerToast("Vorlage angehängt!");
-    announceToAriaAndSpeech("Notiz-Vorlage erfolgreich angehängt.", true);
+    triggerToast("Vorlage angehÃ¤ngt!");
+    announceToAriaAndSpeech("Notiz-Vorlage erfolgreich angehÃ¤ngt.", true);
   };
 
   // --- MOBILE TOUCH-ACCESSORY NAVIGATION HELPERS ---
@@ -1309,7 +1344,7 @@ export default function App() {
 
   const getFieldSectionInfo = (fieldId: string) => {
     if (appFields.s1.some((f) => f.id === fieldId))
-      return { num: 1, name: "Vorführungen" };
+      return { num: 1, name: "VorfÃ¼hrungen" };
     if (appFields.s2.some((f) => f.id === fieldId))
       return { num: 2, name: "Schulung & Support" };
     if (appFields.s3.some((f) => f.id === fieldId))
@@ -1367,7 +1402,7 @@ export default function App() {
     e.preventDefault();
     const name = newFieldName.trim();
     if (!name) {
-      triggerToast("Bitte geben Sie einen gültigen Namen ein.");
+      triggerToast("Bitte geben Sie einen gÃ¼ltigen Namen ein.");
       return;
     }
 
@@ -1386,10 +1421,10 @@ export default function App() {
     }));
 
     setNewFieldName("");
-    setNewFieldIcon("⭐");
-    triggerToast(`Kategorie "${name}" wurde erfolgreich hinzugefügt!`);
+    setNewFieldIcon("â­");
+    triggerToast(`Kategorie "${name}" wurde erfolgreich hinzugefÃ¼gt!`);
     announceToAriaAndSpeech(
-      `Neue Kategorie ${name} in Bereich ${newFieldSection} hinzugefügt`,
+      `Neue Kategorie ${name} in Bereich ${newFieldSection} hinzugefÃ¼gt`,
     );
   };
 
@@ -1401,7 +1436,7 @@ export default function App() {
     triggerHaptic(25);
     if (
       confirm(
-        `Möchten Sie die Kategorie "${label}" wirklich unwiderruflich löschen?`,
+        `MÃ¶chten Sie die Kategorie "${label}" wirklich unwiderruflich lÃ¶schen?`,
       )
     ) {
       setAppFields((prev) => ({
@@ -1414,8 +1449,8 @@ export default function App() {
       delete updatedValues[fieldId];
       setReportData((prev) => ({ ...prev, values: updatedValues }));
 
-      triggerToast(`Kategorie "${label}" wurde gelöscht.`);
-      announceToAriaAndSpeech(`Kategorie ${label} gelöscht.`);
+      triggerToast(`Kategorie "${label}" wurde gelÃ¶scht.`);
+      announceToAriaAndSpeech(`Kategorie ${label} gelÃ¶scht.`);
     }
   };
 
@@ -1423,15 +1458,15 @@ export default function App() {
     triggerHaptic(40);
     if (
       confirm(
-        "Möchten Sie alle Formularfelder wirklich auf den Auslieferungszustand zurücksetzen? Alle Ihre selbst erstellten Kategorien werden gelöscht.",
+        "MÃ¶chten Sie alle Formularfelder wirklich auf den Auslieferungszustand zurÃ¼cksetzen? Alle Ihre selbst erstellten Kategorien werden gelÃ¶scht.",
       )
     ) {
       setAppFields(DEFAULT_FIELDS_CONFIG);
       setReportData((prev) => ({ ...prev, values: {} }));
       setActiveTab("options");
-      triggerToast("Erfolgreich auf Standard-Felder zurückgesetzt!");
+      triggerToast("Erfolgreich auf Standard-Felder zurÃ¼ckgesetzt!");
       announceToAriaAndSpeech(
-        "Formular erfolgreich auf Standardfelder zurückgesetzt.",
+        "Formular erfolgreich auf Standardfelder zurÃ¼ckgesetzt.",
       );
     }
   };
@@ -1458,7 +1493,21 @@ export default function App() {
     handleMonthChange(nextMonthStr);
   };
 
-  // --- GERÄTE-SYNC: ZUSAMMENFÜHREN ODER ERSETZEN ---
+  // --- LIVE-SYNC: lÃ¤uft im Hintergrund weiter, auch auÃŸerhalb des Sync-Fensters ---
+  const buildSyncPayload = useCallback((): string => {
+    return JSON.stringify({
+      appFields,
+      history,
+      carryover,
+      reportData,
+      timeLogs:
+        reportData?.month && history?.[reportData.month]
+          ? history[reportData.month].timeLogs
+          : [],
+    });
+  }, [appFields, history, carryover, reportData]);
+
+  // --- GERÃ„TE-SYNC: ZUSAMMENFÃœHREN ODER ERSETZEN ---
   const handleSyncImport = useCallback(
     (dataStr: string, strategy: "merge" | "replace", options?: { silent?: boolean }): boolean => {
       try {
@@ -1490,7 +1539,7 @@ export default function App() {
           setActiveTab("options");
           const msg =
             strategy === "merge"
-              ? "Daten beider Geräte erfolgreich zusammengeführt!"
+              ? "Daten beider GerÃ¤te erfolgreich zusammengefÃ¼hrt!"
               : "Daten erfolgreich ersetzt!";
           triggerToast(msg);
           announceToAriaAndSpeech(msg, true);
@@ -1506,7 +1555,22 @@ export default function App() {
     [appFields, history, carryover, reportData, announceToAriaAndSpeech],
   );
 
-  // --- MONATSABSCHLUSS-CHECK (Plausibilität vor dem Senden an die VL) ---
+  // Aktuelle Export-/Merge-Funktionen beim Live-Sync-Dienst hinterlegen,
+  // damit der Hintergrund-Abgleich immer den aktuellen Stand sendet.
+  useEffect(() => {
+    registerLiveSyncHandlers(buildSyncPayload, (dataStr) => {
+      handleSyncImport(dataStr, "merge", { silent: true });
+    });
+  }, [buildSyncPayload, handleSyncImport]);
+
+  // Live-Verbindung sauber beenden, wenn die App geschlossen wird
+  useEffect(() => {
+    const handleUnload = () => disconnectLiveSync();
+    window.addEventListener("pagehide", handleUnload);
+    return () => window.removeEventListener("pagehide", handleUnload);
+  }, []);
+
+  // --- MONATSABSCHLUSS-CHECK (PlausibilitÃ¤t vor dem Senden an die VL) ---
   const getReportWarnings = (): string[] => {
     const warnings: string[] = [];
     if (!reportData?.name || !String(reportData.name).trim()) {
@@ -1515,7 +1579,7 @@ export default function App() {
     const vals = reportData?.values || {};
     const hasValues = Object.values(vals).some((v) => typeof v === "number" && v > 0);
     if (!hasValues) {
-      warnings.push("Es sind noch keine Zählerstände eingetragen – der Report wäre leer.");
+      warnings.push("Es sind noch keine ZÃ¤hlerstÃ¤nde eingetragen â€“ der Report wÃ¤re leer.");
     }
     const logs = Array.isArray(reportData?.timeLogs) ? reportData.timeLogs : [];
     if (accessibility.enableTimeTracking !== false && logs.length > 0) {
@@ -1539,11 +1603,11 @@ export default function App() {
     return warnings;
   };
 
-  // --- BERICHT AN VL SENDEN (serverlos über den Teilen-Dialog) ---
+  // --- BERICHT AN VL SENDEN (serverlos Ã¼ber den Teilen-Dialog) ---
   const handleSendToVL = async () => {
     triggerHaptic(25);
     if (!reportData) return;
-    // Plausibilitäts-Check: typische Flüchtigkeitsfehler abfangen, bevor
+    // PlausibilitÃ¤ts-Check: typische FlÃ¼chtigkeitsfehler abfangen, bevor
     // der Bericht bei der Vertriebsleitung landet.
     const warnings = getReportWarnings();
     if (warnings.length > 0) {
@@ -1552,18 +1616,18 @@ export default function App() {
         true,
       );
       const proceed = confirm(
-        "Monatsabschluss-Check – bitte kurz prüfen:\n\n• " +
-          warnings.join("\n• ") +
+        "Monatsabschluss-Check â€“ bitte kurz prÃ¼fen:\n\nâ€¢ " +
+          warnings.join("\nâ€¢ ") +
           "\n\nTrotzdem senden?",
       );
       if (!proceed) {
-        announceToAriaAndSpeech("Senden abgebrochen. Sie können die Angaben jetzt korrigieren.", true);
+        announceToAriaAndSpeech("Senden abgebrochen. Sie kÃ¶nnen die Angaben jetzt korrigieren.", true);
         return;
       }
     }
-    // DSGVO-konform ohne Server: Der Bericht wird als Excel-Datei über den
+    // DSGVO-konform ohne Server: Der Bericht wird als Excel-Datei Ã¼ber den
     // System-Teilen-Dialog (z. B. E-Mail an die VL) weitergegeben.
-    announceToAriaAndSpeech("Teilen-Dialog wird geöffnet, um den Bericht an die VL zu senden.");
+    announceToAriaAndSpeech("Teilen-Dialog wird geÃ¶ffnet, um den Bericht an die VL zu senden.");
     await handleExportExcel();
   };
 
@@ -1591,7 +1655,7 @@ export default function App() {
         )
         .catch(() => {});
     }
-    // Läuft bewusst nur einmal pro Monat (doneKey-Sperre in localStorage).
+    // LÃ¤uft bewusst nur einmal pro Monat (doneKey-Sperre in localStorage).
   }, [reportData?.month]);
 
   // --- TEMPLATES ---
@@ -1606,23 +1670,23 @@ export default function App() {
       case "Geraete-Erprobung":
         newValues["vf_arbeit"] = (newValues["vf_arbeit"] || 0) + 1;
         newValues["std_aussendienst"] = (newValues["std_aussendienst"] || 0) + 2.5;
-        newNotes = (newNotes ? newNotes + "\n" : "") + "Standard Geräte-Erprobung durchgeführt.";
-        announceToAriaAndSpeech("Template Geräte-Erprobung angewendet.");
-        triggerToast("🚀 Template: Geräte-Erprobung geladen");
+        newNotes = (newNotes ? newNotes + "\n" : "") + "Standard GerÃ¤te-Erprobung durchgefÃ¼hrt.";
+        announceToAriaAndSpeech("Template GerÃ¤te-Erprobung angewendet.");
+        triggerToast("ðŸš€ Template: GerÃ¤te-Erprobung geladen");
         break;
       case "Buerotag":
         newValues["std_buero"] = (newValues["std_buero"] || 0) + 8;
         newValues["tage_arbeit"] = (newValues["tage_arbeit"] || 0) + 1;
-        newNotes = (newNotes ? newNotes + "\n" : "") + "Regulärer Bürotag.";
-        announceToAriaAndSpeech("Template Bürotag angewendet.");
-        triggerToast("☕ Template: Bürotag geladen");
+        newNotes = (newNotes ? newNotes + "\n" : "") + "RegulÃ¤rer BÃ¼rotag.";
+        announceToAriaAndSpeech("Template BÃ¼rotag angewendet.");
+        triggerToast("â˜• Template: BÃ¼rotag geladen");
         break;
       case "Schulung":
         newValues["schul_vorort"] = (newValues["schul_vorort"] || 0) + 1;
         newValues["std_aussendienst"] = (newValues["std_aussendienst"] || 0) + 4;
-        newNotes = (newNotes ? newNotes + "\n" : "") + "Schulung vor Ort durchgeführt.";
+        newNotes = (newNotes ? newNotes + "\n" : "") + "Schulung vor Ort durchgefÃ¼hrt.";
         announceToAriaAndSpeech("Template Schulung angewendet.");
-        triggerToast("🎓 Template: Schulung geladen");
+        triggerToast("ðŸŽ“ Template: Schulung geladen");
         break;
     }
 
@@ -1645,17 +1709,17 @@ export default function App() {
     };
 
     const excelRows: any[][] = [];
-    excelRows.push(["MONATSÜBERSICHT AUßENDIENST - BARRIEREFREI"]);
+    excelRows.push(["MONATSÃœBERSICHT AUÃŸENDIENST - BARRIEREFREI"]);
     excelRows.push(["Erstellt mit der barrierefreien RV Mobil App"]);
     excelRows.push([]);
     excelRows.push(["Monat / Jahr:", monthVal]);
     excelRows.push(["Name (Mitarbeiter/in):", nameVal]);
     excelRows.push([]);
 
-    // 1. VORFÜHRUNGEN & AUSLIEFERUNGEN
+    // 1. VORFÃœHRUNGEN & AUSLIEFERUNGEN
     excelRows.push([
-      "1. VORFÜHRUNGEN & AUSLIEFERUNGEN",
-      "Anzahl / Zählerstand",
+      "1. VORFÃœHRUNGEN & AUSLIEFERUNGEN",
+      "Anzahl / ZÃ¤hlerstand",
     ]);
     const startRowS1 = excelRows.length + 1;
     appFields.s1.forEach((i) => {
@@ -1670,7 +1734,7 @@ export default function App() {
     excelRows.push([]);
 
     // 2. SCHULUNG, SUPPORT & AKQUISE
-    excelRows.push(["2. SCHULUNG, SUPPORT & AKQUISE", "Anzahl / Zählerstand"]);
+    excelRows.push(["2. SCHULUNG, SUPPORT & AKQUISE", "Anzahl / ZÃ¤hlerstand"]);
     const startRowS2 = excelRows.length + 1;
     appFields.s2.forEach((i) => {
       excelRows.push([i.label, getVal(i.id)]);
@@ -1684,7 +1748,7 @@ export default function App() {
     excelRows.push([]);
 
     // 3. SPEZIALPRODUKTE (DETAILS)
-    excelRows.push(["3. SPEZIALPRODUKTE (DETAILS)", "Anzahl / Zählerstand"]);
+    excelRows.push(["3. SPEZIALPRODUKTE (DETAILS)", "Anzahl / ZÃ¤hlerstand"]);
     const startRowS3 = excelRows.length + 1;
     appFields.s3.forEach((i) => {
       excelRows.push([i.label, getVal(i.id)]);
@@ -1697,8 +1761,8 @@ export default function App() {
     const totalS3Row = excelRows.length;
     excelRows.push([]);
 
-    // 4. ARBEITSZEIT & BÜRO
-    excelRows.push(["4. ARBEITSZEIT & BÜRO", "Wert / Stunden"]);
+    // 4. ARBEITSZEIT & BÃœRO
+    excelRows.push(["4. ARBEITSZEIT & BÃœRO", "Wert / Stunden"]);
     const startRowS4 = excelRows.length + 1;
     appFields.s4.forEach((i) => {
       excelRows.push([i.label, getVal(i.id)]);
@@ -1713,7 +1777,7 @@ export default function App() {
     // Summary section
     excelRows.push(["GESAMT-ZUSAMMENFASSUNG"]);
     excelRows.push([
-      "Gesamt-Aktivitäten (Bereich 1 + 2 + 3)",
+      "Gesamt-AktivitÃ¤ten (Bereich 1 + 2 + 3)",
       { t: "n", f: `B${totalS1Row}+B${totalS2Row}+B${totalS3Row}` },
     ]);
     excelRows.push([]);
@@ -1744,13 +1808,13 @@ export default function App() {
         if (navigator.canShare({ files: [file] })) {
           navigator
             .share({
-              title: "Außendienst Monatsreport",
-              text: `Anbei der aktuelle Monatsreport für ${formatMonthGerman(monthVal)}`,
+              title: "AuÃŸendienst Monatsreport",
+              text: `Anbei der aktuelle Monatsreport fÃ¼r ${formatMonthGerman(monthVal)}`,
               files: [file],
             })
             .then(() => {
               triggerToast("Report erfolgreich geteilt!");
-              announceToAriaAndSpeech("Teilen-Dialog erfolgreich geöffnet.");
+              announceToAriaAndSpeech("Teilen-Dialog erfolgreich geÃ¶ffnet.");
             })
             .catch((err) => {
               console.log(
@@ -1793,7 +1857,7 @@ export default function App() {
     }
 
     const excelRows: any[][] = [];
-    excelRows.push(["ARBEITSZEITERFASSUNG & STEMPELUHR - RV AUßENDIENST"]);
+    excelRows.push(["ARBEITSZEITERFASSUNG & STEMPELUHR - RV AUÃŸENDIENST"]);
     excelRows.push(["Erstellt mit der barrierefreien RV Mobil App"]);
     excelRows.push([]);
     excelRows.push(["Mitarbeiter/in:", nameVal]);
@@ -1807,8 +1871,8 @@ export default function App() {
       "Gehen",
       "Abzug Pause (Min)",
       "Netto-Stunden (h)",
-      "Anteil Büro (h)",
-      "Anteil Außendienst (h)",
+      "Anteil BÃ¼ro (h)",
+      "Anteil AuÃŸendienst (h)",
       "Kommentar / Ort / Besuchte Schule",
     ]);
 
@@ -1850,8 +1914,8 @@ export default function App() {
       { wch: 10 }, // Gehen
       { wch: 18 }, // Pause
       { wch: 18 }, // Netto
-      { wch: 16 }, // Büro
-      { wch: 22 }, // Außendienst
+      { wch: 16 }, // BÃ¼ro
+      { wch: 22 }, // AuÃŸendienst
       { wch: 45 }, // Kommentar
     ];
 
@@ -1874,13 +1938,13 @@ export default function App() {
           navigator
             .share({
               title: "RV Zeiterfassung",
-              text: `Anbei das Zeiterfassungs-Protokoll für ${formatMonthGerman(monthVal)}`,
+              text: `Anbei das Zeiterfassungs-Protokoll fÃ¼r ${formatMonthGerman(monthVal)}`,
               files: [file],
             })
             .then(() => {
               triggerToast("Zeiterfassung erfolgreich geteilt!");
               announceToAriaAndSpeech(
-                "Zeiterfassung-Teilen-Dialog erfolgreich geöffnet.",
+                "Zeiterfassung-Teilen-Dialog erfolgreich geÃ¶ffnet.",
               );
             })
             .catch((err) => {
@@ -2041,10 +2105,10 @@ export default function App() {
                      triggerHaptic(12);
                      setActiveTab(tab.id as any);
                      if (tab.id === "form") announceToAriaAndSpeech("RV Report Hauptformular angezeigt");
-                     else if (tab.id === "time") announceToAriaAndSpeech("RV Zeit und Stempeluhr geöffnet");
-                     else if (tab.id === "stats") announceToAriaAndSpeech("RV Analyse und Statistiken geöffnet");
-                     else if (tab.id === "history") announceToAriaAndSpeech("RV Archiv geöffnet");
-                     else if (tab.id === "options") announceToAriaAndSpeech("Anzeige-Optionen geöffnet");
+                     else if (tab.id === "time") announceToAriaAndSpeech("RV Zeit und Stempeluhr geÃ¶ffnet");
+                     else if (tab.id === "stats") announceToAriaAndSpeech("RV Analyse und Statistiken geÃ¶ffnet");
+                     else if (tab.id === "history") announceToAriaAndSpeech("RV Archiv geÃ¶ffnet");
+                     else if (tab.id === "options") announceToAriaAndSpeech("Anzeige-Optionen geÃ¶ffnet");
                      window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all cursor-pointer font-bold ${
@@ -2059,7 +2123,7 @@ export default function App() {
           </nav>
           <div className="p-6 text-center border-t border-[var(--border-color)]">
              <p className="text-[10px] text-[var(--text-muted)] font-bold opacity-70">
-               © 2026 Reinecker Vision
+               Â© 2026 Reinecker Vision
              </p>
           </div>
         </aside>
@@ -2108,6 +2172,18 @@ export default function App() {
                 <span>Automatisch lokal gesichert ({lastSavedTime})</span>
               </>
             )}
+            {liveSync.connected && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("sync")}
+                title="Live-Verbindung aktiv â€“ zum Verwalten antippen"
+                aria-label={`Live-Verbindung mit dem anderen GerÃ¤t ist aktiv.${liveSync.lastSyncTime ? ` Letzter Abgleich um ${liveSync.lastSyncTime} Uhr.` : ""} Antippen zum Verwalten.`}
+                className="ml-2 flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-emerald-700 dark:text-emerald-400 cursor-pointer hover:bg-emerald-500/20 transition-colors"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true"></span>
+                <span>Live verbunden</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -2135,7 +2211,7 @@ export default function App() {
               type="button"
               onClick={() => setActiveTab("history")}
               className="text-[9px] font-bold text-[var(--accent)] hover:underline flex items-center gap-1 cursor-pointer p-0.5 rounded"
-              aria-label="Frühere Monate aus dem RV Archiv wählen"
+              aria-label="FrÃ¼here Monate aus dem RV Archiv wÃ¤hlen"
             >
               <History className="w-2.5 h-2.5" />
               <span>Monats-Archiv</span>
@@ -2166,7 +2242,7 @@ export default function App() {
               aria-required="true"
             />
             <span className="block text-[8px] text-[var(--text-muted)] font-semibold pt-1">
-              🔒 DSGVO-sicher lokal
+              ðŸ”’ DSGVO-sicher lokal
             </span>
           </div>
         </div>
@@ -2214,7 +2290,7 @@ export default function App() {
 
       {/* MOBILE COMFORT ACTION BAR */}
       {mobileComfortMode && !isDesktop && (
-        <div className="mb-4 rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-3 shadow-sm" role="toolbar" aria-label="Schnellzugriffe für den Ein-Hand-Modus">
+        <div className="mb-4 rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-3 shadow-sm" role="toolbar" aria-label="Schnellzugriffe fÃ¼r den Ein-Hand-Modus">
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => focusAndAnnounce("month")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-3 py-1.5 text-xs font-black">Monat</button>
             <button type="button" onClick={() => focusAndAnnounce("name")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-3 py-1.5 text-xs font-black">Name</button>
@@ -2233,7 +2309,7 @@ export default function App() {
                 <div className="flex items-start gap-2.5 flex-1">
                   <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
                   <p className="text-sm font-bold leading-snug">
-                    Speichern fehlgeschlagen! Ihre letzten Änderungen sind eventuell nicht dauerhaft
+                    Speichern fehlgeschlagen! Ihre letzten Ã„nderungen sind eventuell nicht dauerhaft
                     gesichert. Bitte erstellen Sie jetzt ein Backup, bevor Sie weiterarbeiten.
                   </p>
                 </div>
@@ -2266,7 +2342,7 @@ export default function App() {
       {/* Bento Header title & interactive filter toggle */}
       <div className="flex items-center justify-between mb-2 px-1">
         <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
-          📊 Monats-Fortschritt{" "}
+          ðŸ“Š Monats-Fortschritt{" "}
           <span className="font-semibold text-xs text-[var(--text-muted)]/70 lowercase">
             (Bereich anklicken zum Filtern)
           </span>
@@ -2281,7 +2357,7 @@ export default function App() {
             }}
             className="text-[10px] font-black text-red-500 hover:text-red-600 hover:underline flex items-center gap-1 cursor-pointer bg-red-500/10 dark:bg-red-500/20 px-2 py-0.5 rounded-md transition-all active:scale-95"
           >
-            <span>Filter aufheben ✕</span>
+            <span>Filter aufheben âœ•</span>
           </button>
         )}
       </div>
@@ -2293,7 +2369,7 @@ export default function App() {
           aria-label="Aktueller Monatsfortschritt Live-Anzeige"
           role="region"
         >
-        {/* Card 1: Vorführungen */}
+        {/* Card 1: VorfÃ¼hrungen */}
         <button
           type="button"
           onClick={() => {
@@ -2301,8 +2377,8 @@ export default function App() {
             setActiveSectionTab(activeSectionTab === "s1" ? "all" : "s1");
             announceToAriaAndSpeech(
               activeSectionTab === "s1"
-                ? "Filter auf alle Bereiche zurückgesetzt"
-                : "Filter gewechselt auf Bereich 1: Vorführungen",
+                ? "Filter auf alle Bereiche zurÃ¼ckgesetzt"
+                : "Filter gewechselt auf Bereich 1: VorfÃ¼hrungen",
             );
           }}
           className={`p-3 rounded-2xl border bg-[var(--card-bg)] flex flex-col justify-between shadow-xs hover:border-emerald-500/50 transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
@@ -2312,8 +2388,8 @@ export default function App() {
           }`}
           aria-label={
             goalsConfig.enabled
-              ? `Bereich 1: Vorführungen. Aktuelle Summe: ${s1Total} von Monatsziel ${goalsConfig.s1}. Klick, um auf diesen Bereich zu filtern.`
-              : `Bereich 1: Vorführungen. Aktuelle Summe: ${s1Total}. Klick, um auf diesen Bereich zu filtern.`
+              ? `Bereich 1: VorfÃ¼hrungen. Aktuelle Summe: ${s1Total} von Monatsziel ${goalsConfig.s1}. Klick, um auf diesen Bereich zu filtern.`
+              : `Bereich 1: VorfÃ¼hrungen. Aktuelle Summe: ${s1Total}. Klick, um auf diesen Bereich zu filtern.`
           }
         >
           <div className="flex items-center gap-2 w-full">
@@ -2325,7 +2401,7 @@ export default function App() {
             </div>
             <div className="min-w-0 flex-1">
               <span className="block text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider leading-tight">
-                Vorführungen
+                VorfÃ¼hrungen
               </span>
               <span className="text-lg font-black text-[var(--text-color)] leading-none">
                 {s1Total}
@@ -2360,7 +2436,7 @@ export default function App() {
             setActiveSectionTab(activeSectionTab === "s2" ? "all" : "s2");
             announceToAriaAndSpeech(
               activeSectionTab === "s2"
-                ? "Filter auf alle Bereiche zurückgesetzt"
+                ? "Filter auf alle Bereiche zurÃ¼ckgesetzt"
                 : "Filter gewechselt auf Bereich 2: Schulungen & Support",
             );
           }}
@@ -2419,7 +2495,7 @@ export default function App() {
             setActiveSectionTab(activeSectionTab === "s3" ? "all" : "s3");
             announceToAriaAndSpeech(
               activeSectionTab === "s3"
-                ? "Filter auf alle Bereiche zurückgesetzt"
+                ? "Filter auf alle Bereiche zurÃ¼ckgesetzt"
                 : "Filter gewechselt auf Bereich 3: Spezialprodukte",
             );
           }}
@@ -2470,7 +2546,7 @@ export default function App() {
           )}
         </button>
 
-        {/* Card 4: Büro & Arbeitszeit */}
+        {/* Card 4: BÃ¼ro & Arbeitszeit */}
         <button
           type="button"
           onClick={() => {
@@ -2478,7 +2554,7 @@ export default function App() {
             setActiveSectionTab(activeSectionTab === "s4" ? "all" : "s4");
             announceToAriaAndSpeech(
               activeSectionTab === "s4"
-                ? "Filter auf alle Bereiche zurückgesetzt"
+                ? "Filter auf alle Bereiche zurÃ¼ckgesetzt"
                 : "Filter gewechselt auf Bereich 4: Arbeitszeit",
             );
           }}
@@ -2502,7 +2578,7 @@ export default function App() {
             </div>
             <div className="min-w-0 flex-1">
               <span className="block text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider leading-tight">
-                Bürozeit
+                BÃ¼rozeit
               </span>
               <span className="text-lg font-black text-[var(--text-color)] leading-none">
                 {s4Hours}h
@@ -2558,7 +2634,7 @@ export default function App() {
                   : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--border-color)]"
               }`}
             >
-              <span aria-hidden="true">📐 </span>
+              <span aria-hidden="true">ðŸ“ </span>
               <span>Kompakt</span>
               <span className="text-[9px] bg-black/10 dark:bg-white/10 px-1 py-0.2 rounded font-black uppercase">
                 {isCompactView ? "Ein" : "Aus"}
@@ -2574,7 +2650,7 @@ export default function App() {
                 title="Werte des letzten gesicherten Monats als Vorlage laden"
                 className="px-2 py-1 rounded-lg text-xs font-bold border bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
               >
-                <span aria-hidden="true">📋 </span>
+                <span aria-hidden="true">ðŸ“‹ </span>
                 <span>Vorlage laden</span>
               </button>
             )}
@@ -2632,7 +2708,7 @@ export default function App() {
                     : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--border-color)]"
               }`}
             >
-              <span aria-hidden="true">🎯 </span>
+              <span aria-hidden="true">ðŸŽ¯ </span>
               <span>Ziele</span>
               <span className="text-[9px] bg-black/10 dark:bg-white/10 px-1 py-0.2 rounded font-black uppercase">
                 {goalsConfig.enabled ? "An" : "Aus"}
@@ -2650,7 +2726,7 @@ export default function App() {
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-[var(--text-color)] flex items-center gap-1">
-                <span>🎯 Monatsziele festlegen</span>
+                <span>ðŸŽ¯ Monatsziele festlegen</span>
               </span>
               <label className="relative inline-flex items-center cursor-pointer select-none">
                 <input
@@ -2678,7 +2754,7 @@ export default function App() {
             </div>
 
             <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">
-              Tragen Sie hier Ihre persönlichen Monatsziele ein. Wenn die Ziele
+              Tragen Sie hier Ihre persÃ¶nlichen Monatsziele ein. Wenn die Ziele
               aktiviert sind, zeigt Ihnen das Dashboard in den Kacheln Ihren
               aktuellen Fortschritt mit farbigen Balken an.
             </p>
@@ -2686,7 +2762,7 @@ export default function App() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div>
                 <label className="block text-[9px] font-bold text-[var(--text-muted)] mb-1 uppercase tracking-wider">
-                  Vorführungen
+                  VorfÃ¼hrungen
                 </label>
                 <input
                   type="number"
@@ -2737,7 +2813,7 @@ export default function App() {
               </div>
               <div>
                 <label className="block text-[9px] font-bold text-[var(--text-muted)] mb-1 uppercase tracking-wider">
-                  Bürozeit (h)
+                  BÃ¼rozeit (h)
                 </label>
                 <input
                   type="number"
@@ -2774,7 +2850,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                aria-label="Suche löschen"
+                aria-label="Suche lÃ¶schen"
                 className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400 hover:text-[var(--text-color)]"
               >
                 <X className="w-4 h-4" aria-hidden="true" />
@@ -2785,7 +2861,7 @@ export default function App() {
       </div>
 
       <div {...swipeHandlers} className="w-full">
-        {/* SECTION 1: VORFÜHRUNGEN & AUSLIEFERUNGEN */}
+        {/* SECTION 1: VORFÃœHRUNGEN & AUSLIEFERUNGEN */}
         {(activeSectionTab === "all" || activeSectionTab === "s1") &&
           hasVisibleFields(appFields.s1) && (
           <section
@@ -2796,7 +2872,7 @@ export default function App() {
               id="section1-heading"
               className="text-lg md:text-xl font-extrabold pb-3 mb-4 border-b-2 border-slate-100 dark:border-slate-800 tracking-tight text-[var(--text-color)]"
             >
-              1. Vorführungen & Auslieferungen
+              1. VorfÃ¼hrungen & Auslieferungen
             </h2>
             <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-2 lg:gap-5' : 'gap-3'}`}>
               {filterFields(appFields.s1).map((field) => (
@@ -2804,7 +2880,8 @@ export default function App() {
                   key={field.id}
                   config={field}
                   value={(reportData?.values || {})[field.id] ?? ""}
-                  onChange={(val) => handleValueChange(field.id, val)}
+                  onChange={(val) => handleValueInput(field.id, val)}
+                  onDelta={(delta) => applyValueDelta(field.id, delta)}
                   onAnnounce={announceToAriaAndSpeech}
                   audioFeedbackEnabled={accessibility.audioFeedback}
                   isCompact={shouldUseCompactFields}
@@ -2853,7 +2930,8 @@ export default function App() {
                   key={field.id}
                   config={field}
                   value={(reportData?.values || {})[field.id] ?? ""}
-                  onChange={(val) => handleValueChange(field.id, val)}
+                  onChange={(val) => handleValueInput(field.id, val)}
+                  onDelta={(delta) => applyValueDelta(field.id, delta)}
                   onAnnounce={announceToAriaAndSpeech}
                   audioFeedbackEnabled={accessibility.audioFeedback}
                   isCompact={shouldUseCompactFields}
@@ -2890,7 +2968,8 @@ export default function App() {
                   key={field.id}
                   config={field}
                   value={(reportData?.values || {})[field.id] ?? ""}
-                  onChange={(val) => handleValueChange(field.id, val)}
+                  onChange={(val) => handleValueInput(field.id, val)}
+                  onDelta={(delta) => applyValueDelta(field.id, delta)}
                   onAnnounce={announceToAriaAndSpeech}
                   audioFeedbackEnabled={accessibility.audioFeedback}
                   isCompact={shouldUseCompactFields}
@@ -2908,7 +2987,7 @@ export default function App() {
           </section>
         )}
 
-      {/* SECTION 4: ARBEITSZEIT & BÜRO */}
+      {/* SECTION 4: ARBEITSZEIT & BÃœRO */}
       {(activeSectionTab === "all" || activeSectionTab === "s4") &&
         hasVisibleFields(appFields.s4) && (
           <section
@@ -2919,7 +2998,7 @@ export default function App() {
               id="section4-heading"
               className="text-lg md:text-xl font-extrabold pb-3 mb-4 border-b-2 border-slate-100 dark:border-slate-800 tracking-tight text-[var(--text-color)]"
             >
-              4. Arbeitszeit & Büro
+              4. Arbeitszeit & BÃ¼ro
             </h2>
             {accessibility.enableTimeTracking !== false && (
               <div className="mb-4 p-3 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-700 dark:text-teal-400 text-xs font-bold flex items-start gap-2">
@@ -2933,7 +3012,8 @@ export default function App() {
                   key={field.id}
                   config={field}
                   value={(reportData?.values || {})[field.id] ?? ""}
-                  onChange={(val) => handleValueChange(field.id, val)}
+                  onChange={(val) => handleValueInput(field.id, val)}
+                  onDelta={(delta) => applyValueDelta(field.id, delta)}
                   onAnnounce={announceToAriaAndSpeech}
                   audioFeedbackEnabled={accessibility.audioFeedback}
                   isCompact={shouldUseCompactFields}
@@ -2959,14 +3039,14 @@ export default function App() {
         !hasVisibleFields(appFields.s4) && (
           <div className="p-8 text-center border-2 border-dashed border-[var(--border-color)] rounded-2xl bg-[var(--card-bg)] mb-5 animate-fade-in">
             <p className="text-sm font-semibold text-[var(--text-muted)]">
-              Keine passenden Einträge gefunden für "{searchQuery}".
+              Keine passenden EintrÃ¤ge gefunden fÃ¼r "{searchQuery}".
             </p>
             <button
               type="button"
               onClick={() => setSearchQuery("")}
               className="mt-3 px-3 py-1.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-xs font-bold rounded-lg cursor-pointer active:scale-95 transition-all"
             >
-              Suche zurücksetzen
+              Suche zurÃ¼cksetzen
             </button>
           </div>
         )}
@@ -3012,10 +3092,10 @@ export default function App() {
             <button
               type="button"
               onClick={addTimestamp}
-              aria-label="Datumstempel in Kommentare einfügen"
+              aria-label="Datumstempel in Kommentare einfÃ¼gen"
               className="py-2 px-3.5 rounded-xl border-2 border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:border-[var(--border-focus)] transition-all cursor-pointer font-extrabold text-sm focus-visible:ring-4"
             >
-              🗓️ Datumstempel
+              ðŸ—“ï¸ Datumstempel
             </button>
           </div>
         </div>
@@ -3026,31 +3106,31 @@ export default function App() {
         >
           Tragen Sie hier wichtige Notizen ein:{" "}
           <span className="text-emerald-600 dark:text-emerald-400 font-black">
-            🔒 Wird nur auf Ihrem Gerät gespeichert
+            ðŸ”’ Wird nur auf Ihrem GerÃ¤t gespeichert
           </span>
         </label>
 
         {/* Quick templates for notes (excellent usability for sales reps on mobile) */}
         <div
           className="flex flex-wrap gap-1.5 mb-3"
-          aria-label="Schnell-Vorlagen für Notizen"
+          aria-label="Schnell-Vorlagen fÃ¼r Notizen"
         >
           {[
             {
-              label: "Alles planmäßig 📅",
-              text: "Alles planmäßig verlaufen. Keine besonderen Vorkommnisse.",
+              label: "Alles planmÃ¤ÃŸig ðŸ“…",
+              text: "Alles planmÃ¤ÃŸig verlaufen. Keine besonderen Vorkommnisse.",
             },
             {
-              label: "Messewoche 🎪",
-              text: "Fokus auf Repräsentanz, Messestand-Betreuung und Neukunden-Akquise vor Ort.",
+              label: "Messewoche ðŸŽª",
+              text: "Fokus auf ReprÃ¤sentanz, Messestand-Betreuung und Neukunden-Akquise vor Ort.",
             },
             {
-              label: "Erfolgreiche Schulungen 📈",
+              label: "Erfolgreiche Schulungen ðŸ“ˆ",
               text: "Kundenschulungen wurden sehr erfolgreich absolviert mit durchweg positivem Feedback.",
             },
             {
-              label: "Urlaubszeit 🏖️",
-              text: "Erhöhte Abwesenheiten im Berichtszeitraum wegen Urlaubs-/Ferienzeit.",
+              label: "Urlaubszeit ðŸ–ï¸",
+              text: "ErhÃ¶hte Abwesenheiten im Berichtszeitraum wegen Urlaubs-/Ferienzeit.",
             },
           ].map((tpl, i) => (
             <button
@@ -3058,7 +3138,7 @@ export default function App() {
               type="button"
               onClick={() => handleApplyNoteTemplate(tpl.text)}
               className="px-2.5 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:border-[var(--border-focus)] hover:bg-slate-50 dark:hover:bg-slate-900 text-[11px] font-black text-[var(--text-color)] transition-all cursor-pointer active:scale-95 focus-visible:ring-2"
-              title={`Text einfügen: "${tpl.text}"`}
+              title={`Text einfÃ¼gen: "${tpl.text}"`}
             >
               {tpl.label}
             </button>
@@ -3082,19 +3162,19 @@ export default function App() {
       {/* FINAL ACTION AREA */}
       <section
         className="space-y-3.5"
-        aria-label="Monat abschließen und exportieren"
+        aria-label="Monat abschlieÃŸen und exportieren"
       >
         <button
           type="button"
           onClick={handleStartNewMonth}
-          aria-label="Nächsten Monat starten. Der aktuelle Monat wird automatisch im RV Archiv gesichert."
+          aria-label="NÃ¤chsten Monat starten. Der aktuelle Monat wird automatisch im RV Archiv gesichert."
           className="w-full py-4 px-6 rounded-2xl font-black bg-[var(--primary)] hover:opacity-90 text-[var(--primary-text)] text-base md:text-lg flex items-center justify-center gap-2.5 shadow-md cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-4 mb-4"
         >
           <CalendarPlus
             className="w-5.5 h-5.5 text-[var(--accent)]"
             aria-hidden="true"
           />
-          <span>Monat abschließen & neu starten (Auto-Archiv)</span>
+          <span>Monat abschlieÃŸen & neu starten (Auto-Archiv)</span>
         </button>
 
         
@@ -3105,7 +3185,7 @@ export default function App() {
             onClick={handleSendToVL}
             className="w-full py-4 px-6 rounded-2xl font-bold bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-base flex items-center justify-center gap-2.5 shadow-sm cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-4"
           >
-            <span className="text-xl">🚀</span>
+            <span className="text-xl">ðŸš€</span>
             <span>Bericht an VL senden (Teilen/E-Mail)</span>
           </button>
         </div>
@@ -3117,7 +3197,7 @@ export default function App() {
         role="contentinfo"
       >
         <p className="opacity-80 text-[10px]">
-          © 2026 Reinecker Vision GmbH | RV Mobil – Konzeptioniert &amp;
+          Â© 2026 Reinecker Vision GmbH | RV Mobil â€“ Konzeptioniert &amp;
           entwickelt von Marc Petry Stramov
         </p>
       </footer>
@@ -3193,18 +3273,8 @@ export default function App() {
         <DeviceSyncModal
           isOpen={true}
           onClose={() => setActiveTab("options")}
-          onExport={() => {
-            const syncData = {
-              appFields,
-              history,
-              carryover,
-              reportData,
-              timeLogs: reportData?.month && history[reportData?.month] ? history[reportData?.month].timeLogs : []
-            };
-            return JSON.stringify(syncData);
-          }}
+          onExport={buildSyncPayload}
           onImport={(dataStr, strategy) => handleSyncImport(dataStr, strategy)}
-          onLiveMerge={(dataStr) => handleSyncImport(dataStr, "merge", { silent: true })}
         />
       )}
 
@@ -3339,7 +3409,7 @@ export default function App() {
             <div
               className="fixed bottom-0 left-0 right-0 z-[100] bg-[var(--card-bg)] border-t border-[var(--border-color)] p-3 shadow-[0_-8px_30px_rgba(0,0,0,0.15)] pb-safe-bottom"
               role="toolbar"
-              aria-label="Mobiles Navigations-Hilfe-Menü"
+              aria-label="Mobiles Navigations-Hilfe-MenÃ¼"
             >
               <div className="max-w-xl mx-auto flex items-center justify-between gap-2">
                 <button
@@ -3348,7 +3418,7 @@ export default function App() {
                   aria-label="Vorheriges Eingabefeld"
                   className="h-12 px-3 rounded-xl font-extrabold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
                 >
-                  ◀ Zurück
+                  â—€ ZurÃ¼ck
                 </button>
 
                 <div className="flex-1 min-w-0 text-center px-1">
@@ -3364,10 +3434,10 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => handleNavigateField("next")}
-                  aria-label="Nächstes Eingabefeld"
+                  aria-label="NÃ¤chstes Eingabefeld"
                   className="h-12 px-3 rounded-xl font-extrabold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
                 >
-                  Weiter ▶
+                  Weiter â–¶
                 </button>
 
                 <button
@@ -3376,10 +3446,10 @@ export default function App() {
                     triggerHaptic(10);
                     (document.activeElement as HTMLElement)?.blur();
                   }}
-                  aria-label="Eingabe abschließen"
+                  aria-label="Eingabe abschlieÃŸen"
                   className="h-12 px-3.5 rounded-xl font-black bg-[var(--primary)] text-[var(--primary-text)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
                 >
-                  Fertig ✓
+                  Fertig âœ“
                 </button>
               </div>
             </div>
@@ -3418,13 +3488,13 @@ export default function App() {
                     if (tab.id === "form") {
                       announceToAriaAndSpeech("RV Report Hauptformular angezeigt");
                     } else if (tab.id === "time") {
-                      announceToAriaAndSpeech("RV Zeit und Stempeluhr geöffnet");
+                      announceToAriaAndSpeech("RV Zeit und Stempeluhr geÃ¶ffnet");
                     } else if (tab.id === "stats") {
-                      announceToAriaAndSpeech("RV Analyse und Statistiken geöffnet");
+                      announceToAriaAndSpeech("RV Analyse und Statistiken geÃ¶ffnet");
                     } else if (tab.id === "history") {
-                      announceToAriaAndSpeech("RV Archiv geöffnet");
+                      announceToAriaAndSpeech("RV Archiv geÃ¶ffnet");
                     } else if (tab.id === "options") {
-                      announceToAriaAndSpeech("Anzeige-Optionen geöffnet");
+                      announceToAriaAndSpeech("Anzeige-Optionen geÃ¶ffnet");
                     }
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}

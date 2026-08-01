@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import {
   X,
   Smartphone,
@@ -23,13 +23,21 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import { Html5Qrcode } from "html5-qrcode";
 import { motion } from "framer-motion";
+import {
+  subscribeLiveSync,
+  getLiveSyncSnapshot,
+  adoptPeer,
+  adoptChannel,
+  getPeer,
+  disconnectLiveSync,
+  abortPairingOnly,
+} from "../utils/liveSync";
 
 interface DeviceSyncModalProps {
   isOpen: boolean;
   onClose: () => void;
   onExport: () => string;
   onImport: (data: string, strategy: "merge" | "replace") => void | boolean;
-  onLiveMerge: (data: string) => void | boolean;
 }
 
 /**
@@ -49,8 +57,6 @@ interface DeviceSyncModalProps {
 const PROTOCOL = "RV1";
 const CHUNK_SIZE = 450; // Zeichen pro QR-Code (zuverlässig scannbar)
 const CYCLE_MS = 650; // Rotationsgeschwindigkeit der QR-Codes
-const LIVE_SEND_INTERVAL_MS = 3000; // Abgleich-Intervall der Live-Verbindung
-const CHANNEL_PART_SIZE = 60000; // Zeichen pro DataChannel-Nachricht
 
 // --- Hilfsfunktionen ---------------------------------------------------
 
@@ -158,7 +164,7 @@ type LiveStep = "offer" | "scan-answer" | "scan-offer" | "answer";
 
 // --- Komponente --------------------------------------------------------
 
-export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, onLiveMerge }: DeviceSyncModalProps) {
+export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }: DeviceSyncModalProps) {
   const [mode, setMode] = useState<"select" | "send" | "receive" | "confirm" | "live-host" | "live-join">("select");
   const [status, setStatus] = useState<{ type: "success" | "error" | "info"; msg: string } | null>(null);
 
@@ -172,10 +178,12 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
   const [expectedTotal, setExpectedTotal] = useState(0);
   const [pendingImport, setPendingImport] = useState<string | null>(null);
 
-  // Live-Verbindung
+  // Live-Verbindung: Zustand liegt im App-weiten Dienst (liveSync.ts),
+  // damit die Verbindung das Schließen dieses Fensters überlebt.
+  const live = useSyncExternalStore(subscribeLiveSync, getLiveSyncSnapshot);
+  const liveConnected = live.connected;
+  const lastSyncTime = live.lastSyncTime;
   const [liveStep, setLiveStep] = useState<LiveStep | null>(null);
-  const [liveConnected, setLiveConnected] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
 
   // Kameraloser Weg: Text-Code kopieren / einfügen
   const [textCode, setTextCode] = useState<string | null>(null);
@@ -188,18 +196,6 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previouslyActiveRef = useRef<HTMLElement | null>(null);
-
-  const pcRef = useRef<RTCPeerConnection | null>(null);
-  const channelRef = useRef<RTCDataChannel | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const lastSentRef = useRef<string | null>(null);
-  const incomingPartsRef = useRef<{ id: string; total: number; parts: Map<number, string> } | null>(null);
-
-  // Props in Refs spiegeln, damit Intervalle/Callbacks immer den aktuellen Stand nutzen
-  const onExportRef = useRef(onExport);
-  onExportRef.current = onExport;
-  const onLiveMergeRef = useRef(onLiveMerge);
-  onLiveMergeRef.current = onLiveMerge;
 
   const stopScanner = useCallback(() => {
     if (scannerRef.current) {
@@ -219,37 +215,9 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
     }
   }, []);
 
-  const teardownLive = useCallback(() => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-    if (channelRef.current) {
-      try {
-        channelRef.current.close();
-      } catch {
-        /* ignore */
-      }
-      channelRef.current = null;
-    }
-    if (pcRef.current) {
-      try {
-        pcRef.current.close();
-      } catch {
-        /* ignore */
-      }
-      pcRef.current = null;
-    }
-    lastSentRef.current = null;
-    incomingPartsRef.current = null;
-    setLiveConnected(false);
-    setLiveStep(null);
-    setLastSyncTime(null);
-  }, []);
-
-  const resetState = useCallback(() => {
+  /** Nur die Fenster-Ansicht zurücksetzen -- die Verbindung bleibt unberührt. */
+  const resetView = useCallback(() => {
     stopScanner();
-    teardownLive();
     receivedRef.current = new Map();
     setMode("select");
     setStatus(null);
@@ -261,8 +229,21 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
     setPendingImport(null);
     setTextCode(null);
     setPasteValue("");
+    setLiveStep(null);
     lastOfferRef.current = null;
-  }, [stopScanner, teardownLive]);
+  }, [stopScanner]);
+
+  /** Abbrechen im Live-Ablauf: laufende Kopplung verwerfen, Ansicht zurück. */
+  const cancelPairing = useCallback(() => {
+    abortPairingOnly();
+    resetView();
+  }, [resetView]);
+
+  /** Ausdrückliches Trennen einer bestehenden Live-Verbindung. */
+  const disconnectLive = useCallback(() => {
+    disconnectLiveSync();
+    resetView();
+  }, [resetView]);
 
   // Fokus-Falle + Escape (Barrierefreiheit)
   useEffect(() => {
@@ -299,20 +280,24 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
     };
   }, [isOpen, onClose]);
 
-  // Aufräumen beim Schließen
+  // Aufräumen beim Schließen: Ansicht zurücksetzen und eine noch nicht
+  // fertige Kopplung abbrechen. Eine BESTEHENDE Live-Verbindung bleibt
+  // bewusst erhalten -- sonst wäre sie nutzlos, weil man dieses Fenster
+  // verlassen muss, um überhaupt Zahlen einzutragen.
   useEffect(() => {
     if (!isOpen) {
-      resetState();
+      abortPairingOnly();
+      resetView();
     }
-  }, [isOpen, resetState]);
+  }, [isOpen, resetView]);
 
-  // Beim Unmount Verbindung und Kamera sicher freigeben
+  // Beim Unmount nur die Kamera freigeben (Verbindung läuft weiter).
   useEffect(() => {
     return () => {
       stopScanner();
-      teardownLive();
+      abortPairingOnly();
     };
-  }, [stopScanner, teardownLive]);
+  }, [stopScanner]);
 
   // QR-Code-Rotation (für Daten- und Kopplungscodes)
   useEffect(() => {
@@ -528,17 +513,9 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
   const createPeer = (): RTCPeerConnection => {
     // Bewusst OHNE STUN/TURN: keine externen Dienste (DSGVO).
     // Dadurch funktioniert die Verbindung im gleichen (W)LAN – auch offline.
+    // Die Verbindung selbst gehört dem App-weiten Dienst (liveSync.ts).
     const pc = new RTCPeerConnection({ iceServers: [] });
-    pcRef.current = pc;
-    pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
-        setLiveConnected(false);
-        setStatus({
-          type: "error",
-          msg: "Verbindung nicht zustande gekommen oder getrennt. Prüfen Sie, ob beide Geräte im gleichen WLAN sind. Auf Gerät B genügt ein Tipp auf 'Neuen Antwort-Code erzeugen', auf Gerät A ggf. die Kopplung neu starten.",
-        });
-      }
-    };
+    adoptPeer(pc);
     return pc;
   };
 
@@ -557,84 +534,44 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
       };
     });
 
-  const sendFullState = useCallback(() => {
-    const ch = channelRef.current;
-    if (!ch || ch.readyState !== "open") return;
-    const data = onExportRef.current();
-    if (data === lastSentRef.current) return;
-    lastSentRef.current = data;
-    const id = secureTransferId();
-    const total = Math.max(1, Math.ceil(data.length / CHANNEL_PART_SIZE));
-    for (let i = 0; i < total; i++) {
-      ch.send(
-        JSON.stringify({
-          type: "full",
-          id,
-          seq: i + 1,
-          total,
-          data: data.slice(i * CHANNEL_PART_SIZE, (i + 1) * CHANNEL_PART_SIZE),
-        })
-      );
-    }
-  }, []);
-
-  const handleChannelMessage = useCallback((raw: string) => {
-    let msg: any;
-    try {
-      msg = JSON.parse(raw);
-    } catch {
-      return;
-    }
-    if (!msg || msg.type !== "full" || typeof msg.data !== "string") return;
-
-    const buf = incomingPartsRef.current;
-    if (!buf || buf.id !== msg.id) {
-      incomingPartsRef.current = { id: msg.id, total: msg.total, parts: new Map() };
-    }
-    const current = incomingPartsRef.current!;
-    current.parts.set(msg.seq, msg.data);
-    if (current.parts.size < current.total) return;
-
-    const fullData = Array.from({ length: current.total }, (_, i) => current.parts.get(i + 1) || "").join("");
-    incomingPartsRef.current = null;
-
-    // Zusammenführen, ohne die eigene Antwort erneut zurückzuspiegeln:
-    // Nach dem Merge ändert sich der eigene Export – das Intervall sendet
-    // den neuen Stand automatisch. Identische Stände werden nicht erneut gesendet.
-    onLiveMergeRef.current(fullData);
-    const time = new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-    setLastSyncTime(time);
-    setStatus({
-      type: "success",
-      msg: `Änderungen vom anderen Gerät übernommen (${time} Uhr). Beide Geräte sind auf dem gleichen Stand.`,
-    });
-  }, []);
-
   const setupChannel = useCallback(
     (ch: RTCDataChannel) => {
-      channelRef.current = ch;
-      ch.onopen = () => {
-        setLiveConnected(true);
+      adoptChannel(ch);
+      // Zusätzlich zur Dienst-Logik nur die Fenster-Anzeige aktualisieren.
+      const serviceOnOpen = ch.onopen;
+      ch.onopen = (ev) => {
+        serviceOnOpen?.call(ch, ev as Event);
         setChunks([]);
         setTextCode(null);
         stopScanner();
         setStatus({
           type: "success",
-          msg: "Live-Verbindung hergestellt! Die Daten beider Geräte werden jetzt automatisch zusammengeführt.",
+          msg: "Live-Verbindung hergestellt! Sie können dieses Fenster jetzt schließen und normal weiterarbeiten – die Verbindung bleibt bestehen.",
         });
-        sendFullState();
-        if (pollRef.current) clearInterval(pollRef.current);
-        pollRef.current = setInterval(sendFullState, LIVE_SEND_INTERVAL_MS);
-      };
-      ch.onmessage = (ev) => {
-        if (typeof ev.data === "string") handleChannelMessage(ev.data);
-      };
-      ch.onclose = () => {
-        setLiveConnected(false);
       };
     },
-    [sendFullState, handleChannelMessage, stopScanner]
+    [stopScanner]
   );
+
+  // Verbindungsverlust im Fenster sichtbar machen (Zustand kommt vom Dienst)
+  useEffect(() => {
+    if (live.failed) {
+      setStatus({
+        type: "error",
+        msg: "Verbindung nicht zustande gekommen oder getrennt. Prüfen Sie, ob beide Geräte im gleichen WLAN sind. Auf Gerät B genügt ein Tipp auf 'Neuen Antwort-Code erzeugen', auf Gerät A ggf. die Kopplung neu starten.",
+      });
+    }
+  }, [live.failed]);
+
+  // Erfolgreichen Hintergrund-Abgleich anzeigen, solange das Fenster offen ist
+  useEffect(() => {
+    if (live.connected && live.lastSyncTime) {
+      setStatus({
+        type: "success",
+        msg: `Änderungen vom anderen Gerät übernommen (${live.lastSyncTime} Uhr). Beide Geräte sind auf dem gleichen Stand.`,
+      });
+    }
+  }, [live.connected, live.lastSyncTime]);
 
   /** Gerät A: Verbindung anbieten */
   const startLiveHost = async () => {
@@ -660,7 +597,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
     } catch (err) {
       console.error("Live host error", err);
       setStatus({ type: "error", msg: "Live-Verbindung konnte nicht vorbereitet werden." });
-      resetState();
+      cancelPairing();
     }
   };
 
@@ -681,7 +618,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
       return;
     }
     try {
-      await pcRef.current?.setRemoteDescription(parsed.sdp as RTCSessionDescriptionInit);
+      await getPeer()?.setRemoteDescription(parsed.sdp as RTCSessionDescriptionInit);
       setStatus({ type: "info", msg: "Verbindung wird aufgebaut... einen Moment bitte." });
     } catch (err) {
       console.error("setRemoteDescription (answer) failed", err);
@@ -735,14 +672,8 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
   const regenerateAnswer = async () => {
     const offer = lastOfferRef.current;
     if (!offer) return;
-    if (channelRef.current) {
-      try { channelRef.current.close(); } catch { /* ignore */ }
-      channelRef.current = null;
-    }
-    if (pcRef.current) {
-      try { pcRef.current.close(); } catch { /* ignore */ }
-      pcRef.current = null;
-    }
+    // createPeer() -> adoptPeer() verwirft die alte Kopplung ohnehin;
+    // hier nur den Status setzen und neu aufsetzen.
     setStatus({ type: "info", msg: "Neuer Antwort-Code wird erzeugt..." });
     await handleOfferScanned(offer);
   };
@@ -899,7 +830,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
       </div>
 
       <button
-        onClick={resetState}
+        onClick={cancelPairing}
         className="text-sm text-[var(--accent)] font-semibold hover:underline cursor-pointer"
       >
         Abbrechen
@@ -921,12 +852,14 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
         )}
       </div>
       <p className="text-xs text-[var(--text-muted)] text-center leading-relaxed">
-        Sie können jetzt an beiden Geräten arbeiten. Änderungen werden alle paar Sekunden
-        zusammengeführt – es gewinnt pro Monat der zuletzt gespeicherte Stand, erfasste
-        Schichten beider Geräte bleiben erhalten. Lassen Sie dieses Fenster dafür geöffnet.
+        Sie können dieses Fenster jetzt schließen und normal weiterarbeiten – die Verbindung
+        bleibt im Hintergrund bestehen. Änderungen werden alle paar Sekunden zusammengeführt:
+        Pro Monat gewinnt der zuletzt gespeicherte Stand, erfasste Schichten beider Geräte
+        bleiben erhalten. Die Verbindung endet erst, wenn Sie unten trennen oder die App
+        schließen.
       </p>
       <button
-        onClick={resetState}
+        onClick={disconnectLive}
         className="w-full py-3 px-4 rounded-xl font-bold border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex justify-center items-center gap-2 cursor-pointer"
       >
         <Unplug className="w-5 h-5" aria-hidden="true" />
@@ -991,7 +924,11 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
             )}
           </div>
 
-          {mode === "select" && (
+          {/* Bestehende Live-Verbindung: beim erneuten Öffnen direkt anzeigen,
+              statt das Startmenü zu zeigen (die Verbindung läuft im Hintergrund). */}
+          {mode === "select" && liveConnected && renderConnectedView()}
+
+          {mode === "select" && !liveConnected && (
             <div className="space-y-4">
               <div className="mb-6 p-4 rounded-xl bg-[var(--bg-color)] border border-[var(--border-color)] flex items-start gap-3">
                 <ShieldCheck className="w-6 h-6 text-[var(--accent)] flex-shrink-0 mt-0.5" aria-hidden="true" />
@@ -1087,7 +1024,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
               )}
               <div className="flex justify-center">
                 <button
-                  onClick={resetState}
+                  onClick={resetView}
                   className="mt-4 text-sm text-[var(--accent)] font-semibold hover:underline cursor-pointer"
                 >
                   Abbrechen
@@ -1137,7 +1074,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
               </p>
 
               <button
-                onClick={resetState}
+                onClick={resetView}
                 className="w-full text-sm text-[var(--text-muted)] font-semibold hover:underline cursor-pointer"
               >
                 Verwerfen und zurück
@@ -1163,7 +1100,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
                         Antwort-Code empfangen (Schritt 2)
                       </button>
                       <button
-                        onClick={resetState}
+                        onClick={cancelPairing}
                         className="w-full text-sm text-[var(--text-muted)] font-semibold hover:underline cursor-pointer"
                       >
                         Abbrechen
@@ -1197,7 +1134,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport, o
                           Neuen Antwort-Code erzeugen
                         </button>
                         <button
-                          onClick={resetState}
+                          onClick={cancelPairing}
                           className="w-full text-sm text-[var(--text-muted)] font-semibold hover:underline cursor-pointer"
                         >
                           Abbrechen
