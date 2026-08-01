@@ -29,6 +29,7 @@ import {
   Clock,
   Search,
   X,
+  AlertTriangle,
 } from "lucide-react";
 
 import {
@@ -54,6 +55,17 @@ import TimeModal from "./components/TimeModal";
 import SecureBackupModal from "./components/SecureBackupModal";
 import DeviceSyncModal from "./components/DeviceSyncModal";
 import { ChangelogModal } from "./components/ChangelogModal";
+
+// Kein throw, kein "as any" -- nur eine gemeinsame Stelle für den
+// Fehlerfall, damit alle Archiv-Speicherpunkte gleich reagieren.
+type OnPersistFailure = (context: string, err: unknown) => void;
+const persistHistory = (
+  data: Record<string, unknown>,
+  onFailure: OnPersistFailure,
+  context: string,
+) => {
+  set("aussendienst_pwa_history", data).catch((err) => onFailure(context, err));
+};
 
 const safeSetItem = (key: string, value: string) => {
   try {
@@ -372,7 +384,11 @@ export default function App() {
     trackMouse: false
   });
 
-  const [saveStatus, setSaveStatus] = useState<"saved" | "saving">("saved");
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "error">("saved");
+  // Sticky, bis ein Speichervorgang wieder erfolgreich war -- damit ein
+  // Außendienstler nie fälschlich "gesichert" sieht, während im Hintergrund
+  // etwas schiefgeht (z. B. Speicher voll, IndexedDB blockiert).
+  const [storageWriteFailed, setStorageWriteFailed] = useState(false);
   const [lastSavedTime, setLastSavedTime] = useState<string>(() => {
     const now = new Date();
     return now.toLocaleTimeString("de-DE", {
@@ -565,6 +581,19 @@ export default function App() {
     }
   }, [accessibility.screenReaderNarration, accessibility.speechRate]);
 
+  // Zentrale Reaktion, wenn ein Archiv-Schreibvorgang (RV Archiv in
+  // IndexedDB) fehlschlägt -- z. B. Speicher voll, IndexedDB durch
+  // Browser-Richtlinie blockiert. Ohne diese Rückmeldung würde ein
+  // Außendienstler nie erfahren, dass eine Änderung nicht gesichert wurde.
+  const handleHistoryPersistFailure = useCallback((context: string, err: unknown) => {
+    console.error(`Speichern des RV Archivs fehlgeschlagen (${context})`, err);
+    setStorageWriteFailed(true);
+    announceToAriaAndSpeech(
+      "Achtung: Das RV Archiv konnte nicht gespeichert werden. Bitte jetzt ein Backup erstellen.",
+      true,
+    );
+  }, [announceToAriaAndSpeech]);
+
   const focusAndAnnounce = useCallback((target: "month" | "name" | "notes") => {
     if (target === "month") {
       monthInputRef.current?.focus();
@@ -645,16 +674,33 @@ export default function App() {
   useEffect(() => {
     setSaveStatus("saving");
     const t = setTimeout(() => {
-      if (reportData) set("aussendienst_pwa_data", reportData);
-      setSaveStatus("saved");
-      const now = new Date();
-      setLastSavedTime(
-        now.toLocaleTimeString("de-DE", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        }),
-      );
+      if (!reportData) return;
+      set("aussendienst_pwa_data", reportData)
+        .then(() => {
+          setSaveStatus("saved");
+          setStorageWriteFailed(false);
+          const now = new Date();
+          setLastSavedTime(
+            now.toLocaleTimeString("de-DE", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            }),
+          );
+        })
+        .catch((err) => {
+          // Muss dem Nutzer ehrlich angezeigt werden: Ohne diesen Fehlerpfad
+          // hätte die Anzeige weiterhin "gesichert" gemeldet, obwohl die
+          // Eingaben nicht persistiert wurden (z. B. Speicher voll,
+          // IndexedDB durch Browser/Richtlinie blockiert).
+          console.error("Speichern des Reports fehlgeschlagen", err);
+          setSaveStatus("error");
+          setStorageWriteFailed(true);
+          announceToAriaAndSpeech(
+            "Achtung: Speichern fehlgeschlagen. Bitte jetzt ein Backup erstellen, damit keine Daten verloren gehen.",
+            true,
+          );
+        });
     }, 400);
     return () => clearTimeout(t);
   }, [reportData]);
@@ -722,7 +768,7 @@ export default function App() {
           savedAt: new Date().toISOString(),
         },
       };
-      set("aussendienst_pwa_history", updated);
+      persistHistory(updated, handleHistoryPersistFailure, "auto-save");
       return updated;
     });
   }, [
@@ -732,6 +778,7 @@ export default function App() {
     reportData?.month,
     reportData?.timeLogs,
     appFields,
+    handleHistoryPersistFailure,
   ]);
 
   useEffect(() => {
@@ -955,7 +1002,7 @@ export default function App() {
         savedAt: new Date().toISOString(),
       };
       setHistory(updatedHistory);
-      set("aussendienst_pwa_history", updatedHistory);
+      persistHistory(updatedHistory, handleHistoryPersistFailure, "month-change");
     }
 
     // 2. Load the target month state from history or start fresh
@@ -1004,7 +1051,7 @@ export default function App() {
     setHistory((prev) => {
       const updated = { ...prev };
       delete updated[monthStr];
-      set("aussendienst_pwa_history", updated);
+      persistHistory(updated, handleHistoryPersistFailure, "delete-record");
       return updated;
     });
   };
@@ -1938,8 +1985,13 @@ export default function App() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden' && reportData) {
-        // Synchronous emergency save to localStorage to prevent data loss on iOS swipe-close
-        localStorage.setItem("aussendienst_pwa_emergency_data", JSON.stringify(reportData));
+        // Synchronous emergency save to localStorage to prevent data loss on iOS swipe-close.
+        // try/catch statt safeSetItem: hier darf kein alert() das Backgrounding blockieren.
+        try {
+          localStorage.setItem("aussendienst_pwa_emergency_data", JSON.stringify(reportData));
+        } catch (err) {
+          console.error("Notfallspeicherung fehlgeschlagen", err);
+        }
         // Also trigger async save just in case
         set("aussendienst_pwa_data", reportData).catch(() => {});
       }
@@ -2044,6 +2096,11 @@ export default function App() {
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
                 <span>Speichert lokal...</span>
+              </>
+            ) : saveStatus === "error" ? (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                <span className="text-red-600 dark:text-red-400">Speichern fehlgeschlagen!</span>
               </>
             ) : (
               <>
@@ -2166,6 +2223,29 @@ export default function App() {
           </div>
         </div>
       )}
+
+            {/* SPEICHER-FEHLER BANNER: bleibt sichtbar, bis ein Speichervorgang wieder klappt */}
+            {storageWriteFailed && (
+              <div
+                role="alert"
+                className="p-4 mb-4 rounded-xl border-2 border-red-600 bg-red-50 dark:bg-red-950/30 text-red-900 dark:text-red-200 flex flex-col sm:flex-row sm:items-center gap-3"
+              >
+                <div className="flex items-start gap-2.5 flex-1">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <p className="text-sm font-bold leading-snug">
+                    Speichern fehlgeschlagen! Ihre letzten Änderungen sind eventuell nicht dauerhaft
+                    gesichert. Bitte erstellen Sie jetzt ein Backup, bevor Sie weiterarbeiten.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("backup")}
+                  className="px-4 py-2.5 rounded-xl font-black text-sm bg-red-600 text-white hover:bg-red-700 transition-all cursor-pointer flex-shrink-0 whitespace-nowrap"
+                >
+                  Jetzt Backup erstellen
+                </button>
+              </div>
+            )}
 
             {/* DEADLINE NOTIFICATION BANNER (Sleeker & more compact) */}
       <div

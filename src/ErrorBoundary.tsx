@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Trash2 } from "lucide-react";
+import { clear as clearIndexedDb } from "idb-keyval";
 
 interface Props {
   children?: ReactNode;
@@ -24,9 +25,18 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error("Uncaught error:", error, errorInfo);
   }
 
-  private handleHardReset = () => {
+  private handleHardReset = async () => {
     if (confirm("Möchten Sie die App wirklich komplett zurücksetzen? Alle gespeicherten Daten (inkl. RV Archiv) werden gelöscht!")) {
+      // Der Bericht und das RV Archiv liegen in IndexedDB (idb-keyval), nicht
+      // in localStorage -- ohne clearIndexedDb() waere diese Meldung falsch
+      // UND ein Absturz durch beschaedigte Archivdaten wuerde nach dem Reset
+      // sofort wiederkehren.
       localStorage.clear();
+      try {
+        await clearIndexedDb();
+      } catch (err) {
+        console.error("IndexedDB-Reset fehlgeschlagen", err);
+      }
       window.location.reload();
     }
   };
