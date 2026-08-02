@@ -517,6 +517,8 @@ export default function App() {
     from: string;
     to: string;
   } | null>(null);
+  // Hinweis auf eine abgebrochene Live-Verbindung weggeklickt?
+  const [syncAbbruchAusgeblendet, setSyncAbbruchAusgeblendet] = useState(false);
 
   // Interaktiver Einstieg bei Erstnutzung. null = noch nicht entschieden
   // (die Entscheidung fällt erst, wenn die gespeicherten Daten geladen sind,
@@ -1764,18 +1766,33 @@ export default function App() {
   // stableStringify statt JSON.stringify: Der Live-Abgleich vergleicht den
   // erzeugten Text, um Unveränderliches nicht erneut zu senden. Ohne stabile
   // Schlüsselreihenfolge sahen inhaltsgleiche Stände verschieden aus.
+  // Der frühere Zusatzschlüssel "timeLogs" ist entfallen: Die Gegenseite hat
+  // ihn nie gelesen (mergeSyncPayload kennt ihn nicht, die Ersetzen-Variante
+  // ebenso wenig) -- er war reiner Ballast in jeder Nachricht. Die Schichten
+  // stecken ohnehin in reportData und im Archiv.
   const buildSyncPayload = useCallback((): string => {
-    return stableStringify({
-      appFields,
-      history,
-      carryover,
-      reportData,
-      timeLogs:
-        reportData?.month && history?.[reportData.month]
-          ? history[reportData.month].timeLogs
-          : [],
-    });
+    return stableStringify({ appFields, history, carryover, reportData });
   }, [appFields, history, carryover, reportData]);
+
+  /**
+   * Kompletten Datenbestand aus einem Paket übernehmen.
+   * Gemeinsame Grundlage für "Ersetzen" beim Geräte-Sync und für das
+   * Einspielen einer Datensicherung -- vorher zweimal fast gleich
+   * ausgeschrieben, mit dem üblichen Risiko, nur eine Stelle zu pflegen.
+   */
+  const ersetzeGesamtstand = useCallback((parsed: any) => {
+    if (parsed.appFields) setAppFields(parsed.appFields);
+    if (parsed.history) {
+      setHistory(parsed.history);
+      // Direkt in IndexedDB sichern, sonst ist das Archiv nach dem Neuladen weg
+      set("aussendienst_pwa_history", parsed.history).catch(() => {});
+    }
+    if (parsed.carryover) {
+      setCarryover(parsed.carryover);
+      safeSetItem("aussendienst_pwa_carryover_v2", JSON.stringify(parsed.carryover));
+    }
+    if (parsed.reportData) setReportData(parsed.reportData);
+  }, []);
 
   // --- GERÄTE-SYNC: ZUSAMMENFÜHREN ODER ERSETZEN ---
   const handleSyncImport = useCallback(
@@ -1794,16 +1811,7 @@ export default function App() {
           safeSetItem("aussendienst_pwa_carryover_v2", JSON.stringify(merged.carryover));
           if (merged.reportData) setReportData(merged.reportData);
         } else {
-          if (parsed.appFields) setAppFields(parsed.appFields);
-          if (parsed.history) {
-            setHistory(parsed.history);
-            set("aussendienst_pwa_history", parsed.history).catch(() => {});
-          }
-          if (parsed.carryover) {
-            setCarryover(parsed.carryover);
-            safeSetItem("aussendienst_pwa_carryover_v2", JSON.stringify(parsed.carryover));
-          }
-          if (parsed.reportData) setReportData(parsed.reportData);
+          ersetzeGesamtstand(parsed);
         }
         if (!options?.silent) {
           setActiveTab("options");
@@ -1822,7 +1830,7 @@ export default function App() {
         return false;
       }
     },
-    [appFields, history, carryover, reportData, announceToAriaAndSpeech],
+    [appFields, history, carryover, reportData, announceToAriaAndSpeech, ersetzeGesamtstand],
   );
 
   // Aktuelle Export-/Merge-Funktionen beim Live-Sync-Dienst hinterlegen,
@@ -1832,6 +1840,19 @@ export default function App() {
       handleSyncImport(dataStr, "merge", { silent: true });
     });
   }, [buildSyncPayload, handleSyncImport]);
+
+  // Abbruch der Live-Verbindung hörbar UND sichtbar machen. Vorher verschwand
+  // nur das grüne Abzeichen im Kopfbereich -- wer gerade Zahlen eintippt,
+  // bemerkt das nicht und glaubt weiter, beide Geräte seien gleichauf.
+  useEffect(() => {
+    if (!liveSync.failed) return;
+    setSyncAbbruchAusgeblendet(false);
+    triggerToast("Live-Verbindung unterbrochen – es wird nicht mehr abgeglichen.");
+    announceToAriaAndSpeech(
+      "Achtung: Die Live-Verbindung zum anderen Gerät ist unterbrochen. Ihre Eingaben werden weiter auf diesem Gerät gespeichert, aber nicht mehr übertragen.",
+      true,
+    );
+  }, [liveSync.failed, announceToAriaAndSpeech]);
 
   // Live-Verbindung sauber beenden, wenn die App geschlossen wird
   useEffect(() => {
@@ -2455,6 +2476,44 @@ export default function App() {
                 >
                   Jetzt Backup erstellen
                 </button>
+              </div>
+            )}
+
+            {/* ABBRUCH DER LIVE-VERBINDUNG: sichtbarer Hinweis, weil sonst nur
+                das grüne Abzeichen verschwindet und niemand es bemerkt. */}
+            {liveSync.failed && !syncAbbruchAusgeblendet && (
+              <div
+                role="alert"
+                className="p-4 mb-4 rounded-xl border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center gap-3"
+              >
+                <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <p className="text-sm font-bold leading-snug">
+                    Live-Verbindung unterbrochen. Ihre Eingaben werden weiter auf
+                    diesem Gerät gespeichert, aber nicht mehr auf das andere Gerät
+                    übertragen.
+                  </p>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSyncAbbruchAusgeblendet(true);
+                      setActiveTab("sync");
+                    }}
+                    className="min-h-[44px] px-4 rounded-xl font-black text-sm bg-amber-600 text-white hover:bg-amber-700 transition-all cursor-pointer whitespace-nowrap focus-visible:ring-4"
+                  >
+                    Neu verbinden
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSyncAbbruchAusgeblendet(true)}
+                    aria-label="Hinweis zur unterbrochenen Live-Verbindung ausblenden"
+                    className="min-h-[44px] px-4 rounded-xl font-bold text-sm border border-amber-600/40 bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-all cursor-pointer whitespace-nowrap focus-visible:ring-4"
+                  >
+                    Ausblenden
+                  </button>
+                </div>
               </div>
             )}
 
@@ -3388,34 +3447,16 @@ export default function App() {
       {/* SECURE BACKUP MODAL */}
       {activeTab === "backup" && (
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
+          {/* Backup und Geräte-Sync nutzen dieselbe Paketform und denselben
+              Weg zurück -- siehe buildSyncPayload / ersetzeGesamtstand. */}
           <SecureBackupModal
             isOpen={true}
             onClose={() => setActiveTab("options")}
-            onExport={() => {
-              // Gather all necessary app state
-              const backupData = {
-                appFields,
-                history,
-                carryover,
-                reportData,
-                timeLogs: reportData?.month && history[reportData?.month] ? history[reportData?.month].timeLogs : []
-              };
-              return JSON.stringify(backupData);
-            }}
+            onExport={buildSyncPayload}
             onImport={(dataStr) => {
               try {
                 const parsed = JSON.parse(dataStr);
-                if (parsed.appFields) setAppFields(parsed.appFields);
-                if (parsed.history) {
-                  setHistory(parsed.history);
-                  // Direkt in IndexedDB sichern, sonst ist das Archiv nach dem Neuladen weg
-                  set("aussendienst_pwa_history", parsed.history).catch(() => {});
-                }
-                if (parsed.carryover) {
-                  setCarryover(parsed.carryover);
-                  safeSetItem("aussendienst_pwa_carryover_v2", JSON.stringify(parsed.carryover));
-                }
-                if (parsed.reportData) setReportData(parsed.reportData);
+                ersetzeGesamtstand(parsed);
                 setActiveTab("options");
                 triggerToast("Backup erfolgreich geladen!");
                 announceToAriaAndSpeech("Backup erfolgreich geladen.", true);

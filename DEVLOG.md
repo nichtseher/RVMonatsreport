@@ -10,6 +10,70 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-02 — v0.9.2: Verbindungsabbruch wird gemeldet, Paketform entschlackt
+
+Die drei Punkte, die beim Live-Sync-Audit (0.9.1) offen geblieben waren.
+
+### 1. Abbruch der Live-Verbindung blieb stumm
+
+Bisher verschwand bei einem Abbruch nur das grüne Abzeichen im Kopfbereich.
+Die Erklärung stand ausschließlich im Sync-Fenster — das man beim Arbeiten
+nicht offen hat. Wer gerade Zahlen eintippt, bemerkt nichts und hält beide
+Geräte weiter für gleichauf.
+
+Dazu kam ein Loch in der Erkennung: `ch.onclose` (die Gegenseite schließt den
+Kanal, weil dort die App zugeht oder das Gerät sperrt) setzte lediglich
+`connected = false`, aber **nicht** `failed`. Genau der häufigste Fall meldete
+also gar nichts.
+
+**Umsetzung:** Gemeinsame Funktion `verbindungVerloren()` in `liveSync.ts`, an
+`onclose` und an den Verbindungszustand gehängt. Damit gewolltes Trennen nicht
+als Abbruch durchgeht, hängt `closePeerOnly()` die Handler jetzt ab, *bevor*
+geschlossen wird — sonst hätte der eigene Knopf „Verbindung trennen" eine
+Abbruch-Warnung ausgelöst. In `App.tsx` ein Hinweisstreifen (`role="alert"`)
+mit „Neu verbinden" und „Ausblenden" plus Sprachansage.
+
+### 2. Toter Schlüssel im Sync- und Backup-Paket
+
+`buildSyncPayload` schickte zusätzlich `timeLogs` mit. Die Gegenseite hat den
+Schlüssel nie gelesen — weder `mergeSyncPayload` (der ihn in `SyncPayload`
+gar nicht kennt) noch die Ersetzen-Variante. Reiner Ballast in jeder Nachricht
+und in jeder Datensicherung; die Schichten stecken ohnehin in `reportData` und
+im Archiv. Entfernt. Für ältere Gegenstellen unkritisch: Sie ignorieren den
+Schlüssel ebenso, und ältere Backups mit dem Schlüssel lassen sich weiterhin
+einspielen.
+
+### 3. Paketform und Wiedereinspielen waren doppelt
+
+Die Paketform wurde an zwei Stellen gebaut (Geräte-Sync und Datensicherung),
+das Wiedereinspielen ebenfalls — fast gleich, mit dem üblichen Risiko, nur
+eine Stelle zu pflegen. Beides läuft jetzt über `buildSyncPayload` und die
+neue Funktion `ersetzeGesamtstand`. Nebeneffekt: Die Datensicherung schreibt
+jetzt ebenfalls stabil sortiertes JSON.
+
+### Geprüft
+
+Am laufenden System, zwei gekoppelte Instanzen:
+- Gerät B geschlossen → auf Gerät A erscheint der Hinweisstreifen mit beiden
+  Tasten, **und die Ansage steht im ARIA-Live-Bereich** (damit liest der
+  Screenreader sie vor); das grüne Abzeichen ist weg.
+- Verbindung selbst getrennt → **keine** Warnung (die Regression, gegen die
+  das Abhängen der Handler schützt).
+
+Datensicherung als vollständiger Umlauf: Export abgefangen und geprüft
+(Schlüssel `appFields`, `carryover`, `history`, `reportData` — kein `timeLogs`
+mehr, Feld-Zeitstempel enthalten), Wert danach von 3 auf 5 geändert, Backup
+wieder eingespielt, Wert steht wieder auf 3.
+
+`npm run lint` und `npm run build` fehlerfrei.
+
+**Weiterhin offen:** Test auf echten Geräten im WLAN (Roadmap-Punkt 1). Ein
+echter Verbindungsabbruch durch WLAN-Verlust ließ sich hier nicht nachstellen —
+geprüft wurde der Weg über das Schließen der Gegenstelle, der dieselbe
+Funktion auslöst.
+
+---
+
 ## 2026-08-02 — v0.9.1: Live-Verbindung verlor Eingaben und kam nie zur Ruhe
 
 Anlass war Marcs Frage, ob der Live-Sync „gut so" ist. Geprüft wurde nicht am

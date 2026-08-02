@@ -31,6 +31,18 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="space-y-6">
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex items-center gap-2 mb-3">
+            <Activity className="w-5 h-5 text-amber-500" />
+            Version 0.9.2: Abbruch der Live-Verbindung wird gemeldet
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-semibold text-[var(--text-muted)]">
+            <li><strong>Sie erfahren jetzt, wenn die Verbindung abreißt:</strong> Bricht die Live-Verbindung ab – WLAN weg, anderes Gerät zugeklappt oder gesperrt –, erscheint ein deutlicher Hinweis samt Sprachansage, mit einer Taste zum erneuten Verbinden. Bisher verschwand lediglich das grüne Zeichen oben; wer gerade Zahlen eintrug, bemerkte nichts und hielt beide Geräte für gleichauf. Trennen Sie selbst, kommt weiterhin keine Warnung.</li>
+            <li><strong>Weniger Datenverkehr:</strong> Jede Übertragung enthielt eine Kopie der Schichten, die die Gegenseite nie ausgewertet hat. Sie entfällt.</li>
+            <li>Datensicherung und Geräte-Sync verwenden intern jetzt denselben Weg – weniger Stellen, an denen sich ein Fehler einschleichen kann.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex items-center gap-2 mb-3">
             <Bug className="w-5 h-5 text-red-500" />
             Version 0.9.1: Live-Verbindung verliert keine Eingaben mehr
           </h3>

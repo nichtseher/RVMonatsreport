@@ -157,6 +157,12 @@ function handleMessage(raw: string) {
 
 function closePeerOnly() {
   if (channel) {
+    // Handler zuerst abhängen: Sonst meldet das Schließen von Hand den
+    // Verlust der Verbindung -- und der Nutzer bekäme eine Abbruch-Warnung
+    // für etwas, das er selbst ausgelöst hat.
+    channel.onopen = null;
+    channel.onmessage = null;
+    channel.onclose = null;
     try {
       channel.close();
     } catch {
@@ -165,6 +171,7 @@ function closePeerOnly() {
     channel = null;
   }
   if (pc) {
+    pc.onconnectionstatechange = null;
     try {
       pc.close();
     } catch {
@@ -174,6 +181,19 @@ function closePeerOnly() {
   }
   lastSent = null;
   incoming = null;
+}
+
+/**
+ * Die Verbindung ist von selbst weggebrochen (WLAN weg, anderes Gerät zu,
+ * Bildschirmsperre). Bewusstes Trennen läuft hier nicht durch, weil
+ * closePeerOnly() die Handler vorher abhängt.
+ */
+function verbindungVerloren() {
+  state.connected = false;
+  state.pairing = false;
+  state.failed = true;
+  stopPoll();
+  notify();
 }
 
 /** Neue Kopplung: alte Verbindung verwerfen und diese übernehmen. */
@@ -187,10 +207,7 @@ export function adoptPeer(newPc: RTCPeerConnection) {
   pc.onconnectionstatechange = () => {
     if (!pc) return;
     if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
-      state.connected = false;
-      state.failed = true;
-      stopPoll();
-      notify();
+      verbindungVerloren();
     }
   };
   notify();
@@ -210,10 +227,11 @@ export function adoptChannel(ch: RTCDataChannel) {
   ch.onmessage = (ev) => {
     if (typeof ev.data === "string") handleMessage(ev.data);
   };
+  // Schließt die Gegenseite den Kanal (App dort geschlossen, Gerät gesperrt),
+  // war das aus Sicht dieses Geräts ein Abbruch -- vorher verschwand dabei
+  // nur stillschweigend das grüne Abzeichen im Kopfbereich.
   ch.onclose = () => {
-    state.connected = false;
-    stopPoll();
-    notify();
+    verbindungVerloren();
   };
 }
 
