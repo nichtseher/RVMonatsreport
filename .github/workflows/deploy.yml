@@ -30,8 +30,14 @@ jobs:
         with:
           node-version: 20
 
+      # npm ci statt npm install: installiert exakt die package-lock.json.
+      # Mit "npm install" durfte die Aktion neuere Versionen innerhalb der
+      # erlaubten Bereiche ziehen -- zwei aufeinanderfolgende Laeufe erzeugten
+      # dadurch bei unveraendertem Quellcode unterschiedliche Bundles
+      # (2026-08-02 beobachtet). Erst mit npm ci ist der Abgleich
+      # "ausgeliefertes Bundle == lokal geprueftes Bundle" belastbar.
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build Application
         run: npm run build

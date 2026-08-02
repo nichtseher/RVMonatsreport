@@ -20,7 +20,9 @@ npm run build      # vite build (client) + esbuild bundles server.ts -> dist/ser
 npm run start      # node dist/server.cjs — serve the production build
 ```
 
-**Every push to `main` publishes to production immediately.** `.github/workflows/deploy.yml` runs `npm install && npm run build` and publishes via `actions/deploy-pages` on every push — verified 2026-08-02 by hash comparison: after a plain `git push origin main` (no `npm run deploy`), the workflow finished in ~33s and https://nichtseher.github.io/RVMonatsreport/ served exactly the locally built bundle filename. Never push work that isn't verified. `npm run deploy` (gh-pages branch) still exists but does not determine what is live — treat it as dead weight.
+**Every push to `main` publishes to production immediately.** `.github/workflows/deploy.yml` runs `npm ci && npm run build` and publishes via `actions/deploy-pages` on every push — verified 2026-08-02: after a plain `git push origin main` (no `npm run deploy`), the workflow finished in ~33s and the live site served assets byte-identical to a local build. Never push work that isn't verified. `npm run deploy` (gh-pages branch) still exists but does not determine what is live — treat it as dead weight.
+
+**Comparing the live build against a local one only works from a clean install.** The deploy builds from `package-lock.json`; a `node_modules` that has drifted from the lockfile produces different chunk hashes, which looks exactly like a broken deploy and isn't. Run `npm ci` before building the reference. (`npm ci` fails while the dev server is running — stop it first.)
 
 The `gh` CLI is **not** installed here. Confirm a deploy through the public REST API instead, then compare the live bundle filename against `dist/assets/`:
 `https://api.github.com/repos/nichtseher/RVMonatsreport/actions/runs?per_page=5`
@@ -42,6 +44,9 @@ Two measurement traps in this preview environment, both of which have produced f
 ## Editing hazards (learned the hard way)
 
 **Never write source files with PowerShell `Set-Content` / `Out-File` / `>` redirection.** On this German Windows setup, PowerShell 5.1 read the UTF-8 file as CP1252 and wrote it back as UTF-8, double-encoding every non-ASCII character and prepending a BOM — it silently destroyed all German umlauts in user-facing strings (`"Anzahl VorfÃ¼hrungen …"`) and all 72 emojis in `DEFAULT_FIELDS_CONFIG`. `tsc` and `vite build` both passed, and browser tests *looked* fine because existing `localStorage` still held the old correct field labels. It shipped to production before anyone noticed.
+
+**The same encoding trap ruins *measurements*, not just writes.** `Get-Content -Raw` (and `Select-String`) read UTF-8 files as ANSI on this machine, so every umlaut and emoji inflates the character count. Comparing a downloaded asset against a local one that way reported bundles as "different sizes, not identical" when they were byte-identical — the pure-ASCII chunk was the only one that "matched", which made the false finding look credible. Read both sides explicitly:
+`[System.IO.File]::ReadAllText($p, [System.Text.Encoding]::UTF8)` and `[System.Text.Encoding]::UTF8.GetString($response.RawContentStream.ToArray())`.
 
 **Equally: don't do bulk edits with `node -e "…"` in the Bash tool.** The shell eats backticks and backslashes — template literals and `\s` vanished from `App.tsx` silently, leaving `const fileName = ;`. Write the script to a file and run `node script.js`.
 
