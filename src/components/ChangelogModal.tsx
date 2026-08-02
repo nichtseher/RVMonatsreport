@@ -31,6 +31,18 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="space-y-6">
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex items-center gap-2 mb-3">
+            <Bug className="w-5 h-5 text-red-500" />
+            Version 0.9.1: Live-Verbindung verliert keine Eingaben mehr
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-semibold text-[var(--text-muted)]">
+            <li><strong>Wichtiger Fehler behoben – Eingaben konnten spurlos verschwinden:</strong> Waren zwei Geräte live verbunden und wurde auf beiden kurz hintereinander etwas erfasst, überschrieb das eine Gerät sämtliche Zahlen des anderen. Die Eingabe war kurz zu sehen und wenige Sekunden später weg – ohne jeden Hinweis. Ab sofort wird <strong>jedes Feld einzeln</strong> abgeglichen: Zwei Erfassungen in verschiedenen Kategorien bleiben beide erhalten.</li>
+            <li><strong>Die Verbindung ist jetzt ruhig:</strong> Bisher tauschten beide Geräte alle drei Sekunden ihren kompletten Datenbestand aus – auch wenn niemand etwas eintrug. Das kostete unnötig Akku und schrieb dauernd auf den Gerätespeicher. Jetzt wird nur noch übertragen, wenn sich wirklich etwas geändert hat.</li>
+            <li><strong>„Zuletzt gespeichert" stimmt wieder:</strong> Die Zeitangabe sprang vorher im Sekundentakt, obwohl sich nichts geändert hatte.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex items-center gap-2 mb-3">
             <ShieldCheck className="w-5 h-5 text-emerald-500" />
             Version 0.9.0: Zähler bleiben erreichbar & Monatsabschluss mit Rückfrage
           </h3>

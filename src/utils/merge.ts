@@ -4,6 +4,7 @@ import {
   TimeLog,
   YearlyCarryover,
   ReportData,
+  ValueTimestamps,
 } from "../types";
 
 /**
@@ -32,12 +33,65 @@ export function mergeTimeLogs(a?: TimeLog[], b?: TimeLog[]): TimeLog[] {
   return Array.from(map.values()).sort((x, y) => x.date.localeCompare(y.date));
 }
 
+/**
+ * Zählerstände feldweise zusammenführen.
+ *
+ * Vorher gewann der komplette Datensatz mit dem jüngeren `savedAt`. Wurde auf
+ * beiden Geräten im selben Abgleich-Fenster je ein *anderes* Feld getippt,
+ * verschwand eine der beiden Eingaben spurlos (zweimal reproduziert).
+ * Jetzt entscheidet je Feld sein eigener Zeitstempel; nur wenn dasselbe Feld
+ * auf beiden Seiten geändert wurde, gewinnt die jüngere Änderung.
+ *
+ * Rückfallebene für Daten aus älteren Versionen: Fehlt der Feld-Zeitstempel,
+ * gilt der Zeitstempel des Monats (`savedAt`) -- damit verhält sich alter
+ * Bestand exakt wie bisher.
+ */
+export function mergeValues(
+  a: Pick<HistoryRecord, "values" | "valuesUpdatedAt" | "savedAt">,
+  b: Pick<HistoryRecord, "values" | "valuesUpdatedAt" | "savedAt">,
+): { values: Record<string, number | "">; valuesUpdatedAt: ValueTimestamps } {
+  const zeitVon = (
+    r: Pick<HistoryRecord, "valuesUpdatedAt" | "savedAt">,
+    id: string,
+  ) => r.valuesUpdatedAt?.[id] || r.savedAt || "";
+
+  const values: Record<string, number | ""> = {};
+  const valuesUpdatedAt: ValueTimestamps = {};
+  const ids = new Set([
+    ...Object.keys(a.values || {}),
+    ...Object.keys(b.values || {}),
+  ]);
+
+  ids.forEach((id) => {
+    const inA = Object.prototype.hasOwnProperty.call(a.values || {}, id);
+    const inB = Object.prototype.hasOwnProperty.call(b.values || {}, id);
+    // Nur eine Seite kennt das Feld -> diese gewinnt.
+    const gewinner = !inB ? a : !inA ? b : zeitVon(a, id) >= zeitVon(b, id) ? a : b;
+    values[id] = gewinner.values[id];
+    // Immer einen Stempel setzen -- nach dem Zusammenführen ist die Liste
+    // damit vollständig und kann nicht mehr auf den wandernden
+    // Monats-Zeitstempel zurückfallen.
+    const stempel = zeitVon(gewinner, id);
+    if (stempel) valuesUpdatedAt[id] = stempel;
+  });
+
+  return { values, valuesUpdatedAt };
+}
+
 function mergeRecord(a?: HistoryRecord, b?: HistoryRecord): HistoryRecord | undefined {
   if (!a) return b;
   if (!b) return a;
+  // Für alles ausser den Zählerständen (Name, Kommentar, Feld-Aufbau) bleibt
+  // es beim jüngeren Datensatz -- dort ist ein Feld-Zeitstempel nicht sinnvoll.
   const newer = (a.savedAt || "") >= (b.savedAt || "") ? a : b;
   const other = newer === a ? b : a;
-  return { ...newer, timeLogs: mergeTimeLogs(other.timeLogs, newer.timeLogs) };
+  const { values, valuesUpdatedAt } = mergeValues(a, b);
+  return {
+    ...newer,
+    values,
+    valuesUpdatedAt,
+    timeLogs: mergeTimeLogs(other.timeLogs, newer.timeLogs),
+  };
 }
 
 export function mergeHistories(
@@ -107,6 +161,7 @@ export function mergeSyncPayload(
       name: remoteReport.name || "",
       notes: remoteReport.notes || "",
       values: remoteReport.values || {},
+      valuesUpdatedAt: remoteReport.valuesUpdatedAt,
       timeLogs: remoteReport.timeLogs || [],
       fieldsSnapshot: remote.appFields,
       savedAt: new Date(0).toISOString(),
@@ -126,6 +181,7 @@ export function mergeSyncPayload(
       name: rec.name || local.reportData?.name || "",
       notes: rec.notes || "",
       values: rec.values || {},
+      valuesUpdatedAt: rec.valuesUpdatedAt,
       timeLogs: rec.timeLogs || [],
     };
   }

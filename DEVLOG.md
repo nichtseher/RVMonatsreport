@@ -10,6 +10,92 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-02 — v0.9.1: Live-Verbindung verlor Eingaben und kam nie zur Ruhe
+
+Anlass war Marcs Frage, ob der Live-Sync „gut so" ist. Geprüft wurde nicht am
+Code, sondern an zwei tatsächlich gekoppelten Instanzen (Kopplung über den
+Textcode, echte WebRTC-Verbindung, DataChannel-Verkehr mitgezählt).
+
+### Befund 1: Stiller Datenverlust bei gleichzeitiger Eingabe
+
+Zweimal reproduziert, beide Male mit Verlust:
+
+| Durchgang | Gerät A tippt | Gerät B tippt | Nach 9 s auf **beiden** Geräten |
+|---|---|---|---|
+| 1 | Vorführungen Arbeitsplatz → 1 | Auslieferungen Schule → 1 | Vorführungen Arbeitsplatz: **leer** |
+| 2 | Vorführungen Schule → 5 | Auslieferungen Arbeitsplatz → 1 | Auslieferungen Arbeitsplatz: **leer** |
+
+Ursache: `mergeRecord` nahm pro Monat den **kompletten** Datensatz mit dem
+jüngeren `savedAt`; nur die Schichten wurden vereinigt, die Zählerstände
+nicht. Wer im Abgleichsfenster als Zweiter stempelte, überschrieb alle Felder
+des anderen. Aus Nutzersicht die schlimmste Variante: Die Zahl war da, wurde
+angesagt — und war Sekunden später ohne Hinweis weg.
+
+**Umsetzung:** Zeitstempel je Zählerfeld (`valuesUpdatedAt` in `types.ts`),
+gesetzt an jeder Stelle, die Zählerstände ändert. `mergeValues` entscheidet
+feldweise; nur bei Änderungen am *selben* Feld gewinnt die jüngere.
+Rückfallebene für Bestandsdaten ohne Feld-Stempel: der Monats-Zeitstempel —
+damit verhält sich alter Bestand exakt wie bisher.
+
+**Beim Testen teuer gelernt (erste Fassung war falsch):** Diese Rückfallebene
+allein genügt nicht. Der Monats-Zeitstempel wandert nach vorn, sobald
+*irgendein anderes* Feld getippt wird — ein unverändert alter Wert bekam
+dadurch einen taufrischen Stempel und überschrieb weiterhin die echte
+Änderung des anderen Geräts. Im Live-Test sichtbar geworden: Gerät B tippte
+5 → 6, Sekunden später stand dort wieder 5. Behoben, indem fehlende Stempel
+*einmal beim Laden* mit dem damaligen Speicherzeitpunkt nachgetragen werden
+(`stempelNachtragen`), bevor der Monats-Zeitstempel sich bewegen kann, und
+indem `mergeValues` nach jedem Zusammenführen eine vollständige Stempelliste
+zurückgibt.
+
+### Befund 2: Der Abgleich kam nie zur Ruhe
+
+Gemessen ohne jede Eingabe, 20 Sekunden: **7 Nachrichten raus, 7 rein, je
+~29,5 KB**. Ursache: Jedes Zusammenführen erzeugt neue Objekte, woraufhin der
+Auto-Archiv-Effekt ein frisches `savedAt` schrieb; damit galt der Datenstand
+als geändert und wurde erneut gesendet — endlos, samt IndexedDB-Schreibvorgang
+im Dreisekundentakt auf beiden Geräten (nachgewiesen: `savedAt` änderte sich
+exakt alle 3 s). Nebenwirkung: `savedAt` sagte als „zuletzt gespeichert"
+nichts mehr aus, obwohl genau dieses Feld beim Zusammenführen entschied.
+
+**Umsetzung:** (1) Der Auto-Archiv-Effekt vergleicht den Inhalt (ohne
+`savedAt`) mit dem bestehenden Archivstand und schreibt bei Gleichheit gar
+nicht. (2) `buildSyncPayload` erzeugt JSON mit **stabiler
+Schlüsselreihenfolge** (neu: `utils/stableJson.ts`) — sonst sahen inhaltlich
+identische Stände nach dem Zusammenführen verschieden aus und wurden erneut
+gesendet.
+
+### Geprüft
+
+Datenebene, Wegwerf-Skript über `npx tsx` (9 Prüfungen, alle bestanden):
+verschiedene Felder bleiben beide erhalten, Richtung egal, bei gleichem Feld
+gewinnt der jüngere Stempel, Korrektur nach unten setzt sich durch (kein
+„Maximum"), Rückfallebene für alte Daten, Idempotenz von `mergeSyncPayload`,
+Konvergenz beider Seiten.
+
+Am laufenden System mit zwei gekoppelten Instanzen:
+
+| Messung | vorher | nachher |
+|---|---|---|
+| Nachrichten in 20 s ohne Eingabe | 7 raus / 7 rein (~29,5 KB) | **0 / 0 (0 Bytes)** |
+| `savedAt` in Ruhe | ändert sich alle 3 s | **bleibt stehen** |
+| Gleichzeitige Eingabe auf beiden Geräten | eine der beiden **verschwindet** | **beide erhalten**, beide Geräte zeigen dasselbe |
+
+Letzter Live-Durchgang: Gerät A tippte „Vorführungen Arbeitsplatz" 3 → 4,
+Gerät B im selben Sekundenfenster „Auslieferungen Schule" 1 → 2. Ergebnis auf
+beiden Geräten: 7 / 4 / 2 — nichts verloren.
+
+`npm run lint` und `npm run build` fehlerfrei.
+
+**Nicht geprüft (ehrlich):** Zwei Browser-Tabs auf einem Rechner sind keine
+zwei Geräte im WLAN. Die Zusammenführungs-Logik ist davon unabhängig und auf
+Datenebene separat abgesichert, aber Laufzeitverhalten über echtes WLAN
+(Latenz, Verbindungsabbrüche) steht weiter aus. Ebenfalls offen und bewusst
+nicht angefasst: Ein Verbindungsabbruch wird weiterhin nur durch das
+verschwindende grüne Abzeichen im Kopfbereich angezeigt — ohne Ansage.
+
+---
+
 ## 2026-08-02 — v0.9.0: Zähler bleiben erreichbar, Monatsabschluss umkehrbar, Excel-Export zusammengeführt
 
 Abgearbeitet wurden die Roadmap-Punkte 2, 3 und 5 der 0.9.0 („Verlässlich im

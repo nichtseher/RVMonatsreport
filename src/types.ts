@@ -35,11 +35,25 @@ export interface YearlyCarryover {
   updatedAt?: string; // ISO-Zeitstempel für den Geräte-Sync (neuerer Stand gewinnt)
 }
 
+/**
+ * Zeitstempel je Zählerfeld (Feld-ID -> ISO-Zeit der letzten Änderung).
+ *
+ * Warum feldweise: Beim Geräte-Abgleich gewann bisher pro Monat der gesamte
+ * Datensatz mit dem jüngeren Zeitstempel. Tippten beide Geräte innerhalb
+ * desselben Abgleich-Fensters etwas ein, verschwand die Eingabe des einen
+ * Geräts vollständig und ohne Hinweis (reproduziert am 2026-08-02).
+ * Mit Zeitstempeln je Feld werden nur noch Änderungen am *selben* Feld
+ * gegeneinander abgewogen.
+ */
+export type ValueTimestamps = Record<string, string>;
+
 export interface ReportData {
   month: string;
   name: string;
   notes: string;
   values: Record<string, number | "">;
+  /** Fehlt bei Daten aus älteren Versionen -- dann gilt savedAt des Monats. */
+  valuesUpdatedAt?: ValueTimestamps;
   timeLogs?: TimeLog[];
 }
 
@@ -48,6 +62,8 @@ export interface HistoryRecord {
   name: string;
   notes: string;
   values: Record<string, number | "">;
+  /** Fehlt bei Daten aus älteren Versionen -- dann gilt savedAt. */
+  valuesUpdatedAt?: ValueTimestamps;
   fieldsSnapshot?: SectionsConfig;
   savedAt: string;
   timeLogs?: TimeLog[];

@@ -40,8 +40,10 @@ import {
   HistoryRecord,
   YearlyCarryover,
   TimeLog,
+  ValueTimestamps,
 } from "./types";
 import { mergeSyncPayload } from "./utils/merge";
+import { stableStringify } from "./utils/stableJson";
 import {
   exportReportToExcel,
   exportTimeLogsToExcel,
@@ -91,6 +93,85 @@ const ONBOARDING_KEY = "aussendienst_pwa_onboarding_v1";
  * "Zaehler: 0", und ein Rueckgaengig nach dem Monatsabschluss haette einen
  * leeren Monat zurueckgelassen.
  */
+/**
+ * Zeitstempel für geänderte Zählerfelder setzen.
+ * Grundlage für das feldweise Zusammenführen beim Geräte-Abgleich
+ * (siehe mergeValues in utils/merge.ts).
+ */
+const stempeln = (
+  vorher: ValueTimestamps | undefined,
+  ids: string[],
+  zeit: string = new Date().toISOString(),
+): ValueTimestamps => {
+  const out: ValueTimestamps = { ...(vorher || {}) };
+  ids.forEach((id) => {
+    out[id] = zeit;
+  });
+  return out;
+};
+
+/**
+ * Fehlende Feld-Zeitstempel nachtragen (für Daten aus Versionen vor 0.9.1).
+ *
+ * WICHTIG und beim Testen teuer gelernt: Ein Feld ohne eigenen Zeitstempel
+ * fällt beim Zusammenführen auf den Monats-Zeitstempel zurück. Der springt
+ * aber nach vorn, sobald irgendein *anderes* Feld getippt wird -- damit
+ * bekäme ein unverändert alter Wert plötzlich einen taufrischen Stempel und
+ * würde die echte Änderung des anderen Geräts überschreiben (genau der
+ * Fehler, der behoben werden sollte, nur subtiler).
+ *
+ * Deshalb werden fehlende Stempel *einmal beim Laden* mit dem damaligen
+ * Speicherzeitpunkt nachgetragen, bevor er sich weiterbewegen kann.
+ */
+const stempelNachtragen = (
+  values: Record<string, number | ""> | undefined,
+  vorhanden: ValueTimestamps | undefined,
+  zeitpunkt: string,
+): ValueTimestamps => {
+  const out: ValueTimestamps = { ...(vorhanden || {}) };
+  Object.keys(values || {}).forEach((id) => {
+    if (!out[id]) out[id] = zeitpunkt;
+  });
+  return out;
+};
+
+/** Wie stempeln(), aber nur für Felder, deren Wert sich tatsächlich geändert hat. */
+const stempelnGeaenderte = (
+  vorher: ValueTimestamps | undefined,
+  alteWerte: Record<string, number | "">,
+  neueWerte: Record<string, number | "">,
+): ValueTimestamps => {
+  const ids = new Set([
+    ...Object.keys(alteWerte || {}),
+    ...Object.keys(neueWerte || {}),
+  ]);
+  const geaendert = Array.from(ids).filter(
+    (id) => (alteWerte || {})[id] !== (neueWerte || {})[id],
+  );
+  return stempeln(vorher, geaendert);
+};
+
+/**
+ * Inhaltlicher Fingerabdruck eines Monats -- ohne savedAt.
+ * Damit lässt sich erkennen, ob ein Speichervorgang überhaupt etwas ändert.
+ */
+const inhaltsFingerabdruck = (r: {
+  name?: string;
+  notes?: string;
+  values?: Record<string, number | "">;
+  valuesUpdatedAt?: ValueTimestamps;
+  timeLogs?: TimeLog[];
+  fieldsSnapshot?: SectionsConfig;
+}): string =>
+  stableStringify({
+    name: r.name || "",
+    notes: r.notes || "",
+    values: r.values || {},
+    valuesUpdatedAt: r.valuesUpdatedAt || {},
+    timeLogs: r.timeLogs || [],
+    fieldsSnapshot: r.fieldsSnapshot || null,
+  });
+
 const monthHasContent = (data?: {
   notes?: string;
   values?: Record<string, number | "">;
@@ -826,17 +907,30 @@ export default function App() {
     if (!monthHasContent(reportData)) return;
 
     setHistory((prev) => {
+      const inhalt = {
+        month: reportData?.month,
+        name: reportData?.name,
+        notes: reportData?.notes,
+        values: reportData?.values,
+        valuesUpdatedAt: reportData?.valuesUpdatedAt,
+        timeLogs: reportData?.timeLogs || [],
+        fieldsSnapshot: appFields,
+      };
+
+      // Ohne inhaltliche Änderung KEIN neues savedAt und kein Schreibvorgang.
+      // Vorher erzeugte jedes Zusammenführen neue Objekte, dadurch lief der
+      // Live-Abgleich endlos im Dreisekundentakt weiter und schrieb dabei
+      // ununterbrochen in die IndexedDB (gemessen am 2026-08-02). Nebenwirkung
+      // war, dass savedAt als "zuletzt gespeichert" nichts mehr aussagte --
+      // obwohl genau dieses Feld beim Zusammenführen entscheidet.
+      const bestehend = prev[reportData.month];
+      if (bestehend && inhaltsFingerabdruck(bestehend) === inhaltsFingerabdruck(inhalt)) {
+        return prev;
+      }
+
       const updated = {
         ...prev,
-        [reportData?.month]: {
-          month: reportData?.month,
-          name: reportData?.name,
-          notes: reportData?.notes,
-          values: reportData?.values,
-          timeLogs: reportData?.timeLogs || [],
-          fieldsSnapshot: appFields,
-          savedAt: new Date().toISOString(),
-        },
+        [reportData?.month]: { ...inhalt, savedAt: new Date().toISOString() },
       };
       persistHistory(updated, handleHistoryPersistFailure, "auto-save");
       return updated;
@@ -845,6 +939,7 @@ export default function App() {
     reportData?.name,
     reportData?.notes,
     reportData?.values,
+    reportData?.valuesUpdatedAt,
     reportData?.month,
     reportData?.timeLogs,
     appFields,
@@ -909,6 +1004,8 @@ export default function App() {
         ...prev.values,
         [id]: val,
       },
+      // Zeitstempel je Feld -- Grundlage des feldweisen Abgleichs
+      valuesUpdatedAt: stempeln(prev.valuesUpdatedAt, [id]),
     }));
   }, []);
 
@@ -993,6 +1090,11 @@ export default function App() {
       return {
         ...prev,
         values: newValues,
+        valuesUpdatedAt: stempeln(prev.valuesUpdatedAt, [
+          "std_buero",
+          "std_aussendienst",
+          "tage_arbeit",
+        ]),
         timeLogs: updatedLogs,
       };
     });
@@ -1030,6 +1132,11 @@ export default function App() {
       return {
         ...prev,
         values: newValues,
+        valuesUpdatedAt: stempeln(prev.valuesUpdatedAt, [
+          "std_buero",
+          "std_aussendienst",
+          "tage_arbeit",
+        ]),
         timeLogs: updatedLogs,
       };
     });
@@ -1065,6 +1172,11 @@ export default function App() {
       return {
         ...prev,
         values: newValues,
+        valuesUpdatedAt: stempeln(prev.valuesUpdatedAt, [
+          "std_buero",
+          "std_aussendienst",
+          "tage_arbeit",
+        ]),
         timeLogs: updatedLogs,
       };
     });
@@ -1101,6 +1213,7 @@ export default function App() {
         name: reportData?.name,
         notes: reportData?.notes,
         values: reportData?.values,
+        valuesUpdatedAt: reportData?.valuesUpdatedAt,
         timeLogs: reportData?.timeLogs || [],
         fieldsSnapshot: appFields,
         savedAt: new Date().toISOString(),
@@ -1117,6 +1230,14 @@ export default function App() {
         name: savedRecord.name || reportData?.name,
         notes: savedRecord.notes || "",
         values: savedRecord.values || {},
+        // Zeitstempel des Archivstands mitnehmen und fehlende mit dessen
+        // Speicherzeitpunkt nachtragen -- sonst fiele das Feld später auf den
+        // dann bereits weitergewanderten Monats-Zeitstempel zurück.
+        valuesUpdatedAt: stempelNachtragen(
+          savedRecord.values,
+          savedRecord.valuesUpdatedAt,
+          savedRecord.savedAt,
+        ),
         timeLogs: savedRecord.timeLogs || [],
       });
       if (savedRecord.fieldsSnapshot) {
@@ -1184,6 +1305,11 @@ export default function App() {
           ...prev,
           notes: prevRecord.notes || "",
           values: prevRecord.values || {},
+          valuesUpdatedAt: stempelnGeaenderte(
+            prev.valuesUpdatedAt,
+            prev.values || {},
+            prevRecord.values || {},
+          ),
         }));
         if (prevRecord.fieldsSnapshot) {
           setAppFields(prevRecord.fieldsSnapshot);
@@ -1518,7 +1644,11 @@ export default function App() {
         // Also clean up value
         const updatedValues = { ...(reportData?.values || {}) };
         delete updatedValues[fieldId];
-        setReportData((prev) => ({ ...prev, values: updatedValues }));
+        setReportData((prev) => ({
+          ...prev,
+          values: updatedValues,
+          valuesUpdatedAt: stempeln(prev.valuesUpdatedAt, [fieldId]),
+        }));
 
         triggerToast(`Kategorie "${label}" wurde gelöscht.`);
         announceToAriaAndSpeech(`Kategorie ${label} gelöscht.`);
@@ -1536,7 +1666,11 @@ export default function App() {
       tone: "danger",
       onConfirm: () => {
         setAppFields(DEFAULT_FIELDS_CONFIG);
-        setReportData((prev) => ({ ...prev, values: {} }));
+        setReportData((prev) => ({
+          ...prev,
+          values: {},
+          valuesUpdatedAt: stempelnGeaenderte(prev.valuesUpdatedAt, prev.values || {}, {}),
+        }));
         setActiveTab("options");
         triggerToast("Erfolgreich auf Standard-Felder zurückgesetzt!");
         announceToAriaAndSpeech(
@@ -1627,8 +1761,11 @@ export default function App() {
   };
 
   // --- LIVE-SYNC: läuft im Hintergrund weiter, auch außerhalb des Sync-Fensters ---
+  // stableStringify statt JSON.stringify: Der Live-Abgleich vergleicht den
+  // erzeugten Text, um Unveränderliches nicht erneut zu senden. Ohne stabile
+  // Schlüsselreihenfolge sahen inhaltsgleiche Stände verschieden aus.
   const buildSyncPayload = useCallback((): string => {
-    return JSON.stringify({
+    return stableStringify({
       appFields,
       history,
       carryover,
@@ -1831,6 +1968,11 @@ export default function App() {
     setReportData({
       ...reportData,
       values: newValues,
+      valuesUpdatedAt: stempelnGeaenderte(
+        reportData.valuesUpdatedAt,
+        reportData.values || {},
+        newValues,
+      ),
       notes: newNotes,
     });
   };
@@ -1959,6 +2101,13 @@ export default function App() {
         if (initialData) {
           // Monat absichern, falls er im gespeicherten Stand fehlt
           if (!initialData.month) initialData.month = currentMonthStr;
+          // Feld-Zeitstempel aus älteren Ständen nachtragen, solange der
+          // Monats-Zeitstempel noch der alte ist (siehe stempelNachtragen).
+          initialData.valuesUpdatedAt = stempelNachtragen(
+            initialData.values,
+            initialData.valuesUpdatedAt,
+            savedHistory?.[initialData.month]?.savedAt || new Date(0).toISOString(),
+          );
           setReportData(initialData);
         } else {
           setReportData({ month: currentMonthStr, name: "", notes: "", values: {}, timeLogs: [] });
