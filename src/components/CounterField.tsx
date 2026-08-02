@@ -135,7 +135,7 @@ export default React.memo(function CounterField({
     <div 
       className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl bg-slate-50 dark:bg-slate-800/30 p-3 sm:p-4 border border-slate-100 dark:border-slate-800/60 transition-all focus-within:ring-2 focus-within:ring-blue-500/50 hover:border-blue-500/30 gap-3`}
     >
-      <div className="flex-1 pr-2">
+      <div className="flex-1 pr-2 min-w-0">
         <label 
           id={`label-${config.id}`} 
           htmlFor={inputId} 
@@ -147,7 +147,7 @@ export default React.memo(function CounterField({
             if (config.icon) return <span className="text-xl flex-shrink-0 mt-0.5" aria-hidden="true">{config.icon}</span>;
             return null;
           })()}
-          <span>{config.label}</span>
+          <span className="min-w-0 break-words">{config.label}</span>
         </label>
         {config.isCustom && (
           <span className="inline-block mt-1 text-[0.75rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">

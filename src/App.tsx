@@ -52,6 +52,7 @@ import A11yModal from "./components/A11yModal";
 import CounterField from "./components/CounterField";
 import QuickEntryPanel, { QuickEntryConfig, DEFAULT_QUICK_CONFIG } from "./components/QuickEntryPanel";
 import ConfirmDialog, { ConfirmRequest } from "./components/ConfirmDialog";
+import OnboardingModal from "./components/OnboardingModal";
 import HelpModal from "./components/HelpModal";
 import ManageModal from "./components/ManageModal";
 import HistoryModal from "./components/HistoryModal";
@@ -73,6 +74,8 @@ const persistHistory = (
 ) => {
   set("aussendienst_pwa_history", data).catch((err) => onFailure(context, err));
 };
+
+const ONBOARDING_KEY = "aussendienst_pwa_onboarding_v1";
 
 const safeSetItem = (key: string, value: string) => {
   try {
@@ -403,6 +406,11 @@ export default function App() {
   // Barrierefreier Ersatz für window.confirm() (siehe ConfirmDialog.tsx)
   const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null);
 
+  // Interaktiver Einstieg bei Erstnutzung. null = noch nicht entschieden
+  // (die Entscheidung fällt erst, wenn die gespeicherten Daten geladen sind,
+  // damit bestehende Nutzer den Einstieg nicht faelschlich sehen).
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+
   // Breiter Bildschirm? Grundlage für das automatische Desktop-Layout.
   const [viewportIsWide, setViewportIsWide] = useState<boolean>(() => {
     if (typeof window === "undefined" || !window.matchMedia) return false;
@@ -617,6 +625,15 @@ export default function App() {
     setStorageWriteFailed(true);
     announceToAriaAndSpeech(
       "Achtung: Das RV Archiv konnte nicht gespeichert werden. Bitte jetzt ein Backup erstellen.",
+      true,
+    );
+  }, [announceToAriaAndSpeech]);
+
+  const finishOnboarding = useCallback(() => {
+    safeSetItem(ONBOARDING_KEY, "1");
+    setShowOnboarding(false);
+    announceToAriaAndSpeech(
+      "Einrichtung abgeschlossen. Sie können jetzt Ihre Zahlen erfassen.",
       true,
     );
   }, [announceToAriaAndSpeech]);
@@ -2063,12 +2080,32 @@ export default function App() {
         } else {
           setHistory({});
         }
+
+        // Einstieg nur bei echter Erstnutzung zeigen. Bestehende Nutzer
+        // erkennen wir an vorhandenen Daten -- bei ihnen wird die Markierung
+        // still gesetzt, damit der Einstieg nicht nachtraeglich aufpoppt.
+        const bereitsGesehen = localStorage.getItem(ONBOARDING_KEY) === "1";
+        const hatDaten =
+          (savedHistory && Object.keys(savedHistory).length > 0) ||
+          (initialData &&
+            (initialData.name ||
+              (initialData.values &&
+                Object.values(initialData.values).some((v: any) => typeof v === "number" && v > 0))));
+        if (bereitsGesehen || hatDaten) {
+          if (!bereitsGesehen) safeSetItem(ONBOARDING_KEY, "1");
+          setShowOnboarding(false);
+        } else {
+          setShowOnboarding(true);
+        }
       } catch (e) {
         console.error("Failed to load from IDB", e);
         const d = new Date();
         const currentMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
         setReportData({ month: currentMonthStr, name: "", notes: "", values: {}, timeLogs: [] });
         setHistory({});
+        // Im Fehlerfall keinen Einstieg erzwingen -- der Nutzer hat
+        // moeglicherweise Daten, die nur gerade nicht lesbar waren.
+        setShowOnboarding(false);
       }
     }
     loadData();
@@ -2165,7 +2202,7 @@ export default function App() {
 
       {/* MAIN CONTENT WRAPPER */}
       <div id="main-content" className={`w-full relative ${isDesktop ? 'lg:flex-1 lg:overflow-y-auto lg:h-screen lg:px-6' : ''}`}>
-        <div className={`mx-auto px-4 py-6 pb-32 relative ${isDesktop ? 'lg:max-w-5xl lg:pb-12 xl:max-w-6xl' : 'max-w-2xl'}`}>
+        <div className={`mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative ${isDesktop ? 'lg:max-w-5xl lg:pb-12 xl:max-w-6xl' : 'max-w-2xl'}`}>
       {/* Off-screen live announcer region for screen readers */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {ariaAnnouncement}
@@ -2175,7 +2212,7 @@ export default function App() {
         <div className={`animate-fade-in ${isDesktop ? 'lg:pb-8' : 'pb-24'}`}>
           {/* HEADER SECTION (Accessible, modern responsive layout, removed duplicate buttons for clean tidiness) */}
           <header
-            className="p-5 mb-4 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)] flex flex-col md:flex-row md:items-center md:justify-between gap-5 shadow-sm"
+            className="p-3 sm:p-5 mb-3 sm:mb-4 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)] flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-5 shadow-sm"
             role="banner"
           >
         <div className="space-y-1.5 flex-1 min-w-0">
@@ -2221,16 +2258,19 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right side: Compact inline Stammdaten inputs for ultra-clear visibility */}
-        <div className="flex flex-col sm:flex-row items-stretch gap-3 w-full md:w-auto md:max-w-md bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-dashed border-[var(--border-color)]" role="group" aria-label="Berichtsmetadaten">
+        {/* Stammdaten: auf dem Handy nebeneinander statt gestapelt -- das
+            spart rund 100px Hoehe, ohne etwas zu verstecken. Die Hinweise
+            "DSGVO-sicher lokal" und der Archiv-Link entfielen bewusst: beides
+            steht bereits im Kopf-Abzeichen bzw. in der Navigation. */}
+        <div className="flex flex-row items-stretch gap-2 sm:gap-3 w-full md:w-auto md:max-w-md bg-slate-50 dark:bg-slate-900/40 p-2.5 sm:p-3 rounded-xl border border-dashed border-[var(--border-color)]" role="group" aria-label="Berichtsmetadaten">
           {/* Month input */}
-          <div className="flex-1 min-w-[130px] space-y-1">
+          <div className="flex-1 min-w-0 space-y-1">
             <label
               htmlFor="meta-month-input"
               className="text-[0.75rem] font-black text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1"
             >
-              <Calendar className="w-3 h-3 text-[var(--accent)]" />{" "}
-              Berichtsmonat:
+              <Calendar className="w-3 h-3 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
+              <span className="truncate">Monat:</span>
             </label>
             <input
               ref={monthInputRef}
@@ -2238,27 +2278,19 @@ export default function App() {
               type="month"
               value={reportData?.month}
               onChange={(e) => handleMonthChange(e.target.value)}
-              className="w-full px-2 py-1.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-lg text-xs font-bold focus:border-[var(--border-focus)] outline-none"
+              className="w-full px-2 py-2.5 min-h-[44px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-lg text-xs font-bold focus:border-[var(--border-focus)] outline-none"
               aria-required="true"
             />
-            <button
-              type="button"
-              onClick={() => setActiveTab("history")}
-              className="text-[0.6875rem] font-bold text-[var(--accent)] hover:underline flex items-center gap-1 cursor-pointer p-0.5 rounded"
-              aria-label="Frühere Monate aus dem RV Archiv wählen"
-            >
-              <History className="w-2.5 h-2.5" />
-              <span>Monats-Archiv</span>
-            </button>
           </div>
 
           {/* Name input */}
-          <div className="flex-1 min-w-[155px] space-y-1">
+          <div className="flex-1 min-w-0 space-y-1">
             <label
               htmlFor="meta-name-input"
               className="text-[0.75rem] font-black text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1"
             >
-              <User className="w-3 h-3 text-[var(--accent)]" /> Mitarbeiter/in:
+              <User className="w-3 h-3 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
+              <span className="truncate">Mitarbeiter/in:</span>
             </label>
             <input
               ref={nameInputRef}
@@ -2271,13 +2303,10 @@ export default function App() {
                   : String(reportData?.name || "")
               }
               onChange={(e) => handleMetaChange("name", e.target.value)}
-              className="w-full px-2 py-1.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-lg text-xs font-bold focus:border-[var(--border-focus)] outline-none"
+              className="w-full px-2 py-2.5 min-h-[44px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-lg text-xs font-bold focus:border-[var(--border-focus)] outline-none"
               autoComplete="name"
               aria-required="true"
             />
-            <span className="block text-[0.6875rem] text-[var(--text-muted)] font-semibold pt-1">
-              🔒 DSGVO-sicher lokal
-            </span>
           </div>
         </div>
       </header>
@@ -3238,6 +3267,18 @@ export default function App() {
       </div>
       )}
 
+      {/* INTERAKTIVER EINSTIEG BEI ERSTNUTZUNG */}
+      {showOnboarding === true && (
+        <OnboardingModal
+          name={reportData?.name || ""}
+          onNameChange={(n) => handleMetaChange("name", n)}
+          settings={accessibility}
+          onSettingsChange={setAccessibility}
+          onFinish={finishOnboarding}
+          announce={announceToAriaAndSpeech}
+        />
+      )}
+
       {/* BARRIEREFREIER BESTÄTIGUNGSDIALOG (Ersatz für window.confirm) */}
       <ConfirmDialog
         request={confirmRequest}
@@ -3258,7 +3299,7 @@ export default function App() {
 
       {/* HELP & BACKUP MODAL */}
       {activeTab === "help" && (
-        <div className="max-w-2xl mx-auto px-4 py-6 pb-32 relative">
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
           <HelpModal
             isOpen={true}
             onClose={() => setActiveTab("options")}
@@ -3269,7 +3310,7 @@ export default function App() {
 
       {/* SECURE BACKUP MODAL */}
       {activeTab === "backup" && (
-        <div className="max-w-2xl mx-auto px-4 py-6 pb-32 relative">
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
           <SecureBackupModal
             isOpen={true}
             onClose={() => setActiveTab("options")}
@@ -3321,7 +3362,7 @@ export default function App() {
 
       {/* TIME MODAL (ZEITBEREICH) */}
       {activeTab === "time" && (
-        <div className="max-w-2xl mx-auto px-4 py-6 pb-32 relative">
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
           <TimeModal
             clockInTime={clockInTime}
             onClockIn={handleClockIn}
@@ -3342,7 +3383,7 @@ export default function App() {
 
       {/* MANAGEMENT MODAL */}
       {activeTab === "manage" && (
-        <div className="max-w-2xl mx-auto px-4 py-6 pb-32 relative">
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
           <ManageModal
             isOpen={true}
             onClose={() => setActiveTab("options")}
@@ -3355,7 +3396,7 @@ export default function App() {
 
       {/* HISTORY MODAL */}
       {activeTab === "history" && (
-        <div className="max-w-2xl mx-auto px-4 py-6 pb-32 relative">
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
           <HistoryModal
             appFields={appFields}
             history={history}
@@ -3369,7 +3410,7 @@ export default function App() {
 
       {/* STATS & TRENDS MODAL */}
       {activeTab === "stats" && (
-        <div className="max-w-2xl mx-auto px-4 py-6 pb-32 relative">
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
           <StatsModal
             reportData={reportData}
             appFields={appFields}
@@ -3381,7 +3422,7 @@ export default function App() {
 
       {/* ACCESSIBILITY & DISPLAY MODAL */}
       {activeTab === "options" && (
-        <div className="max-w-2xl mx-auto px-4 py-6 pb-32 relative">
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
           <A11yModal
             settings={accessibility}
             onChange={setAccessibility}
@@ -3412,12 +3453,12 @@ export default function App() {
       )}
       
       {activeTab === "changelog" && (
-        <div className="max-w-2xl mx-auto px-4 py-6 pb-32 relative">
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
           <ChangelogModal onClose={() => setActiveTab("options")} />
         </div>
       )}
       {activeTab === "carryover" && (
-        <div className="max-w-2xl mx-auto px-4 py-6 pb-32 relative">
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
           <CarryoverModal
             isOpen={true}
             onClose={() => setActiveTab("time")}

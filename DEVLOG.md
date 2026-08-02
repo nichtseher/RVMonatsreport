@@ -10,6 +10,93 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-02 — v0.8.0: Handy-Optimierung und geführter Einstieg
+
+### Ausgangsmessung (390 × 844 iPhone-Größe, 360 × 800 Android)
+
+Vor jeder Änderung gemessen, statt geschätzt:
+
+| Wert | 390 px | 360 px |
+|---|---|---|
+| Kopfbereich Höhe | 330 px (39 % des Bildschirms) | 383 px (47 %) |
+| davon Stammdaten-Block | 212 px | — |
+| Schnell-Erfassung beginnt bei | y = 423 px | y = 476 px |
+| Erstes Zählerfeld bei | y = 1521 px (**180 % der Bildschirmhöhe**) | — |
+| Seitlicher Rand | 32 px (8 % der Breite) | 32 px (9 %) |
+
+### Gefundener Fehler: waagerechter Überlauf auf schmalen Android-Geräten
+
+Bei 360 px Breite ließ sich die Seite seitlich verschieben (Scrollbreite
+368 px). Zwei Verursacher ermittelt: der „Anpassen“-Knopf in der
+Schnell-Erfassung (7 px Überstand, weil die Überschriftzeile nicht umbrach) und
+ein langer Kategoriename (`Anzahl Teilnahme Veranstaltungen/Messen/…`, 9 px
+Überstand, weil der Text nicht umbrechen konnte). Behoben mit `min-w-0`,
+`flex-wrap` und `break-words`.
+
+### Platz zurückgewonnen
+
+Der Stammdaten-Block (Monat + Name) stapelte sich auf dem Handy untereinander,
+weil er erst ab 640 px nebeneinander lief — auf keinem Telefon also. Umgestellt
+auf zwei Spalten ab der kleinsten Breite. Zusätzlich zwei Doppelungen entfernt:
+der Hinweis „🔒 DSGVO-sicher lokal“ (steht bereits im Kopf-Abzeichen) und der
+Link „Monats-Archiv“ (das Archiv liegt in der Hauptnavigation). Abstände auf
+dem Handy verkleinert, Seitenrand von 16 auf 12 px.
+
+**Ergebnis, nachgemessen:**
+
+| Wert | vorher | nachher |
+|---|---|---|
+| Kopfbereich (390 px) | 330 px | **182 px** |
+| Kopfbereich (360 px) | 383 px | **182 px** |
+| Schnell-Tasten ohne Scrollen sichtbar | 0 von 6 | **6 von 6** |
+| Waagerechter Überlauf (360 px) | ja | **nein** |
+| Inhaltsbreite (360 px) | 328 px | 337 px |
+
+Damit ist die Kernfunktion der App — direkt nach dem Termin eine Zahl
+erfassen — ohne einen einzigen Wischvorgang erreichbar.
+
+### Geführter Einstieg (`OnboardingModal.tsx`)
+
+Fünf Schritte, die jeweils **etwas einstellen**, statt nur zu begrüßen:
+Willkommen → Name → Sehen und Hören (Schriftgröße, Farbschema,
+Sprachansagen) → Schnell-Erfassung erklärt → Datenschutz und Backup-Hinweis.
+
+Besonders relevant für die Zielgruppe: Schriftgröße und Farbschema lassen sich
+sofort setzen, statt sie erst in den Optionen suchen zu müssen. Beim Punkt
+Sprachansagen steht ausdrücklich der Hinweis, dass Nutzer eines echten
+Screenreaders diese Option normalerweise **aus** lassen sollten, um nicht alles
+doppelt zu hören.
+
+Barrierefreiheit: `role="dialog"` mit Fokusfalle, Fokus springt bei jedem
+Schrittwechsel auf die neue Überschrift, Fortschritt ist als Text *und* als
+`progressbar` vorhanden, jederzeit überspringbar.
+
+**Erkennung bestehender Nutzer:** Der Einstieg erscheint nur, wenn weder eine
+Markierung gesetzt ist noch Daten existieren (Archiv, Name oder Zählerstände).
+Bestehende Nutzer bekommen die Markierung still gesetzt, damit der Einstieg
+nicht nachträglich aufpoppt. Schlägt das Laden der Daten fehl, wird der
+Einstieg **nicht** gezeigt — der Nutzer könnte Daten haben, die nur gerade
+nicht lesbar waren.
+
+**Verifiziert** mit komplett geleertem `localStorage` und IndexedDB: Einstieg
+erscheint, Fortschrittsanzeige korrekt ausgezeichnet, Name landet im Formular,
+Schriftgröße wirkt sofort (16 → 24 px gemessen), Farbschema wechselt, nach
+Abschluss bleiben alle Einstellungen erhalten und der Einstieg erscheint beim
+Neuladen nicht erneut.
+
+### Weiterhin offen
+
+- 49 Bedienelemente liegen unter 44 × 44 px (Apple-HIG/WCAG-AAA-Empfehlung).
+  Die verbindliche AA-Grenze von 24 px wird überall eingehalten — also **kein**
+  Normverstoß, aber für einhändige Bedienung verbesserungswürdig. Steht in der
+  Roadmap für 0.9.0.
+- Alles Touch-spezifische bleibt unverifiziert (siehe `ROADMAP.md`, Punkt 1):
+  Ein verkleinertes Desktop-Fenster meldet weiterhin ein Zeigegerät mit Maus.
+
+Neu angelegt: `ROADMAP.md` mit dem Plan bis 1.0.
+
+---
+
 ## 2026-08-02 — v0.7.0: Encoding-Notfall, Lesbarkeit, Desktop, barrierefreie Dialoge
 
 ### Encoding-Schaden (selbst verursacht, war live)
