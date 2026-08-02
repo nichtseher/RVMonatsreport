@@ -175,7 +175,7 @@ export default function QuickEntryPanel({
                   {val}
                 </span>
               </div>
-              <span className="text-[0.75rem] font-bold text-[var(--text-color)] leading-tight line-clamp-2">
+              <span className="w-full break-words text-[0.75rem] font-bold text-[var(--text-color)] leading-tight line-clamp-2">
                 {field.label.replace(/^Anzahl\s+/i, "")}
               </span>
             </button>

@@ -127,13 +127,20 @@ export default React.memo(function CounterField({
 
   const parentPadding = isCompact ? "py-1.5 gap-2" : "py-4 gap-3";
   const labelSize = isCompact ? "text-sm font-semibold" : "text-base font-semibold";
-  const buttonSize = isCompact ? "w-10 h-10" : "w-14 h-14";
+  // Bedienflaechen bewusst in festen Pixeln statt in rem: Sie enthalten nur
+  // Symbole, keinen Text. Mit rem wuchsen sie bei "Grosse Schrift" mit --
+  // die Zeile wurde dann breiter als die Karte und die Minus-Taste rutschte
+  // auf einem 360-px-Handy bis zu 163 px aus dem Bildschirm heraus (gemessen).
+  const buttonSize = isCompact ? "w-[44px] h-[44px]" : "w-[56px] h-[56px]";
+  const quickButtonSize = isCompact ? "w-[36px] h-[36px] text-[0.75rem]" : "w-[44px] h-[44px] text-xs";
   const iconSize = isCompact ? "w-4 h-4" : "w-6 h-6";
-  const inputSize = isCompact ? "w-16 py-1.5 text-base rounded-lg" : "w-20 py-3 text-xl rounded-xl";
+  // Die Zahl selbst ist Text und MUSS mitwachsen (WCAG 1.4.4), darf dafuer
+  // aber schrumpfen, wenn der Platz knapp wird.
+  const inputSize = isCompact ? "py-1.5 text-base rounded-lg" : "py-3 text-xl rounded-xl";
 
   return (
     <div 
-      className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl bg-slate-50 dark:bg-slate-800/30 p-3 sm:p-4 border border-slate-100 dark:border-slate-800/60 transition-all focus-within:ring-2 focus-within:ring-blue-500/50 hover:border-blue-500/30 gap-3`}
+      className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl bg-slate-50 dark:bg-slate-800/30 p-2.5 sm:p-4 border border-slate-100 dark:border-slate-800/60 transition-all focus-within:ring-2 focus-within:ring-blue-500/50 hover:border-blue-500/30 gap-3`}
     >
       <div className="flex-1 pr-2 min-w-0">
         <label 
@@ -156,30 +163,26 @@ export default React.memo(function CounterField({
         )}
       </div>
 
-      <div className="flex items-center gap-2 self-end sm:self-auto select-none">
-        {/* Quick -5 Button (Hidden from screen-readers to avoid cluttering tab order/swipe sequence for blind users) */}
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-hidden="true"
-          onClick={() => handleQuickChange(-1)}
-          className={`${isCompact ? "w-8 h-8 text-[0.75rem]" : "w-10 h-10 text-xs"} rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-red-500 font-extrabold transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
-        >
-          -5
-        </button>
-
+      {/*
+        Umbruchfaehige Bedienzeile: Passt alles nebeneinander, bleibt es eine
+        Zeile. Wird es eng (schmales Handy, grosse Schrift), rutschen die
+        Fuenferschritte in eine zweite Zeile -- statt wie bisher aus der Karte
+        und aus dem Bildschirm zu laufen. Ab 640 px stellt sm:order-* die
+        gewohnte Reihenfolge "-5 - Zahl + +5" wieder her.
+      */}
+      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto sm:flex-nowrap sm:justify-end select-none">
         {/* Decrement Button (Optimized for Touch-Only) */}
         <button
           type="button"
           onClick={handleDecrement}
           aria-label="Verringern"
-          className={`${buttonSize} rounded-full flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-[var(--text-color)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:bg-slate-300 dark:active:bg-slate-700 touch-manipulation shadow-sm`}
+          className={`${buttonSize} shrink-0 order-1 sm:order-2 rounded-full flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-[var(--text-color)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:bg-slate-300 dark:active:bg-slate-700 touch-manipulation shadow-sm`}
         >
           <Minus className={iconSize} aria-hidden="true" />
         </button>
 
         {/* Input Spinbox (Optimized Keyboard for Touch) */}
-        <div className="relative">
+        <div className="relative order-2 sm:order-3 flex-1 min-w-[3rem] sm:flex-none sm:w-20">
           <input
             id={inputId}
             type="number"
@@ -203,7 +206,7 @@ export default React.memo(function CounterField({
             }}
             onBlur={onBlur}
             placeholder="0"
-            className={`${inputSize} text-center font-black border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] focus:border-[var(--border-focus)] outline-none touch-manipulation`}
+            className={`${inputSize} w-full text-center font-black border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] focus:border-[var(--border-focus)] outline-none touch-manipulation`}
           />
           <p id={instructionsId} className="sr-only">
             {`Eingabefeld für ${config.label}. Verwenden Sie die Pfeiltasten oder die Plus- und Minus-Tasten. Mit Enter springen Sie zum nächsten Feld.`}
@@ -215,9 +218,20 @@ export default React.memo(function CounterField({
           type="button"
           onClick={handleIncrement}
           aria-label="Erhöhen"
-          className={`${buttonSize} rounded-full flex items-center justify-center bg-[var(--primary)] text-[var(--primary-text)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:opacity-85 touch-manipulation shadow-sm`}
+          className={`${buttonSize} shrink-0 order-3 sm:order-4 rounded-full flex items-center justify-center bg-[var(--primary)] text-[var(--primary-text)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:opacity-85 touch-manipulation shadow-sm`}
         >
           <Plus className={iconSize} aria-hidden="true" />
+        </button>
+
+        {/* Quick -5 Button (Hidden from screen-readers to avoid cluttering tab order/swipe sequence for blind users) */}
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-hidden="true"
+          onClick={() => handleQuickChange(-1)}
+          className={`${quickButtonSize} shrink-0 order-4 sm:order-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-red-500 font-extrabold transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
+        >
+          -5
         </button>
 
         {/* Quick +5 Button (Hidden from screen-readers to avoid cluttering tab order/swipe sequence for blind users) */}
@@ -226,7 +240,7 @@ export default React.memo(function CounterField({
           tabIndex={-1}
           aria-hidden="true"
           onClick={() => handleQuickChange(1)}
-          className={`${isCompact ? "w-8 h-8 text-[0.75rem]" : "w-10 h-10 text-xs"} rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-emerald-500 font-extrabold transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
+          className={`${quickButtonSize} shrink-0 order-5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-emerald-500 font-extrabold transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
         >
           +5
         </button>

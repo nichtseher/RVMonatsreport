@@ -106,12 +106,22 @@ export default function HistoryModal({
       const formattedMonthName = formatMonthGerman(monthVal).replace(/\s+/g, "_");
       const fileName = `RV_Mobil_Report_${cleanName}_${formattedMonthName}_Archiv.xlsx`;
       
-      await triggerFileDownload(wbout, fileName);
-      triggerToast(`Excel RV Report für ${formatMonthGerman(monthVal)} exportiert!`);
-      announceToAriaAndSpeech(`Excel RV Report für ${formatMonthGerman(monthVal)} exportiert.`);
+      const ergebnis = await triggerFileDownload(
+        wbout,
+        fileName,
+        `RV Report ${formatMonthGerman(monthVal)} (aus dem Archiv)`,
+      );
+      if (ergebnis === "abgebrochen") {
+        triggerToast("Teilen abgebrochen – es wurde nichts gesendet.");
+        announceToAriaAndSpeech("Teilen abgebrochen. Es wurde nichts gesendet.");
+        return;
+      }
+      triggerToast(`Excel RV Report für ${formatMonthGerman(monthVal)} ${ergebnis}!`);
+      announceToAriaAndSpeech(`Excel RV Report für ${formatMonthGerman(monthVal)} ${ergebnis}.`);
     } catch (err) {
       console.error(err);
       triggerToast("Fehler beim Exportieren des Reports.");
+      announceToAriaAndSpeech("Fehler beim Exportieren des Reports.");
     }
   };
 
@@ -130,12 +140,22 @@ export default function HistoryModal({
       const formattedMonthName = formatMonthGerman(monthVal).replace(/\s+/g, "_");
       const fileName = `RV_Zeiterfassung_${cleanName}_${formattedMonthName}_Archiv.xlsx`;
       
-      await triggerFileDownload(wbout, fileName);
-      triggerToast(`Zeiterfassung für ${formatMonthGerman(monthVal)} exportiert!`);
-      announceToAriaAndSpeech(`Zeiterfassungs-Protokoll für ${formatMonthGerman(monthVal)} exportiert.`);
+      const ergebnis = await triggerFileDownload(
+        wbout,
+        fileName,
+        `RV Zeiterfassung ${formatMonthGerman(monthVal)} (aus dem Archiv)`,
+      );
+      if (ergebnis === "abgebrochen") {
+        triggerToast("Teilen abgebrochen – es wurde nichts gesendet.");
+        announceToAriaAndSpeech("Teilen abgebrochen. Es wurde nichts gesendet.");
+        return;
+      }
+      triggerToast(`Zeiterfassung für ${formatMonthGerman(monthVal)} ${ergebnis}!`);
+      announceToAriaAndSpeech(`Zeiterfassungs-Protokoll für ${formatMonthGerman(monthVal)} ${ergebnis}.`);
     } catch (err) {
       console.error(err);
       triggerToast("Fehler beim Exportieren der Zeiterfassung.");
+      announceToAriaAndSpeech("Fehler beim Exportieren der Zeiterfassung.");
     }
   };
 
@@ -241,7 +261,7 @@ export default function HistoryModal({
                     <button
                       type="button"
                       onClick={() => toggleYear(year)}
-                      className="w-full flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-[var(--border-color)] text-left cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all select-none"
+                      className="w-full flex items-center justify-between min-h-[44px] px-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-[var(--border-color)] text-left cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all select-none"
                     >
                       <span className="text-xs font-black tracking-wider text-[var(--text-color)] uppercase flex items-center gap-1.5">
                         <Filter className="w-3 h-3 text-[var(--accent)]" />

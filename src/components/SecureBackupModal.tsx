@@ -151,13 +151,13 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
               Sicherheit
             </h3>
             
-            <label className="flex items-center gap-3 cursor-pointer group">
+            <label className="flex items-center gap-3 min-h-[44px] cursor-pointer group">
               <div className="relative flex items-center justify-center">
-                <input 
-                  type="checkbox" 
-                  checked={useEncryption} 
+                <input
+                  type="checkbox"
+                  checked={useEncryption}
                   onChange={(e) => setUseEncryption(e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-all"
+                  className="w-6 h-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-all"
                   aria-label="Verschlüsselung aktivieren"
                 />
               </div>
@@ -193,7 +193,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
                   placeholder="Passwort eingeben"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
+                  className="w-full px-4 min-h-[44px] rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
                   aria-label="Backup Passwort für Import"
                 />
                </div>

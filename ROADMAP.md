@@ -1,6 +1,6 @@
 # Roadmap — RV Monatsreport (RV Mobil)
 
-Stand: 2026-08-02, Version 0.8.0
+Stand: 2026-08-02, Version 0.9.0
 
 Diese Roadmap ist aus **gemessenen Befunden** entstanden, nicht aus Vermutungen.
 Wo eine Zahl steht, wurde sie im Browser nachgemessen. Punkte ohne Beleg sind
@@ -32,9 +32,34 @@ ein).
 
 ---
 
-## Version 0.9.0 — „Verlässlich im Alltag"
+## Was 0.9.0 gebracht hat (erledigt)
 
-Schwerpunkt: die letzten Stolpersteine im täglichen Gebrauch beseitigen.
+Umgesetzt wurden die Punkte 2, 3 und 5 der ursprünglichen 0.9.0-Liste. Bei der
+Vermessung kam ein schwererer, vorher unbekannter Fehler zum Vorschein:
+
+| Bereich | Vorher (gemessen, 360 px) | Nachher (gemessen) |
+|---|---|---|
+| Zähler-Tastenreihe bei „Groß" | ragt 76 px aus dem Bildschirm | **vollständig sichtbar** |
+| Zähler-Tastenreihe bei „Extra groß" | ragt 163 px aus dem Bildschirm | **vollständig sichtbar** |
+| Waagerechter Überlauf bei „Extra groß" | ja (436 px Inhalt) | **nein (360 px)** |
+| Bedienelemente unter 44 × 44 px | 56 (über alle Ansichten) | **0** |
+| Höhe einer Zählerkarte (normale Schrift) | 137 px | 133 px |
+
+Dazu: Rückfrage und **Rückgängig** beim Monatsabschluss, keine leeren Monate
+mehr im Archiv, Excel-Export aus Formular und Archiv erzeugen dieselbe Datei,
+Fokusfalle des Einrichtungs-Assistenten geschlossen. Einzelheiten und
+Messmethode im [DEVLOG](DEVLOG.md).
+
+**Korrektur einer Annahme dieser Roadmap:** Punkt 3 stand hier als
+„Monatsabschluss ist unumkehrbar". Das war falsch — der Monat wandert
+vollständig ins Archiv und ist über die Monatsauswahl erreichbar (nachgeprüft).
+Die vorgeschlagene 30-Tage-Aufbewahrung hätte ein Problem gelöst, das es nicht
+gibt. Das echte Problem war die fehlende Rückfrage und der fehlende sichtbare
+Rückweg; genau das ist jetzt umgesetzt.
+
+---
+
+## Version 0.9.x — was offen blieb
 
 ### 1. Test auf echten Geräten (höchste Priorität, blockiert 1.0)
 Bisher wurde alles in einem Desktop-Browser mit verkleinertem Fenster geprüft.
@@ -50,60 +75,47 @@ Bisher wurde alles in einem Desktop-Browser mit verkleinertem Fenster geprüft.
 
 Ohne diese Tests ist eine 1.0 nicht seriös vertretbar.
 
-### 2. Touch-Ziele vergrößern
-Gemessen: **49 Bedienelemente unter 44 × 44 px** (Apple-HIG- und
-WCAG-AAA-Empfehlung). Die verbindliche AA-Grenze von 24 px wird überall
-eingehalten — es ist also **kein Normverstoß**, aber für einhändige Bedienung
-unterwegs und für Nutzer mit motorischen Einschränkungen spürbar. Betroffen
-sind vor allem die kleinen Umschalter („Kompakt", „Ziele", „Vorlesen") und die
-Schnell-Optionen-Leiste.
-
-### 3. Entwurfs-Sicherung für den Monatsabschluss
-Heute ist „Monat abschließen & neu starten" unumkehrbar. Vorschlag: Der
-abgeschlossene Monat bleibt 30 Tage als wiederherstellbarer Stand erhalten,
-mit einem Hinweis im Archiv. Schützt vor dem teuersten Fehler, den ein
-Außendienstler machen kann.
-
-### 4. Excel-Export im Firmenformat
+### 2. Excel-Export im Firmenformat
 Zurückgestellt, weil die Originalvorlage noch fehlt. Sobald sie vorliegt: Der
 Export soll exakt dem internen Formular entsprechen (gleiche Zellen,
 Reihenfolge, Summenzeilen), damit die Vertriebsleitung nichts nacharbeiten
-muss. **Braucht eine Zulieferung.**
+muss. **Braucht eine Zulieferung.** Die technische Voraussetzung dafür steht:
+Es gibt jetzt nur noch eine Export-Stelle (`utils/excelUtils.ts`).
 
-### 5. Doppelten Excel-Code zusammenführen
-Die Export-Logik existiert zweimal (`utils/excelUtils.ts` und inline in
-`App.tsx`). Jede Änderung muss aktuell an zwei Stellen erfolgen — eine
-klassische Fehlerquelle. Rein technisch, für den Nutzer unsichtbar, aber
-Voraussetzung für Punkt 4.
+### 3. Status je Monat im Archiv
+Aus dem Archiv ist nicht ersichtlich, welcher Monat schon an die
+Vertriebsleitung ging und welcher nicht. Bei mehreren offenen Monaten ist das
+die Stelle, an der ein Bericht liegen bleibt. (Aus dem offenen
+UI-Verbesserungsplan vom 2026-08-01, noch nicht angefangen.)
 
 ---
 
 ## Version 1.0 — „Abnahmefähig"
 
-### 6. TypeScript-Strict-Modus
+### 4. TypeScript-Strict-Modus
 `tsconfig.json` hat `strict` nicht gesetzt. Genau die Null- und
 Undefined-Fehler, die dadurch unsichtbar bleiben, mussten bisher von Hand
 gefunden werden (z. B. „undefined" im Notizfeld, fehlender Monat beim Laden).
 Die beste Versicherung gegen künftige Fehler dieser Art.
 
-### 7. `App.tsx` aufteilen
+### 5. `App.tsx` aufteilen
 Die Datei hat rund 3.500 Zeilen und enthält Zustand, Speicherlogik, Export,
 Sprachausgabe und die komplette Oberfläche. Jede Änderung daran ist riskanter
 als nötig. Aufteilen in Bereiche (Formular, Export, Speicher, Sprache).
 
-### 8. Automatische Tests für die Rechenkerne
+### 6. Automatische Tests für die Rechenkerne
 Bisher gibt es **keine Tests**. Sinnvoll für: Arbeitszeit über Mitternacht,
 Excel-Summenformeln, Zusammenführen beim Geräte-Sync, Ver-/Entschlüsselung des
 Backups. Das sind die Stellen, an denen ein Fehler echten Schaden anrichtet.
 
-### 9. Automatische Prüfung bei jedem Push
+### 7. Automatische Prüfung bei jedem Push
 Aktuell laufen `lint` und `build` nur, wenn jemand daran denkt. Eine
 GitHub-Action, die beides plus `npm audit` bei jedem Push ausführt, hätte den
 Encoding-Schaden zwar nicht gefunden (siehe unten), aber sie fängt alles ab,
 was den Build bricht. **Zusätzlich nötig:** eine Prüfung auf doppelt kodierte
 Zeichen — genau dieser Fehler ging unbemerkt live.
 
-### 10. Screenreader-Abnahme
+### 8. Screenreader-Abnahme
 Vollständiger Durchgang durch alle Bereiche mit NVDA und VoiceOver. Das kann
 nur der Nutzer selbst leisten; das Ergebnis entscheidet über die 1.0.
 
@@ -137,7 +149,7 @@ nur der Nutzer selbst leisten; das Ergebnis entscheidet über die 1.0.
 
 ## Offene Fragen an den Auftraggeber
 
-1. **Excel-Originalvorlage** — wird für Punkt 4 gebraucht.
+1. **Excel-Originalvorlage** — wird für Punkt 2 gebraucht.
 2. **Welcher Deploy-Weg gilt?** Es existieren zwei parallele: `npm run deploy`
    (Branch `gh-pages`) und ein GitHub-Actions-Workflow, der bei jedem Push auf
    `main` automatisch veröffentlicht. Beide laufen tatsächlich. Welcher die

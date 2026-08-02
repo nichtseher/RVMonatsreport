@@ -96,18 +96,24 @@ function ToggleRow({
         aria-label={label}
         aria-describedby={describedById}
         onClick={onToggle}
-        className={`relative w-14 h-8 rounded-full border-2 transition-colors cursor-pointer flex-shrink-0 ${
-          checked
-            ? "bg-[var(--accent)] border-[var(--accent)]"
-            : "bg-[var(--input-bg)] border-[var(--border-color)]"
-        }`}
+        /* Aussehen bleibt der 56x32-Schalter, die Trefferflaeche ist aber
+           44 px hoch -- vorher waren es nur 32 px. */
+        className="w-14 min-h-[44px] flex items-center justify-center cursor-pointer flex-shrink-0"
       >
         <span
           aria-hidden="true"
-          className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-all ${
-            checked ? "left-[26px]" : "left-0.5"
+          className={`relative block w-14 h-8 rounded-full border-2 transition-colors ${
+            checked
+              ? "bg-[var(--accent)] border-[var(--accent)]"
+              : "bg-[var(--input-bg)] border-[var(--border-color)]"
           }`}
-        />
+        >
+          <span
+            className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-all ${
+              checked ? "left-[26px]" : "left-0.5"
+            }`}
+          />
+        </span>
         <span className="sr-only">{checked ? "Aktiv" : "Inaktiv"}</span>
       </button>
     </div>
@@ -204,7 +210,7 @@ export default function A11yModal({
           <button
             type="button"
             onClick={onOpenChangelog}
-            className="text-xs font-black px-3 py-1.5 rounded-full bg-purple-600/10 text-purple-600 dark:text-purple-400 border border-purple-600/30 hover:bg-purple-600/20 transition-colors cursor-pointer flex-shrink-0"
+            className="text-xs font-black px-3 min-h-[44px] inline-flex items-center rounded-full bg-purple-600/10 text-purple-600 dark:text-purple-400 border border-purple-600/30 hover:bg-purple-600/20 transition-colors cursor-pointer flex-shrink-0"
           >
             Was gibt's Neues?
           </button>
@@ -376,7 +382,7 @@ export default function A11yModal({
               step="0.2"
               value={settings.speechRate || 1.0}
               onChange={(e) => updateSetting("speechRate", parseFloat(e.target.value))}
-              className="flex-1 h-2.5 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-full appearance-none cursor-pointer accent-[var(--accent)]"
+              className="rv-slider flex-1 accent-[var(--accent)]"
             />
             <span className="text-[0.75rem] font-black uppercase text-[var(--text-muted)]">Schnell</span>
           </div>

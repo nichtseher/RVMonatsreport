@@ -64,10 +64,22 @@ export default function OnboardingModal({
       if (focusable.length === 0) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
+      const active = document.activeElement as HTMLElement | null;
+
+      // Der Startfokus liegt auf der Ueberschrift (tabindex="-1"), die selbst
+      // nicht in der Liste steht. Ohne diese beiden Zweige fuehrte Shift+Tab
+      // von dort direkt in den Hintergrund -- obwohl aria-modal="true" dem
+      // Screenreader sagt, dort sei nichts. Fuer einen blinden Erstnutzer der
+      // schlechteste denkbare Einstieg.
+      if (!active || !dialogRef.current.contains(active)) {
+        (e.shiftKey ? last : first).focus();
+        e.preventDefault();
+        return;
+      }
+      if (e.shiftKey && (active === first || active === headingRef.current)) {
         last.focus();
         e.preventDefault();
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && active === last) {
         first.focus();
         e.preventDefault();
       }

@@ -311,6 +311,52 @@ input, textarea {
   }
 }
 
+/* Schieberegler (z. B. Sprechgeschwindigkeit).
+   Vorher war das Bedienelement nur 10 px hoch -- mit dem Finger kaum zu
+   treffen. Ausserdem war `appearance: none` gesetzt, ohne einen eigenen
+   Griff zu gestalten; damit zeichnet Chrome gar keinen sichtbaren Griff.
+   Jetzt: 44 px Trefferflaeche, sichtbare Spur, deutlich sichtbarer Griff. */
+input[type="range"].rv-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 44px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+input[type="range"].rv-slider::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+}
+input[type="range"].rv-slider::-moz-range-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+}
+input[type="range"].rv-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  /* mittig auf der 10 px hohen Spur (inkl. 1 px Rand) */
+  margin-top: -9px;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 2px solid var(--card-bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+input[type="range"].rv-slider::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 2px solid var(--card-bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
 /* Accessible Interactive Focus */
 *:focus-visible {
   outline: 4px solid var(--border-focus) !important;

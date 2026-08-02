@@ -43,6 +43,11 @@ import {
 } from "./types";
 import { mergeSyncPayload } from "./utils/merge";
 import {
+  exportReportToExcel,
+  exportTimeLogsToExcel,
+  triggerFileDownload,
+} from "./utils/excelUtils";
+import {
   registerLiveSyncHandlers,
   disconnectLiveSync,
   subscribeLiveSync,
@@ -76,6 +81,27 @@ const persistHistory = (
 };
 
 const ONBOARDING_KEY = "aussendienst_pwa_onboarding_v1";
+
+/**
+ * Hat dieser Monat echten Inhalt -- also etwas, das verloren gehen koennte?
+ *
+ * Der Name zaehlt bewusst NICHT dazu: Er wird beim Monatswechsel automatisch
+ * mitgenommen, dadurch galt jeder frische Monat sofort als "hat Daten" und
+ * landete leer im RV Archiv. Die Archivliste fuellte sich mit Eintraegen
+ * "Zaehler: 0", und ein Rueckgaengig nach dem Monatsabschluss haette einen
+ * leeren Monat zurueckgelassen.
+ */
+const monthHasContent = (data?: {
+  notes?: string;
+  values?: Record<string, number | "">;
+  timeLogs?: TimeLog[];
+} | null): boolean => {
+  if (!data) return false;
+  if (typeof data.notes === "string" && data.notes.trim() !== "") return true;
+  if (Object.values(data.values || {}).some((v) => typeof v === "number" && v !== 0))
+    return true;
+  return Array.isArray(data.timeLogs) && data.timeLogs.length > 0;
+};
 
 const safeSetItem = (key: string, value: string) => {
   try {
@@ -405,6 +431,11 @@ export default function App() {
 
   // Barrierefreier Ersatz für window.confirm() (siehe ConfirmDialog.tsx)
   const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null);
+  // Zuletzt abgeschlossener Monat -- Grundlage für das Rückgängig-Angebot
+  const [lastMonthClose, setLastMonthClose] = useState<{
+    from: string;
+    to: string;
+  } | null>(null);
 
   // Interaktiver Einstieg bei Erstnutzung. null = noch nicht entschieden
   // (die Entscheidung fällt erst, wenn die gespeicherten Daten geladen sind,
@@ -791,13 +822,8 @@ export default function App() {
   useEffect(() => {
     if (!reportData?.month) return;
 
-    // Only save if we have some data in the form to avoid empty spamming
-    const hasData =
-      reportData?.name ||
-      reportData?.notes ||
-      Object.values(reportData?.values || {}).some((v) => v !== "" && v !== 0) ||
-      (reportData?.timeLogs && reportData?.timeLogs.length > 0);
-    if (!hasData) return;
+    // Nur Monate mit echtem Inhalt archivieren (siehe monthHasContent)
+    if (!monthHasContent(reportData)) return;
 
     setHistory((prev) => {
       const updated = {
@@ -874,6 +900,9 @@ export default function App() {
 
   // --- VALUE UPDATERS ---
   const handleValueChange = useCallback((id: string, val: number | "") => {
+    // Sobald im neuen Monat gearbeitet wird, ist das Rückgängig-Angebot
+    // hinfällig -- ein Rücksprung würde sonst frische Eingaben gefährden.
+    setLastMonthClose(null);
     setReportData((prev) => ({
       ...prev,
       values: {
@@ -1051,21 +1080,19 @@ export default function App() {
     key: keyof Omit<ReportData, "values">,
     val: string,
   ) => {
+    setLastMonthClose(null);
     setReportData((prev) => ({ ...prev, [key]: val }));
   }, []);
 
   const handleMonthChange = (newMonth: string) => {
     if (!newMonth) return;
+    // Jeder Monatswechsel beendet ein offenes Rückgängig-Angebot; der
+    // Abschluss-Ablauf setzt es danach bewusst neu.
+    setLastMonthClose(null);
 
     // 1. Save current active month state to history first if it has any meaningful content
     const currentMonth = reportData?.month;
-    const hasData =
-      reportData?.name ||
-      reportData?.notes ||
-      Object.values(reportData?.values || {}).some(
-        (v) => typeof v === "number" && v > 0,
-      ) ||
-      (reportData?.timeLogs && reportData?.timeLogs.length > 0);
+    const hasData = monthHasContent(reportData);
 
     let updatedHistory = { ...history };
     if (hasData && currentMonth) {
@@ -1520,6 +1547,15 @@ export default function App() {
   };
 
   // --- START NEW MONTH (ARCHIVE & RESET) ---
+  /**
+   * Monatsabschluss ist der folgenschwerste Knopf der App: Er wechselt den
+   * Arbeitsmonat und leert das Formular. Bisher geschah das ohne jede
+   * Rueckfrage -- ein Fehlgriff auf dem Handy genuegte. Die Daten gehen dabei
+   * zwar nicht verloren (der Monat wandert vollstaendig ins RV Archiv,
+   * nachgemessen: Zaehler, Kommentar, Schichten und Feld-Aufbau), aber der
+   * Nutzer sieht das nicht und weiss nicht, wie er zurueckkommt.
+   * Deshalb: vorher fragen, hinterher Rueckgaengig anbieten.
+   */
   const handleStartNewMonth = () => {
     triggerHaptic(40);
     const currentMonth = reportData?.month;
@@ -1537,8 +1573,57 @@ export default function App() {
     }
     const nextMonthStr = `${nextYear}-${String(nextMonth).padStart(2, "0")}`;
 
-    // Trigger month change - this saves the current month into history and opens the next one fresh (cleared)
-    handleMonthChange(nextMonthStr);
+    const zaehlungen = Object.values(reportData?.values || {}).reduce<number>(
+      (sum, v) => (typeof v === "number" ? sum + v : sum),
+      0,
+    );
+    const schichten = reportData?.timeLogs?.length || 0;
+    const details = [
+      `Gezählte Vorgänge: ${zaehlungen}`,
+      `Erfasste Schichten: ${schichten}`,
+      "Der Monat bleibt vollständig im RV Archiv und lässt sich dort jederzeit wieder laden.",
+    ];
+    if (!monthHasContent(reportData)) {
+      details.unshift(
+        "Achtung: In diesem Monat ist noch nichts erfasst – es wird nichts archiviert.",
+      );
+    }
+
+    setConfirmRequest({
+      title: `${formatMonthGerman(currentMonth)} abschließen?`,
+      message: `${formatMonthGerman(currentMonth)} wird im RV Archiv gesichert. Danach arbeiten Sie in ${formatMonthGerman(nextMonthStr)} mit leerem Formular weiter.`,
+      details,
+      confirmLabel: "Monat abschließen",
+      onConfirm: () => {
+        // Trigger month change - this saves the current month into history and opens the next one fresh (cleared)
+        handleMonthChange(nextMonthStr);
+        setLastMonthClose({ from: currentMonth, to: nextMonthStr });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      },
+    });
+  };
+
+  /**
+   * Monatsabschluss zurueckholen. Der neue Monat wird dabei nur dann aus dem
+   * Archiv entfernt, wenn dort nichts eingetragen wurde -- sonst bliebe ein
+   * leerer Eintrag stehen. Sobald der Nutzer im neuen Monat wirklich zu
+   * arbeiten beginnt, verschwindet das Angebot (siehe clearMonthCloseUndo).
+   */
+  const handleUndoMonthClose = () => {
+    if (!lastMonthClose) return;
+    const { from, to } = lastMonthClose;
+    triggerHaptic(25);
+
+    if (!monthHasContent(reportData) && history?.[to]) {
+      handleDeleteRecordFromHistory(to);
+    }
+    setLastMonthClose(null);
+    handleMonthChange(from);
+    triggerToast(`Monatsabschluss zurückgenommen – zurück in ${formatMonthGerman(from)}.`);
+    announceToAriaAndSpeech(
+      `Monatsabschluss zurückgenommen. Sie arbeiten wieder in ${formatMonthGerman(from)}.`,
+      true,
+    );
   };
 
   // --- LIVE-SYNC: läuft im Hintergrund weiter, auch außerhalb des Sync-Fensters ---
@@ -1751,275 +1836,72 @@ export default function App() {
   };
 
   // --- EXPORT TO EXCEL ---
+  // Die Tabellenerzeugung liegt zentral in utils/excelUtils.ts. Vorher stand
+  // sie hier ein zweites Mal -- mit anderen Beschriftungen als im Archiv-Export.
   const handleExportExcel = async () => {
     triggerHaptic(25);
-    const XLSX = await import("xlsx");
-    const monthVal = reportData?.month || "Monat";
-    const nameVal = reportData?.name || "Mitarbeitende_r";
-    const getVal = (id: string) => {
-      const val = (reportData?.values || {})[id];
-      return typeof val === "number" ? val : 0;
-    };
+    try {
+      const { wbout, monthVal, nameVal } = await exportReportToExcel(
+        reportData,
+        appFields,
+      );
+      const cleanName = nameVal.replace(/\s+/g, "_") || "Mitarbeiter";
+      const formattedMonthName = formatMonthGerman(monthVal).replace(/\s+/g, "_");
+      const fileName = `RV_Mobil_Report_${cleanName}_${formattedMonthName}.xlsx`;
 
-    const excelRows: any[][] = [];
-    excelRows.push(["MONATSÜBERSICHT AUßENDIENST - BARRIEREFREI"]);
-    excelRows.push(["Erstellt mit der barrierefreien RV Mobil App"]);
-    excelRows.push([]);
-    excelRows.push(["Monat / Jahr:", monthVal]);
-    excelRows.push(["Name (Mitarbeiter/in):", nameVal]);
-    excelRows.push([]);
-
-    // 1. VORFÜHRUNGEN & AUSLIEFERUNGEN
-    excelRows.push([
-      "1. VORFÜHRUNGEN & AUSLIEFERUNGEN",
-      "Anzahl / Zählerstand",
-    ]);
-    const startRowS1 = excelRows.length + 1;
-    appFields.s1.forEach((i) => {
-      excelRows.push([i.label, getVal(i.id)]);
-    });
-    const endRowS1 = excelRows.length;
-    excelRows.push([
-      "Gesamt (Bereich 1)",
-      { t: "n", f: `SUM(B${startRowS1}:B${endRowS1})` },
-    ]);
-    const totalS1Row = excelRows.length;
-    excelRows.push([]);
-
-    // 2. SCHULUNG, SUPPORT & AKQUISE
-    excelRows.push(["2. SCHULUNG, SUPPORT & AKQUISE", "Anzahl / Zählerstand"]);
-    const startRowS2 = excelRows.length + 1;
-    appFields.s2.forEach((i) => {
-      excelRows.push([i.label, getVal(i.id)]);
-    });
-    const endRowS2 = excelRows.length;
-    excelRows.push([
-      "Gesamt (Bereich 2)",
-      { t: "n", f: `SUM(B${startRowS2}:B${endRowS2})` },
-    ]);
-    const totalS2Row = excelRows.length;
-    excelRows.push([]);
-
-    // 3. SPEZIALPRODUKTE (DETAILS)
-    excelRows.push(["3. SPEZIALPRODUKTE (DETAILS)", "Anzahl / Zählerstand"]);
-    const startRowS3 = excelRows.length + 1;
-    appFields.s3.forEach((i) => {
-      excelRows.push([i.label, getVal(i.id)]);
-    });
-    const endRowS3 = excelRows.length;
-    excelRows.push([
-      "Gesamt (Bereich 3)",
-      { t: "n", f: `SUM(B${startRowS3}:B${endRowS3})` },
-    ]);
-    const totalS3Row = excelRows.length;
-    excelRows.push([]);
-
-    // 4. ARBEITSZEIT & BÜRO
-    excelRows.push(["4. ARBEITSZEIT & BÜRO", "Wert / Stunden"]);
-    const startRowS4 = excelRows.length + 1;
-    appFields.s4.forEach((i) => {
-      excelRows.push([i.label, getVal(i.id)]);
-    });
-    const endRowS4 = excelRows.length;
-    excelRows.push([
-      "Gesamt (Bereich 4)",
-      { t: "n", f: `SUM(B${startRowS4}:B${endRowS4})` },
-    ]);
-    excelRows.push([]);
-
-    // Summary section
-    excelRows.push(["GESAMT-ZUSAMMENFASSUNG"]);
-    excelRows.push([
-      "Gesamt-Aktivitäten (Bereich 1 + 2 + 3)",
-      { t: "n", f: `B${totalS1Row}+B${totalS2Row}+B${totalS3Row}` },
-    ]);
-    excelRows.push([]);
-
-    excelRows.push(["Anmerkungen & Kommentare:"]);
-    excelRows.push([reportData?.notes || "Keine Anmerkungen eingetragen."]);
-
-    const ws = XLSX.utils.aoa_to_sheet(excelRows);
-
-    // Set widths
-    ws["!cols"] = [{ wch: 54 }, { wch: 22 }];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Monatsreport");
-
-    const cleanName = nameVal.replace(/\s+/g, "_") || "Mitarbeiter";
-    const formattedMonthName = formatMonthGerman(monthVal).replace(/\s+/g, "_");
-    const fileName = `RV_Mobil_Report_${cleanName}_${formattedMonthName}.xlsx`;
-
-    // Try web sharing API first
-    if (navigator.share && navigator.canShare) {
-      try {
-        const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-        const file = new File([wbout], fileName, {
-          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        });
-
-        if (navigator.canShare({ files: [file] })) {
-          navigator
-            .share({
-              title: "Außendienst Monatsreport",
-              text: `Anbei der aktuelle Monatsreport für ${formatMonthGerman(monthVal)}`,
-              files: [file],
-            })
-            .then(() => {
-              triggerToast("Report erfolgreich geteilt!");
-              announceToAriaAndSpeech("Teilen-Dialog erfolgreich geöffnet.");
-            })
-            .catch((err) => {
-              console.log(
-                "Sharing cancelled or failed, falling back to download",
-                err,
-              );
-              XLSX.writeFile(wb, fileName);
-              triggerToast("Excel-Report erfolgreich heruntergeladen!");
-              announceToAriaAndSpeech("Excel-Report heruntergeladen.");
-            });
-          return;
-        }
-      } catch (e) {
-        console.warn("Share API was blocked, using standard download.", e);
+      const ergebnis = await triggerFileDownload(
+        wbout,
+        fileName,
+        `Anbei der aktuelle Monatsreport für ${formatMonthGerman(monthVal)}`,
+      );
+      if (ergebnis === "abgebrochen") {
+        triggerToast("Teilen abgebrochen – es wurde nichts gesendet.");
+        announceToAriaAndSpeech("Teilen abgebrochen. Es wurde nichts gesendet.");
+        return;
       }
+      triggerToast(`Excel-Report erfolgreich ${ergebnis}!`);
+      announceToAriaAndSpeech(`Excel-Report ${ergebnis}.`);
+    } catch (err) {
+      console.error("Excel-Export fehlgeschlagen", err);
+      triggerToast("Fehler beim Erstellen der Excel-Datei.");
+      announceToAriaAndSpeech("Fehler beim Erstellen der Excel-Datei.", true);
     }
-
-    // Standard download fallback
-    XLSX.writeFile(wb, fileName);
-    triggerToast("Excel-Report erfolgreich heruntergeladen!");
-    announceToAriaAndSpeech("Excel-Report heruntergeladen.");
   };
 
   // --- EXPORT TIME LOGS TO EXCEL (Variante B) ---
   const handleExportTimeLogsExcel = async () => {
     triggerHaptic(25);
-    const XLSX = await import("xlsx");
-    const monthVal = reportData?.month || "Monat";
-    const nameVal = reportData?.name || "Mitarbeitende_r";
-    const logs = (
-      Array.isArray(reportData?.timeLogs) ? [...reportData?.timeLogs] : []
-    ).sort((a, b) => a.date.localeCompare(b.date));
-
-    if (logs.length === 0) {
-      triggerToast("Keine Zeiterfassungsdaten vorhanden!");
-      announceToAriaAndSpeech(
-        "Keine Zeiterfassungsdaten zum Exportieren vorhanden.",
-      );
-      return;
-    }
-
-    const excelRows: any[][] = [];
-    excelRows.push(["ARBEITSZEITERFASSUNG & STEMPELUHR - RV AUßENDIENST"]);
-    excelRows.push(["Erstellt mit der barrierefreien RV Mobil App"]);
-    excelRows.push([]);
-    excelRows.push(["Mitarbeiter/in:", nameVal]);
-    excelRows.push(["Berichtsmonat:", formatMonthGerman(monthVal)]);
-    excelRows.push([]);
-
-    // Table Headers
-    excelRows.push([
-      "Datum",
-      "Kommen",
-      "Gehen",
-      "Abzug Pause (Min)",
-      "Netto-Stunden (h)",
-      "Anteil Büro (h)",
-      "Anteil Außendienst (h)",
-      "Kommentar / Ort / Besuchte Schule",
-    ]);
-
-    const startRow = excelRows.length + 1;
-    logs.forEach((log) => {
-      const [y, m, d] = log.date.split("-");
-      const formattedDate = y && m && d ? `${d}.${m}.${y}` : log.date;
-      excelRows.push([
-        formattedDate,
-        log.clockIn,
-        log.clockOut,
-        log.breakMinutes,
-        log.duration,
-        log.officeHours,
-        log.fieldHours,
-        log.notes || "",
-      ]);
-    });
-    const endRow = excelRows.length;
-
-    // Sums Row
-    excelRows.push([
-      "GESAMT",
-      "",
-      "",
-      "",
-      { t: "n", f: `SUM(E${startRow}:E${endRow})` },
-      { t: "n", f: `SUM(F${startRow}:F${endRow})` },
-      { t: "n", f: `SUM(G${startRow}:G${endRow})` },
-      "",
-    ]);
-
-    const ws = XLSX.utils.aoa_to_sheet(excelRows);
-
-    // Set widths
-    ws["!cols"] = [
-      { wch: 12 }, // Datum
-      { wch: 10 }, // Kommen
-      { wch: 10 }, // Gehen
-      { wch: 18 }, // Pause
-      { wch: 18 }, // Netto
-      { wch: 16 }, // Büro
-      { wch: 22 }, // Außendienst
-      { wch: 45 }, // Kommentar
-    ];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Arbeitszeiten");
-
-    const cleanName = nameVal.replace(/\s+/g, "_") || "Mitarbeiter";
-    const formattedMonthName = formatMonthGerman(monthVal).replace(/\s+/g, "_");
-    const fileName = `RV_Zeiterfassung_${cleanName}_${formattedMonthName}.xlsx`;
-
-    // Try web sharing API first
-    if (navigator.share && navigator.canShare) {
-      try {
-        const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-        const file = new File([wbout], fileName, {
-          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        });
-
-        if (navigator.canShare({ files: [file] })) {
-          navigator
-            .share({
-              title: "RV Zeiterfassung",
-              text: `Anbei das Zeiterfassungs-Protokoll für ${formatMonthGerman(monthVal)}`,
-              files: [file],
-            })
-            .then(() => {
-              triggerToast("Zeiterfassung erfolgreich geteilt!");
-              announceToAriaAndSpeech(
-                "Zeiterfassung-Teilen-Dialog erfolgreich geöffnet.",
-              );
-            })
-            .catch((err) => {
-              console.log(
-                "Sharing cancelled or failed, falling back to download",
-                err,
-              );
-              XLSX.writeFile(wb, fileName);
-              triggerToast("Zeiterfassung erfolgreich heruntergeladen!");
-              announceToAriaAndSpeech("Zeiterfassung heruntergeladen.");
-            });
-          return;
-        }
-      } catch (e) {
-        console.warn("Share API was blocked, using standard download.", e);
+    try {
+      const result = await exportTimeLogsToExcel(reportData);
+      if (!result) {
+        triggerToast("Keine Zeiterfassungsdaten vorhanden!");
+        announceToAriaAndSpeech(
+          "Keine Zeiterfassungsdaten zum Exportieren vorhanden.",
+        );
+        return;
       }
-    }
+      const { wbout, monthVal, nameVal } = result;
+      const cleanName = nameVal.replace(/\s+/g, "_") || "Mitarbeiter";
+      const formattedMonthName = formatMonthGerman(monthVal).replace(/\s+/g, "_");
+      const fileName = `RV_Zeiterfassung_${cleanName}_${formattedMonthName}.xlsx`;
 
-    // Standard download fallback
-    XLSX.writeFile(wb, fileName);
-    triggerToast("Zeiterfassung erfolgreich heruntergeladen!");
-    announceToAriaAndSpeech("Zeiterfassung heruntergeladen.");
+      const ergebnis = await triggerFileDownload(
+        wbout,
+        fileName,
+        `Anbei das Zeiterfassungs-Protokoll für ${formatMonthGerman(monthVal)}`,
+      );
+      if (ergebnis === "abgebrochen") {
+        triggerToast("Teilen abgebrochen – es wurde nichts gesendet.");
+        announceToAriaAndSpeech("Teilen abgebrochen. Es wurde nichts gesendet.");
+        return;
+      }
+      triggerToast(`Zeiterfassung erfolgreich ${ergebnis}!`);
+      announceToAriaAndSpeech(`Zeiterfassung ${ergebnis}.`);
+    } catch (err) {
+      console.error("Zeiterfassungs-Export fehlgeschlagen", err);
+      triggerToast("Fehler beim Erstellen der Excel-Datei.");
+      announceToAriaAndSpeech("Fehler beim Erstellen der Excel-Datei.", true);
+    }
   };
 
   // --- COMPUTE LIVE TOTALS FOR DASHBOARD ---
@@ -2318,6 +2200,40 @@ export default function App() {
         </div>
       </header>
 
+      {/* Rückgängig-Angebot nach dem Monatsabschluss.
+          role="status" statt "alert": Es ist eine Bestätigung, keine Störung --
+          der Screenreader liest sie, ohne den Nutzer zu unterbrechen. */}
+      {lastMonthClose && (
+        <div
+          role="status"
+          className="mb-4 p-3.5 rounded-2xl border-2 border-[var(--accent)] bg-[var(--accent)]/10 flex flex-col sm:flex-row sm:items-center gap-3"
+        >
+          <p className="flex-1 min-w-0 text-sm font-bold text-[var(--text-color)] leading-snug">
+            <span aria-hidden="true">✅ </span>
+            {formatMonthGerman(lastMonthClose.from)} ist im RV Archiv gesichert.
+            Sie arbeiten jetzt in {formatMonthGerman(lastMonthClose.to)}.
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleUndoMonthClose}
+              aria-label={`Monatsabschluss rückgängig machen und zurück zu ${formatMonthGerman(lastMonthClose.from)}`}
+              className="min-h-[44px] px-4 rounded-xl font-black text-sm bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 transition-all cursor-pointer active:scale-95 focus-visible:ring-4"
+            >
+              Rückgängig
+            </button>
+            <button
+              type="button"
+              onClick={() => setLastMonthClose(null)}
+              aria-label="Hinweis zum Monatsabschluss ausblenden"
+              className="min-h-[44px] px-4 rounded-xl font-bold text-sm border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--border-color)] transition-all cursor-pointer active:scale-95 focus-visible:ring-4"
+            >
+              Alles klar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Schnell-Umschalter (kompakt): Sprachansage & Ein-Hand-Modus */}
       <div className="mb-4 flex flex-wrap items-center gap-2" role="toolbar" aria-label="Schnell-Einstellungen">
         <button
@@ -2327,7 +2243,7 @@ export default function App() {
             setAccessibility((prev) => ({ ...prev, screenReaderNarration: !prev.screenReaderNarration }));
             announceToAriaAndSpeech("Sprachansagen wurden aktualisiert.", true);
           }}
-          className={`rounded-full px-3 py-1.5 text-xs font-black transition-all cursor-pointer ${accessibility.screenReaderNarration ? "bg-emerald-600 text-white" : "bg-[var(--bg-color)] text-[var(--text-color)] border border-[var(--border-color)]"}`}
+          className={`inline-flex items-center rounded-full px-3.5 min-h-[44px] text-xs font-black transition-all cursor-pointer ${accessibility.screenReaderNarration ? "bg-emerald-600 text-white" : "bg-[var(--bg-color)] text-[var(--text-color)] border border-[var(--border-color)]"}`}
         >
           {accessibility.screenReaderNarration ? "Sprachansagen AN" : "Sprachansagen AUS"}
         </button>
@@ -2339,7 +2255,7 @@ export default function App() {
               setMobileComfortMode((prev) => !prev);
               announceToAriaAndSpeech("Ein-Hand-Modus aktualisiert.", true);
             }}
-            className={`rounded-full px-3 py-1.5 text-xs font-black transition-all cursor-pointer ${mobileComfortMode ? "bg-indigo-600 text-white" : "bg-[var(--bg-color)] text-[var(--text-color)] border border-[var(--border-color)]"}`}
+            className={`inline-flex items-center rounded-full px-3.5 min-h-[44px] text-xs font-black transition-all cursor-pointer ${mobileComfortMode ? "bg-indigo-600 text-white" : "bg-[var(--bg-color)] text-[var(--text-color)] border border-[var(--border-color)]"}`}
           >
             {mobileComfortMode ? "Ein-Hand AN" : "Ein-Hand AUS"}
           </button>
@@ -2698,7 +2614,7 @@ export default function App() {
                     : "Standard-Layout aktiviert!",
                 );
               }}
-              className={`px-2 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
+              className={`px-2.5 min-h-[44px] rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
                 isCompactView
                   ? "bg-[var(--accent)] text-[var(--accent-text)] border-[var(--accent)] shadow-xs"
                   : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--border-color)]"
@@ -2718,7 +2634,7 @@ export default function App() {
                 onClick={handleCopyPreviousMonth}
                 aria-label="Vormonats-Werte als Vorlage laden"
                 title="Werte des letzten gesicherten Monats als Vorlage laden"
-                className="px-2 py-1 rounded-lg text-xs font-bold border bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
+                className="px-2.5 min-h-[44px] rounded-lg text-xs font-bold border bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
               >
                 <span aria-hidden="true">📋 </span>
                 <span>Vorlage laden</span>
@@ -2739,7 +2655,7 @@ export default function App() {
                   ? "Vorlesen stoppen"
                   : "Zusammenfassung vorlesen"
               }
-              className={`px-2 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
+              className={`px-2.5 min-h-[44px] rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
                 isReadingSummary
                   ? "bg-amber-500 text-white border-amber-500 shadow-xs"
                   : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--border-color)]"
@@ -2770,7 +2686,7 @@ export default function App() {
               }}
               aria-label="Monatsziele einrichten"
               title="Monatsziele einrichten"
-              className={`px-2 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
+              className={`px-2.5 min-h-[44px] rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
                 isGoalsEditorOpen
                   ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
                   : goalsConfig.enabled
@@ -2914,7 +2830,7 @@ export default function App() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Nach Produkten oder Kategorien suchen (z.B. WeWalk, Tactonom, Schulung)..."
               aria-label="Nach Produkten oder Kategorien suchen"
-              className="w-full pl-9 pr-8 py-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-xl text-xs font-semibold focus:border-[var(--border-focus)] outline-none"
+              className="w-full pl-9 pr-8 min-h-[44px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-xl text-xs font-semibold focus:border-[var(--border-focus)] outline-none"
             />
             {searchQuery && (
               <button
@@ -2935,7 +2851,7 @@ export default function App() {
         {(activeSectionTab === "all" || activeSectionTab === "s1") &&
           hasVisibleFields(appFields.s1) && (
           <section
-            className="p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]"
+            className="p-4 sm:p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]"
             aria-labelledby="section1-heading"
           >
             <h2
@@ -2985,7 +2901,7 @@ export default function App() {
       {(activeSectionTab === "all" || activeSectionTab === "s2") &&
         hasVisibleFields(appFields.s2) && (
           <section
-            className="p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]"
+            className="p-4 sm:p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]"
             aria-labelledby="section2-heading"
           >
             <h2
@@ -3023,7 +2939,7 @@ export default function App() {
       {(activeSectionTab === "all" || activeSectionTab === "s3") &&
         hasVisibleFields(appFields.s3) && (
           <section
-            className="p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]"
+            className="p-4 sm:p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]"
             aria-labelledby="section3-heading"
           >
             <h2
@@ -3061,7 +2977,7 @@ export default function App() {
       {(activeSectionTab === "all" || activeSectionTab === "s4") &&
         hasVisibleFields(appFields.s4) && (
           <section
-            className="p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]"
+            className="p-4 sm:p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]"
             aria-labelledby="section4-heading"
           >
             <h2
@@ -3124,7 +3040,7 @@ export default function App() {
 
       {/* SECTION 5: NOTES & ANMERKUNGEN */}
       <section
-        className={`p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]`}
+        className={`p-4 sm:p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]`}
         aria-labelledby="notes-heading"
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b-2 border-slate-100 dark:border-slate-800">
@@ -3134,7 +3050,11 @@ export default function App() {
           >
             Anmerkungen & Kommentare
           </h2>
-          <div className="flex items-center gap-2">
+          {/* flex-wrap: Bei grosser Schrift passten "Diktieren" und
+              "Datumstempel" nicht mehr nebeneinander und schoben die Seite
+              waagerecht aus dem Bildschirm (gemessen: 430 px Inhalt auf einem
+              360-px-Handy). */}
+          <div className="flex flex-wrap items-center gap-2">
             {/* Dictate Speech Input button */}
             <button
               type="button"
@@ -3208,7 +3128,7 @@ export default function App() {
               key={i}
               type="button"
               onClick={() => handleApplyNoteTemplate(tpl.text)}
-              className="px-2.5 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:border-[var(--border-focus)] hover:bg-slate-50 dark:hover:bg-slate-900 text-[0.75rem] font-black text-[var(--text-color)] transition-all cursor-pointer active:scale-95 focus-visible:ring-2"
+              className="inline-flex items-center px-2.5 min-h-[44px] rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:border-[var(--border-focus)] hover:bg-slate-50 dark:hover:bg-slate-900 text-[0.75rem] font-black text-[var(--text-color)] transition-all cursor-pointer active:scale-95 focus-visible:ring-2"
               title={`Text einfügen: "${tpl.text}"`}
             >
               {tpl.label}
@@ -3588,7 +3508,7 @@ export default function App() {
                     }
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
-                  className={`flex-1 flex flex-col items-center justify-center py-1.5 rounded-xl relative transition-all active:scale-90 cursor-pointer ${
+                  className={`flex-1 min-w-0 flex flex-col items-center justify-center py-1.5 rounded-xl relative transition-all active:scale-90 cursor-pointer ${
                     isSelected
                       ? "text-[var(--accent)] font-extrabold"
                       : "text-[var(--text-muted)] hover:text-[var(--text-color)] font-semibold"

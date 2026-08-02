@@ -135,7 +135,7 @@ export default function StatsModal({
             <button
               type="button"
               onClick={() => handleTabChange("current")}
-              className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer ${
+              className={`px-3 min-h-[44px] inline-flex items-center justify-center text-xs font-black rounded-lg transition-all cursor-pointer ${
                 activeTab === "current"
                   ? "bg-[var(--card-bg)] text-[var(--text-color)] shadow-sm"
                   : "text-[var(--text-muted)] hover:text-[var(--text-color)]"
@@ -146,7 +146,7 @@ export default function StatsModal({
             <button
               type="button"
               onClick={() => handleTabChange("trends")}
-              className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all cursor-pointer ${
+              className={`px-3 min-h-[44px] inline-flex items-center justify-center text-xs font-black rounded-lg transition-all cursor-pointer ${
                 activeTab === "trends"
                   ? "bg-[var(--card-bg)] text-[var(--text-color)] shadow-sm"
                   : "text-[var(--text-muted)] hover:text-[var(--text-color)]"
@@ -161,7 +161,7 @@ export default function StatsModal({
               type="button"
               onClick={() => setViewType("visual")}
               aria-label="Grafische Ansicht"
-              className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2 min-h-[44px] rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
                 viewType === "visual"
                   ? "bg-[var(--card-bg)] text-[var(--text-color)] shadow-sm"
                   : "text-[var(--text-muted)] hover:text-[var(--text-color)]"
@@ -174,7 +174,7 @@ export default function StatsModal({
               type="button"
               onClick={() => setViewType("table")}
               aria-label="Tabellarische Ansicht"
-              className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2 min-h-[44px] rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
                 viewType === "table"
                   ? "bg-[var(--card-bg)] text-[var(--text-color)] shadow-sm"
                   : "text-[var(--text-muted)] hover:text-[var(--text-color)]"

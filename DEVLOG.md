@@ -10,6 +10,174 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-02 — v0.9.0: Zähler bleiben erreichbar, Monatsabschluss umkehrbar, Excel-Export zusammengeführt
+
+Abgearbeitet wurden die Roadmap-Punkte 2, 3 und 5 der 0.9.0 („Verlässlich im
+Alltag"). Punkt 1 (Test auf echten Geräten) und 4 (Firmen-Excel-Vorlage)
+bleiben offen — beide brauchen eine Zulieferung von außen.
+
+### Befund 1: Die Zähler-Tasten liefen aus dem Bildschirm (schwerwiegend)
+
+Bei der Vermessung der Touch-Ziele fiel etwas Größeres auf. Die Bedienzeile
+eines Zählers (`-5 − Zahl + +5`) hat feste Breite, die Karte darum herum nicht.
+Gemessen auf einem 360-px-Gerät (typisches Android), Ansicht „RV Report":
+
+| Schriftgröße | linker Rand der Tastenreihe | Folge |
+|---|---|---|
+| Normal | x = 11 px (Karte beginnt bei 33) | Reihe steht über den Kartenrand hinaus |
+| Groß | **x = −76 px** | „−5" und Teile der Minus-Taste außerhalb des Bildschirms |
+| Extra groß | **x = −163 px** | „−5", Minus und Teile des Eingabefelds außerhalb |
+
+Ursache: Alle Maße waren rem-basiert und wuchsen mit der Schriftgröße mit,
+während die Karte schmal blieb; `align-self: flex-end` schob den Überstand nach
+links, also aus dem Bild. Betroffen war ausgerechnet die Einstellung, die
+sehbehinderte Nutzer brauchen — dort war das Verringern eines Zählers per
+Fingertipp schlicht unmöglich.
+
+**Umsetzung** (`CounterField.tsx`): Bedienflächen bekommen feste Pixelmaße
+(sie enthalten Symbole, keinen Text — WCAG 1.4.4 verlangt hier kein
+Mitwachsen), das Zahlenfeld bleibt rem-basiert und darf schrumpfen, die Zeile
+ist umbruchfähig. Reicht der Platz, bleibt es eine Zeile; wird es eng, rutschen
+die Fünferschritte in eine zweite. Ab 640 px stellt `sm:order-*` die gewohnte
+Reihenfolge wieder her. Zusätzlich Innenabstände auf dem Handy verringert
+(Abschnitte `p-5` → `p-4`, Zählerkarte `p-3` → `p-2.5`).
+
+**Ergebnis, nachgemessen (360 px, alle drei Schriftgrößen):** nichts mehr
+außerhalb des Bildschirms, keine waagerechte Scrollleiste mehr (vorher 365 px
+bzw. 436 px Inhalt bei 360 px Fensterbreite). Die Zählerkarte ist bei normaler
+Schrift sogar 4 px flacher als vorher — der Platzgewinn aus 0.8.0 bleibt
+erhalten.
+
+Zwei weitere Überlauf-Quellen bei großer Schrift gefunden und behoben:
+„Diktieren"/„Datumstempel" nebeneinander (jetzt umbruchfähig), die
+Navigationsleiste unten (`min-w-0`, damit die Beschriftungen kürzen dürfen)
+und eine lange Kategorie-Beschriftung in der Schnell-Erfassung (`break-words`).
+
+### Befund 2: Touch-Ziele
+
+Vorher **50 Bedienelemente unter 44 × 44 px** in der Ansicht „RV Report",
+weitere in „RV Analyse" (4), „RV Archiv" (1) und „Optionen" (1). Die
+verbindliche WCAG-AA-Grenze von 24 px war überall eingehalten — es war also
+kein Normverstoß, aber unterhalb der Empfehlung für einhändige Bedienung.
+
+Nachher, nachgemessen: **0 Elemente unter 44 × 44 px** in 15 Kombinationen
+(fünf Hauptansichten × drei Schriftgrößen, 360 px breit) sowie im
+Einrichtungs-Assistenten.
+
+Beim Nachmessen der Optionen-Unterseiten kamen zwei Elemente zutage, die vorher
+niemand auf der Rechnung hatte:
+- Die **Schalter** in „Anzeige & Bedienung" waren 56 × 32 px. Das Aussehen
+  bleibt, die Trefferfläche ist jetzt 56 × 44.
+- Der **Schieberegler für die Sprechgeschwindigkeit war 10 px hoch** — mit dem
+  Finger praktisch nicht zu treffen. Zusätzlich stand `appearance: none`, ohne
+  dass ein eigener Griff gestaltet war; Chrome zeichnet dann gar keinen
+  sichtbaren Griff. Jetzt 44 px Trefferfläche, sichtbare Spur, 26-px-Griff
+  (`.rv-slider` in `index.css`).
+- Kleinere Nachzieher: Reiter in der Hilfe (36 → 44 px), Passwortfeld der
+  Datensicherung (41 → 44 px).
+
+**Ehrlich offen:** Das Kontrollkästchen „Backup mit Passwort schützen" ist ein
+natives Kästchen und misst 24 px. Die zugehörige Beschriftungszeile ist 44 px
+hoch und vollständig anklickbar, damit ist die Bedienfläche in Ordnung — das
+Kästchen selbst wurde bewusst nicht per `transform` aufgeblasen.
+
+*Zwei Messfallen, für künftige Audits notiert:*
+1. Die Prüfumgebung rendert mit Faktor 0,99993 — 44 px messen sich als 43,997.
+   Ein Schwellwert von exakt 44 meldet lauter Fehlalarme; geprüft wurde gegen 43,5.
+2. Dialoge mit Einblend-Animation (framer-motion) bleiben in der Vorschau auf
+   ihrem Startwert `scale(0.95)`, weil das Fenster keine Bilder zeichnet.
+   Elemente darin messen sich 5 % zu klein (44 px → 41,8 px). Der Geräte-Sync-
+   Zurückknopf ist deshalb **kein** Fund, sondern ein Artefakt.
+
+### Befund 3: „Monat abschließen" — die Roadmap-Annahme war falsch
+
+Die Roadmap führte den Punkt als „unumkehrbar". Nachgeprüft: **stimmt nicht.**
+Der Monat wandert beim Abschluss vollständig ins RV Archiv (Zähler, Kommentar,
+Schichten, Feld-Aufbau — per IndexedDB-Abfrage kontrolliert) und lässt sich
+über die Monatsauswahl zurückholen. Eine 30-Tage-Aufbewahrung, wie dort
+vorgeschlagen, hätte also ein Problem gelöst, das es nicht gibt.
+
+Das **tatsächliche** Problem: Der Knopf löste ohne jede Rückfrage aus (im
+Browser bestätigt: ein Klick, kein Dialog, Monat gewechselt), und der Nutzer
+erfährt nirgends, dass und wie er zurückkommt.
+
+**Umsetzung:**
+1. Rückfrage über den vorhandenen `ConfirmDialog` — mit Angabe, was gesichert
+   wird (gezählte Vorgänge, Schichten) und was danach passiert. Startfokus auf
+   „Abbrechen", Escape bricht ab.
+2. Danach ein Hinweisstreifen mit **Rückgängig** (`role="status"`, damit der
+   Screenreader ihn liest, ohne zu unterbrechen). Er verschwindet, sobald im
+   neuen Monat wirklich gearbeitet wird — ein Rücksprung würde dann frische
+   Eingaben gefährden.
+3. Nebenbefund behoben: Der Name allein galt als „Monat hat Daten". Da der Name
+   beim Wechsel mitgenommen wird, landete **jeder** frische Monat sofort leer im
+   Archiv (reproduziert: Archiv enthielt `2026-09` mit `values: {}`). Neue
+   Regel in `monthHasContent()`: Kommentar, Zählerstand oder Schicht — der Name
+   zählt nicht mehr.
+
+Vollständig im Browser durchgespielt: Abbrechen ändert nichts; Bestätigen
+archiviert August korrekt und wechselt zu September (Archiv enthält jetzt nur
+noch August); Rückgängig stellt Monat, Kommentar, alle Zählerstände und beide
+Schichten wieder her; nach drei Tipps auf „+" im neuen Monat ist das Angebot
+verschwunden und der Zähler steht auf 3 (kein Zählverlust — Regressionstest zu
+0.6.0).
+
+### Befund 4: Der Excel-Export existierte zweimal — mit unterschiedlichem Ergebnis
+
+`utils/excelUtils.ts` (Archiv) und die Inline-Fassung in `App.tsx` (laufender
+Monat) waren auseinandergelaufen. Derselbe Monat ergab je nach Weg ein anderes
+Dokument: „Gesamt" statt „Gesamt (Bereich 1)", im Archiv-Export fehlte der
+Kommentarblock ganz, wenn kein Kommentar vorhanden war, andere Spaltenbreiten,
+anderer Blattname („Monatsbericht" vs. „Monatsreport").
+
+Zusammengeführt auf die Fassung des laufenden Monats — das ist das Dokument,
+das die Vertriebsleitung tatsächlich bekommt. Mit einem Wegwerf-Skript
+(`npx tsx`) beide Wege erzeugt und verglichen: **außerhalb der Kopfzeile
+identisch**, Summenformeln geprüft (`B10=SUM(B8:B9)`, `B25=B10+B14+B18`, der
+Arbeitszeit-Bereich korrekt nicht in der Aktivitäten-Summe).
+
+Beim Ausliefern zusätzlich ein echter Fehler behoben: Brach der Nutzer den
+Teilen-Dialog ab, lud die Formular-Fassung trotzdem herunter, die
+Archiv-Fassung meldete „Fehler beim Exportieren". Jetzt wird ein Abbruch als
+das behandelt, was er ist (`AbortError` → „Teilen abgebrochen"), ohne Download
+und ohne Fehlermeldung. Das ist eine bewusste Verhaltensänderung, keine reine
+Umstrukturierung.
+
+### Befund 5: Fokusfalle des Einrichtungs-Assistenten hatte ein Loch
+
+`OnboardingModal` meldet `aria-modal="true"`, aber im Hintergrund waren
+**12 fokussierbare Elemente** weiterhin per Tabulator erreichbar. Die
+vorhandene Falle griff nur, wenn der Fokus exakt auf dem ersten oder letzten
+Element lag — der Startfokus liegt aber auf der Überschrift (`tabindex="-1"`),
+die in keiner der beiden Listen steht. Shift+Tab von dort führte also in einen
+Hintergrund, den der Screenreader für nicht vorhanden erklärt. Behoben; der
+Fokus wird jetzt in den Dialog zurückgeholt.
+
+*Ehrlich angemerkt:* Diese Lücke ist aus dem Code hergeleitet und die
+Zählung der erreichbaren Elemente ist gemessen — die Tastaturbewegung selbst
+lässt sich mit synthetischen Ereignissen nicht belastbar nachstellen. Ein
+echter Tastatur-Durchlauf steht noch aus.
+
+### Geprüft
+
+`npm run lint` (tsc --noEmit) und `npm run build` fehlerfrei. Erststart mit
+geleertem `localStorage` **und** gelöschter IndexedDB kontrolliert (Vorgabe aus
+CLAUDE.md): Assistent erscheint, alle 18 Standardfelder mit korrekten Umlauten
+und allen Symbolen, keine doppelt kodierten Zeichen, kein waagerechter Überlauf.
+Export beider Wege ausgelöst und die erzeugten Dateinamen kontrolliert.
+
+**Nicht geprüft (ehrlich):** alles, was echte Hardware braucht — Touch-Zweige
+(`pointer: coarse`), Bildschirmtastatur, iOS-Safe-Areas, NVDA/VoiceOver/TalkBack.
+Das bleibt Roadmap-Punkt 1 und blockiert weiterhin die 1.0.
+
+*Arbeitsnotiz:* Ein Bulk-Edit über `node -e` in der Bash-Shell hat Backticks und
+Backslashes zerlegt (Template-Literale und `\s` verschwanden aus dem Code) —
+dieselbe Klasse von Fehler wie der Encoding-Schaden aus 0.7.0. Reparatur über
+ein per Datei geschriebenes Node-Skript. Für Bulk-Änderungen gilt: Skript in
+eine Datei schreiben, nicht in die Kommandozeile.
+
+---
+
 ## 2026-08-02 — v0.8.1: Zwei Farbsysteme zusammengeführt, Navigation vereinheitlicht
 
 Anlass: die Frage, ob das Design durchgängig ist. Der Audit förderte keinen

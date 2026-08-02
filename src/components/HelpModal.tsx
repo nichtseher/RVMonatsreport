@@ -73,7 +73,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-[var(--border-color)] overflow-x-auto">
+        <div className="flex flex-shrink-0 border-b border-[var(--border-color)] overflow-x-auto">
           {[
             { id: "general", label: "Allgemein", icon: BookOpen },
             { id: "report", label: "RV Report", icon: LayoutGrid },
@@ -85,7 +85,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex-1 min-w-[120px] py-4 px-4 text-sm font-bold flex items-center justify-center gap-2 border-b-4 transition-colors ${
+                className={`flex-1 min-w-[120px] min-h-[44px] py-4 px-4 text-sm font-bold flex items-center justify-center gap-2 border-b-4 transition-colors ${
                   activeTab === tab.id
                     ? "border-[var(--accent)] text-[var(--accent)] bg-slate-50 dark:bg-slate-900/50"
                     : "border-transparent text-[var(--text-muted)] hover:bg-slate-50 dark:hover:bg-slate-800"
