@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* KRITISCH: Tailwinds dark:-Varianten an das APP-Theme koppeln.
+   Standardmaessig folgt dark: der Betriebssystem-Einstellung
+   (prefers-color-scheme) -- unabhaengig davon, was der Nutzer in der App
+   waehlt. Das fuehrte zu praktisch unlesbaren Kombinationen, z. B.
+   App-Theme "Hell" bei dunklem Betriebssystem: fast schwarze Schrift auf
+   dunklem Kartenhintergrund (gemessener Kontrast 1,18:1).
+   Das Attribut data-dark setzt App.tsx passend zum gewaehlten Theme. */
+@custom-variant dark (&:where([data-dark="true"], [data-dark="true"] *));
+
 @theme {
   /* Bewusster System-Schriftstapel statt "Inter"/"JetBrains Mono": Diese
      Schriften waren zwar deklariert, wurden aber nie geladen (0 Webfonts) --
@@ -20,6 +29,8 @@
   --primary-text: #ffffff;
   --accent: #15803d;
   --accent-hover: #166534;
+  /* Schriftfarbe AUF der Akzentflaeche -- pro Theme lesbar gewaehlt */
+  --accent-text: #ffffff;
   --text-color: #0f172a;
   --text-muted: #475569;
   /* 3,12:1 gegen die weisse Karte -- erfuellt WCAG 1.4.11 (3:1) fuer
@@ -44,10 +55,12 @@
 [data-theme="dark"] {
   --bg-color: #020617;
   --card-bg: #0f172a;
-  --primary: #3b82f6;
+  /* #2563eb statt #3b82f6: weisse Schrift erreicht damit 5,17:1 (vorher 3,68:1) */
+  --primary: #2563eb;
   --primary-text: #ffffff;
   --accent: #22c55e;
   --accent-hover: #4ade80;
+  --accent-text: #052e16;
   --text-color: #f8fafc;
   --text-muted: #94a3b8;
   /* 3,09:1 gegen die dunkle Karte (vorher #1e293b mit nur 1,22:1) */
@@ -72,6 +85,7 @@
   --primary-text: #000000;
   --accent: #ffffff;
   --accent-hover: #e5e5e5;
+  --accent-text: #000000;
   --text-color: #ffffff;
   --text-muted: #e5e5e5;
   --border-color: #ffffff;
@@ -95,6 +109,7 @@
   --primary-text: #000000;
   --accent: #ffff00;
   --accent-hover: #cccc00;
+  --accent-text: #000000;
   --text-color: #ffff00;
   --text-muted: #ffff00;
   --border-color: #ffff00;
@@ -108,6 +123,105 @@
   --total-text: #ffff00;
   --custom-bg: #000000;
   --modal-bg: rgba(0, 0, 0, 0.95);
+}
+
+/* ---------------------------------------------------------------
+   HOCHKONTRAST: fest verdrahtete Farben neutralisieren.
+
+   Rund 570 Stellen im Code nutzen feste Tailwind-Farben (bg-slate-50,
+   text-emerald-700, border-red-200 ...) statt der Theme-Variablen. Die
+   ignorieren jede Theme-Wahl -- im Gelb-auf-Schwarz-Theme lagen dadurch
+   51 von 141 Textelementen unter dem Mindestkontrast, die schlimmsten
+   bei 1,05:1 (praktisch unsichtbar).
+
+   In den Hochkontrast-Themes ist genau EIN Farbpaar erwuenscht, deshalb
+   werden hier alle Palettenfarben auf die Theme-Farben gezwungen -- so
+   arbeitet auch der Hochkontrast-Modus von Windows. Die Bedeutung geht
+   nicht verloren: Beschriftungen und Symbole bleiben erhalten.
+   --------------------------------------------------------------- */
+[data-theme="high-contrast-dark"] [class*="bg-slate-"],
+[data-theme="high-contrast-dark"] [class*="bg-gray-"],
+[data-theme="high-contrast-dark"] [class*="bg-emerald-"],
+[data-theme="high-contrast-dark"] [class*="bg-green-"],
+[data-theme="high-contrast-dark"] [class*="bg-amber-"],
+[data-theme="high-contrast-dark"] [class*="bg-indigo-"],
+[data-theme="high-contrast-dark"] [class*="bg-blue-"],
+[data-theme="high-contrast-dark"] [class*="bg-red-"],
+[data-theme="high-contrast-dark"] [class*="bg-teal-"],
+[data-theme="high-contrast-dark"] [class*="bg-purple-"],
+[data-theme="high-contrast-dark"] [class*="bg-rose-"],
+[data-theme="high-contrast-dark"] [class*="bg-cyan-"],
+[data-theme="high-contrast-dark"] [class*="bg-violet-"],
+[data-theme="high-contrast-dark"] [class*="bg-sky-"],
+[data-theme="high-contrast-yellow"] [class*="bg-slate-"],
+[data-theme="high-contrast-yellow"] [class*="bg-gray-"],
+[data-theme="high-contrast-yellow"] [class*="bg-emerald-"],
+[data-theme="high-contrast-yellow"] [class*="bg-green-"],
+[data-theme="high-contrast-yellow"] [class*="bg-amber-"],
+[data-theme="high-contrast-yellow"] [class*="bg-indigo-"],
+[data-theme="high-contrast-yellow"] [class*="bg-blue-"],
+[data-theme="high-contrast-yellow"] [class*="bg-red-"],
+[data-theme="high-contrast-yellow"] [class*="bg-teal-"],
+[data-theme="high-contrast-yellow"] [class*="bg-purple-"],
+[data-theme="high-contrast-yellow"] [class*="bg-rose-"],
+[data-theme="high-contrast-yellow"] [class*="bg-cyan-"],
+[data-theme="high-contrast-yellow"] [class*="bg-violet-"],
+[data-theme="high-contrast-yellow"] [class*="bg-sky-"] {
+  background-color: var(--card-bg) !important;
+}
+
+[data-theme="high-contrast-dark"] [class*="text-slate-"],
+[data-theme="high-contrast-dark"] [class*="text-gray-"],
+[data-theme="high-contrast-dark"] [class*="text-emerald-"],
+[data-theme="high-contrast-dark"] [class*="text-green-"],
+[data-theme="high-contrast-dark"] [class*="text-amber-"],
+[data-theme="high-contrast-dark"] [class*="text-indigo-"],
+[data-theme="high-contrast-dark"] [class*="text-blue-"],
+[data-theme="high-contrast-dark"] [class*="text-red-"],
+[data-theme="high-contrast-dark"] [class*="text-teal-"],
+[data-theme="high-contrast-dark"] [class*="text-purple-"],
+[data-theme="high-contrast-dark"] [class*="text-rose-"],
+[data-theme="high-contrast-dark"] [class*="text-cyan-"],
+[data-theme="high-contrast-dark"] [class*="text-violet-"],
+[data-theme="high-contrast-dark"] [class*="text-sky-"],
+[data-theme="high-contrast-dark"] [class*="text-white"],
+[data-theme="high-contrast-yellow"] [class*="text-slate-"],
+[data-theme="high-contrast-yellow"] [class*="text-gray-"],
+[data-theme="high-contrast-yellow"] [class*="text-emerald-"],
+[data-theme="high-contrast-yellow"] [class*="text-green-"],
+[data-theme="high-contrast-yellow"] [class*="text-amber-"],
+[data-theme="high-contrast-yellow"] [class*="text-indigo-"],
+[data-theme="high-contrast-yellow"] [class*="text-blue-"],
+[data-theme="high-contrast-yellow"] [class*="text-red-"],
+[data-theme="high-contrast-yellow"] [class*="text-teal-"],
+[data-theme="high-contrast-yellow"] [class*="text-purple-"],
+[data-theme="high-contrast-yellow"] [class*="text-rose-"],
+[data-theme="high-contrast-yellow"] [class*="text-cyan-"],
+[data-theme="high-contrast-yellow"] [class*="text-violet-"],
+[data-theme="high-contrast-yellow"] [class*="text-sky-"],
+[data-theme="high-contrast-yellow"] [class*="text-white"] {
+  color: var(--text-color) !important;
+}
+
+[data-theme="high-contrast-dark"] [class*="border-slate-"],
+[data-theme="high-contrast-dark"] [class*="border-gray-"],
+[data-theme="high-contrast-dark"] [class*="border-emerald-"],
+[data-theme="high-contrast-dark"] [class*="border-green-"],
+[data-theme="high-contrast-dark"] [class*="border-amber-"],
+[data-theme="high-contrast-dark"] [class*="border-indigo-"],
+[data-theme="high-contrast-dark"] [class*="border-blue-"],
+[data-theme="high-contrast-dark"] [class*="border-red-"],
+[data-theme="high-contrast-dark"] [class*="border-teal-"],
+[data-theme="high-contrast-yellow"] [class*="border-slate-"],
+[data-theme="high-contrast-yellow"] [class*="border-gray-"],
+[data-theme="high-contrast-yellow"] [class*="border-emerald-"],
+[data-theme="high-contrast-yellow"] [class*="border-green-"],
+[data-theme="high-contrast-yellow"] [class*="border-amber-"],
+[data-theme="high-contrast-yellow"] [class*="border-indigo-"],
+[data-theme="high-contrast-yellow"] [class*="border-blue-"],
+[data-theme="high-contrast-yellow"] [class*="border-red-"],
+[data-theme="high-contrast-yellow"] [class*="border-teal-"] {
+  border-color: var(--border-color) !important;
 }
 
 /* Font Size Overrides */

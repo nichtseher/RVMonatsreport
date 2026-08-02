@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import {
-  X,
+  ArrowLeft,
   Smartphone,
   Monitor,
   CheckCircle2,
@@ -883,19 +883,20 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
         ref={modalRef}
         className="bg-[var(--card-bg)] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-[var(--border-color)] flex flex-col max-h-[90vh]"
       >
-        <div className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-color)]">
-          <h2 id="sync-modal-title" className="font-bold text-lg flex items-center gap-2">
-            <ArrowRightLeft className="w-5 h-5 text-[var(--accent)]" aria-hidden="true" />
-            Geräte-Synchronisation
-          </h2>
+        {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
+        <div className="p-3 border-b border-[var(--border-color)] flex items-center gap-2.5 bg-[var(--bg-color)]">
           <button
             ref={closeButtonRef}
             onClick={onClose}
-            aria-label="Synchronisation schließen"
-            className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+            aria-label="Zurück zu den Optionen"
+            className="w-11 h-11 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--card-bg)] hover:bg-[var(--border-color)] transition-colors cursor-pointer active:scale-95"
           >
-            <X className="w-5 h-5" aria-hidden="true" />
+            <ArrowLeft className="w-5 h-5" aria-hidden="true" />
           </button>
+          <h2 id="sync-modal-title" className="font-bold text-lg flex items-center gap-2 min-w-0">
+            <ArrowRightLeft className="w-5 h-5 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
+            <span className="truncate">Geräte-Synchronisation</span>
+          </h2>
         </div>
 
         <div className="p-6 overflow-y-auto">

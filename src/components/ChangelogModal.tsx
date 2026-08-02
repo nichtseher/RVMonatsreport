@@ -31,6 +31,18 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="space-y-6">
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex items-center gap-2 mb-3">
+            <ShieldCheck className="w-5 h-5 text-emerald-500" />
+            Version 0.8.1: Farbschemata repariert & einheitliche Navigation
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-semibold text-[var(--text-muted)]">
+            <li><strong>Wichtiger Fehler behoben – Farbschemata wirkten nur halb:</strong> Ein Teil der Oberfläche richtete sich nach der Einstellung Ihres Geräts statt nach dem in der App gewählten Farbschema. Dadurch konnte Text nahezu unlesbar werden – etwa wenn Sie „Hell“ wählten, Ihr Handy aber im Dunkelmodus lief. Besonders betroffen waren die Hochkontrast-Schemata. Jetzt folgt die gesamte App Ihrer Wahl.</li>
+            <li><strong>Alle vier Farbschemata geprüft:</strong> In Hell, Dunkel, Hoher Kontrast und Gelb auf Schwarz erfüllen jetzt sämtliche Texte den geforderten Mindestkontrast.</li>
+            <li><strong>Einheitliches Zurück:</strong> Überall führt jetzt derselbe Zurück-Pfeil oben links eine Ebene zurück. Vorher gab es teils ein Schließen-Kreuz, teils einen Pfeil – bei drei Ansichten zeigte das Symbol sogar etwas anderes an, als der Screenreader vorlas.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex items-center gap-2 mb-3">
             <Sparkles className="w-5 h-5 text-violet-500" />
             Version 0.8.0: Mehr Platz auf dem Handy & geführter Einstieg
           </h3>

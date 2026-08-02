@@ -385,7 +385,7 @@ export default function OnboardingModal({
               <button
                 type="button"
                 onClick={onFinish}
-                className="flex-1 min-h-[48px] px-4 rounded-xl font-black bg-[var(--accent)] text-white hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="flex-1 min-h-[48px] px-4 rounded-xl font-black bg-[var(--accent)] text-[var(--accent-text)] hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <CheckCircle2 className="w-5 h-5" aria-hidden="true" />
                 Los geht's

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import { 
-  X, HelpCircle, BookOpen, Clock, FileText,
+  ArrowLeft, HelpCircle, BookOpen, Clock, FileText,
   Settings, Share2, Lock, AlertTriangle, Play,
   CalendarDays, BarChart3, LayoutGrid, Shield, Zap, Keyboard
 } from "lucide-react";
@@ -51,24 +51,25 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
         
         {/* Header */}
         <div className="bg-slate-100 dark:bg-slate-900 p-6 border-b-2 border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 z-10">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-inner">
-              <HelpCircle className="w-6 h-6" />
+          {/* Zurück-Pfeil links (einheitliches Navigationsmuster) */}
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={onClose}
+              className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] cursor-pointer transition-colors active:scale-95 focus-visible:ring-4"
+              aria-label="Zurück zu den Optionen"
+            >
+              <ArrowLeft className="w-6 h-6" aria-hidden="true" />
+            </button>
+            <div className="w-12 h-12 bg-blue-500 rounded-full hidden sm:flex items-center justify-center text-white shadow-inner flex-shrink-0">
+              <HelpCircle className="w-6 h-6" aria-hidden="true" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h2 id="help-modal-title" className="text-xl md:text-2xl font-black text-[var(--text-color)] tracking-tight">
                 Hilfe & Handbuch
               </h2>
               <p className="text-sm font-bold text-[var(--text-muted)] mt-1">Ausführliche Erklärungen zur RV Mobil App</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-full transition-all active:scale-95 focus-visible:ring-4"
-            aria-label="Hilfe schließen"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         {/* Tab Navigation */}

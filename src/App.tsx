@@ -832,6 +832,13 @@ export default function App() {
     );
     document.documentElement.setAttribute("data-theme", accessibility.theme);
     document.documentElement.setAttribute("data-size", accessibility.fontSize);
+    // Steuert Tailwinds dark:-Varianten (siehe @custom-variant in index.css).
+    // Ohne dies folgen sie dem Betriebssystem statt der App-Einstellung.
+    const dunkleThemes = ["dark", "high-contrast-dark", "high-contrast-yellow"];
+    document.documentElement.setAttribute(
+      "data-dark",
+      dunkleThemes.includes(accessibility.theme) ? "true" : "false",
+    );
   }, [accessibility]);
 
   useEffect(() => {
@@ -2183,7 +2190,7 @@ export default function App() {
                      window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all cursor-pointer font-bold ${
-                    isSelected ? "bg-[var(--accent)] text-white shadow-md shadow-indigo-500/20" : "text-[var(--text-muted)] hover:bg-[var(--input-bg)] hover:text-[var(--text-color)]"
+                    isSelected ? "bg-[var(--accent)] text-[var(--accent-text)] shadow-md shadow-indigo-500/20" : "text-[var(--text-muted)] hover:bg-[var(--input-bg)] hover:text-[var(--text-color)]"
                   }`}
                 >
                   <IconComp className={`w-5 h-5 ${isSelected ? "stroke-[2.5]" : "stroke-[2]"}`} />
@@ -2693,7 +2700,7 @@ export default function App() {
               }}
               className={`px-2 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
                 isCompactView
-                  ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-xs"
+                  ? "bg-[var(--accent)] text-[var(--accent-text)] border-[var(--accent)] shadow-xs"
                   : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--border-color)]"
               }`}
             >
@@ -3107,7 +3114,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setSearchQuery("")}
-              className="mt-3 px-3 py-1.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-xs font-bold rounded-lg cursor-pointer active:scale-95 transition-all"
+              className="mt-3 px-3 py-1.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] text-xs font-bold rounded-lg cursor-pointer active:scale-95 transition-all"
             >
               Suche zurücksetzen
             </button>
@@ -3168,7 +3175,8 @@ export default function App() {
           className="text-xs font-bold text-[var(--text-muted)] block mb-2 leading-relaxed"
         >
           Tragen Sie hier wichtige Notizen ein:{" "}
-          <span className="text-emerald-600 dark:text-emerald-400 font-black">
+          {/* emerald-700 statt -600: erreicht auf weissem Grund 4,5:1 */}
+          <span className="text-emerald-700 dark:text-emerald-400 font-black">
             🔒 Wird nur auf Ihrem Gerät gespeichert
           </span>
         </label>

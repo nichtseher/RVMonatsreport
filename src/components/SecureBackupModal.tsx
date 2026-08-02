@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { X, Download, Upload, Share2, Lock, Unlock, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Download, Upload, Share2, Lock, Unlock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { encryptData, decryptData } from "../utils/crypto";
 import { motion } from "framer-motion";
 
@@ -123,16 +123,16 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-lg w-full overflow-hidden flex flex-col border border-gray-200 dark:border-gray-700 animate-fade-in relative">
-      <button
-        onClick={onClose}
-        className="absolute top-5 right-5 w-12 h-12 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] cursor-pointer z-10 transition-colors"
-        aria-label="Zurück"
-      >
-        <X className="w-6 h-6" />
-      </button>
-
+      {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
       <div className="flex items-center gap-3 p-6 md:p-8 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-slate-800/50">
-        <div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl">
+        <button
+          onClick={onClose}
+          className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] cursor-pointer transition-colors active:scale-95"
+          aria-label="Zurück zu den Optionen"
+        >
+          <ArrowLeft className="w-6 h-6" aria-hidden="true" />
+        </button>
+        <div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl flex-shrink-0">
           <Lock className="w-6 h-6" aria-hidden="true" />
         </div>
         <h2 id="backup-title" className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white">Datensicherung</h2>

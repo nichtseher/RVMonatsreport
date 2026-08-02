@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { X, Calendar, Clock, Sparkles, Save, Info } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, Sparkles, Save, Info } from "lucide-react";
 import { YearlyCarryover } from "../types";
 
 interface CarryoverModalProps {
@@ -101,20 +101,18 @@ export default function CarryoverModal({
       ref={modalRef}
       className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-3xl w-full border border-[var(--border-color)] p-6 md:p-8 relative shadow-lg animate-fade-in"
     >
-      {/* Close Button */}
-      <button
-        ref={closeButtonRef}
-        type="button"
-        onClick={onClose}
-        aria-label="Zurück"
-        className="absolute top-5 right-5 w-12 h-12 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] cursor-pointer z-10 transition-colors"
-      >
-        <X className="w-6 h-6" />
-      </button>
-
-      {/* Header */}
+      {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
       <div className="flex items-center gap-3 mb-4">
-        <Calendar className="w-8 h-8 text-[var(--accent)]" aria-hidden="true" />
+        <button
+          ref={closeButtonRef}
+          type="button"
+          onClick={onClose}
+          aria-label="Zurück zur Zeiterfassung"
+          className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] cursor-pointer transition-colors active:scale-95"
+        >
+          <ArrowLeft className="w-6 h-6" aria-hidden="true" />
+        </button>
+        <Calendar className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
         <h2 id="carryover-modal-title" className="text-2xl md:text-3xl font-extrabold tracking-tight">
           Jahreskonto & Einstellungen
         </h2>

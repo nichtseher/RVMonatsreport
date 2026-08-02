@@ -510,7 +510,7 @@ export default React.memo(function ClockInWidget({
                           }}
                           className={`p-1.5 rounded border text-[0.75rem] font-extrabold cursor-pointer transition-all ${
                             isActive
-                              ? "bg-[var(--accent)] border-[var(--accent)] text-white"
+                              ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-text)]"
                               : "bg-[var(--card-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
                           }`}
                         >
@@ -851,7 +851,7 @@ export default React.memo(function ClockInWidget({
                       }}
                       className={`p-1.5 rounded border text-[0.75rem] font-extrabold cursor-pointer transition-all ${
                         isActive
-                          ? "bg-[var(--accent)] border-[var(--accent)] text-white"
+                          ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-text)]"
                           : "bg-[var(--card-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
                       }`}
                     >

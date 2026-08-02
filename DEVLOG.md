@@ -10,6 +10,82 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-02 — v0.8.1: Zwei Farbsysteme zusammengeführt, Navigation vereinheitlicht
+
+Anlass: die Frage, ob das Design durchgängig ist. Der Audit förderte keinen
+Schönheitsfehler zutage, sondern einen Lesbarkeits-Fehler.
+
+### Befund: zwei Farbsysteme, die gegeneinander arbeiteten
+
+Die App nutzte parallel:
+- ein eigenes Theme-System über CSS-Variablen (915 Verwendungen) — folgte
+  korrekt der App-Einstellung;
+- **192 Tailwind-`dark:`-Regeln in allen 15 Komponenten** — diese folgen
+  standardmäßig `prefers-color-scheme`, also der **Betriebssystem**-Einstellung,
+  völlig unabhängig davon, was der Nutzer in der App wählt.
+
+Belegt durch Messung: Der Hintergrund der Zählerkarten war bei *allen drei*
+App-Themes identisch, während sich nur die Textfarbe änderte.
+
+| Situation | gemessener Kontrast |
+|---|---|
+| App „Hell“ + Gerät im Dunkelmodus | **1,18 : 1** |
+| Theme „Gelb auf Schwarz“ | **1,05 : 1** bei 51 von 141 Elementen |
+
+Der erste Fall ist Alltag (Dunkelmodus ist auf Handys verbreitet), der zweite
+trifft ausgerechnet das Schema für Nutzer mit dem größten Kontrastbedarf.
+
+### Messfehler im eigenen Prüfskript (wichtig für künftige Audits)
+
+Der erste Messdurchlauf lieferte unbrauchbare Zahlen (u. a. „Kontrast 1,0“ für
+sichtbar korrekte Elemente). Ursache: Tailwind 4 gibt Farben als `oklch()` aus;
+das Skript hatte die Zahlen als RGB gelesen. Korrektur: Farben über ein
+1×1-Canvas auflösen lassen, dann stimmen alle Formate. **Erst danach waren die
+Zahlen belastbar** — die zuvor gemeldeten Werte wären falsch gewesen.
+
+### Umsetzung
+
+1. `@custom-variant dark` in `index.css` bindet `dark:` an ein Attribut
+   `data-dark`, das `App.tsx` passend zum gewählten Theme setzt (gesetzt für
+   `dark`, `high-contrast-dark`, `high-contrast-yellow`).
+2. Für die beiden Hochkontrast-Schemata werden fest verdrahtete Palettenfarben
+   (`bg-slate-50`, `text-emerald-700`, …) per CSS auf die Theme-Farben
+   gezwungen — so arbeitet auch der Hochkontrast-Modus von Windows. Ohne das
+   wären dort weiterhin Karten in Grautönen mit gelber Schrift erschienen.
+3. Neue Variable `--accent-text` pro Theme: Schriftfarbe **auf** der
+   Akzentfläche. Neun Stellen nutzten `text-white` auf `bg-[var(--accent)]` —
+   im Hochkontrast-Schema war das weiß auf weiß (Kontrast 1,0), im
+   Dunkel-Schema 2,28:1.
+4. `--primary` im Dunkel-Schema von `#3b82f6` auf `#2563eb` (weiße Schrift:
+   3,68 → 5,17:1) und ein Hinweistext von `emerald-600` auf `-700` (3,65 → über
+   4,5:1).
+
+**Ergebnis, in allen vier Schemata nachgemessen: 0 von 141 Textelementen unter
+4,5:1** (vorher u. a. 51 im Gelb-Schema).
+
+### Navigation vereinheitlicht
+
+Bestandsaufnahme ergab drei verschiedene Muster — und einen Widerspruch:
+`CarryoverModal`, `ManageModal` und `SecureBackupModal` zeigten ein
+**Schließen-Kreuz**, ihre Screenreader-Beschriftung lautete aber **„Zurück“**.
+Sehende und blinde Nutzer bekamen also unterschiedliche Aussagen.
+
+Alle Ansichten nutzen jetzt dasselbe Muster (wie zuvor schon Changelog und
+Optionen): Zurück-Pfeil als erstes Element der Kopfzeile, mit Zielangabe in der
+Beschriftung („Zurück zu den Optionen“, „Zurück zur Zeiterfassung“).
+Umgestellt: Hilfe, Datensicherung, Formularfelder verwalten, Jahreskonto,
+Geräte-Sync. Im Browser geprüft: kein Schließen-Kreuz mehr vorhanden, überall
+identische Beschriftung.
+
+### Offen
+
+Die Zählerzeilen haben je **vier** Knöpfe (`-5`, `−`, `+`, `+5`). Für
+Screenreader sind die `±5`-Knöpfe ausgeblendet (`aria-hidden`, nicht im
+Tab-Fokus), sehende Nutzer sehen jedoch scheinbar doppelte Plus- und
+Minus-Tasten. Noch nicht geändert — Rückfrage beim Auftraggeber läuft.
+
+---
+
 ## 2026-08-02 — v0.8.0: Handy-Optimierung und geführter Einstieg
 
 ### Ausgangsmessung (390 × 844 iPhone-Größe, 360 × 800 Android)

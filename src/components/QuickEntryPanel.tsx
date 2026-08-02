@@ -169,7 +169,7 @@ export default function QuickEntryPanel({
               <div className="flex items-center justify-between w-full gap-1">
                 {renderIcon(field)}
                 <span
-                  className="min-w-[28px] h-7 px-1.5 rounded-full bg-[var(--accent)] text-white text-sm font-black flex items-center justify-center"
+                  className="min-w-[28px] h-7 px-1.5 rounded-full bg-[var(--accent)] text-[var(--accent-text)] text-sm font-black flex items-center justify-center"
                   aria-hidden="true"
                 >
                   {val}
@@ -199,7 +199,7 @@ export default function QuickEntryPanel({
               }}
               className={`px-3 py-1.5 rounded-full text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                 config.mode === "auto" || config.ids.length === 0
-                  ? "bg-[var(--accent)] text-white"
+                  ? "bg-[var(--accent)] text-[var(--accent-text)]"
                   : "bg-[var(--bg-color)] text-[var(--text-color)] border border-[var(--border-color)]"
               }`}
             >

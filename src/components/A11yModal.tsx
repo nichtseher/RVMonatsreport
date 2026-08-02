@@ -297,7 +297,7 @@ export default function A11yModal({
                   aria-pressed={isActive}
                   className={`py-3 px-2 text-sm font-black rounded-xl border-2 transition-all cursor-pointer text-center active:scale-95 flex items-center justify-center gap-1.5 ${
                     isActive
-                      ? "bg-[var(--accent)] border-[var(--accent)] text-white"
+                      ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-text)]"
                       : "bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
                   }`}
                 >
