@@ -10,6 +10,121 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-02 — v0.9.3: Durchsicht der Codebase, Hilfetexte und Ladezeit
+
+Anlass: Marcs Frage, ob die Codebase sauber ist, ob die Hilfetexte wirklich
+helfen und wo es Optimierungen gibt. Alle drei Punkte geprüft, die Funde
+abgearbeitet.
+
+### 1. Stiller Datenverlust beim Wiederherstellen und Zusammenführen
+
+Der schwerste Fund der Durchsicht. Das Archiv wurde an zwei Stellen mit
+`.catch(() => {})` in die IndexedDB geschrieben — beim Einspielen einer
+Datensicherung und beim Zusammenführen zweier Geräte. Schlägt der
+Schreibvorgang fehl (Speicher voll, IndexedDB blockiert), meldete die App
+trotzdem „Backup erfolgreich geladen!" — und nach dem nächsten Öffnen wäre
+alles weg gewesen.
+
+Genau diese Fehlerklasse hatte das Stabilitäts-Audit vom 2026-08-01 für den
+Autospeicher behoben und dafür `persistHistory(…, handleHistoryPersistFailure)`
+eingeführt; **diese beiden Pfade nutzten es nicht.** Jetzt schon: Ein
+Fehlschlag setzt den persistenten Warnbanner und wird angesagt. Die Sicherung
+beim Wechsel in den Hintergrund schluckt ihren Fehler ebenfalls nicht mehr
+komplett (Konsole) — dort ist er unkritisch, weil die Notfallkopie in
+localStorage greift.
+
+### 2. Hilfetexte: vier Aussagen stimmten nicht mehr
+
+Jede Sachaussage gegen den Code geprüft. **Korrekt waren** alle sieben
+Tastenkürzel (einzeln nachgesehen), die Backup-Endungen, was die Stempeluhr
+automatisch überträgt, „Empfängeradresse ist nicht hinterlegt", die
+Acht-Kategorien-Grenze, Suchleiste und Sprunglink.
+
+Falsch bzw. veraltet und jetzt korrigiert:
+
+| Stelle | war | ist |
+|---|---|---|
+| Monat abschließen | „Sobald Sie den Knopf drücken, passieren zwei Dinge" | Rückfrage vorweg, danach **Rückgängig** — beides erklärt (seit 0.9.0 vorhanden, in der Hilfe gefehlt) |
+| Schnell-Erfassung | „Ein Tipp = plus eins" | stimmt für Zähler; die selbst wählbaren Stunden-Felder aus Bereich 4 zählen in **halben Stunden** |
+| Live-Verbindung | „endet, wenn Sie trennen oder die App schließen" | dritter Fall ergänzt: bricht sie ab, meldet die App das (0.9.2); dazu das feldweise Zusammenführen aus 0.9.1 |
+| Backup-Passwort | „tragen Sie es in das Passwortfeld ein" | benennt jetzt das konkrete Feld |
+
+Beim letzten Punkt liess sich die Hilfe gar nicht sauber formulieren, weil die
+Oberfläche zwei Passwortfelder hatte, die abwechselnd erschienen — je nachdem,
+ob das Häkchen „Backup mit Passwort schützen" gesetzt war. Beide schrieben in
+denselben Zustand, aber beim Wiederherstellen sah man ein Feld mit der
+Aufforderung „Sicheres Passwort vergeben", obwohl man ein vorhandenes Passwort
+eingeben sollte. Jetzt: **ein** Feld, beschriftet „Passwort", mit einem
+Hinweistext, der sich nach dem Häkchen richtet. Nebenbei die einzige Stelle
+korrigiert, die den Nutzer duzte („Bitte gib …").
+
+### 3. Ladezeit: Start-Bundle mehr als halbiert
+
+Gemessen: Das Start-Bundle enthielt QR-Erzeugung, Kamera-Scanner und die
+Animationsbibliothek — alles nur im Geräte-Sync bzw. in der Datensicherung
+gebraucht, beides auf der Startseite nie geöffnet.
+
+| | vorher | nachher |
+|---|---|---|
+| Start-Bundle | 996 KB (288 KB gzip) | **477 KB (129 KB gzip)** |
+| nachgeladen: Geräte-Sync | — | 383 KB (115 KB gzip) |
+| nachgeladen: Animationen | — | 125 KB (41 KB gzip) |
+| nachgeladen: Datensicherung | — | 10 KB (3 KB gzip) |
+
+**55 % weniger JavaScript bei jedem Start und nach jeder Aktualisierung.**
+Umgesetzt mit `React.lazy` + `Suspense` und einem sichtbaren Platzhalter.
+
+### 4. Aufräumen
+
+`formatMonthGerman` existierte **dreimal**: in `utils/dateUtils.ts`, als
+lokale Kopie in `App.tsx` und nochmal in `HistoryModal.tsx` — dort wurde die
+Util-Funktion sogar importiert und anschliessend von der lokalen überdeckt,
+der Import war tot. Jetzt eine Quelle. `CLAUDE.md` an zwei überholten Stellen
+berichtigt (Excel-Export ist seit 0.9.0 nicht mehr doppelt; die Deploy-Frage
+ist geklärt).
+
+### Geprüft
+
+`npm run lint` und `npm run build` fehlerfrei. Im Browser: Zähler weiter
+funktionsfähig, beide nachgeladenen Bereiche öffnen sich, Datensicherung als
+vollständiger Umlauf **mit Verschlüsselung** — Backup mit Passwort erzeugt
+(Endung `.json.enc`, Inhalt tatsächlich verschlüsselt), Wert danach von 7 auf 9
+geändert, Datei ohne Passwort eingespielt → saubere Fehlermeldung, danach mit
+Passwort → Wert steht wieder auf 7.
+
+### 5. Platz im RV Report (nach Marcs Entscheidung)
+
+Zur Auswahl standen: Umschalter in die Optionen verschieben, auf eine Zeile
+eindampfen oder so lassen. Marc wählte das Eindampfen, dazu den Fristen-Hinweis
+nur noch bei Bedarf.
+
+- **Schnell-Optionen auf eine Zeile.** Die Überschrift „Schnell-Optionen" ist
+  entfallen (der Bereich trägt sie jetzt als `aria-label` am `role="toolbar"`),
+  die „Ein/Aus"-Plaketten sind durch `aria-pressed` bzw. `aria-expanded`
+  ersetzt — das lesen Screenreader von sich aus vor, es kostet aber keinen
+  Platz. „Vorlage laden" heisst nur noch „Vorlage".
+- **Fristen-Hinweis nur im relevanten Zeitfenster.** Der allgemeine Merksatz
+  stand alle 31 Tage im Monat da. Jetzt erscheint er in den letzten fünf Tagen
+  des Monats und bis zum 8. des Folgemonats; die dringende Variante (rot,
+  ungesendete Zahlen) ist unverändert. Die Berechnung des Monatsletzten wurde
+  gegen Februar, Schaltjahr-Februar, 30- und 31-Tage-Monate geprüft.
+
+Gemessen auf einem 390-px-Handy:
+
+| | vorher | nachher |
+|---|---|---|
+| Block „Schnell-Optionen" | 203 px, 2 Tastenzeilen | **126 px, 1 Zeile** |
+| Fristen-Hinweis | immer 80 px | nur an ~13 Tagen im Monat |
+| erster Zählerbereich beginnt bei | 1256 px | **1171 px** (mitte Monat nochmals 80 px früher) |
+| Gesamtlänge der Seite | 5285 px | 5166 px |
+
+### 6. Changelog als Beta gekennzeichnet
+
+Alle 13 Versionseinträge tragen jetzt eine „Beta"-Plakette neben der
+Überschrift (Kontrast geprüft: 6,4 / 10,4 / 21 / 19,6 in den vier Farbschemata).
+
+---
+
 ## 2026-08-02 — v0.9.2: Verbindungsabbruch wird gemeldet, Paketform entschlackt
 
 Die drei Punkte, die beim Live-Sync-Audit (0.9.1) offen geblieben waren.

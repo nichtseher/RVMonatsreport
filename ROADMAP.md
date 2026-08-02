@@ -123,6 +123,21 @@ nur der Nutzer selbst leisten; das Ergebnis entscheidet über die 1.0.
 
 ## Danach (1.x) — bewusst später
 
+- **Kopplung der Live-Verbindung vereinfachen** (zurückgestellt am 2026-08-02).
+  Marc: „so ist es zu komplex". Geprüft: Mit **einem einzigen** Code ist es
+  technisch nicht machbar — WebRTC handelt die Verbindung zwischen beiden
+  Geräten aus, der Code von A enthält A's Verbindungsdaten, die Antwort von B
+  enthält B's, und keines lässt sich aus dem anderen oder einem gemeinsamen
+  Kennwort berechnen. Ein Code ginge nur über einen Vermittlungsserver, den
+  die DSGVO-Zusage ausschliesst. **Machbar ist:** den Zwischenschritt
+  „Antwort-Code empfangen (Schritt 2)" abschaffen — Gerät A geht automatisch
+  in den Empfangsmodus, während es seinen Code zeigt. Dann bleibt: B scannt A,
+  B zeigt an, A scannt B, ohne Knopfdruck dazwischen. Zusätzlich sollte die
+  **Einmal-Übertragung** im Sync-Fenster nach vorn — sie braucht ohnehin nur
+  eine Richtung und damit einen Code (gemessen: ein Monat = 1015 Zeichen
+  Textcode bzw. 3 automatisch wechselnde QR-Codes, ein ganzes Jahr = 1328
+  Zeichen). Die Live-Verbindung ist nur nötig, wenn beide Geräte dauerhaft
+  gleichauf bleiben sollen.
 - **Termin-Logbuch (optional!).** Jeder Tipp erzeugt zusätzlich einen Eintrag
   mit Datum und Notiz, sodass Zahlen belegbar werden und der Excel-Export ein
   zweites Blatt mit der Terminliste enthalten kann. **Muss abschaltbar sein** —

@@ -71,22 +71,6 @@ export default function HistoryModal({
     );
   };
 
-  const formatMonthGerman = (monthStr: string) => {
-    if (!monthStr || typeof monthStr !== "string") return "";
-    const parts = monthStr.split("-");
-    if (parts.length < 2) return monthStr;
-    const [year, month] = parts;
-    const monthNames = [
-      "Januar", "Februar", "März", "April", "Mai", "Juni",
-      "Juli", "August", "September", "Oktober", "November", "Dezember"
-    ];
-    const monthIdx = parseInt(month, 10) - 1;
-    if (monthIdx >= 0 && monthIdx < 12) {
-      return `${monthNames[monthIdx]} ${year}`;
-    }
-    return monthStr;
-  };
-
   const getActiveCount = (record: HistoryRecord) => {
     let total = 0;
     if (record && record.values) {

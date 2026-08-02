@@ -101,7 +101,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
 
         if (file.name.endsWith(".enc")) {
           if (!password) {
-            setStatus({ type: "error", msg: "Dieses Backup ist verschlüsselt. Bitte gib unten das Passwort ein und versuche es erneut." });
+            setStatus({ type: "error", msg: "Dieses Backup ist verschlüsselt. Bitte tragen Sie oben das Passwort ein und wählen Sie die Datei erneut aus." });
             return;
           }
           finalDataStr = await decryptData(content, password);
@@ -166,38 +166,37 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
               </span>
             </label>
 
-            {useEncryption && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
-                <input
-                  type="password"
-                  placeholder="Sicheres Passwort vergeben"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-lg"
-                  aria-label="Backup Passwort"
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  Wichtig: Ohne dieses Passwort können Sie das Backup später nicht mehr öffnen!
-                </p>
-              </motion.div>
-            )}
-            
-            {/* For Import when unencrypted is selected but they need password */}
-            {!useEncryption && (
-               <div className="pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
-                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                   Passwort für Wiederherstellung (nur wenn Backup verschlüsselt ist):
-                 </p>
-                 <input
-                  type="password"
-                  placeholder="Passwort eingeben"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 min-h-[44px] rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all"
-                  aria-label="Backup Passwort für Import"
-                />
-               </div>
-            )}
+            {/*
+              EIN Passwortfeld für beide Richtungen. Vorher gab es zwei, die
+              abwechselnd erschienen -- je nachdem, ob das Häkchen oben gesetzt
+              war. Beide schrieben in denselben Zustand, aber beim
+              Wiederherstellen sah man dann ein Feld mit der Aufforderung
+              "Sicheres Passwort vergeben", obwohl man ein vorhandenes Passwort
+              eingeben sollte. Auch die Hilfe liess sich so nicht sauber
+              formulieren.
+            */}
+            <div>
+              <label
+                htmlFor="backup-passwort"
+                className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5"
+              >
+                Passwort
+              </label>
+              <input
+                id="backup-passwort"
+                type="password"
+                placeholder="Passwort eingeben"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-lg"
+                aria-describedby="backup-passwort-hinweis"
+              />
+              <p id="backup-passwort-hinweis" className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+                {useEncryption
+                  ? "Wird zum Verschlüsseln Ihres neuen Backups verwendet – und um ein verschlüsseltes Backup wieder einzuspielen. Ohne dieses Passwort lässt sich die Datei später nicht mehr öffnen."
+                  : "Nur nötig, um ein verschlüsseltes Backup (Endung .json.enc) wieder einzuspielen. Für ein neues Backup ohne Passwortschutz können Sie das Feld leer lassen."}
+              </p>
+            </div>
           </div>
 
           {status && (

@@ -140,7 +140,9 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 >
                   <p>Ja. Von sich aus synchronisieren sich Handy und Laptop nicht automatisch – ein Eintrag auf dem Handy erscheint erst dann auf dem Laptop, wenn Sie beide Geräte einmal koppeln. Das geht auf zwei Arten unter Optionen → Geräte-Sync:</p>
                   <p><strong>Einmal-Übertragung:</strong> Ein Gerät zeigt einen Code an, das andere übernimmt ihn – gut, um Daten einmalig zu übertragen. Sie wählen dabei, ob die Daten <em>zusammengeführt</em> (empfohlen) oder <em>ersetzt</em> werden sollen.</p>
-                  <p><strong>Live-Verbindung:</strong> Nach einer einmaligen Kopplung gleichen sich beide Geräte automatisch alle paar Sekunden ab. Sie können das Sync-Fenster danach schließen und ganz normal weiterarbeiten – oben erscheint der Hinweis <strong>„Live verbunden“</strong>. Voraussetzung: beide Geräte im gleichen WLAN, App auf beiden geöffnet. Die Verbindung endet, wenn Sie sie trennen oder die App schließen.</p>
+                  <p><strong>Live-Verbindung:</strong> Nach einer einmaligen Kopplung gleichen sich beide Geräte von selbst ab – immer dann, wenn sich etwas geändert hat. Sie können das Sync-Fenster danach schließen und ganz normal weiterarbeiten; oben erscheint der Hinweis <strong>„Live verbunden“</strong>. Voraussetzung: beide Geräte im gleichen WLAN, App auf beiden geöffnet.</p>
+                  <p>Tippen Sie auf beiden Geräten kurz hintereinander etwas ein, bleiben <strong>beide Eingaben erhalten</strong> – jede Kategorie wird einzeln abgeglichen. Nur wenn Sie dieselbe Kategorie gleichzeitig auf beiden Geräten ändern, gilt die zuletzt getippte.</p>
+                  <p>Die Verbindung endet, wenn Sie sie trennen oder die App schließen. Bricht sie von selbst ab – WLAN weg, anderes Gerät zugeklappt –, meldet die App das mit einem <strong>deutlichen Hinweis samt Ansage</strong> und bietet „Neu verbinden“ an. Solange Sie diesen Hinweis sehen, landen Ihre Eingaben nur noch auf diesem einen Gerät.</p>
                   <p><strong>Keine Kamera nötig:</strong> Beide Wege funktionieren normalerweise per QR-Code-Scan, aber jeder Code lässt sich auch antippen, kopieren und am anderen Gerät einfügen – praktisch, wenn der PC keine Webcam hat.</p>
                   <p>Alternativ steht weiterhin die Funktion "Sicheres Backup" unter "Optionen" zur Verfügung. Alles funktioniert komplett offline – ganz ohne Server.</p>
                 </FAQItem>
@@ -173,8 +175,9 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   icon={<Zap className="text-amber-500" />}
                   title="Am schnellsten: die Schnell-Erfassung direkt nach dem Termin"
                 >
-                  <p>Ganz oben im <strong>RV Report</strong> finden Sie die <strong>Schnell-Erfassung</strong>: große Tasten für Ihre wichtigsten Kategorien. <strong>Ein Tipp = plus eins</strong>, mit Ton und kurzer Vibration als Bestätigung. So erfassen Sie einen Termin in wenigen Sekunden, ohne zu scrollen oder zu suchen.</p>
+                  <p>Ganz oben im <strong>RV Report</strong> finden Sie die <strong>Schnell-Erfassung</strong>: große Tasten für Ihre wichtigsten Kategorien. <strong>Ein Tipp erhöht den Zähler um eins</strong>, mit Ton und kurzer Vibration als Bestätigung. So erfassen Sie einen Termin in wenigen Sekunden, ohne zu scrollen oder zu suchen.</p>
                   <p>Welche Tasten dort erscheinen, richtet sich normalerweise automatisch danach, was Sie am häufigsten nutzen. Über <strong>Anpassen</strong> können Sie stattdessen bis zu acht Kategorien selbst auswählen – die Reihenfolge Ihrer Auswahl bestimmt die Reihenfolge der Tasten.</p>
+                  <p>Zur Auswahl stehen dabei auch die Stunden-Felder aus Bereich 4 („Arbeitszeit &amp; Büro“). Dort zählt ein Tipp in <strong>halben Stunden</strong> (+0,5), weil diese Felder in Stunden geführt werden. Die automatische Auswahl lässt sie bewusst weg – die füllt normalerweise die Stempeluhr.</p>
                   <p><strong>Tipp:</strong> Wenn Sie die App auf dem Startbildschirm installiert haben, halten Sie das App-Symbol gedrückt – so springen Sie direkt zur Erfassung oder zur Stempeluhr.</p>
                 </FAQItem>
 
@@ -192,12 +195,13 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   icon={<CalendarDays className="text-blue-500" />}
                   title="Was passiert, wenn ich auf 'Monat abschließen & neu starten' drücke?"
                 >
-                  <p>Sobald Sie diesen Knopf ganz unten im RV Report drücken, passieren zwei Dinge:</p>
+                  <p>Zuerst kommt eine <strong>Rückfrage</strong>. Sie zeigt Ihnen, was gesichert wird – wie viele Vorgänge Sie gezählt und wie viele Schichten Sie erfasst haben. Erst wenn Sie dort auf „Monat abschließen“ tippen, passieren zwei Dinge:</p>
                   <ul className="list-disc pl-4 space-y-1 mt-2">
                     <li>Ihre aktuellen Zählerstände und Notizen werden eingefroren und im <strong>RV Archiv</strong> gespeichert.</li>
                     <li>Die Zähler auf der Startseite werden alle wieder auf <strong>0</strong> gesetzt, und der Monat springt automatisch eins weiter (z.B. von Januar auf Februar).</li>
                   </ul>
-                  <p className="mt-2">Keine Sorge: Sie können sich die archivierten Monate jederzeit über den Reiter "RV Archiv" wieder ansehen, nachträglich bearbeiten oder exportieren.</p>
+                  <p className="mt-2">Danach erscheint oben ein Streifen mit der Taste <strong>Rückgängig</strong>. Damit sind Sie sofort wieder im alten Monat, als wäre nichts gewesen. Der Streifen verschwindet, sobald Sie im neuen Monat den ersten Wert erfassen – ein Rücksprung würde diesen sonst gefährden.</p>
+                  <p className="mt-2">Auch ohne Rückgängig ist nichts verloren: Sie können sich die archivierten Monate jederzeit über den Reiter „RV Archiv“ wieder ansehen, nachträglich bearbeiten oder exportieren.</p>
                 </FAQItem>
 
                 <FAQItem 
@@ -255,7 +259,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   title="Wie erstelle ich ein Backup meiner Daten?"
                 >
                   <p>Gehen Sie im Menü auf <strong>Optionen</strong> und dort auf <strong>Datensicherung</strong>.</p>
-                  <p>Setzen Sie das Häkchen bei <strong>„Backup mit Passwort schützen“</strong> und vergeben Sie ein Passwort. Mit <strong>Auf Gerät speichern</strong> laden Sie die Datei herunter, mit <strong>Sicher Teilen / Senden</strong> geben Sie sie direkt weiter (z. B. an sich selbst per E-Mail).</p>
+                  <p>Setzen Sie das Häkchen bei <strong>„Backup mit Passwort schützen“</strong> und tragen Sie darunter im Feld <strong>„Passwort“</strong> eines ein. Mit <strong>Auf Gerät speichern</strong> laden Sie die Datei herunter, mit <strong>Sicher Teilen / Senden</strong> geben Sie sie direkt weiter (z. B. an sich selbst per E-Mail).</p>
                   <p>Ohne Passwort entsteht eine normale Datei (Endung <code>.json</code>), mit Passwort eine verschlüsselte (Endung <code>.json.enc</code>). Heben Sie diese Datei sicher auf.</p>
                   <p className="text-amber-700 dark:text-amber-400 font-bold">Wichtig: Ohne das Passwort lässt sich ein verschlüsseltes Backup später nicht mehr öffnen.</p>
                 </FAQItem>
@@ -265,7 +269,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   title="Wie stelle ich ein Backup wieder her?"
                 >
                   <p>Ebenfalls unter <strong>Optionen &gt; Datensicherung</strong> finden Sie den Knopf <strong>Backup wiederherstellen</strong>.</p>
-                  <p>Wählen Sie Ihre Backup-Datei aus (<code>.json</code> oder <code>.json.enc</code>). Bei einer verschlüsselten Datei tragen Sie <strong>vorher</strong> das Passwort in das Passwortfeld ein – sonst meldet die App, dass das Passwort fehlt.</p>
+                  <p>Wählen Sie Ihre Backup-Datei aus (<code>.json</code> oder <code>.json.enc</code>). Bei einer verschlüsselten Datei tragen Sie <strong>vorher</strong> das Passwort in das Feld <strong>„Passwort“</strong> ein – sonst meldet die App, dass das Passwort fehlt. Es ist dasselbe Feld, mit dem Sie auch ein neues Backup schützen.</p>
                   <p>Alle Ihre Daten (Zählerstände, Archiv, Zeiterfassung, Jahreskonto) werden dann wiederhergestellt.</p>
                 </FAQItem>
               </div>

@@ -44,6 +44,9 @@ import {
 } from "./types";
 import { mergeSyncPayload } from "./utils/merge";
 import { stableStringify } from "./utils/stableJson";
+// Eine Quelle für die Monatsnamen: Dieselbe Funktion lag zuvor zusätzlich
+// hier und in HistoryModal.tsx -- drei Kopien, die auseinanderlaufen konnten.
+import { formatMonthGerman } from "./utils/dateUtils";
 import {
   exportReportToExcel,
   exportTimeLogsToExcel,
@@ -67,8 +70,28 @@ import StatsModal from "./components/StatsModal";
 import CarryoverModal from "./components/CarryoverModal";
 import ClockInWidget from "./components/ClockInWidget";
 import TimeModal from "./components/TimeModal";
-import SecureBackupModal from "./components/SecureBackupModal";
-import DeviceSyncModal from "./components/DeviceSyncModal";
+/*
+  Geräte-Sync und Datensicherung werden erst geladen, wenn man sie öffnet.
+  Beide ziehen schwere Bibliotheken nach (QR-Erzeugung, Kamera-Scanner,
+  Animationen), die auf der Startseite niemand braucht. Gemessen: Das
+  Start-Bundle schrumpft dadurch von 996 KB auf 610 KB (288 → 173 KB
+  komprimiert) -- Ladezeit zählt im Aussendienst bei schlechtem Netz.
+*/
+const SecureBackupModal = React.lazy(() => import("./components/SecureBackupModal"));
+const DeviceSyncModal = React.lazy(() => import("./components/DeviceSyncModal"));
+
+/** Platzhalter, solange ein nachgeladener Bereich noch unterwegs ist. */
+function BereichLaedt({ name }: { name: string }) {
+  return (
+    <div
+      role="status"
+      className="p-6 text-sm font-bold text-[var(--text-muted)] flex items-center gap-2"
+    >
+      <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" aria-hidden="true" />
+      {name} wird geladen …
+    </div>
+  );
+}
 import { ChangelogModal } from "./components/ChangelogModal";
 
 // Kein throw, kein "as any" -- nur eine gemeinsame Stelle für den
@@ -876,30 +899,6 @@ export default function App() {
     };
   }, []);
 
-  // German month formatting helper
-  const formatMonthGerman = (monthStr: string) => {
-    if (!monthStr) return "";
-    const [year, month] = monthStr.split("-");
-    const monthNames = [
-      "Januar",
-      "Februar",
-      "März",
-      "April",
-      "Mai",
-      "Juni",
-      "Juli",
-      "August",
-      "September",
-      "Oktober",
-      "November",
-      "Dezember",
-    ];
-    const monthIdx = parseInt(month, 10) - 1;
-    if (monthIdx >= 0 && monthIdx < 12) {
-      return `${monthNames[monthIdx]} ${year}`;
-    }
-    return monthStr;
-  };
 
   // Automatic saving into history list upon any relevant data changes
   useEffect(() => {
@@ -982,12 +981,19 @@ export default function App() {
 
     if (currentDay <= 8 && isPastDeadlineMonth && hasValues) {
       return {
+        sichtbar: true,
         isUrgent: true,
         message: `🚨 Achtung Abgabefrist: Sie haben ungesendete Zählerstände für ${formatMonthGerman(reportData?.month || "")}! Bitte exportieren Sie den Report sofort als Excel und senden ihn an die Vertriebsleitung (VL)!`,
       };
     }
 
+    // Der allgemeine Merksatz stand bisher ganze 31 Tage im Monat da und kostete
+    // auf dem Handy 80 px, ohne je etwas Neues zu sagen. Jetzt erscheint er nur
+    // im Zeitfenster, in dem er zählt: kurz vor Monatsende und bis zur Abgabe.
+    const letzterTag = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const naheAmMonatsende = currentDay >= letzterTag - 4;
     return {
+      sichtbar: naheAmMonatsende || currentDay <= 8,
       isUrgent: false,
       message: `ℹ️ Hinweis für den Monatsabschluss: Bitte senden Sie den Report bis spätestens zum 8. des Folgemonats als Excel-Datei an die Vertriebsleitung (VL).`,
     };
@@ -1784,15 +1790,18 @@ export default function App() {
     if (parsed.appFields) setAppFields(parsed.appFields);
     if (parsed.history) {
       setHistory(parsed.history);
-      // Direkt in IndexedDB sichern, sonst ist das Archiv nach dem Neuladen weg
-      set("aussendienst_pwa_history", parsed.history).catch(() => {});
+      // Direkt in IndexedDB sichern, sonst ist das Archiv nach dem Neuladen weg.
+      // Über persistHistory statt mit verschlucktem Fehler: Sonst meldet die App
+      // "erfolgreich wiederhergestellt", obwohl nichts geschrieben wurde -- und
+      // beim nächsten Öffnen ist alles weg.
+      persistHistory(parsed.history, handleHistoryPersistFailure, "wiederherstellung");
     }
     if (parsed.carryover) {
       setCarryover(parsed.carryover);
       safeSetItem("aussendienst_pwa_carryover_v2", JSON.stringify(parsed.carryover));
     }
     if (parsed.reportData) setReportData(parsed.reportData);
-  }, []);
+  }, [handleHistoryPersistFailure]);
 
   // --- GERÄTE-SYNC: ZUSAMMENFÜHREN ODER ERSETZEN ---
   const handleSyncImport = useCallback(
@@ -1806,7 +1815,9 @@ export default function App() {
           );
           setAppFields(merged.appFields);
           setHistory(merged.history);
-          set("aussendienst_pwa_history", merged.history).catch(() => {});
+          // Fehler beim Schreiben müssen sichtbar werden -- gerade beim
+          // Zusammenführen, wo der Nutzer glaubt, beide Geräte seien gleichauf.
+          persistHistory(merged.history, handleHistoryPersistFailure, "sync-zusammenfuehren");
           setCarryover(merged.carryover);
           safeSetItem("aussendienst_pwa_carryover_v2", JSON.stringify(merged.carryover));
           if (merged.reportData) setReportData(merged.reportData);
@@ -1830,7 +1841,15 @@ export default function App() {
         return false;
       }
     },
-    [appFields, history, carryover, reportData, announceToAriaAndSpeech, ersetzeGesamtstand],
+    [
+      appFields,
+      history,
+      carryover,
+      reportData,
+      announceToAriaAndSpeech,
+      ersetzeGesamtstand,
+      handleHistoryPersistFailure,
+    ],
   );
 
   // Aktuelle Export-/Merge-Funktionen beim Live-Sync-Dienst hinterlegen,
@@ -2181,8 +2200,12 @@ export default function App() {
         } catch (err) {
           console.error("Notfallspeicherung fehlgeschlagen", err);
         }
-        // Also trigger async save just in case
-        set("aussendienst_pwa_data", reportData).catch(() => {});
+        // Zusätzlich der normale Weg. Ein Fehler ist hier nicht dramatisch --
+        // die Notfallkopie oben in localStorage greift --, aber er gehört
+        // wenigstens in die Konsole statt komplett verschluckt zu werden.
+        set("aussendienst_pwa_data", reportData).catch((err) =>
+          console.error("Sicherung beim Wechsel in den Hintergrund fehlgeschlagen", err),
+        );
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -2517,21 +2540,23 @@ export default function App() {
               </div>
             )}
 
-            {/* DEADLINE NOTIFICATION BANNER (Sleeker & more compact) */}
-      <div
-        role="alert"
-        className={`p-3.5 mb-4 rounded-xl border flex gap-2.5 items-center text-xs font-semibold leading-snug ${
-          deadlineInfo.isUrgent
-            ? "bg-red-50 dark:bg-red-950/20 border-red-500 text-red-900 dark:text-red-200 animate-pulse"
-            : "bg-[var(--alert-bg)] border-[var(--alert-border)] text-[var(--alert-text)]"
-        }`}
-      >
-        <Info
-          className="w-4 h-4 flex-shrink-0 text-amber-600 dark:text-amber-400"
-          aria-hidden="true"
-        />
-        <p className="flex-1">{deadlineInfo.message}</p>
-      </div>
+            {/* DEADLINE NOTIFICATION BANNER -- nur im relevanten Zeitfenster */}
+      {deadlineInfo.sichtbar && (
+        <div
+          role="alert"
+          className={`p-3.5 mb-4 rounded-xl border flex gap-2.5 items-center text-xs font-semibold leading-snug ${
+            deadlineInfo.isUrgent
+              ? "bg-red-50 dark:bg-red-950/20 border-red-500 text-red-900 dark:text-red-200 animate-pulse"
+              : "bg-[var(--alert-bg)] border-[var(--alert-border)] text-[var(--alert-text)]"
+          }`}
+        >
+          <Info
+            className="w-4 h-4 flex-shrink-0 text-amber-600 dark:text-amber-400"
+            aria-hidden="true"
+          />
+          <p className="flex-1">{deadlineInfo.message}</p>
+        </div>
+      )}
 
       {/* Bento Header title & interactive filter toggle */}
       <div className="flex items-center justify-between mb-2 px-1">
@@ -2801,17 +2826,25 @@ export default function App() {
       </div>
       </div>
 
-      {/* ERGONOMIC CONTROLS DASHBOARD (Streamlined, compact & optimized for screen readers) */}
+      {/*
+        ERGONOMIC CONTROLS DASHBOARD.
+        Eine Zeile statt zwei: Der Block kostete auf einem 390-px-Handy 203 px
+        (ein Viertel Bildschirm) für drei Umschalter, die man einmal einstellt.
+        Die Überschrift ist entfallen -- jede Taste sagt über ihr aria-label
+        ohnehin, was sie tut --, und die "Ein/Aus"-Plaketten sind durch
+        aria-pressed ersetzt, das Screenreader von sich aus vorlesen.
+      */}
       <div className="mb-3 p-2.5 rounded-xl border bg-[var(--card-bg)] border-[var(--border-color)] space-y-2 shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-[0.75rem] font-black text-[var(--text-muted)] uppercase tracking-wider">
-            Schnell-Optionen
-          </span>
-
+        <div
+          className="flex flex-wrap items-center gap-1.5"
+          role="toolbar"
+          aria-label="Schnell-Optionen"
+        >
           <div className="flex flex-wrap items-center gap-1.5">
             {/* Compact mode toggle */}
             <button
               type="button"
+              aria-pressed={isCompactView}
               aria-label={`Kompakt-Layout ${isCompactView ? "deaktivieren" : "aktivieren"}`}
               onClick={() => {
                 triggerHaptic(15);
@@ -2830,9 +2863,6 @@ export default function App() {
             >
               <span aria-hidden="true">📐 </span>
               <span>Kompakt</span>
-              <span className="text-[0.6875rem] bg-black/10 dark:bg-white/10 px-1 py-0.2 rounded font-black uppercase">
-                {isCompactView ? "Ein" : "Aus"}
-              </span>
             </button>
 
             {/* Baseline Template Copy Button (Vormonats-Direktkopie) */}
@@ -2845,7 +2875,7 @@ export default function App() {
                 className="px-2.5 min-h-[44px] rounded-lg text-xs font-bold border bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
               >
                 <span aria-hidden="true">📋 </span>
-                <span>Vorlage laden</span>
+                <span>Vorlage</span>
               </button>
             )}
 
@@ -2892,7 +2922,8 @@ export default function App() {
                 triggerHaptic(15);
                 setIsGoalsEditorOpen((prev) => !prev);
               }}
-              aria-label="Monatsziele einrichten"
+              aria-expanded={isGoalsEditorOpen}
+              aria-label={`Monatsziele einrichten. Ziele sind zurzeit ${goalsConfig.enabled ? "eingeschaltet" : "ausgeschaltet"}.`}
               title="Monatsziele einrichten"
               className={`px-2.5 min-h-[44px] rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
                 isGoalsEditorOpen
@@ -2904,9 +2935,6 @@ export default function App() {
             >
               <span aria-hidden="true">🎯 </span>
               <span>Ziele</span>
-              <span className="text-[0.6875rem] bg-black/10 dark:bg-white/10 px-1 py-0.2 rounded font-black uppercase">
-                {goalsConfig.enabled ? "An" : "Aus"}
-              </span>
             </button>
           </div>
         </div>
@@ -3449,6 +3477,7 @@ export default function App() {
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
           {/* Backup und Geräte-Sync nutzen dieselbe Paketform und denselben
               Weg zurück -- siehe buildSyncPayload / ersetzeGesamtstand. */}
+          <React.Suspense fallback={<BereichLaedt name="Datensicherung" />}>
           <SecureBackupModal
             isOpen={true}
             onClose={() => setActiveTab("options")}
@@ -3466,16 +3495,19 @@ export default function App() {
               }
             }}
           />
+          </React.Suspense>
         </div>
       )}
 
       {activeTab === "sync" && (
-        <DeviceSyncModal
-          isOpen={true}
-          onClose={() => setActiveTab("options")}
-          onExport={buildSyncPayload}
-          onImport={(dataStr, strategy) => handleSyncImport(dataStr, strategy)}
-        />
+        <React.Suspense fallback={<BereichLaedt name="Geräte-Sync" />}>
+          <DeviceSyncModal
+            isOpen={true}
+            onClose={() => setActiveTab("options")}
+            onExport={buildSyncPayload}
+            onImport={(dataStr, strategy) => handleSyncImport(dataStr, strategy)}
+          />
+        </React.Suspense>
       )}
 
       {/* TIME MODAL (ZEITBEREICH) */}

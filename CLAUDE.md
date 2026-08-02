@@ -19,7 +19,10 @@ npm run start        # node dist/server.cjs — serve the production build
 npm run deploy       # predeploy runs build, then gh-pages -d dist publishes to the gh-pages branch
 ```
 
-**Two independent deploy paths exist — verified via the GitHub Actions API.** `npm run deploy` pushes `dist/` to the `gh-pages` branch. Separately, `.github/workflows/deploy.yml` auto-runs `npm install && npm run build` and publishes via GitHub's native Pages Actions deployment (`actions/deploy-pages`) on **every push to `main`/`master`** — confirmed still active and succeeding (workflow run completed ~20s after a `git push` during this audit). Only one of these can actually be "live" depending on the repo's Settings → Pages → Source; which one is authoritative has not been confirmed. Until that's resolved, treat every push to `main` as a potential auto-publish, not just explicit `npm run deploy` runs.
+**The GitHub Actions workflow is the authoritative deploy path — verified 2026-08-02.** `.github/workflows/deploy.yml` runs `npm install && npm run build` and publishes via `actions/deploy-pages` on **every push to `main`**. Proven by hash comparison: after a plain `git push origin main` (no `npm run deploy`), the workflow finished in ~45s and https://nichtseher.github.io/RVMonatsreport/ served exactly the locally built bundle filename. **Every push to `main` publishes to production immediately** — never push work that isn't verified. `npm run deploy` (gh-pages branch) still exists but does not determine what is live; treat it as dead weight.
+
+Workflow status is queryable without a token (public repo), which is how deploys get confirmed here — the `gh` CLI is *not* installed on this machine:
+`https://api.github.com/repos/nichtseher/RVMonatsreport/actions/runs?per_page=5`
 
 There are no unit/integration tests in this repo. When validating logic changes (e.g. to `src/utils/merge.ts`), write a throwaway script and run it with `npx tsx <script>.ts` rather than expecting a test runner.
 
@@ -48,7 +51,11 @@ There are no unit/integration tests in this repo. When validating logic changes 
 
 Both paths funnel into `mergeSyncPayload` (`src/utils/merge.ts`), which is last-write-wins per archived month (by `savedAt`), unions `TimeLog`s by `id`, unions custom fields, and is idempotent — re-merging the same payload must be a no-op. Any change to the sync payload shape must stay compatible with this merge function and with the QR chunk size limits (`CHUNK_SIZE` in `DeviceSyncModal.tsx`).
 
-**Excel export** (`src/utils/excelUtils.ts`) has some duplicated logic with inline export functions still in `App.tsx` (`handleExportExcel`, `handleExportTimeLogsExcel`) — this is known debt, not an intentional pattern to copy from.
+**Excel export** lives solely in `src/utils/excelUtils.ts` (consolidated in 0.9.0 — the form and the archive previously produced *different* files for the same month). `App.tsx`'s `handleExportExcel` / `handleExportTimeLogsExcel` only build the filename and hand off to `triggerFileDownload`, which returns `"geteilt" | "heruntergeladen" | "abgebrochen"` so each caller can report the outcome honestly.
+
+**Sync/backup payload** is built in one place too (`buildSyncPayload`, stable-sorted JSON) and restored in one place (`ersetzeGesamtstand`); both the device sync's "replace" branch and the backup restore go through them. Archive writes must go through `persistHistory(..., handleHistoryPersistFailure, context)` — a swallowed `.catch(() => {})` there means the UI reports success while the data is gone after the next reload (fixed in 0.9.3 for exactly those two paths).
+
+**Lazy-loaded screens:** `DeviceSyncModal` and `SecureBackupModal` are `React.lazy` + `Suspense` (0.9.3). They pull in the QR/camera/animation libraries, which nobody needs on first paint — the initial bundle dropped from 288 KB to 129 KB gzipped. Keep new heavy, rarely-opened screens lazy too.
 
 **Accessibility is a first-class requirement, not a nice-to-have** — the primary users are blind/low-vision field staff using NVDA/JAWS/VoiceOver. Every interactive change should go through the existing `announceToAriaAndSpeech(message, immediate?, fieldId?, newValue?)` pattern (drives both the ARIA live region and optional TTS via `SpeechSynthesisUtterance`), and buttons need real `aria-label`s. Audio "click" feedback for counters is centralized in `src/utils/audioFeedback.ts` (Web Audio oscillator tones) — reuse it rather than duplicating tone logic.
 
