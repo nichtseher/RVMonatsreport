@@ -150,7 +150,7 @@ export default React.memo(function CounterField({
           <span>{config.label}</span>
         </label>
         {config.isCustom && (
-          <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+          <span className="inline-block mt-1 text-[0.75rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
             Eigene Kategorie
           </span>
         )}
@@ -163,7 +163,7 @@ export default React.memo(function CounterField({
           tabIndex={-1}
           aria-hidden="true"
           onClick={() => handleQuickChange(-1)}
-          className={`${isCompact ? "w-8 h-8 text-[10px]" : "w-10 h-10 text-xs"} rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-red-500 font-extrabold transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
+          className={`${isCompact ? "w-8 h-8 text-[0.75rem]" : "w-10 h-10 text-xs"} rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-red-500 font-extrabold transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
         >
           -5
         </button>
@@ -226,7 +226,7 @@ export default React.memo(function CounterField({
           tabIndex={-1}
           aria-hidden="true"
           onClick={() => handleQuickChange(1)}
-          className={`${isCompact ? "w-8 h-8 text-[10px]" : "w-10 h-10 text-xs"} rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-emerald-500 font-extrabold transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
+          className={`${isCompact ? "w-8 h-8 text-[0.75rem]" : "w-10 h-10 text-xs"} rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-emerald-500 font-extrabold transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
         >
           +5
         </button>

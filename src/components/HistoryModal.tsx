@@ -282,11 +282,11 @@ export default function HistoryModal({
                                       <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" aria-hidden="true" />
                                       {formatMonthGerman(record.month)}
                                     </span>
-                                    <span className="text-[9px] font-mono font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full text-[var(--text-muted)]">
+                                    <span className="text-[0.6875rem] font-mono font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full text-[var(--text-muted)]">
                                       Zähler: {totalCount}
                                     </span>
                                   </div>
-                                  <p className="text-[11px] font-bold text-[var(--text-muted)] mt-1">
+                                  <p className="text-[0.75rem] font-bold text-[var(--text-muted)] mt-1">
                                     Mitarbeiter: {record.name ? String(record.name) : "Kein Name eingetragen"}
                                   </p>
                                 </div>
@@ -376,7 +376,7 @@ export default function HistoryModal({
                                           <span>Export RV Zeit</span>
                                         </button>
                                       ) : (
-                                        <div className="h-11 rounded-xl border border-dashed border-[var(--border-color)] bg-slate-500/5 text-[var(--text-muted)] text-[10px] font-bold flex items-center justify-center select-none">
+                                        <div className="h-11 rounded-xl border border-dashed border-[var(--border-color)] bg-slate-500/5 text-[var(--text-muted)] text-[0.75rem] font-bold flex items-center justify-center select-none">
                                           Keine Schichten erfasst
                                         </div>
                                       )}

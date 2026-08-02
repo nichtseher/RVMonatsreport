@@ -293,7 +293,7 @@ export default function TimeModal({
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-[10px] font-bold text-[var(--text-muted)]">
+                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-[0.75rem] font-bold text-[var(--text-muted)]">
                   <span>Sollzeit:</span>
                   <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[var(--text-color)] font-extrabold">
                     {(carryover.dailyTargetHours * 5).toFixed(1)}h/Woche
@@ -335,7 +335,7 @@ export default function TimeModal({
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-[10px] font-bold text-[var(--text-muted)]">
+                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-[0.75rem] font-bold text-[var(--text-muted)]">
                   <span>Fehltage (YTD):</span>
                   <span className="flex gap-2">
                     <span className="bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-extrabold">
@@ -358,7 +358,7 @@ export default function TimeModal({
 
               <div className="overflow-hidden rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)]">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-[11px]" aria-label="Monatliche Arbeitszeit-Aufschlüsselung">
+                  <table className="w-full text-left border-collapse text-[0.75rem]" aria-label="Monatliche Arbeitszeit-Aufschlüsselung">
                     <thead>
                       <tr className="bg-slate-50 dark:bg-slate-900 border-b border-[var(--border-color)] text-[var(--text-color)] font-black">
                         <th className="p-2.5">Monat</th>

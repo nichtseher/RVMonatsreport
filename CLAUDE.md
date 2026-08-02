@@ -25,6 +25,12 @@ There are no unit/integration tests in this repo. When validating logic changes 
 
 `npm run deploy` publishes straight to production (https://nichtseher.github.io/RVMonatsreport/) — only run it when asked to ship, and prefer running `npm run lint` and `npm run build` first.
 
+## Editing rules (learned the hard way)
+
+**Never write source files with PowerShell `Set-Content` / `Out-File` / `>` redirection.** On this German Windows setup, PowerShell 5.1 read the UTF-8 file as CP1252 and wrote it back as UTF-8, double-encoding every non-ASCII character and prepending a BOM — it silently destroyed all German umlauts in user-facing strings (`"Anzahl VorfÃ¼hrungen …"`) and all 72 emojis in `DEFAULT_FIELDS_CONFIG`. `tsc` and `vite build` both passed, and browser tests *looked* fine because existing `localStorage` still held the old correct field labels — only a genuinely new user (empty storage) would have seen the damage. It shipped to production before it was caught. Use the Edit/Write tools for source changes; if a bulk change is unavoidable, use `node -e` with explicit `fs.readFileSync(f,'utf8')`/`writeFileSync(f,s,'utf8')`.
+
+**Corollary for testing:** when a change touches defaults (`DEFAULT_FIELDS_CONFIG`, initial settings, first-run behavior), verify with `localStorage.clear()` **and** a cleared IndexedDB (`keyval-store`), not just a reload — otherwise stored state masks the regression.
+
 ## Architecture
 
 **Single monolithic state container.** `src/App.tsx` (~3000 lines) owns essentially all application state (report data, history/archive, accessibility settings, goals, carryover, quick-entry config, sync handlers, dictation, TTS) via `useState`/`useCallback`, and passes state + handlers down as props to view components in `src/components/`. There is no router — navigation is a single `activeTab` string switched by the bottom nav / sidebar, with each tab's component rendered conditionally at the bottom of `App.tsx`'s JSX. When adding a feature, the handler almost always belongs in `App.tsx` and is threaded down via props, following the existing `handleXxx` naming convention.

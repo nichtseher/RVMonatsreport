@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { 
   X, HelpCircle, BookOpen, Clock, FileText,
   Settings, Share2, Lock, AlertTriangle, Play,
-  CalendarDays, BarChart3, LayoutGrid, Shield, Zap
+  CalendarDays, BarChart3, LayoutGrid, Shield, Zap, Keyboard
 } from "lucide-react";
 import { SectionsConfig } from "../types";
 
@@ -142,6 +142,24 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <p><strong>Live-Verbindung:</strong> Nach einer einmaligen Kopplung gleichen sich beide Geräte automatisch alle paar Sekunden ab. Sie können das Sync-Fenster danach schließen und ganz normal weiterarbeiten – oben erscheint der Hinweis <strong>„Live verbunden“</strong>. Voraussetzung: beide Geräte im gleichen WLAN, App auf beiden geöffnet. Die Verbindung endet, wenn Sie sie trennen oder die App schließen.</p>
                   <p><strong>Keine Kamera nötig:</strong> Beide Wege funktionieren normalerweise per QR-Code-Scan, aber jeder Code lässt sich auch antippen, kopieren und am anderen Gerät einfügen – praktisch, wenn der PC keine Webcam hat.</p>
                   <p>Alternativ steht weiterhin die Funktion "Sicheres Backup" unter "Optionen" zur Verfügung. Alles funktioniert komplett offline – ganz ohne Server.</p>
+                </FAQItem>
+
+                <FAQItem
+                  icon={<Keyboard className="text-blue-500" />}
+                  title="Tastenkürzel (besonders praktisch am PC)"
+                >
+                  <p>Diese Kürzel funktionieren überall in der App. Halten Sie <strong>Alt</strong> und <strong>Umschalt</strong> zusammen gedrückt und tippen Sie dann den Buchstaben:</p>
+                  <ul className="list-disc pl-4 space-y-1 mt-1">
+                    <li><strong>Alt+Umschalt+M</strong> – zum Feld „Berichtsmonat“ springen</li>
+                    <li><strong>Alt+Umschalt+N</strong> – zum Feld „Mitarbeiter/in“ springen</li>
+                    <li><strong>Alt+Umschalt+O</strong> – zum Notizfeld springen</li>
+                    <li><strong>Alt+Umschalt+T</strong> – RV Zeit (Stempeluhr) öffnen</li>
+                    <li><strong>Alt+Umschalt+H</strong> – RV Archiv öffnen</li>
+                    <li><strong>Alt+Umschalt+S</strong> – Sprachansagen ein- oder ausschalten</li>
+                    <li><strong>Alt+Umschalt+L</strong> – Ein-Hand-Modus ein- oder ausschalten</li>
+                  </ul>
+                  <p className="mt-2">In den Zähler-Eingabefeldern gilt zusätzlich: <strong>Pfeil hoch/runter</strong> ändert den Wert, <strong>Enter</strong> springt zum nächsten Feld, <strong>Umschalt+Enter</strong> zum vorherigen.</p>
+                  <p>Ganz oben auf der Seite liegt außerdem ein Sprunglink <strong>„Zum Hauptinhalt springen“</strong>, den Sie mit der Tabulatortaste erreichen.</p>
                 </FAQItem>
               </div>
             </div>

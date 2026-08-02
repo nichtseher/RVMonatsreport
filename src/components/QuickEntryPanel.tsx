@@ -128,7 +128,7 @@ export default function QuickEntryPanel({
         >
           <Zap className="w-5 h-5 text-[var(--accent)]" aria-hidden="true" />
           Schnell-Erfassung
-          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--accent)]/10 text-[var(--accent)]">
+          <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--accent)]/10 text-[var(--accent)]">
             {config.mode === "custom" && config.ids.length > 0 ? "Eigene Auswahl" : "Automatisch"}
           </span>
         </h2>
@@ -175,7 +175,7 @@ export default function QuickEntryPanel({
                   {val}
                 </span>
               </div>
-              <span className="text-[11px] font-bold text-[var(--text-color)] leading-tight line-clamp-2">
+              <span className="text-[0.75rem] font-bold text-[var(--text-color)] leading-tight line-clamp-2">
                 {field.label.replace(/^Anzahl\s+/i, "")}
               </span>
             </button>
@@ -236,7 +236,7 @@ export default function QuickEntryPanel({
                       {field.label}
                     </span>
                     {checked && (
-                      <span className="text-[10px] font-black text-[var(--accent)]" aria-label={`Position ${pos + 1}`}>
+                      <span className="text-[0.75rem] font-black text-[var(--accent)]" aria-label={`Position ${pos + 1}`}>
                         #{pos + 1}
                       </span>
                     )}
@@ -246,7 +246,7 @@ export default function QuickEntryPanel({
             })}
           </ul>
 
-          <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+          <p className="text-[0.75rem] text-[var(--text-muted)] leading-relaxed">
             Die Reihenfolge entspricht der Reihenfolge Ihrer Auswahl. „Automatisch"
             richtet sich danach, was Sie in den letzten Monaten am meisten eingetragen haben.
           </p>

@@ -25,6 +25,11 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error("Uncaught error:", error, errorInfo);
   }
 
+  // BEWUSSTE AUSNAHME: Überall sonst in der App ist window.confirm() durch
+  // den barrierefreien ConfirmDialog ersetzt (siehe components/ConfirmDialog.tsx).
+  // Hier NICHT: Das ist der Absturz-Bildschirm. Wenn der React-Zustand bereits
+  // beschaedigt ist, muss der Not-Reset ohne eigene Komponenten funktionieren.
+  // Das eingebaute confirm() des Browsers ist hier die robustere Wahl.
   private handleHardReset = async () => {
     if (confirm("Möchten Sie die App wirklich komplett zurücksetzen? Alle gespeicherten Daten (inkl. RV Archiv) werden gelöscht!")) {
       // Der Bericht und das RV Archiv liegen in IndexedDB (idb-keyval), nicht
@@ -63,7 +68,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </p>
 
             <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl text-left mb-6 overflow-auto max-h-32 border border-slate-200 dark:border-slate-700">
-              <code className="text-[10px] text-red-600 dark:text-red-400 font-mono">
+              <code className="text-[0.75rem] text-red-600 dark:text-red-400 font-mono">
                 {this.state.errorMsg || "Unknown render error"}
               </code>
             </div>
@@ -86,7 +91,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </button>
             </div>
             
-            <p className="mt-5 text-[10px] text-slate-400 font-medium">
+            <p className="mt-5 text-[0.75rem] text-slate-400 font-medium">
               Ein kompletter Reset löscht alle lokalen Daten, kann aber helfen, wenn die App in einer Endlosschleife hängt.
             </p>
           </div>

@@ -10,6 +10,116 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-02 — v0.7.0: Encoding-Notfall, Lesbarkeit, Desktop, barrierefreie Dialoge
+
+### Encoding-Schaden (selbst verursacht, war live)
+
+Beim Prüfen der Desktop-Ansicht fiel auf, dass `src/App.tsx` **149 beschädigte
+Zeichen** enthielt. Ursache: ein früherer Bulk-Replace über PowerShell
+`Set-Content -Encoding utf8`. PowerShell 5.1 las die UTF-8-Datei als CP1252 und
+schrieb sie als UTF-8 zurück — **doppelt kodiert**, plus BOM. Betroffen waren
+279 Zeichenfolgen: alle deutschen Umlaute in nutzersichtbaren Texten
+(`"Anzahl VorfÃ¼hrungen Schule/Bildung"`) und **alle 72 Emojis**
+(`icon: "ðŸ«"`).
+
+**Warum es durch alle Prüfungen rutschte:** `tsc --noEmit` und `vite build`
+liefen sauber (Mojibake ist gültiges UTF-8, nur mit falschen Zeichen). Auch die
+Browser-Tests zeigten korrekten Text — weil die Feldnamen bei bestehenden
+Nutzern aus dem `localStorage` kommen, der noch die alten, korrekten Werte
+hielt. Nur ein **neuer** Nutzer mit leerem Speicher hätte die kaputte
+`DEFAULT_FIELDS_CONFIG` gesehen. Der Fehler ging so in Produktion.
+
+**Reparatur:** Eine pauschale Umkehrung war nicht möglich, weil die Datei
+gemischt war (spätere Edits hatten korrektes UTF-8 geschrieben) — ein erster
+Versuch brach mit Ersatzzeichen ab. Stattdessen gezielt: nur Zeichenfolgen
+ersetzen, die als CP1252-Bytes eine **gültige UTF-8-Sequenz** ergeben.
+Korrektes „ü“ (Byte 0xFC) ist kein gültiges UTF-8-Startbyte und blieb dadurch
+unangetastet. Verifiziert gegen den letzten sauberen Stand `00bb057`: alle 67
+Umlaut-Wörter vorhanden, Emojis 72/72 exakt, 0 Mojibake, kein BOM. Anschließend
+im Browser mit **komplett geleertem `localStorage` UND IndexedDB** geprüft.
+Sofort deployed (`07e142e`).
+
+**Konsequenz festgehalten** in `CLAUDE.md`: Quelldateien nie mit PowerShell
+schreiben; Änderungen an Standardwerten immer mit leerem Speicher testen.
+
+### Lesbarkeit: Schrift-Einstellung wirkte auf 80 Elemente gar nicht
+
+Verifizierter Befund: Rund 80 Beschriftungen nutzten feste Pixelgrößen
+(`text-[9px]`, `text-[10px]`). Feste px-Werte reagieren **nicht** auf die
+Schriftgrößen-Einstellung der App (die über `html { font-size }` skaliert).
+Gemessen: Bei „Extra groß“ wuchs normaler Text von 16 auf 18 px, die kleinen
+Beschriftungen blieben bei **10 px** — ein Verstoß gegen WCAG 1.4.4 für genau
+die Zielgruppe, die die Einstellung braucht.
+
+Fix: 97 Vorkommen in 12 Dateien von px auf `rem` umgestellt (8/9px → 11px,
+10/11px → 12px als Basis). Gemessen nach der Änderung: kleinste Schrift 11 px,
+bei „Extra groß“ **16,5 px** — skaliert jetzt mit. Kein waagerechter Überlauf
+auf 375 px Breite.
+
+### Desktop-Ansicht praktikabel gemacht
+
+Gemessen auf 1920 px mit Standardeinstellungen: Inhalt 672 px breit,
+**1248 px (65 %) ungenutzt**, dazu die schwebende Handy-Navigationsleiste. Das
+gute Desktop-Layout (Seitenleiste + zwei Spalten) existierte bereits, war aber
+per Voreinstellung **aus** und in den Optionen versteckt.
+
+- Desktop-Layout schaltet sich jetzt ab 1024 px Fensterbreite selbst ein
+  (`matchMedia`), die ausdrückliche Einstellung behält Vorrang. Gemessen:
+  genutzte Breite 672 → **1440 px**.
+- `user-select: none` galt global → am PC ließ sich kein Text markieren oder
+  kopieren. Jetzt per `@media (pointer: fine)` wieder freigegeben, auf Touch
+  weiterhin gesperrt (verhindert versehentliches Markieren beim Tippen).
+- Scrollbalken waren global ausgeblendet (gemessene Breite 0 px) → am PC keine
+  Positions- oder Längenanzeige. Jetzt nur noch auf Touch versteckt; gemessen:
+  15 px sichtbar.
+- Tastenkürzel waren nirgends dokumentiert → neuer Hilfe-Abschnitt, die Kürzel
+  direkt aus dem Code in `App.tsx` übernommen (nicht aus dem Gedächtnis).
+
+### Barrierefreie Bestätigungsdialoge
+
+`window.confirm()` wird von NVDA/JAWS unzuverlässig vorgelesen, ist nicht
+gestaltbar (ignoriert Hochkontrast-Themes und Schriftgröße) und wirkt mobil
+wie ein Fremdkörper. Neue Komponente `src/components/ConfirmDialog.tsx`:
+`role="alertdialog"`, Fokusfalle, Escape, Fokus-Rückgabe an das auslösende
+Element, Startfokus bewusst auf **Abbrechen**. Ersetzt fünf `confirm()`-Aufrufe
+in `App.tsx` und `ClockInWidget.tsx`. Der Monatsabschluss-Check zeigt seine
+Warnungen jetzt als echte Liste statt als Text mit Aufzählungszeichen.
+
+**Bewusste Ausnahme:** Das `confirm()` in `ErrorBoundary.tsx` bleibt. Das ist
+der Absturz-Bildschirm — wenn der React-Zustand beschädigt ist, muss der
+Not-Reset ohne eigene Komponenten funktionieren. Als Kommentar im Code
+begründet.
+
+Verifiziert: Dialog hat `role="alertdialog"`, `aria-modal`, verknüpftes Label
+und Beschreibung; Startfokus auf „Erst korrigieren“; Escape schließt; Fokus
+kehrt zum auslösenden Knopf zurück.
+
+### Kontrast und Schriftart
+
+- `--border-color` hatte nur **1,48:1** gegen die Karte — Rahmen praktisch
+  unsichtbar. Zielwerte berechnet statt geschätzt: hell `#8593a8` (3,12:1),
+  dunkel `#556780` (3,09:1), beide über der WCAG-1.4.11-Grenze von 3:1. Die
+  zwei Hochkontrast-Themes blieben unangetastet (weiterhin 21:1 bzw. 19,6:1).
+- `--font-sans` deklarierte „Inter“, aber es wurde **keine Schrift geladen**
+  (0 Webfonts, verifiziert) — die App nutzte je nach System eine andere
+  Schrift. Da externe Schriftdienste wegen der DSGVO-Zusage ausscheiden: durch
+  einen bewussten System-Schriftstapel ersetzt.
+
+### Nicht umgesetzt (bewusst)
+
+Einklappbare Formularbereiche wurden verworfen: Eingeklappter Inhalt ist für
+Screenreader-Nutzer nicht erreichbar, und die Suchfunktion würde ins Leere
+laufen, wenn ein Treffer in einem geschlossenen Bereich liegt.
+
+### Nicht verifizierbar in dieser Umgebung
+
+Die Touch-Zweige der neuen CSS-Regeln (`@media (pointer: coarse)`: versteckte
+Scrollbalken, gesperrte Textauswahl) konnten **nicht** geprüft werden — ein auf
+Handygröße verkleinertes Desktop-Fenster meldet weiterhin `pointer: fine`. Das
+braucht einen Test auf einem echten Touchgerät.
+
+---
+
 ## 2026-08-01 — v0.6.0: Verlässlicheres Zählen, Sync im Hintergrund, Hilfe korrigiert
 
 ### Kritischer Zählfehler (beim Testen entdeckt)

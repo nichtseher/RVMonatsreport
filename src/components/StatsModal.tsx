@@ -168,7 +168,7 @@ export default function StatsModal({
               }`}
             >
               <PieChart className="w-4 h-4" />
-              <span className="text-[10px] font-bold px-1">Grafik</span>
+              <span className="text-[0.75rem] font-bold px-1">Grafik</span>
             </button>
             <button
               type="button"
@@ -181,7 +181,7 @@ export default function StatsModal({
               }`}
             >
               <Table className="w-4 h-4" />
-              <span className="text-[10px] font-bold px-1">Tabelle</span>
+              <span className="text-[0.75rem] font-bold px-1">Tabelle</span>
             </button>
           </div>
         </div>
@@ -195,49 +195,49 @@ export default function StatsModal({
               {/* Bento Grid Metrics */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-indigo-500/5 text-center">
-                  <span className="block text-[10px] font-black uppercase text-indigo-500 tracking-wider mb-1">
+                  <span className="block text-[0.75rem] font-black uppercase text-indigo-500 tracking-wider mb-1">
                     Aktivitäten
                   </span>
                   <span className="text-3xl font-black text-indigo-600 dark:text-indigo-400">
                     {totalActions}
                   </span>
-                  <span className="block text-[9px] text-[var(--text-muted)] font-semibold mt-1">
+                  <span className="block text-[0.6875rem] text-[var(--text-muted)] font-semibold mt-1">
                     Gesamtaktionen
                   </span>
                 </div>
 
                 <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-emerald-500/5 text-center">
-                  <span className="block text-[10px] font-black uppercase text-emerald-500 tracking-wider mb-1">
+                  <span className="block text-[0.75rem] font-black uppercase text-emerald-500 tracking-wider mb-1">
                     Vorführungen
                   </span>
                   <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
                     {currentS1}
                   </span>
-                  <span className="block text-[9px] text-[var(--text-muted)] font-semibold mt-1">
+                  <span className="block text-[0.6875rem] text-[var(--text-muted)] font-semibold mt-1">
                     Bereich 1
                   </span>
                 </div>
 
                 <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-amber-500/5 text-center">
-                  <span className="block text-[10px] font-black uppercase text-amber-500 tracking-wider mb-1">
+                  <span className="block text-[0.75rem] font-black uppercase text-amber-500 tracking-wider mb-1">
                     Schulungen
                   </span>
                   <span className="text-3xl font-black text-amber-600 dark:text-amber-400">
                     {currentS2}
                   </span>
-                  <span className="block text-[9px] text-[var(--text-muted)] font-semibold mt-1">
+                  <span className="block text-[0.6875rem] text-[var(--text-muted)] font-semibold mt-1">
                     Bereich 2
                   </span>
                 </div>
 
                 <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-blue-500/5 text-center">
-                  <span className="block text-[10px] font-black uppercase text-blue-500 tracking-wider mb-1">
+                  <span className="block text-[0.75rem] font-black uppercase text-blue-500 tracking-wider mb-1">
                     Bürozeit
                   </span>
                   <span className="text-3xl font-black text-blue-600 dark:text-blue-400">
                     {currentHours}h
                   </span>
-                  <span className="block text-[9px] text-[var(--text-muted)] font-semibold mt-1">
+                  <span className="block text-[0.6875rem] text-[var(--text-muted)] font-semibold mt-1">
                     Arbeitszeit ca.
                   </span>
                 </div>
@@ -301,7 +301,7 @@ export default function StatsModal({
                         </svg>
                         <div className="absolute text-center">
                           <span className="block text-2xl font-black text-[var(--text-color)]">{totalActions}</span>
-                          <span className="block text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">Aktionen</span>
+                          <span className="block text-[0.6875rem] font-black text-[var(--text-muted)] uppercase tracking-widest">Aktionen</span>
                         </div>
                       </div>
 
@@ -321,7 +321,7 @@ export default function StatsModal({
                                   <span className="text-xs font-black text-[var(--text-color)] truncate">{category.title}</span>
                                   <span className="text-xs font-bold text-[var(--text-muted)]">{category.val} ({pct}%)</span>
                                 </div>
-                                <span className="block text-[10px] text-[var(--text-muted)] truncate">{category.desc}</span>
+                                <span className="block text-[0.75rem] text-[var(--text-muted)] truncate">{category.desc}</span>
                               </div>
                             </div>
                           );
@@ -392,7 +392,7 @@ export default function StatsModal({
                     <div className="p-5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-color)] space-y-4">
                       <h3 className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)] flex items-center justify-between">
                         <span>📈 Aktivitätsvergleich über {sortedMonths.length} Monate</span>
-                        <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1">
+                        <span className="text-[0.75rem] font-bold text-emerald-500 flex items-center gap-1">
                           <TrendingUp className="w-3.5 h-3.5" /> Trend
                         </span>
                       </h3>
@@ -446,7 +446,7 @@ export default function StatsModal({
                                     return (
                                       <g key={i} className="opacity-30 dark:opacity-20">
                                         <line x1={paddingLeft} y1={y} x2={500 - paddingRight} y2={y} stroke="var(--text-muted)" strokeWidth="1" strokeDasharray="4 4" />
-                                        <text x={paddingLeft - 8} y={y + 4} textAnchor="end" fill="var(--text-color)" className="text-[9px] font-bold font-mono">{labelVal}</text>
+                                        <text x={paddingLeft - 8} y={y + 4} textAnchor="end" fill="var(--text-color)" className="text-[0.6875rem] font-bold font-mono">{labelVal}</text>
                                       </g>
                                     );
                                   })}
@@ -481,7 +481,7 @@ export default function StatsModal({
                                     const x = getX(idx);
                                     const shortMonth = m.month.split("-")[1] + "/" + m.month.split("-")[0].slice(-2);
                                     return (
-                                      <text key={idx} x={x} y={220 - 8} textAnchor="middle" fill="var(--text-color)" className="text-[10px] font-black font-mono">
+                                      <text key={idx} x={x} y={220 - 8} textAnchor="middle" fill="var(--text-color)" className="text-[0.75rem] font-black font-mono">
                                         {shortMonth}
                                       </text>
                                     );

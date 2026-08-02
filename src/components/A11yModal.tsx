@@ -367,7 +367,7 @@ export default function A11yModal({
             </span>
           </label>
           <div className="flex items-center gap-3 mt-2">
-            <span className="text-[10px] font-black uppercase text-[var(--text-muted)]">Langsam</span>
+            <span className="text-[0.75rem] font-black uppercase text-[var(--text-muted)]">Langsam</span>
             <input
               id="speech-rate-range"
               type="range"
@@ -378,7 +378,7 @@ export default function A11yModal({
               onChange={(e) => updateSetting("speechRate", parseFloat(e.target.value))}
               className="flex-1 h-2.5 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-full appearance-none cursor-pointer accent-[var(--accent)]"
             />
-            <span className="text-[10px] font-black uppercase text-[var(--text-muted)]">Schnell</span>
+            <span className="text-[0.75rem] font-black uppercase text-[var(--text-muted)]">Schnell</span>
           </div>
         </div>
       </SectionCard>

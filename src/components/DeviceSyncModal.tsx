@@ -683,7 +683,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
   const renderSyncSteps = () => {
     const currentStep = mode === "select" ? 1 : mode === "confirm" ? 3 : 2;
     return (
-      <ol className="mb-5 grid grid-cols-3 gap-2 text-[11px] uppercase font-black tracking-[0.18em] text-[var(--text-muted)] list-none p-0">
+      <ol className="mb-5 grid grid-cols-3 gap-2 text-[0.75rem] uppercase font-black tracking-[0.18em] text-[var(--text-muted)] list-none p-0">
         {[
           { label: "1. Wahl", help: "Senden oder Empfangen" },
           { label: "2. QR-Code", help: "Zeigen & Scannen" },
@@ -698,8 +698,8 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
                 : "border-[var(--border-color)] bg-[var(--bg-color)]"
             }`}
           >
-            <div className="text-[9px] font-black mb-1">{step.label}</div>
-            <div className="text-[10px] font-semibold">{step.help}</div>
+            <div className="text-[0.6875rem] font-black mb-1">{step.label}</div>
+            <div className="text-[0.75rem] font-semibold">{step.help}</div>
           </li>
         ))}
       </ol>
@@ -939,7 +939,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
                 </p>
               </div>
 
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              <p className="text-[0.75rem] font-black uppercase tracking-[0.18em] text-[var(--text-muted)]">
                 Einmal-Übertragung per QR-Code
               </p>
 
@@ -973,7 +973,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
                 </div>
               </button>
 
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--text-muted)] pt-2">
+              <p className="text-[0.75rem] font-black uppercase tracking-[0.18em] text-[var(--text-muted)] pt-2">
                 Live-Verbindung (beide Geräte gleichzeitig)
               </p>
 

@@ -164,7 +164,7 @@ export default function ManageModal({
             <RotateCcw className="w-4 h-4" />
             <span>Formular auf Standard-Felder zurücksetzen</span>
           </button>
-          <p className="text-[11px] text-[var(--text-muted)] text-center mt-2 leading-relaxed">
+          <p className="text-[0.75rem] text-[var(--text-muted)] text-center mt-2 leading-relaxed">
             Warnung: Dies stellt den Anfangszustand der App wieder her. Ihre selbst erstellten Kategorien werden dabei gelöscht.
           </p>
         </div>

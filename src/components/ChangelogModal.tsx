@@ -31,6 +31,21 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="space-y-6">
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex items-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-cyan-500" />
+            Version 0.7.0: Besser lesbar, besser am PC
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-semibold text-[var(--text-muted)]">
+            <li><strong>Wichtiger Fehler behoben:</strong> Bei neu installierter App wurden Umlaute und Symbole falsch dargestellt („Anzahl VorfÃ¼hrungen“). Betroffen waren nur neue Installationen – vorhandene Daten blieben unberührt.</li>
+            <li><strong>Schrift-Einstellung wirkt jetzt überall:</strong> Rund 80 kleine Beschriftungen hatten eine feste Größe und wuchsen nicht mit, wenn Sie „Groß“ oder „Extra groß“ einstellten. Das ist behoben – zusätzlich ist die kleinste Schrift generell größer geworden.</li>
+            <li><strong>Am PC deutlich brauchbarer:</strong> Die Desktop-Ansicht mit Seitenleiste schaltet sich bei breiten Fenstern von selbst ein (vorher blieb rund zwei Drittel des Bildschirms ungenutzt). Außerdem lässt sich Text wieder markieren und kopieren, und es gibt wieder sichtbare Scrollbalken.</li>
+            <li><strong>Barrierefreie Rückfragen:</strong> Sicherheitsabfragen (z. B. vor dem Löschen) nutzen keine Browser-Fenster mehr, sondern eigene Dialoge – zuverlässig vom Screenreader vorgelesen, mit Escape abbrechbar und im gewählten Farbschema. Der Startfokus liegt bewusst auf „Abbrechen“.</li>
+            <li><strong>Klarere Umrandungen:</strong> Rahmen und Trennlinien waren kaum sichtbar und erfüllen jetzt die Kontrast-Norm.</li>
+            <li>Neu in der Hilfe: eine Übersicht aller Tastenkürzel.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex items-center gap-2 mb-3">
             <Sparkles className="w-5 h-5 text-rose-500" />
             Version 0.6.0: Verlässlicheres Zählen & Sync im Hintergrund
           </h3>

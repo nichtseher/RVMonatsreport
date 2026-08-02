@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  /* Bewusster System-Schriftstapel statt "Inter"/"JetBrains Mono": Diese
+     Schriften waren zwar deklariert, wurden aber nie geladen (0 Webfonts) --
+     die App nutzte faktisch die Systemschrift, nur unvorhersehbar. Externe
+     Schriftdienste sind wegen der DSGVO-Zusage ausgeschlossen, deshalb hier
+     bewusst die jeweils beste vorinstallierte Schrift pro System. */
+  --font-sans: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "SF Mono",
+    Menlo, Consolas, monospace;
 }
 
 :root {
@@ -15,7 +22,9 @@
   --accent-hover: #166534;
   --text-color: #0f172a;
   --text-muted: #475569;
-  --border-color: #cbd5e1;
+  /* 3,12:1 gegen die weisse Karte -- erfuellt WCAG 1.4.11 (3:1) fuer
+     Bedienelement-Umrisse. Vorher #cbd5e1 mit nur 1,48:1 (kaum sichtbar). */
+  --border-color: #8593a8;
   --border-focus: #2563eb;
   --danger: #dc2626;
   --alert-bg: #fef9c3;
@@ -41,7 +50,8 @@
   --accent-hover: #4ade80;
   --text-color: #f8fafc;
   --text-muted: #94a3b8;
-  --border-color: #1e293b;
+  /* 3,09:1 gegen die dunkle Karte (vorher #1e293b mit nur 1,22:1) */
+  --border-color: #556780;
   --border-focus: #60a5fa;
   --danger: #ef4444;
   --alert-bg: #0f172a;
@@ -158,19 +168,33 @@ button, input, select, textarea {
   top: 1rem;
 }
 
-/* Hide scrollbars for a cleaner native look */
-::-webkit-scrollbar {
-  display: none;
-}
-* {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+/* Scrollbalken nur auf Touch-Geraeten ausblenden (dort scrollt man mit dem
+   Finger und die Leiste stoert optisch). Am PC bleiben sie sichtbar: ohne sie
+   fehlt jeder Hinweis auf Seitenlaenge und aktuelle Position. */
+@media (pointer: coarse) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  * {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
 }
 
 /* Allow text selection in inputs and textareas */
 input, textarea {
   -webkit-user-select: auto;
   user-select: auto;
+}
+
+/* Mit Maus/Trackpad Text ueberall markieren und kopieren koennen.
+   Auf Touch bleibt die Auswahl gesperrt, damit beim Tippen auf die
+   Zaehler-Buttons nicht versehentlich Text markiert wird. */
+@media (pointer: fine) {
+  body {
+    -webkit-user-select: auto;
+    user-select: auto;
+  }
 }
 
 /* Accessible Interactive Focus */

@@ -51,6 +51,7 @@ import {
 import A11yModal from "./components/A11yModal";
 import CounterField from "./components/CounterField";
 import QuickEntryPanel, { QuickEntryConfig, DEFAULT_QUICK_CONFIG } from "./components/QuickEntryPanel";
+import ConfirmDialog, { ConfirmRequest } from "./components/ConfirmDialog";
 import HelpModal from "./components/HelpModal";
 import ManageModal from "./components/ManageModal";
 import HistoryModal from "./components/HistoryModal";
@@ -398,6 +399,9 @@ export default function App() {
 
   // Live-Sync-Status (Verbindung lebt außerhalb dieses Fensters weiter)
   const liveSync = useSyncExternalStore(subscribeLiveSync, getLiveSyncSnapshot);
+
+  // Barrierefreier Ersatz für window.confirm() (siehe ConfirmDialog.tsx)
+  const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null);
 
   // Breiter Bildschirm? Grundlage für das automatische Desktop-Layout.
   const [viewportIsWide, setViewportIsWide] = useState<boolean>(() => {
@@ -1120,25 +1124,26 @@ export default function App() {
     if (!prevRecord) return;
 
     const formattedMonth = formatMonthGerman(prevRecord.month);
-    if (
-      confirm(
-        `Möchten Sie die Zahlen und Kategorien aus dem Monat "${formattedMonth}" als Vorlage kopieren? Ihre aktuellen Zählerstände für diesen Monat werden überschrieben.`,
-      )
-    ) {
-      setReportData((prev) => ({
-        ...prev,
-        notes: prevRecord.notes || "",
-        values: prevRecord.values || {},
-      }));
-      if (prevRecord.fieldsSnapshot) {
-        setAppFields(prevRecord.fieldsSnapshot);
-      }
-      triggerToast(`Vorlage von ${formattedMonth} erfolgreich geladen!`);
-      announceToAriaAndSpeech(
-        `Vorlage von ${formattedMonth} erfolgreich geladen.`,
-        true,
-      );
-    }
+    setConfirmRequest({
+      title: "Vorlage laden?",
+      message: `Die Zahlen und Kategorien aus „${formattedMonth}“ werden als Vorlage übernommen. Ihre aktuellen Zählerstände für diesen Monat werden dabei überschrieben.`,
+      confirmLabel: "Vorlage laden",
+      onConfirm: () => {
+        setReportData((prev) => ({
+          ...prev,
+          notes: prevRecord.notes || "",
+          values: prevRecord.values || {},
+        }));
+        if (prevRecord.fieldsSnapshot) {
+          setAppFields(prevRecord.fieldsSnapshot);
+        }
+        triggerToast(`Vorlage von ${formattedMonth} erfolgreich geladen!`);
+        announceToAriaAndSpeech(
+          `Vorlage von ${formattedMonth} erfolgreich geladen.`,
+          true,
+        );
+      },
+    });
   };
 
   // --- DICTATION ENGINE ---
@@ -1448,41 +1453,46 @@ export default function App() {
     label: string,
   ) => {
     triggerHaptic(25);
-    if (
-      confirm(
-        `Möchten Sie die Kategorie "${label}" wirklich unwiderruflich löschen?`,
-      )
-    ) {
-      setAppFields((prev) => ({
-        ...prev,
-        [sectionKey]: prev[sectionKey].filter((f) => f.id !== fieldId),
-      }));
+    setConfirmRequest({
+      title: "Kategorie löschen?",
+      message: `„${label}“ wird endgültig aus dem Formular entfernt. Der bisher erfasste Wert für diesen Monat geht dabei verloren.`,
+      confirmLabel: "Endgültig löschen",
+      tone: "danger",
+      onConfirm: () => {
+        setAppFields((prev) => ({
+          ...prev,
+          [sectionKey]: prev[sectionKey].filter((f) => f.id !== fieldId),
+        }));
 
-      // Also clean up value
-      const updatedValues = { ...(reportData?.values || {}) };
-      delete updatedValues[fieldId];
-      setReportData((prev) => ({ ...prev, values: updatedValues }));
+        // Also clean up value
+        const updatedValues = { ...(reportData?.values || {}) };
+        delete updatedValues[fieldId];
+        setReportData((prev) => ({ ...prev, values: updatedValues }));
 
-      triggerToast(`Kategorie "${label}" wurde gelöscht.`);
-      announceToAriaAndSpeech(`Kategorie ${label} gelöscht.`);
-    }
+        triggerToast(`Kategorie "${label}" wurde gelöscht.`);
+        announceToAriaAndSpeech(`Kategorie ${label} gelöscht.`);
+      },
+    });
   };
 
   const handleFactoryResetFields = () => {
     triggerHaptic(40);
-    if (
-      confirm(
-        "Möchten Sie alle Formularfelder wirklich auf den Auslieferungszustand zurücksetzen? Alle Ihre selbst erstellten Kategorien werden gelöscht.",
-      )
-    ) {
-      setAppFields(DEFAULT_FIELDS_CONFIG);
-      setReportData((prev) => ({ ...prev, values: {} }));
-      setActiveTab("options");
-      triggerToast("Erfolgreich auf Standard-Felder zurückgesetzt!");
-      announceToAriaAndSpeech(
-        "Formular erfolgreich auf Standardfelder zurückgesetzt.",
-      );
-    }
+    setConfirmRequest({
+      title: "Formular zurücksetzen?",
+      message:
+        "Alle Formularfelder werden auf den Auslieferungszustand zurückgesetzt. Ihre selbst erstellten Kategorien und die Zählerstände dieses Monats werden dabei gelöscht.",
+      confirmLabel: "Zurücksetzen",
+      tone: "danger",
+      onConfirm: () => {
+        setAppFields(DEFAULT_FIELDS_CONFIG);
+        setReportData((prev) => ({ ...prev, values: {} }));
+        setActiveTab("options");
+        triggerToast("Erfolgreich auf Standard-Felder zurückgesetzt!");
+        announceToAriaAndSpeech(
+          "Formular erfolgreich auf Standardfelder zurückgesetzt.",
+        );
+      },
+    });
   };
 
   // --- START NEW MONTH (ARCHIVE & RESET) ---
@@ -1618,6 +1628,13 @@ export default function App() {
   };
 
   // --- BERICHT AN VL SENDEN (serverlos über den Teilen-Dialog) ---
+  const sendReportToVL = async () => {
+    // DSGVO-konform ohne Server: Der Bericht wird als Excel-Datei über den
+    // System-Teilen-Dialog (z. B. E-Mail an die VL) weitergegeben.
+    announceToAriaAndSpeech("Teilen-Dialog wird geöffnet, um den Bericht an die VL zu senden.");
+    await handleExportExcel();
+  };
+
   const handleSendToVL = async () => {
     triggerHaptic(25);
     if (!reportData) return;
@@ -1625,24 +1642,22 @@ export default function App() {
     // der Bericht bei der Vertriebsleitung landet.
     const warnings = getReportWarnings();
     if (warnings.length > 0) {
-      announceToAriaAndSpeech(
-        "Monatsabschluss-Check: " + warnings.join(" "),
-        true,
-      );
-      const proceed = confirm(
-        "Monatsabschluss-Check – bitte kurz prüfen:\n\n• " +
-          warnings.join("\n• ") +
-          "\n\nTrotzdem senden?",
-      );
-      if (!proceed) {
-        announceToAriaAndSpeech("Senden abgebrochen. Sie können die Angaben jetzt korrigieren.", true);
-        return;
-      }
+      setConfirmRequest({
+        title: "Monatsabschluss-Check",
+        message:
+          warnings.length === 1
+            ? "Vor dem Senden ist eine Sache aufgefallen:"
+            : `Vor dem Senden sind ${warnings.length} Dinge aufgefallen:`,
+        details: warnings,
+        confirmLabel: "Trotzdem senden",
+        cancelLabel: "Erst korrigieren",
+        onConfirm: () => {
+          void sendReportToVL();
+        },
+      });
+      return;
     }
-    // DSGVO-konform ohne Server: Der Bericht wird als Excel-Datei über den
-    // System-Teilen-Dialog (z. B. E-Mail an die VL) weitergegeben.
-    announceToAriaAndSpeech("Teilen-Dialog wird geöffnet, um den Bericht an die VL zu senden.");
-    await handleExportExcel();
+    await sendReportToVL();
   };
 
   // --- LOKALE MONATSBERICHT-ERINNERUNG (serverlos, ohne Push-Dienst) ---
@@ -2141,7 +2156,7 @@ export default function App() {
             })}
           </nav>
           <div className="p-6 text-center border-t border-[var(--border-color)]">
-             <p className="text-[10px] text-[var(--text-muted)] font-bold opacity-70">
+             <p className="text-[0.75rem] text-[var(--text-muted)] font-bold opacity-70">
                © 2026 Reinecker Vision
              </p>
           </div>
@@ -2168,13 +2183,13 @@ export default function App() {
             <h1 className="text-xl md:text-2xl font-black tracking-tight text-[var(--text-color)]">
               RV Mobil
             </h1>
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[0.75rem] font-black uppercase tracking-[0.2em] text-emerald-700">
               DSGVO & barrierefrei
             </span>
           </div>
 
           {/* Offline Auto-Save live status feedback */}
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider pt-1">
+          <div className="flex items-center gap-1.5 text-[0.75rem] font-bold text-[var(--text-muted)] uppercase tracking-wider pt-1">
             {saveStatus === "saving" ? (
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
@@ -2212,7 +2227,7 @@ export default function App() {
           <div className="flex-1 min-w-[130px] space-y-1">
             <label
               htmlFor="meta-month-input"
-              className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1"
+              className="text-[0.75rem] font-black text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1"
             >
               <Calendar className="w-3 h-3 text-[var(--accent)]" />{" "}
               Berichtsmonat:
@@ -2229,7 +2244,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setActiveTab("history")}
-              className="text-[9px] font-bold text-[var(--accent)] hover:underline flex items-center gap-1 cursor-pointer p-0.5 rounded"
+              className="text-[0.6875rem] font-bold text-[var(--accent)] hover:underline flex items-center gap-1 cursor-pointer p-0.5 rounded"
               aria-label="Frühere Monate aus dem RV Archiv wählen"
             >
               <History className="w-2.5 h-2.5" />
@@ -2241,7 +2256,7 @@ export default function App() {
           <div className="flex-1 min-w-[155px] space-y-1">
             <label
               htmlFor="meta-name-input"
-              className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1"
+              className="text-[0.75rem] font-black text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1"
             >
               <User className="w-3 h-3 text-[var(--accent)]" /> Mitarbeiter/in:
             </label>
@@ -2260,7 +2275,7 @@ export default function App() {
               autoComplete="name"
               aria-required="true"
             />
-            <span className="block text-[8px] text-[var(--text-muted)] font-semibold pt-1">
+            <span className="block text-[0.6875rem] text-[var(--text-muted)] font-semibold pt-1">
               🔒 DSGVO-sicher lokal
             </span>
           </div>
@@ -2360,7 +2375,7 @@ export default function App() {
 
       {/* Bento Header title & interactive filter toggle */}
       <div className="flex items-center justify-between mb-2 px-1">
-        <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+        <span className="text-[0.75rem] font-black text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
           📊 Monats-Fortschritt{" "}
           <span className="font-semibold text-xs text-[var(--text-muted)]/70 lowercase">
             (Bereich anklicken zum Filtern)
@@ -2374,7 +2389,7 @@ export default function App() {
               setActiveSectionTab("all");
               announceToAriaAndSpeech("Alle Filter aufgehoben.");
             }}
-            className="text-[10px] font-black text-red-500 hover:text-red-600 hover:underline flex items-center gap-1 cursor-pointer bg-red-500/10 dark:bg-red-500/20 px-2 py-0.5 rounded-md transition-all active:scale-95"
+            className="text-[0.75rem] font-black text-red-500 hover:text-red-600 hover:underline flex items-center gap-1 cursor-pointer bg-red-500/10 dark:bg-red-500/20 px-2 py-0.5 rounded-md transition-all active:scale-95"
           >
             <span>Filter aufheben ✕</span>
           </button>
@@ -2419,13 +2434,13 @@ export default function App() {
               <Eye className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="block text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider leading-tight">
+              <span className="block text-[0.6875rem] font-bold text-[var(--text-muted)] uppercase tracking-wider leading-tight">
                 Vorführungen
               </span>
               <span className="text-lg font-black text-[var(--text-color)] leading-none">
                 {s1Total}
                 {goalsConfig.enabled && (
-                  <span className="text-[10px] font-normal text-[var(--text-muted)] ml-0.5">
+                  <span className="text-[0.75rem] font-normal text-[var(--text-muted)] ml-0.5">
                     /{goalsConfig.s1}
                   </span>
                 )}
@@ -2478,13 +2493,13 @@ export default function App() {
               <GraduationCap className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="block text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider leading-tight">
+              <span className="block text-[0.6875rem] font-bold text-[var(--text-muted)] uppercase tracking-wider leading-tight">
                 Schulungen
               </span>
               <span className="text-lg font-black text-[var(--text-color)] leading-none">
                 {s2Total}
                 {goalsConfig.enabled && (
-                  <span className="text-[10px] font-normal text-[var(--text-muted)] ml-0.5">
+                  <span className="text-[0.75rem] font-normal text-[var(--text-muted)] ml-0.5">
                     /{goalsConfig.s2}
                   </span>
                 )}
@@ -2537,13 +2552,13 @@ export default function App() {
               <Sparkles className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="block text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider leading-tight">
+              <span className="block text-[0.6875rem] font-bold text-[var(--text-muted)] uppercase tracking-wider leading-tight">
                 Spezial
               </span>
               <span className="text-lg font-black text-[var(--text-color)] leading-none">
                 {s3Total}
                 {goalsConfig.enabled && (
-                  <span className="text-[10px] font-normal text-[var(--text-muted)] ml-0.5">
+                  <span className="text-[0.75rem] font-normal text-[var(--text-muted)] ml-0.5">
                     /{goalsConfig.s3}
                   </span>
                 )}
@@ -2596,13 +2611,13 @@ export default function App() {
               <Clock className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="block text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider leading-tight">
+              <span className="block text-[0.6875rem] font-bold text-[var(--text-muted)] uppercase tracking-wider leading-tight">
                 Bürozeit
               </span>
               <span className="text-lg font-black text-[var(--text-color)] leading-none">
                 {s4Hours}h
                 {goalsConfig.enabled && (
-                  <span className="text-[10px] font-normal text-[var(--text-muted)] ml-0.5">
+                  <span className="text-[0.75rem] font-normal text-[var(--text-muted)] ml-0.5">
                     /{goalsConfig.s4}
                   </span>
                 )}
@@ -2629,7 +2644,7 @@ export default function App() {
       {/* ERGONOMIC CONTROLS DASHBOARD (Streamlined, compact & optimized for screen readers) */}
       <div className="mb-3 p-2.5 rounded-xl border bg-[var(--card-bg)] border-[var(--border-color)] space-y-2 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider">
+          <span className="text-[0.75rem] font-black text-[var(--text-muted)] uppercase tracking-wider">
             Schnell-Optionen
           </span>
 
@@ -2655,7 +2670,7 @@ export default function App() {
             >
               <span aria-hidden="true">📐 </span>
               <span>Kompakt</span>
-              <span className="text-[9px] bg-black/10 dark:bg-white/10 px-1 py-0.2 rounded font-black uppercase">
+              <span className="text-[0.6875rem] bg-black/10 dark:bg-white/10 px-1 py-0.2 rounded font-black uppercase">
                 {isCompactView ? "Ein" : "Aus"}
               </span>
             </button>
@@ -2729,7 +2744,7 @@ export default function App() {
             >
               <span aria-hidden="true">🎯 </span>
               <span>Ziele</span>
-              <span className="text-[9px] bg-black/10 dark:bg-white/10 px-1 py-0.2 rounded font-black uppercase">
+              <span className="text-[0.6875rem] bg-black/10 dark:bg-white/10 px-1 py-0.2 rounded font-black uppercase">
                 {goalsConfig.enabled ? "An" : "Aus"}
               </span>
             </button>
@@ -2766,13 +2781,13 @@ export default function App() {
                   className="sr-only peer"
                 />
                 <div className="w-8 h-4 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3.5 after:transition-all peer-checked:bg-indigo-600"></div>
-                <span className="ml-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase">
+                <span className="ml-1.5 text-[0.75rem] font-bold text-[var(--text-muted)] uppercase">
                   {goalsConfig.enabled ? "Aktiviert" : "Deaktiviert"}
                 </span>
               </label>
             </div>
 
-            <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">
+            <p className="text-[0.75rem] text-[var(--text-muted)] leading-relaxed">
               Tragen Sie hier Ihre persönlichen Monatsziele ein. Wenn die Ziele
               aktiviert sind, zeigt Ihnen das Dashboard in den Kacheln Ihren
               aktuellen Fortschritt mit farbigen Balken an.
@@ -2780,7 +2795,7 @@ export default function App() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div>
-                <label className="block text-[9px] font-bold text-[var(--text-muted)] mb-1 uppercase tracking-wider">
+                <label className="block text-[0.6875rem] font-bold text-[var(--text-muted)] mb-1 uppercase tracking-wider">
                   Vorführungen
                 </label>
                 <input
@@ -2797,7 +2812,7 @@ export default function App() {
                 />
               </div>
               <div>
-                <label className="block text-[9px] font-bold text-[var(--text-muted)] mb-1 uppercase tracking-wider">
+                <label className="block text-[0.6875rem] font-bold text-[var(--text-muted)] mb-1 uppercase tracking-wider">
                   Schulungen
                 </label>
                 <input
@@ -2814,7 +2829,7 @@ export default function App() {
                 />
               </div>
               <div>
-                <label className="block text-[9px] font-bold text-[var(--text-muted)] mb-1 uppercase tracking-wider">
+                <label className="block text-[0.6875rem] font-bold text-[var(--text-muted)] mb-1 uppercase tracking-wider">
                   Spezialprodukte
                 </label>
                 <input
@@ -2831,7 +2846,7 @@ export default function App() {
                 />
               </div>
               <div>
-                <label className="block text-[9px] font-bold text-[var(--text-muted)] mb-1 uppercase tracking-wider">
+                <label className="block text-[0.6875rem] font-bold text-[var(--text-muted)] mb-1 uppercase tracking-wider">
                   Bürozeit (h)
                 </label>
                 <input
@@ -3156,7 +3171,7 @@ export default function App() {
               key={i}
               type="button"
               onClick={() => handleApplyNoteTemplate(tpl.text)}
-              className="px-2.5 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:border-[var(--border-focus)] hover:bg-slate-50 dark:hover:bg-slate-900 text-[11px] font-black text-[var(--text-color)] transition-all cursor-pointer active:scale-95 focus-visible:ring-2"
+              className="px-2.5 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:border-[var(--border-focus)] hover:bg-slate-50 dark:hover:bg-slate-900 text-[0.75rem] font-black text-[var(--text-color)] transition-all cursor-pointer active:scale-95 focus-visible:ring-2"
               title={`Text einfügen: "${tpl.text}"`}
             >
               {tpl.label}
@@ -3215,13 +3230,20 @@ export default function App() {
         className="mt-12 pt-6 pb-2 border-t border-[var(--border-color)] text-center text-xs font-bold text-[var(--text-muted)] space-y-4"
         role="contentinfo"
       >
-        <p className="opacity-80 text-[10px]">
+        <p className="opacity-80 text-[0.75rem]">
           © 2026 Reinecker Vision GmbH | RV Mobil – Konzeptioniert &amp;
           entwickelt von Marc Petry Stramov
         </p>
       </footer>
       </div>
       )}
+
+      {/* BARRIEREFREIER BESTÄTIGUNGSDIALOG (Ersatz für window.confirm) */}
+      <ConfirmDialog
+        request={confirmRequest}
+        onClose={() => setConfirmRequest(null)}
+        announce={announceToAriaAndSpeech}
+      />
 
       {/* TOAST POPUP (With ARIA live attribute) */}
       {toastText && (
@@ -3441,7 +3463,7 @@ export default function App() {
                 </button>
 
                 <div className="flex-1 min-w-0 text-center px-1">
-                  <span className="block text-[10px] font-black uppercase tracking-wider text-[var(--accent)] truncate">
+                  <span className="block text-[0.75rem] font-black uppercase tracking-wider text-[var(--accent)] truncate">
                     Bereich {secInfo.num}: {secInfo.name} ({activeIndex + 1}/
                     {visibleFields.length})
                   </span>
@@ -3528,7 +3550,7 @@ export default function App() {
                       className={`w-5 h-5 transition-transform ${isSelected ? "scale-110 stroke-[2.5]" : "stroke-[1.8]"}`}
                     />
                   </div>
-                  <span className="text-[10px] mt-0.5 tracking-tight truncate max-w-full">
+                  <span className="text-[0.75rem] mt-0.5 tracking-tight truncate max-w-full">
                     {tab.label}
                   </span>
                   {isSelected && (
