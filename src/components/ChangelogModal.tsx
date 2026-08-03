@@ -31,6 +31,18 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="space-y-6">
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+            <Bug className="w-5 h-5 text-red-500" />
+            <span>Version 0.9.7: Zähler-Tasten auf dem Handy in richtiger Reihenfolge</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Auf dem Handy standen die Tasten in einer anderen Reihenfolge als am PC.</strong> Statt „−5, Minus, Zahl, Plus, +5“ war es „Minus, Zahl, Plus, −5, +5“ – das „−5“ saß also rechts vom Plus. Jetzt ist die Reihenfolge auf jedem Gerät dieselbe.</li>
+            <li><strong>Die Tastenreihe bleibt immer in einer Zeile.</strong> Wird der Platz knapp, geben die Tasten ein wenig nach, statt umzubrechen. Geprüft auf allen gängigen iPhone-Breiten und in allen drei Schriftgrößen – die Zahl bleibt dabei immer vollständig lesbar.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
             <Sparkles className="w-5 h-5 text-violet-500" />
             <span>Version 0.9.6: Ruhigeres, einheitlicheres Erscheinungsbild</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>

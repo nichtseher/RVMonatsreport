@@ -131,8 +131,22 @@ export default React.memo(function CounterField({
   // Symbole, keinen Text. Mit rem wuchsen sie bei "Grosse Schrift" mit --
   // die Zeile wurde dann breiter als die Karte und die Minus-Taste rutschte
   // auf einem 360-px-Handy bis zu 163 px aus dem Bildschirm heraus (gemessen).
-  const buttonSize = isCompact ? "w-[44px] h-[44px]" : "w-[56px] h-[56px]";
-  const quickButtonSize = isCompact ? "w-[36px] h-[36px] text-[0.75rem]" : "w-[44px] h-[44px] text-xs";
+  // min-w: Auf sehr schmalen Geraeten (320 px) duerfen auch Plus und Minus
+  // etwas nachgeben, statt aus der Karte zu ragen. Ueberall sonst 56 px.
+  const buttonSize = isCompact
+    ? "w-[44px] h-[44px] min-w-[44px]"
+    : "w-[56px] h-[56px] min-w-[48px]";
+  /*
+    Die Fuenferschritte duerfen als Einzige schrumpfen (44 -> 36 px), damit die
+    Zeile auch bei "Extra grosse Schrift" auf einem schmalen Handy EINE Zeile
+    bleibt. Sie sind reine Bequemlichkeit fuer sehende Touch-Nutzer
+    (aria-hidden, nicht im Tab-Lauf) -- ein Umbruch dort ist schlimmer als
+    36 px, und die verbindliche WCAG-Grenze von 24 px bleibt weit uebertroffen.
+    Wo Platz ist, sind es unveraendert 44 px.
+  */
+  const quickButtonSize = isCompact
+    ? "w-[36px] h-[36px] min-w-[32px] text-[0.75rem]"
+    : "w-[44px] h-[44px] min-w-[36px] text-xs";
   const iconSize = isCompact ? "w-4 h-4" : "w-6 h-6";
   // Die Zahl selbst ist Text und MUSS mitwachsen (WCAG 1.4.4), darf dafuer
   // aber schrumpfen, wenn der Platz knapp wird.
@@ -140,7 +154,9 @@ export default React.memo(function CounterField({
 
   return (
     <div 
-      className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl bg-slate-50 dark:bg-slate-800/30 p-2.5 sm:p-4 border border-slate-100 dark:border-slate-800/60 transition-all focus-within:ring-2 focus-within:ring-blue-500/50 hover:border-blue-500/30 gap-3`}
+      /* Innenabstand in Pixeln: Er muss nicht mit der Schriftgroesse wachsen
+         und nahm der Bedienzeile sonst genau den Platz weg, den sie braucht. */
+      className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl bg-slate-50 dark:bg-slate-800/30 p-[10px] sm:p-4 border border-slate-100 dark:border-slate-800/60 transition-all focus-within:ring-2 focus-within:ring-blue-500/50 hover:border-blue-500/30 gap-3`}
     >
       <div className="flex-1 pr-2 min-w-0">
         <label 
@@ -166,25 +182,43 @@ export default React.memo(function CounterField({
       </div>
 
       {/*
-        Umbruchfaehige Bedienzeile: Passt alles nebeneinander, bleibt es eine
-        Zeile. Wird es eng (schmales Handy, grosse Schrift), rutschen die
-        Fuenferschritte in eine zweite Zeile -- statt wie bisher aus der Karte
-        und aus dem Bildschirm zu laufen. Ab 640 px stellt sm:order-* die
-        gewohnte Reihenfolge "-5 - Zahl + +5" wieder her.
+        Bedienzeile: "-5  -  Zahl  +  +5" -- auf JEDEM Geraet in derselben
+        Reihenfolge.
+
+        Bis 0.9.6 waren die Fuenferschritte auf dem Handy per CSS-order ans
+        Ende gestellt (-, Zahl, +, -5, +5), damit ein Umbruch sauber trennt.
+        Praxis-Rueckmeldung vom iPhone: Es bricht bei ueblicher Schriftgroesse
+        gar nicht um, man sah nur eine andere Reihenfolge als am PC -- das
+        "-5" stand rechts vom Plus. Deshalb jetzt ueberall gleich; der Umbruch
+        bleibt als Notnagel fuer sehr schmale Geraete mit sehr grosser Schrift.
       */}
-      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto sm:flex-nowrap sm:justify-end select-none">
+      <div className="flex flex-nowrap items-center justify-center gap-[4px] sm:gap-2 w-full sm:w-auto sm:justify-end select-none">
+        {/* Quick -5 Button (Hidden from screen-readers to avoid cluttering tab order/swipe sequence for blind users) */}
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-hidden="true"
+          onClick={() => handleQuickChange(-1)}
+          className={`${quickButtonSize} rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-red-500 font-black transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
+        >
+          -5
+        </button>
+
         {/* Decrement Button (Optimized for Touch-Only) */}
         <button
           type="button"
           onClick={handleDecrement}
           aria-label="Verringern"
-          className={`${buttonSize} shrink-0 order-1 sm:order-2 rounded-full flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-[var(--text-color)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:bg-slate-300 dark:active:bg-slate-700 touch-manipulation shadow-sm`}
+          className={`${buttonSize} rounded-full flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-[var(--text-color)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:bg-slate-300 dark:active:bg-slate-700 touch-manipulation shadow-sm`}
         >
           <Minus className={iconSize} aria-hidden="true" />
         </button>
 
         {/* Input Spinbox (Optimized Keyboard for Touch) */}
-        <div className="relative order-2 sm:order-3 flex-1 min-w-[3rem] sm:flex-none sm:w-20">
+        {/* Grenzen in Pixeln, nicht in rem: rem waechst mit der
+            Schrifteinstellung mit, dadurch sprengte gerade "Extra gross" die
+            Zeile. Die Zahl selbst skaliert weiterhin (WCAG 1.4.4). */}
+        <div className="relative flex-1 min-w-[56px] max-w-[72px] sm:flex-none sm:w-20 sm:max-w-none">
           <input
             id={inputId}
             type="number"
@@ -220,20 +254,9 @@ export default React.memo(function CounterField({
           type="button"
           onClick={handleIncrement}
           aria-label="Erhöhen"
-          className={`${buttonSize} shrink-0 order-3 sm:order-4 rounded-full flex items-center justify-center bg-[var(--primary)] text-[var(--primary-text)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:opacity-85 touch-manipulation shadow-sm`}
+          className={`${buttonSize} rounded-full flex items-center justify-center bg-[var(--primary)] text-[var(--primary-text)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:opacity-85 touch-manipulation shadow-sm`}
         >
           <Plus className={iconSize} aria-hidden="true" />
-        </button>
-
-        {/* Quick -5 Button (Hidden from screen-readers to avoid cluttering tab order/swipe sequence for blind users) */}
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-hidden="true"
-          onClick={() => handleQuickChange(-1)}
-          className={`${quickButtonSize} shrink-0 order-4 sm:order-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-red-500 font-black transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
-        >
-          -5
         </button>
 
         {/* Quick +5 Button (Hidden from screen-readers to avoid cluttering tab order/swipe sequence for blind users) */}
@@ -242,7 +265,7 @@ export default React.memo(function CounterField({
           tabIndex={-1}
           aria-hidden="true"
           onClick={() => handleQuickChange(1)}
-          className={`${quickButtonSize} shrink-0 order-5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-emerald-500 font-black transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
+          className={`${quickButtonSize} rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-emerald-500 font-black transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
         >
           +5
         </button>

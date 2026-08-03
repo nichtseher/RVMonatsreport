@@ -10,6 +10,69 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-03 — v0.9.7: Zählerzeile auf dem Handy — Reihenfolge korrigiert
+
+Praxis-Rückmeldung von Marcs iPhone: „Am PC siehts gut aus aber am Smartphone
+nicht." Genau die Art Befund, die in dieser Umgebung nicht entstehen kann.
+
+### Ursache — ein Fehler aus 0.9.0
+
+Die Bedienzeile stand auf dem Handy in einer **anderen Reihenfolge** als am PC:
+
+| | Reihenfolge |
+|---|---|
+| PC (ab 640 px) | `−5  −  [Zahl]  +  +5` |
+| Handy | `−  [Zahl]  +  −5  +5` |
+
+Das „−5“ saß also rechts vom Plus. Das war in 0.9.0 Absicht: Die
+Fünferschritte waren per `order-*` ans Ende gestellt, damit ein **Umbruch**
+sauber in `[− Zahl +]` und `[−5 +5]` zerfällt. Der Denkfehler: Bei üblicher
+Schriftgröße bricht die Zeile gar nicht um — man sieht nur die verdrehte
+Reihenfolge. Am PC fiel es nie auf, weil dort `sm:order-*` die richtige
+Reihenfolge wiederherstellt. Nachgemessen bei 390 px: eine Zeile, Reihenfolge
+verdreht.
+
+### Umsetzung
+
+1. **`order-*` entfernt**, die `−5`-Taste im DOM vor die Minus-Taste gezogen.
+   Damit gilt überall dieselbe Reihenfolge.
+2. **Kein Umbruch mehr** (`flex-nowrap`). Wird es eng, geben die Elemente nach
+   statt umzubrechen: Fünferschritte 44 → 36 px, Plus/Minus 56 → 48 px. Beides
+   nur als Untergrenze — wo Platz ist, bleibt es bei 44 bzw. 56 px.
+3. **Grenzen in Pixeln statt in rem.** `min-w-[2.75rem]` und `max-w-[5.5rem]`
+   am Zahlenfeld wuchsen mit der Schrifteinstellung mit (bei „Extra groß“ auf
+   66 bzw. 132 px) und sprengten die Zeile genau dann, wenn der Platz ohnehin
+   knapp war. Die Zahl selbst skaliert weiterhin (WCAG 1.4.4) — nur ihr
+   Rahmen nicht.
+
+Beim Umbau zweimal gestolpert, beide Male vom prüfenden Skript abgefangen,
+bevor etwas geschrieben wurde: erst passte der Anker nicht (die Datei nutzt
+CRLF, mein Suchtext LF), dann schrumpften die Tasten trotz `min-w` nicht —
+weil Flexbox bei gesetztem `flex-wrap` lieber umbricht als schrumpft.
+
+### Geprüft
+
+Alle gängigen iPhone-Breiten × alle drei Schriftgrößen, jeweils Reihenfolge,
+Zeilenzahl, Überstand über den Kartenrand und ob „999“ noch vollständig ins
+Zahlenfeld passt:
+
+| Breite | Normal | Groß | Extra groß |
+|---|---|---|---|
+| 375 px (SE 2022, 13 mini) | eine Zeile | eine Zeile | eine Zeile |
+| 390 px (13, 14) | eine Zeile | eine Zeile | eine Zeile |
+| 393 px (15, 16) | volle Tastengröße | volle Tastengröße | volle Tastengröße |
+| 320 px (SE 2016) | eine Zeile | 5 px über den Kartenrand | 12 px darüber |
+
+„999“ passt in **jeder** Kombination vollständig ins Feld. Kein seitliches
+Scrollen der Seite. Die Report-Seite wurde bei 390 px zusätzlich systematisch
+nach verrutschten Elementen abgesucht — ausser der Zählerzeile war nichts
+auffällig.
+
+**Offen:** die 320-px-Breite (iPhone SE von 2016) bei grosser Schrift. Dort
+stösst die Zeile an den Kartenrand. Betrifft kein aktuelles Gerät.
+
+---
+
 ## 2026-08-03 — v0.9.6: Ein Symbolsystem, drei Schriftgewichte
 
 Grundlage ist das Design-Inventar (siehe unten). Umgesetzt sind die Schritte 1
