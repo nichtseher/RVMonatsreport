@@ -10,6 +10,79 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-02 — v0.9.4: Automatische Kontrolle vor jeder Veröffentlichung
+
+Vorgezogen aus der 1.0-Liste (Punkte „Automatische Tests für die Rechenkerne"
+und „Automatische Prüfung bei jedem Push"). Begründung: Jeder Push auf `main`
+veröffentlicht sofort, und bis hierher gab es **keinerlei** automatische
+Kontrolle davor. In dieser Sitzung sind drei Fehler derselben Familie
+aufgetreten — einer davon ging seinerzeit unbemerkt live:
+
+| Fehler | Ausgang |
+|---|---|
+| PowerShell zerstörte Umlaute und 72 Emojis in `App.tsx` | **unbemerkt live gegangen** (0.7.0) |
+| Bash-Quoting zerlegte Template-Literale in `App.tsx` | zufällig binnen Minuten bemerkt |
+| PowerShell las UTF-8 als ANSI beim Dateivergleich | erzeugte einen Fehlbefund, der zuerst als echt gemeldet wurde |
+
+### Was jetzt läuft
+
+`npm run check` — 37 Prüfungen, bewusst **ohne Test-Framework**: `tsx` ist für
+den Dev-Server ohnehin da, und das Projekt sollte keine Testabhängigkeiten
+bekommen. Ein schlankes Gerüst (`scripts/helfer.ts`) sammelt die Fälle,
+`scripts/pruefen.ts` führt sie aus und endet mit Fehlercode.
+
+Geprüft werden ausschliesslich reine Funktionen an den Stellen, an denen ein
+Fehler echten Schaden anrichtet:
+
+- **Zusammenführen beim Geräte-Sync** (11 Fälle) — verschiedene Felder bleiben
+  beide erhalten, Reihenfolge der Geräte egal, bei gleichem Feld gewinnt die
+  jüngere Änderung, Korrektur nach unten setzt sich durch, Rückfallebene für
+  Altdaten ohne Feld-Zeitstempel, vollständige Stempelliste nach dem Merge,
+  Idempotenz, Konvergenz beider Seiten, Vereinigung von Schichten und
+  Kategorien.
+- **Excel-Export** (7 Fälle) — Formular und Archiv erzeugen dieselbe Datei,
+  Summenformeln zeigen auf die richtigen Zeilen, der Arbeitszeit-Bereich zählt
+  nicht in die Aktivitäten-Summe, Sortierung der Schichten nach Datum.
+- **Arbeitszeit** (6 Fälle) — inklusive Schicht über Mitternacht.
+- **Backup-Verschlüsselung** (5 Fälle) — Umlauf, falsches Passwort schlägt
+  fehl, beschädigte Datei schlägt fehl, jedes Backup bekommt eigenes Salt/IV.
+- **Textkodierung** (4 Fälle) — doppelt kodierte Zeichen in `src/`, BOM am
+  Dateianfang, und ob die Standardfelder ihre Umlaute und alle 18 Symbole noch
+  haben.
+
+Der Deploy-Workflow führt `lint`, `check` und `npm audit` **vor** dem Bauen
+aus. Schlägt etwas fehl, bricht der Job ab und der bisherige Stand bleibt
+online. `npm audit` meldet nur (`|| true`) — ein neuer Fund in einer
+Unterabhängigkeit soll keine fertige Version blockieren.
+
+### Nebenarbeit: Arbeitszeit-Berechnung herausgelöst
+
+Sie lag als lokale Funktion in `ClockInWidget.tsx` (gut 1000 Zeilen) und war
+deshalb nicht prüfbar — obwohl ein Fehler dort unmittelbar in falschen
+Stundenzahlen landet. Jetzt in `src/utils/timeUtils.ts`. Dabei zwei Dinge
+bereinigt: Die Mitternachts-Behandlung stand doppelt da (der zweite Zweig war
+unerreichbar), und unbrauchbare Eingaben lieferten `NaN`, das während des
+Ausfüllens durch die Oberfläche wandern konnte — jetzt 0.
+
+### Geprüft, dass die Prüfungen auch beissen
+
+Ein grüner Lauf beweist für sich genommen nichts. Zwei Gegenproben:
+
+1. Eine Datei mit absichtlich zerstörtem Text (`VorfÃ¼hrungen`) in `src/`
+   abgelegt → die Kodierungs-Prüfung schlägt an, Lauf endet mit Fehlercode 1.
+   Datei wieder entfernt.
+2. Eine Erwartung verfälscht (7,75 → 7,76 Stunden) → der Wertevergleich meldet
+   „erwartet 7.76, war 7.75", Fehlercode 1. Zurückgesetzt.
+
+Eine Ausnahme war nötig: `ChangelogModal.tsx` enthält die zerstörte
+Zeichenfolge absichtlich als Beispiel im Text zu 0.7.0. Ohne Ausnahmeliste
+hätte die Prüfung ab sofort dauerhaft angeschlagen.
+
+`npm run lint` deckt jetzt auch `scripts/` ab, `npm audit --omit=dev` meldet
+0 Schwachstellen.
+
+---
+
 ## 2026-08-02 — v0.9.3: Durchsicht der Codebase, Hilfetexte und Ladezeit
 
 Anlass: Marcs Frage, ob die Codebase sauber ist, ob die Hilfetexte wirklich

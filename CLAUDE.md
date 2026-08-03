@@ -15,10 +15,15 @@ The UI is German and addresses the user formally ("Sie"). Spoken announcements a
 ```bash
 npm install
 npm run dev        # tsx server.ts — dev server on http://localhost:3000 (Express + Vite middleware, HMR)
-npm run lint       # tsc --noEmit — this is the ONLY check; no ESLint config, no test framework
+npm run lint       # tsc --noEmit (covers src/ and scripts/); no ESLint config
+npm run check      # tsx scripts/pruefen.ts — 37 checks, no test framework
 npm run build      # vite build (client) + esbuild bundles server.ts -> dist/server.cjs
 npm run start      # node dist/server.cjs — serve the production build
 ```
+
+`npm run check` covers the pure functions where a mistake does real damage: sync merge (including the per-field timestamps), Excel sum formulas, working-time math across midnight, backup encryption, and a scan of `src/` for double-encoded characters and BOMs. Add cases there rather than writing another throwaway script. `scripts/checks/kodierung.ts` carries an allowlist — `ChangelogModal.tsx` contains mojibake on purpose, as an example in the 0.7.0 entry.
+
+The deploy workflow runs `lint`, `check` and `npm audit` **before** building, so a failure leaves the previous version online. Anything not expressible as a pure-function check (UI geometry, screen-reader behavior, real devices) still has to be verified by hand — see below.
 
 **Every push to `main` publishes to production immediately.** `.github/workflows/deploy.yml` runs `npm ci && npm run build` and publishes via `actions/deploy-pages` on every push — verified 2026-08-02: after a plain `git push origin main` (no `npm run deploy`), the workflow finished in ~33s and the live site served assets byte-identical to a local build. Never push work that isn't verified. `npm run deploy` (gh-pages branch) still exists but does not determine what is live — treat it as dead weight.
 

@@ -14,6 +14,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { TimeLog } from "../types";
+import { berechneNettoStunden } from "../utils/timeUtils";
 import ConfirmDialog, { ConfirmRequest } from "./ConfirmDialog";
 
 interface ClockInWidgetProps {
@@ -267,28 +268,9 @@ export default React.memo(function ClockInWidget({
     );
   };
 
-  const calculateManualDuration = (
-    cin: string,
-    cout: string,
-    breaks: number,
-  ) => {
-    const [inH, inM] = cin.split(":").map(Number);
-    const [outH, outM] = cout.split(":").map(Number);
-
-    let inMinutes = inH * 60 + inM;
-    let outMinutes = outH * 60 + outM;
-
-    if (outMinutes < inMinutes) {
-      outMinutes += 24 * 60;
-    }
-
-    const rawDiffMinutes = outMinutes >= inMinutes ? outMinutes - inMinutes : outMinutes + 24 * 60 - inMinutes; // Nachtschicht über Mitternacht
-    const netMinutes = Math.max(0, rawDiffMinutes - breaks);
-    return Math.round((netMinutes / 60) * 100) / 100;
-  };
-
   const getCalculatedManualShiftValues = () => {
-    const netHours = calculateManualDuration(
+    // Rechnung liegt in utils/timeUtils.ts, damit sie prüfbar ist
+    const netHours = berechneNettoStunden(
       manualClockIn,
       manualClockOut,
       manualBreakMinutes,

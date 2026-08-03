@@ -31,6 +31,19 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="space-y-6">
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+            <ShieldCheck className="w-5 h-5 text-emerald-500" />
+            <span>Version 0.9.4: Automatische Kontrolle vor jeder Veröffentlichung</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-semibold text-[var(--text-muted)]">
+            <li><strong>An dieser Version sehen Sie nichts – und das ist der Zweck.</strong> Bisher wurde jede Änderung unmittelbar veröffentlicht, ohne dass irgendetwas sie vorher geprüft hat. Ab jetzt laufen bei jeder Veröffentlichung 37 automatische Kontrollen; schlägt eine fehl, bleibt die bisherige Fassung online.</li>
+            <li><strong>Geprüft werden die Stellen, an denen ein Fehler wirklich weh tut:</strong> das Zusammenführen zweier Geräte, die Summenformeln im Excel-Export, die Arbeitszeit-Berechnung (auch über Mitternacht) und die Verschlüsselung der Datensicherung.</li>
+            <li><strong>Und der Fehler, der schon einmal unbemerkt live ging:</strong> Bei einem Bearbeitungsfehler wurden früher alle Umlaute und Symbole in den Kategorienamen zerstört – sichtbar nur für neu installierte Geräte. Genau darauf wird jetzt bei jeder Veröffentlichung geprüft.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
             <Activity className="w-5 h-5 text-cyan-500" />
             <span>Version 0.9.3: Schnellerer Start, ehrlichere Meldungen, korrigierte Hilfe</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>

@@ -1,6 +1,6 @@
 # Roadmap — RV Monatsreport (RV Mobil)
 
-Stand: 2026-08-02, Version 0.9.0
+Stand: 2026-08-02, Version 0.9.4
 
 Diese Roadmap ist aus **gemessenen Befunden** entstanden, nicht aus Vermutungen.
 Wo eine Zahl steht, wurde sie im Browser nachgemessen. Punkte ohne Beleg sind
@@ -59,6 +59,30 @@ Rückweg; genau das ist jetzt umgesetzt.
 
 ---
 
+## Was 0.9.4 gebracht hat (erledigt)
+
+Die beiden 1.0-Punkte „Automatische Tests für die Rechenkerne" und
+„Automatische Prüfung bei jedem Push" sind umgesetzt — vorgezogen, weil jeder
+Push sofort veröffentlicht und es bis dahin **keinerlei** automatische
+Kontrolle gab.
+
+- `npm run check` prüft 37 Fälle ohne Test-Framework (`tsx` genügt):
+  Zusammenführen beim Geräte-Sync inklusive der feldweisen Zeitstempel,
+  Excel-Summenformeln, Arbeitszeit über Mitternacht, Backup-Ver- und
+  -Entschlüsselung, stabile Textform.
+- Dazu die Prüfung auf **doppelt kodierte Zeichen** in `src/` — der Fehler,
+  der 0.7.0 unbemerkt live ging. Gegengeprobt: Mit absichtlich zerstörtem Text
+  schlägt sie an und bricht mit Fehlercode ab.
+- Der Deploy-Workflow führt `lint`, `check` und `npm audit` **vor** dem Bauen
+  aus. Schlägt etwas fehl, wird nichts veröffentlicht und der bisherige Stand
+  bleibt online.
+- Nebenbei: Die Arbeitszeit-Berechnung lag als lokale Funktion in der über
+  1000 Zeilen langen `ClockInWidget.tsx` und war dadurch nicht prüfbar. Sie
+  liegt jetzt in `src/utils/timeUtils.ts` und liefert bei unbrauchbaren
+  Eingaben 0 statt `NaN`.
+
+---
+
 ## Version 0.9.x — was offen blieb
 
 ### 1. Test auf echten Geräten (höchste Priorität, blockiert 1.0)
@@ -103,19 +127,7 @@ Die Datei hat rund 3.500 Zeilen und enthält Zustand, Speicherlogik, Export,
 Sprachausgabe und die komplette Oberfläche. Jede Änderung daran ist riskanter
 als nötig. Aufteilen in Bereiche (Formular, Export, Speicher, Sprache).
 
-### 6. Automatische Tests für die Rechenkerne
-Bisher gibt es **keine Tests**. Sinnvoll für: Arbeitszeit über Mitternacht,
-Excel-Summenformeln, Zusammenführen beim Geräte-Sync, Ver-/Entschlüsselung des
-Backups. Das sind die Stellen, an denen ein Fehler echten Schaden anrichtet.
-
-### 7. Automatische Prüfung bei jedem Push
-Aktuell laufen `lint` und `build` nur, wenn jemand daran denkt. Eine
-GitHub-Action, die beides plus `npm audit` bei jedem Push ausführt, hätte den
-Encoding-Schaden zwar nicht gefunden (siehe unten), aber sie fängt alles ab,
-was den Build bricht. **Zusätzlich nötig:** eine Prüfung auf doppelt kodierte
-Zeichen — genau dieser Fehler ging unbemerkt live.
-
-### 8. Screenreader-Abnahme
+### 6. Screenreader-Abnahme
 Vollständiger Durchgang durch alle Bereiche mit NVDA und VoiceOver. Das kann
 nur der Nutzer selbst leisten; das Ergebnis entscheidet über die 1.0.
 

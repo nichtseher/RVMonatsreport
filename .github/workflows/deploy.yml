@@ -39,6 +39,21 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      # Ab hier wird geprueft, BEVOR gebaut und veroeffentlicht wird. Jeder
+      # Push auf main geht sofort live -- ohne dieses Tor gab es keinerlei
+      # automatische Kontrolle. Schlaegt ein Schritt fehl, bricht der Job ab
+      # und der bisherige Stand bleibt online.
+      - name: Typen pruefen
+        run: npm run lint
+
+      - name: Rechenkerne und Textkodierung pruefen
+        run: npm run check
+
+      - name: Bekannte Sicherheitsluecken melden
+        # Nur Bericht, kein Abbruch: Ein neuer Fund in einer Unterabhaengigkeit
+        # soll nicht die Veroeffentlichung einer fertigen Version blockieren.
+        run: npm audit --omit=dev || true
+
       - name: Build Application
         run: npm run build
 
