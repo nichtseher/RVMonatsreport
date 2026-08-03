@@ -83,6 +83,27 @@ Kontrolle gab.
 
 ---
 
+## Was 0.9.5 gebracht hat (erledigt)
+
+Vollständige Prüfung des Sync-Bereichs am laufenden System (Konzept und
+Belege: [KONZEPT-0.9.5.md](KONZEPT-0.9.5.md)). Der Bereich lief in seinen
+normalen Abläufen, hatte aber drei Lücken — zwei davon reproduziert:
+
+- **Der Import prüfte die Struktur nicht.** Ein Paket mit gültigem JSON, aber
+  unsinnigem Inhalt führte beim Ersetzen in den Fehlerbildschirm. Jetzt prüft
+  `pruefeSyncPaket()` jedes eingehende Paket — im Sync-Fenster, im
+  Live-Kanal und beim Einspielen einer Datensicherung.
+- **„Alles ersetzen" löste mit einem Tipp aus.** Jetzt mit Rückfrage und
+  konkreten Zahlen (Monate hier, Monate im Paket).
+- **Der kopierte Textcode war unverschlüsselt**, während das Fenster zum
+  Mailversand riet und gleichzeitig „ohne Zwischenspeicherung auf fremden
+  Servern" versprach. Jetzt optionaler Passwortschutz (`RVC2:`, AES-GCM) und
+  ehrliche Hinweise pro Übertragungsweg.
+
+`npm run check` deckt jetzt 52 Fälle ab (vorher 37).
+
+---
+
 ## Version 0.9.x — was offen blieb
 
 ### 1. Test auf echten Geräten (höchste Priorität, blockiert 1.0)

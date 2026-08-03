@@ -81,6 +81,10 @@ Two independent transfer modes share one payload shape:
 1. **One-shot transfer** — QR chunks (`RV1|<id>|<seq>|<total>|<z|u>|<data>`, `CHUNK_SIZE` in `DeviceSyncModal.tsx`) or an equivalent copy/paste text code (`RVC1:<z|u>:<base64>`), compressed with `CompressionStream`. The receiver chooses "merge" or "replace".
 2. **Live connection** — WebRTC `RTCDataChannel`, no ICE servers, paired via an offer/answer exchange sent through the same QR/text-code mechanism. Two codes are structurally unavoidable without a signaling server; see ROADMAP.md before revisiting that.
 
+Code building/parsing lives in `src/utils/syncCode.ts` (not in the modal). A text code is `RVC1:` (compressed + base64, **not encrypted** — anyone holding it can read everything) or `RVC2:` (AES-GCM via the same `crypto.ts` as the backup, password optional and applied at copy time, because PBKDF2 must not run on every keystroke). Pairing codes stay unencrypted on purpose: they carry no report data.
+
+**Everything arriving from outside goes through `pruefeSyncPaket()` (`src/utils/syncSchema.ts`) before it touches state** — sync import (both strategies, including the live channel) and backup restore. Without it, a syntactically valid but structurally wrong packet crashed the app into the ErrorBoundary; that is reproduced as a check case. Payloads carry `app: "rvmobil"`, `fmt: 1`; a missing identifier means "pre-0.9.5" and is still accepted after the structural check. Unknown extra fields are deliberately tolerated so older and newer versions interoperate.
+
 **The live connection belongs to `src/utils/liveSync.ts`, not to the sync window.** It is a module singleton exposed to React through `useSyncExternalStore`; `App.tsx` registers current export/merge callbacks via `registerLiveSyncHandlers` on every relevant state change. Closing the sync screen must not drop an established connection — the whole point is that you leave that screen to enter numbers.
 
 Two subtleties in `liveSync.ts` that look like details and are not:

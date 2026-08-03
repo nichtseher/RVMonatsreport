@@ -44,6 +44,7 @@ import {
 } from "./types";
 import { mergeSyncPayload } from "./utils/merge";
 import { stableStringify } from "./utils/stableJson";
+import { pruefeSyncPaket, PAKET_APP, PAKET_FORMAT } from "./utils/syncSchema";
 // Eine Quelle für die Monatsnamen: Dieselbe Funktion lag zuvor zusätzlich
 // hier und in HistoryModal.tsx -- drei Kopien, die auseinanderlaufen konnten.
 import { formatMonthGerman } from "./utils/dateUtils";
@@ -1777,7 +1778,16 @@ export default function App() {
   // ebenso wenig) -- er war reiner Ballast in jeder Nachricht. Die Schichten
   // stecken ohnehin in reportData und im Archiv.
   const buildSyncPayload = useCallback((): string => {
-    return stableStringify({ appFields, history, carryover, reportData });
+    // app/fmt seit 0.9.5: Damit lässt sich ein fremder oder unvollständiger
+    // Code klar als solcher erkennen, statt ihn zu erraten (siehe syncSchema).
+    return stableStringify({
+      app: PAKET_APP,
+      fmt: PAKET_FORMAT,
+      appFields,
+      history,
+      carryover,
+      reportData,
+    });
   }, [appFields, history, carryover, reportData]);
 
   /**
@@ -1807,7 +1817,20 @@ export default function App() {
   const handleSyncImport = useCallback(
     (dataStr: string, strategy: "merge" | "replace", options?: { silent?: boolean }): boolean => {
       try {
-        const parsed = JSON.parse(dataStr);
+        const roh = JSON.parse(dataStr);
+        // Letzte Verteidigungslinie: Auch der Live-Kanal und ältere Fassungen
+        // können unbrauchbare Pakete liefern. Ungeprüft übernommen führte das
+        // direkt in den Fehlerbildschirm (reproduziert am 2026-08-03).
+        const geprueft = pruefeSyncPaket(roh);
+        if (!geprueft.ok) {
+          console.error("Sync-Paket abgelehnt:", geprueft.grund);
+          if (!options?.silent) {
+            triggerToast(geprueft.grund);
+            announceToAriaAndSpeech(geprueft.grund, true);
+          }
+          return false;
+        }
+        const parsed = geprueft.paket;
         if (strategy === "merge") {
           const merged = mergeSyncPayload(
             { appFields, history: history || {}, carryover, reportData },
@@ -3484,8 +3507,17 @@ export default function App() {
             onExport={buildSyncPayload}
             onImport={(dataStr) => {
               try {
-                const parsed = JSON.parse(dataStr);
-                ersetzeGesamtstand(parsed);
+                // Gleiche Struktur-Prüfung wie beim Geräte-Sync: Eine
+                // beschädigte Backup-Datei darf die App nicht in den
+                // Fehlerbildschirm schicken.
+                const geprueft = pruefeSyncPaket(JSON.parse(dataStr));
+                if (!geprueft.ok) {
+                  const text = `Diese Datei konnte nicht eingespielt werden. ${geprueft.grund}`;
+                  triggerToast(text);
+                  announceToAriaAndSpeech(text, true);
+                  return;
+                }
+                ersetzeGesamtstand(geprueft.paket);
                 setActiveTab("options");
                 triggerToast("Backup erfolgreich geladen!");
                 announceToAriaAndSpeech("Backup erfolgreich geladen.", true);
@@ -3506,6 +3538,7 @@ export default function App() {
             onClose={() => setActiveTab("options")}
             onExport={buildSyncPayload}
             onImport={(dataStr, strategy) => handleSyncImport(dataStr, strategy)}
+            lokaleMonate={Object.keys(history || {}).length}
           />
         </React.Suspense>
       )}

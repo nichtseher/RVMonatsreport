@@ -24,6 +24,18 @@ import { QRCodeSVG } from "qrcode.react";
 import { Html5Qrcode } from "html5-qrcode";
 import { motion } from "framer-motion";
 import {
+  buildChunks,
+  buildTextCode,
+  parseChunk,
+  parseTextCode,
+  istVerschluesselterCode,
+  decompressString,
+} from "../utils/syncCode";
+import type { ParsedChunk } from "../utils/syncCode";
+import { pruefeSyncPaket, monateImPaket } from "../utils/syncSchema";
+import ConfirmDialog, { ConfirmRequest } from "./ConfirmDialog";
+
+import {
   subscribeLiveSync,
   getLiveSyncSnapshot,
   adoptPeer,
@@ -38,6 +50,8 @@ interface DeviceSyncModalProps {
   onClose: () => void;
   onExport: () => string;
   onImport: (data: string, strategy: "merge" | "replace") => void | boolean;
+  /** Monate im Archiv dieses Geräts -- für die Rückfrage vor dem Ersetzen. */
+  lokaleMonate?: number;
 }
 
 /**
@@ -54,117 +68,19 @@ interface DeviceSyncModalProps {
  *    beide Geräte automatisch ab (Zusammenführen, kein Überschreiben).
  */
 
-const PROTOCOL = "RV1";
-const CHUNK_SIZE = 450; // Zeichen pro QR-Code (zuverlässig scannbar)
 const CYCLE_MS = 650; // Rotationsgeschwindigkeit der QR-Codes
 
-// --- Hilfsfunktionen ---------------------------------------------------
-
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = "";
-  const CHUNK = 0x8000;
-  for (let i = 0; i < bytes.length; i += CHUNK) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-  }
-  return btoa(binary);
-}
-
-function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
-
-async function compressString(input: string): Promise<{ data: string; compressed: boolean }> {
-  const raw = new TextEncoder().encode(input);
-  if (typeof CompressionStream === "undefined") {
-    return { data: bytesToBase64(raw), compressed: false };
-  }
-  try {
-    const stream = new Blob([raw]).stream().pipeThrough(new CompressionStream("deflate-raw"));
-    const buffer = await new Response(stream).arrayBuffer();
-    return { data: bytesToBase64(new Uint8Array(buffer)), compressed: true };
-  } catch {
-    return { data: bytesToBase64(raw), compressed: false };
-  }
-}
-
-async function decompressString(base64: string, compressed: boolean): Promise<string> {
-  const bytes = base64ToBytes(base64);
-  if (!compressed) {
-    return new TextDecoder().decode(bytes);
-  }
-  if (typeof DecompressionStream === "undefined") {
-    throw new Error("Dieses Gerät unterstützt die Dekomprimierung nicht.");
-  }
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
-  const buffer = await new Response(stream).arrayBuffer();
-  return new TextDecoder().decode(new Uint8Array(buffer));
-}
-
-/** Kryptografisch sichere, kurze Transfer-ID */
-function secureTransferId(): string {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const random = new Uint8Array(4);
-  crypto.getRandomValues(random);
-  return Array.from(random, (b) => alphabet[b % alphabet.length]).join("");
-}
-
-interface ParsedChunk {
-  id: string;
-  seq: number;
-  total: number;
-  compressed: boolean;
-  data: string;
-}
-
-function parseChunk(text: string): ParsedChunk | null {
-  // Format: RV1|<id>|<seq>|<total>|<z|u>|<daten>
-  if (!text.startsWith(PROTOCOL + "|")) return null;
-  const parts = text.split("|");
-  if (parts.length < 6) return null;
-  const seq = parseInt(parts[2], 10);
-  const total = parseInt(parts[3], 10);
-  if (!Number.isFinite(seq) || !Number.isFinite(total) || seq < 1 || total < 1 || seq > total) return null;
-  return {
-    id: parts[1],
-    seq,
-    total,
-    compressed: parts[4] === "z",
-    data: parts.slice(5).join("|"),
-  };
-}
-
-/**
- * Text-Code als kameraloser Übertragungsweg (Kopieren & Einfügen):
- * gleicher Inhalt wie die QR-Codes, nur als ein einziger String.
- * Format: RVC1:<z|u>:<base64>
- */
-async function buildTextCode(payload: string): Promise<string> {
-  const { data, compressed } = await compressString(payload);
-  return `RVC1:${compressed ? "z" : "u"}:${data}`;
-}
-
-async function parseTextCode(text: string): Promise<string | null> {
-  const trimmed = text.trim();
-  if (!trimmed.startsWith("RVC1:")) return null;
-  const firstSep = trimmed.indexOf(":");
-  const secondSep = trimmed.indexOf(":", firstSep + 1);
-  if (secondSep === -1) return null;
-  const flag = trimmed.slice(firstSep + 1, secondSep);
-  const data = trimmed.slice(secondSep + 1).replace(/\s+/g, "");
-  return decompressString(data, flag === "z");
-}
-
+// --- Komponente --------------------------------------------------------
 type ScanPurpose = "data" | "offer" | "answer";
 type LiveStep = "offer" | "scan-answer" | "scan-offer" | "answer";
 
-// --- Komponente --------------------------------------------------------
-
-export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }: DeviceSyncModalProps) {
+export default function DeviceSyncModal({
+  isOpen,
+  onClose,
+  onExport,
+  onImport,
+  lokaleMonate = 0,
+}: DeviceSyncModalProps) {
   const [mode, setMode] = useState<"select" | "send" | "receive" | "confirm" | "live-host" | "live-join">("select");
   const [status, setStatus] = useState<{ type: "success" | "error" | "info"; msg: string } | null>(null);
 
@@ -177,6 +93,7 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
   const [receivedCount, setReceivedCount] = useState(0);
   const [expectedTotal, setExpectedTotal] = useState(0);
   const [pendingImport, setPendingImport] = useState<string | null>(null);
+  const [eingehendeMonate, setEingehendeMonate] = useState(0);
 
   // Live-Verbindung: Zustand liegt im App-weiten Dienst (liveSync.ts),
   // damit die Verbindung das Schließen dieses Fensters überlebt.
@@ -188,7 +105,17 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
   // Kameraloser Weg: Text-Code kopieren / einfügen
   const [textCode, setTextCode] = useState<string | null>(null);
   const [pasteValue, setPasteValue] = useState("");
+  // Optionaler Passwortschutz des Textcodes (seit 0.9.5). Betrifft NUR die
+  // Datenübertragung -- die Kopplungscodes der Live-Verbindung bleiben offen,
+  // sie enthalten keine Berichtsdaten.
+  const [sendePasswort, setSendePasswort] = useState("");
+  const [empfangsPasswort, setEmpfangsPasswort] = useState("");
+  const [brauchtPasswort, setBrauchtPasswort] = useState(false);
+  // Rückfrage vor dem Ersetzen (barrierefreier Dialog statt sofortiger Aktion)
+  const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null);
   const lastOfferRef = useRef<any>(null);
+  /** Rohdaten der Einmal-Übertragung; nur gesetzt, wenn Daten gesendet werden. */
+  const sendPayloadRef = useRef<string | null>(null);
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scanPurposeRef = useRef<ScanPurpose>("data");
@@ -229,8 +156,14 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
     setPendingImport(null);
     setTextCode(null);
     setPasteValue("");
+    setSendePasswort("");
+    setEmpfangsPasswort("");
+    setBrauchtPasswort(false);
+    setEingehendeMonate(0);
+    setConfirmRequest(null);
     setLiveStep(null);
     lastOfferRef.current = null;
+    sendPayloadRef.current = null;
   }, [stopScanner]);
 
   /** Abbrechen im Live-Ablauf: laufende Kopplung verwerfen, Ansicht zurück. */
@@ -308,25 +241,12 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
     return () => clearInterval(interval);
   }, [chunks.length, isPlaying]);
 
-  // --- QR-Chunks bauen (gemeinsam für Daten und Live-Kopplung) ---
-  const buildChunks = async (payloadStr: string): Promise<string[]> => {
-    const { data, compressed } = await compressString(payloadStr);
-    const id = secureTransferId();
-    const total = Math.max(1, Math.ceil(data.length / CHUNK_SIZE));
-    const flag = compressed ? "z" : "u";
-    const parts: string[] = [];
-    for (let i = 0; i < total; i++) {
-      const slice = data.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-      parts.push(`${PROTOCOL}|${id}|${i + 1}|${total}|${flag}|${slice}`);
-    }
-    return parts;
-  };
-
   // --- Sender (Einmal-Übertragung) ---
   const startSend = async () => {
     try {
       setStatus({ type: "info", msg: "Daten werden vorbereitet..." });
       const payload = onExport();
+      sendPayloadRef.current = payload;
       setTextCode(await buildTextCode(payload));
       const parts = await buildChunks(payload);
       setChunks(parts);
@@ -390,12 +310,22 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
 
   // --- Kameraloser Weg: Code kopieren / einfügen ---
   const copyTextCode = async () => {
-    if (!textCode) return;
+    // Der Code wird erst beim Kopieren gebaut. Grund: Das Verschlüsseln
+    // (PBKDF2, 100 000 Runden) darf nicht bei jedem Tastendruck im
+    // Passwortfeld laufen. Kopplungscodes der Live-Verbindung haben keine
+    // Nutzdaten und bleiben wie sie sind.
+    const rohdaten = sendPayloadRef.current;
+    const zuKopieren = rohdaten
+      ? await buildTextCode(rohdaten, sendePasswort || undefined)
+      : textCode;
+    if (!zuKopieren) return;
     try {
-      await navigator.clipboard.writeText(textCode);
+      await navigator.clipboard.writeText(zuKopieren);
       setStatus({
         type: "success",
-        msg: "Code in die Zwischenablage kopiert. Fügen Sie ihn am anderen Gerät unter 'Code einfügen' ein (z. B. per geteilter Zwischenablage, Nachricht an sich selbst oder E-Mail).",
+        msg: sendePasswort
+          ? "Verschlüsselter Code kopiert. Am anderen Gerät unter „Code einfügen“ einsetzen – dort wird dasselbe Passwort abgefragt."
+          : "Code kopiert. Am anderen Gerät unter „Code einfügen“ einsetzen. Achtung: Dieser Code ist NICHT verschlüsselt – geben Sie ihn nur über Wege weiter, denen Sie Ihre Daten anvertrauen würden.",
       });
     } catch (err) {
       console.error("Clipboard error", err);
@@ -406,14 +336,28 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
   const submitPastedCode = async () => {
     if (!pasteValue.trim()) return;
     try {
-      const jsonStr = await parseTextCode(pasteValue);
-      if (!jsonStr) {
-        setStatus({ type: "error", msg: "Das ist kein gültiger Code. Bitte den vollständigen Code einfügen (beginnt mit RVC1:)." });
+      const ergebnis = await parseTextCode(pasteValue, empfangsPasswort || undefined);
+      if (!ergebnis.ok) {
+        const texte: Record<string, string> = {
+          "kein-code":
+            "Das ist kein gültiger Code. Bitte den vollständigen Code einfügen (er beginnt mit RVC1: oder RVC2:).",
+          "passwort-noetig":
+            "Dieser Code ist mit einem Passwort geschützt. Bitte tragen Sie es unten ein und übernehmen Sie den Code erneut.",
+          "passwort-falsch":
+            "Das Passwort passt nicht zu diesem Code. Bitte prüfen Sie es und versuchen Sie es erneut.",
+          unlesbar:
+            "Der Code konnte nicht gelesen werden. Bitte erneut vollständig kopieren und einfügen.",
+        };
+        setStatus({ type: "error", msg: texte[ergebnis.grund] || texte.unlesbar });
+        // Passwortfeld einblenden, sobald klar ist, dass eines gebraucht wird
+        if (ergebnis.grund === "passwort-noetig") setBrauchtPasswort(true);
         return;
       }
       stopScanner();
       setPasteValue("");
-      handleAssembled(jsonStr);
+      setBrauchtPasswort(false);
+      setEmpfangsPasswort("");
+      handleAssembled(ergebnis.inhalt);
     } catch (err) {
       console.error("Paste code error", err);
       setStatus({ type: "error", msg: "Code konnte nicht gelesen werden. Bitte erneut vollständig kopieren und einfügen." });
@@ -480,15 +424,17 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
     }
 
     if (purpose === "data") {
-      if (parsed && (parsed.k === "rvw-offer" || parsed.k === "rvw-answer")) {
-        setStatus({
-          type: "error",
-          msg: "Das war ein Kopplungscode für die Live-Verbindung. Bitte nutzen Sie dafür 'Live-Verbindung beitreten'.",
-        });
+      // Struktur prüfen, BEVOR etwas angeboten wird. Vorher wurde jedes
+      // gültige JSON angenommen; ein Paket mit unsinnigem Inhalt führte beim
+      // Ersetzen direkt in den Fehlerbildschirm (reproduziert am 2026-08-03).
+      const geprueft = pruefeSyncPaket(parsed);
+      if (!geprueft.ok) {
+        setStatus({ type: "error", msg: geprueft.grund });
         setMode("select");
         return;
       }
       setPendingImport(jsonStr);
+      setEingehendeMonate(monateImPaket(geprueft.paket));
       setMode("confirm");
       setStatus({
         type: "success",
@@ -506,6 +452,30 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
     if (!pendingImport) return;
     onImport(pendingImport, strategy);
     setPendingImport(null);
+  };
+
+  /**
+   * Ersetzen ist die folgenschwerste Aktion der App -- sie überschreibt das
+   * gesamte Archiv dieses Geräts. Bis 0.9.4 löste ein einziger Tipp sie aus,
+   * während der weit harmlosere Monatsabschluss längst eine Rückfrage hatte.
+   */
+  const ersetzenAnfragen = () => {
+    const monatWort = (n: number) => `${n} ${n === 1 ? "Monat" : "Monate"}`;
+    setConfirmRequest({
+      title: "Alle Daten dieses Geräts ersetzen?",
+      message:
+        "Der gesamte Bestand dieses Geräts wird durch die empfangenen Daten überschrieben.",
+      details: [
+        `Auf diesem Gerät: ${monatWort(lokaleMonate)} im Archiv (plus der laufende Monat)`,
+        `Im empfangenen Paket: ${monatWort(eingehendeMonate)}`,
+        "Alles, was nur auf diesem Gerät steht, geht dabei verloren.",
+        "Rückgängig machen lässt sich das nicht.",
+      ],
+      confirmLabel: "Endgültig ersetzen",
+      cancelLabel: "Abbrechen",
+      tone: "danger",
+      onConfirm: () => applyImport("replace"),
+    });
   };
 
   // --- Live-Verbindung (WebRTC, Peer-to-Peer, ohne externe Server) ---
@@ -761,13 +731,43 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
       <p className="text-sm text-center text-[var(--text-muted)] max-w-[300px]">{label}</p>
 
       {textCode && (
-        <button
-          onClick={copyTextCode}
-          className="mt-4 w-full max-w-[300px] py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all flex justify-center items-center gap-2 cursor-pointer"
-        >
-          <Copy className="w-5 h-5" aria-hidden="true" />
-          Code kopieren (ohne Kamera)
-        </button>
+        <div className="mt-4 w-full max-w-[300px] space-y-3">
+          {/* Passwortschutz nur für Nutzdaten -- Kopplungscodes enthalten keine. */}
+          {sendPayloadRef.current && (
+            <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] p-3 space-y-2">
+              <p className="text-[0.75rem] font-bold text-[var(--text-color)] leading-snug">
+                Der QR-Code bleibt auf dem Bildschirm – er verlässt das Gerät nicht.
+                Der <strong>kopierte Textcode</strong> dagegen ist ohne Passwort
+                <strong> nicht verschlüsselt</strong>: Wer ihn hat, kann alle Daten lesen.
+              </p>
+              <label htmlFor="sync-passwort" className="block text-[0.75rem] font-black text-[var(--text-color)]">
+                Passwort für den Textcode (freiwillig)
+              </label>
+              <input
+                id="sync-passwort"
+                type="password"
+                value={sendePasswort}
+                onChange={(e) => setSendePasswort(e.target.value)}
+                placeholder="leer lassen = ohne Schutz"
+                className="w-full px-3 min-h-[44px] rounded-lg border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm focus:border-[var(--border-focus)] outline-none"
+                aria-describedby="sync-passwort-hinweis"
+              />
+              <p id="sync-passwort-hinweis" className="text-[0.6875rem] text-[var(--text-muted)] leading-snug">
+                Mit Passwort wird der Textcode verschlüsselt. Am anderen Gerät muss
+                dasselbe Passwort eingegeben werden – ohne es sind die Daten verloren.
+              </p>
+            </div>
+          )}
+          <button
+            onClick={copyTextCode}
+            className="w-full py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all flex justify-center items-center gap-2 cursor-pointer"
+          >
+            <Copy className="w-5 h-5" aria-hidden="true" />
+            {sendPayloadRef.current && sendePasswort
+              ? "Verschlüsselten Code kopieren"
+              : "Code kopieren (ohne Kamera)"}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -814,11 +814,32 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
         <textarea
           id="paste-code-input"
           value={pasteValue}
-          onChange={(e) => setPasteValue(e.target.value)}
-          placeholder="Code hier einfügen (beginnt mit RVC1:)..."
+          onChange={(e) => {
+            setPasteValue(e.target.value);
+            // Passwortfeld sofort zeigen, sobald ein geschützter Code drinsteht
+            if (istVerschluesselterCode(e.target.value)) setBrauchtPasswort(true);
+          }}
+          placeholder="Code hier einfügen (beginnt mit RVC1: oder RVC2:)..."
           rows={3}
           className="w-full p-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-mono focus:border-[var(--border-focus)] outline-none resize-y"
         />
+
+        {brauchtPasswort && (
+          <div className="mt-2">
+            <label htmlFor="paste-passwort" className="block text-xs font-black text-[var(--text-color)] mb-1">
+              Passwort des Codes
+            </label>
+            <input
+              id="paste-passwort"
+              type="password"
+              value={empfangsPasswort}
+              onChange={(e) => setEmpfangsPasswort(e.target.value)}
+              placeholder="Passwort eingeben"
+              className="w-full px-3 min-h-[44px] rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-sm focus:border-[var(--border-focus)] outline-none"
+            />
+          </div>
+        )}
+
         <button
           onClick={submitPastedCode}
           disabled={!pasteValue.trim()}
@@ -1058,20 +1079,22 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
                 Zusammenführen (empfohlen)
               </button>
               <p className="text-xs text-[var(--text-muted)] text-center -mt-2 leading-relaxed">
-                Vereinigt die Daten beider Geräte: Pro Monat gewinnt der zuletzt gespeicherte
-                Stand, erfasste Schichten und eigene Kategorien beider Geräte bleiben erhalten.
+                Vereinigt die Daten beider Geräte: Jede Kategorie wird einzeln abgeglichen –
+                bei Änderungen an derselben Kategorie gilt die jüngere. Erfasste Schichten und
+                eigene Kategorien beider Geräte bleiben erhalten.
               </p>
 
               <button
-                onClick={() => applyImport("replace")}
+                onClick={ersetzenAnfragen}
                 className="w-full py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--bg-color)] transition-all flex justify-center items-center gap-2 cursor-pointer"
               >
                 <AlertTriangle className="w-5 h-5" aria-hidden="true" />
                 Alles ersetzen
               </button>
               <p className="text-xs text-[var(--text-muted)] text-center -mt-2 leading-relaxed">
-                Überschreibt <strong>alle</strong> lokalen Daten dieses Geräts mit den
-                empfangenen Daten.
+                Überschreibt <strong>alle</strong> lokalen Daten dieses Geräts
+                ({lokaleMonate === 1 ? "1 Monat" : `${lokaleMonate} Monate`} im Archiv) mit den
+                empfangenen Daten. Es kommt vorher eine Rückfrage.
               </p>
 
               <button
@@ -1148,6 +1171,13 @@ export default function DeviceSyncModal({ isOpen, onClose, onExport, onImport }:
                   ))}
         </div>
       </motion.div>
+
+      {/* Rückfrage vor dem Ersetzen -- derselbe barrierefreie Dialog wie beim
+          Monatsabschluss (Fokusfalle, Escape, Startfokus auf Abbrechen). */}
+      <ConfirmDialog
+        request={confirmRequest}
+        onClose={() => setConfirmRequest(null)}
+      />
     </div>
   );
 }

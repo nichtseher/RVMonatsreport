@@ -10,6 +10,109 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-03 — v0.9.5: Geräte-Sync abgesichert
+
+Grundlage ist [KONZEPT-0.9.5.md](KONZEPT-0.9.5.md) — eine vollständige Prüfung
+des Sync-Bereichs am laufenden System, nicht nur am Code. Der Einmal-Transfer
+war bis dahin nie getestet worden.
+
+### Was lief (belegt)
+
+Textcode erzeugen, am zweiten Gerät einfügen, zusammenführen: Zähler beider
+Geräte bleiben erhalten, Kommentar kommt an, Umlaute und Emojis unversehrt.
+Zusammen mit den Live-Verbindungs-Prüfungen aus 0.9.1/0.9.2 ist der Bereich in
+seinen normalen Abläufen in Ordnung.
+
+### Befund 1: Der Import prüfte die Struktur nicht — reproduzierter Absturz
+
+`handleAssembled` prüfte nur, ob sich der Text als JSON lesen lässt. Ein Paket
+mit gültigem JSON, aber unsinniger Struktur
+(`{"appFields":"kaputt","history":12345,…}`) wurde angenommen — die App meldete
+„Daten vollständig empfangen". Ein Tipp auf „Alles ersetzen" führte direkt in
+den Fehlerbildschirm: *Cannot read properties of undefined (reading 'forEach')*.
+
+Genau nachgemessen: Nach dem Neuladen lief die App wieder und die gespeicherten
+Daten waren unversehrt — der Absturz geschah beim Zeichnen, bevor die
+Speicher-Effekte liefen. **Kein Datenverlust**, aber bis zum Neuladen
+unbenutzbar und ohne Erklärung. Dass die Daten überlebten, ist eine Eigenschaft
+dieses Falls und war keine Zusage der Umsetzung.
+
+**Umsetzung:** Neue `utils/syncSchema.ts` mit `pruefeSyncPaket()`. Geprüft wird
+nur so viel, dass die Oberfläche nicht abstürzt und das Zusammenführen sinnvoll
+arbeiten kann; unbekannte Zusatzfelder bleiben erlaubt, damit ältere und
+neuere Fassungen zusammenarbeiten. Das Paket trägt jetzt eine Kennung
+(`app: "rvmobil"`, `fmt: 1`) — fehlt sie, greift die reine Strukturprüfung,
+Pakete vor 0.9.5 bleiben also lesbar. Eingehängt an **drei** Stellen: früh im
+Sync-Fenster (für eine gute Meldung), in `handleSyncImport` als letzte
+Verteidigungslinie (dort läuft auch der Live-Kanal durch) und beim Einspielen
+einer Datensicherung, die denselben Weg nutzt.
+
+### Befund 2: „Alles ersetzen" löste mit einem Tipp aus
+
+Die folgenschwerste Aktion der App — sie überschreibt das gesamte Archiv des
+empfangenden Geräts — hatte keine Rückfrage, während der weit harmlosere
+Monatsabschluss seit 0.9.0 eine hat. Jetzt der bekannte `ConfirmDialog` in der
+roten Variante, mit konkreten Zahlen aus beiden Ständen (Monate hier, Monate im
+Paket) und Startfokus auf „Abbrechen".
+
+Nebenbei den Erklärtext daneben berichtigt: Er beschrieb noch das
+Zusammenführen von vor 0.9.1 („Pro Monat gewinnt der zuletzt gespeicherte
+Stand") — seit 0.9.1 wird feldweise abgeglichen.
+
+### Befund 3: Der Textcode war unverschlüsselt, die Oberfläche sagte etwas anderes
+
+Nachgewiesen: Ein echter Code liess sich mit drei trivialen Schritten
+(base64 → `deflate-raw` → `JSON.parse`) in Klartext zurückverwandeln — Name,
+Kommentare, alle Zählerstände, das komplette Archiv. Im selben Fenster standen
+zwei Aussagen, die sich widersprachen: oben „100 % serverlos … ohne
+Zwischenspeicherung auf fremden Servern", nach dem Kopieren der Rat, den Code
+„per Nachricht an sich selbst oder E-Mail" weiterzugeben.
+
+Für QR gilt das nicht (Bildschirm → Kamera), für die Live-Verbindung ebenso
+wenig (DTLS-verschlüsselt). Auffällig war die Unwucht: Die Datensicherung kann
+mit Passwort verschlüsselt werden, der Sync-Code nie.
+
+**Umsetzung:** Neues Format `RVC2:` mit AES-GCM über dasselbe `crypto.ts` wie
+das Backup. Das Passwort ist freiwillig; ohne Eingabe entsteht weiterhin ein
+`RVC1:`-Code. Verschlüsselt wird erst beim Kopieren — PBKDF2 mit 100 000 Runden
+darf nicht bei jedem Tastendruck laufen. Auf der Empfangsseite erscheint das
+Passwortfeld, sobald ein `RVC2:`-Code im Feld steht, und die Meldungen
+unterscheiden „Passwort fehlt", „Passwort falsch" und „kein RV-Mobil-Code".
+Die Kopplungscodes der Live-Verbindung bleiben bewusst offen — sie enthalten
+keine Berichtsdaten. Der Ratschlag zum Mailversand ist weg; stattdessen steht
+bei jedem Weg, was er bedeutet.
+
+### Nebenarbeit
+
+Die Code-Funktionen (Komprimieren, Base64, QR-Teilstücke, Textcodes) lagen in
+der über 1000 Zeilen langen `DeviceSyncModal.tsx` und waren nicht prüfbar. Sie
+liegen jetzt in `utils/syncCode.ts`.
+
+### Geprüft
+
+`npm run check` umfasst jetzt **52 Fälle** (vorher 37). Neu: Struktur-Prüfung
+(gültiges Paket, altes Paket ohne Kennung, der reproduzierte Unsinns-Fall,
+zehn einzeln beschädigte Varianten, Kopplungscode, fremde Anwendung, unbekannte
+Zusatzfelder) und Übertragungscodes (Umlauf mit und ohne Passwort, fehlendes
+und falsches Passwort, kein Klartext im verschlüsselten Code, QR-Teilstücke
+zerlegen und zusammensetzen, beschädigte Teilstücke).
+
+Am laufenden System:
+
+| Prüfung | Ergebnis |
+|---|---|
+| derselbe Unsinns-Code wie im Befund | „Die Kategorien im Paket sind beschädigt." — kein Absturz, keine Übernahme angeboten |
+| „Alles ersetzen" | Rückfrage mit korrekten Zahlen, Startfokus auf „Abbrechen" |
+| Code mit Passwort | Präfix `RVC2:`, kein Klartext im Code, Passwortfeld erscheint sofort |
+| falsches Passwort | „Das Passwort passt nicht zu diesem Code." |
+| richtiges Passwort | Übernahme wird angeboten, Zusammenführen läuft durch |
+
+**Nicht umgesetzt (bewusst):** die Vereinfachung der Kopplung — von Marc
+zurückgestellt, Begründung in der ROADMAP. Ebenso der Status je Monat im
+Archiv, weil das neue Oberfläche wäre und der Gerätetest ansteht.
+
+---
+
 ## 2026-08-02 — v0.9.4: Automatische Kontrolle vor jeder Veröffentlichung
 
 Vorgezogen aus der 1.0-Liste (Punkte „Automatische Tests für die Rechenkerne"

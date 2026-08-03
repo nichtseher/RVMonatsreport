@@ -1,34 +1,5 @@
+import "../browserShim";
 import { gruppe, pruefe, gleich, wirft } from "../helfer";
-
-/*
-  Die Backup-Verschlüsselung nutzt Browser-Bausteine. Zwei davon fehlen in
-  Node und werden hier nachgebildet:
-    - `window`      -> zeigt auf globalThis (Node hat crypto.subtle global)
-    - `FileReader`  -> nur readAsDataURL, das in crypto.ts zum Base64-Kodieren
-                       dient
-  Die eigentliche Kryptografie (PBKDF2, AES-GCM, Salt/IV-Rahmen) läuft damit
-  unverändert -- nur das Verpacken in Base64 ist nachgebaut.
-*/
-const g = globalThis as unknown as Record<string, unknown>;
-if (!g.window) g.window = globalThis;
-if (!g.FileReader) {
-  g.FileReader = class {
-    result: string | null = null;
-    onloadend: (() => void) | null = null;
-    onerror: ((grund: unknown) => void) | null = null;
-    readAsDataURL(blob: Blob) {
-      blob
-        .arrayBuffer()
-        .then((puffer) => {
-          this.result =
-            "data:application/octet-stream;base64," +
-            Buffer.from(puffer).toString("base64");
-          this.onloadend?.();
-        })
-        .catch((grund) => this.onerror?.(grund));
-    }
-  };
-}
 
 const { encryptData, decryptData } = await import("../../src/utils/crypto");
 

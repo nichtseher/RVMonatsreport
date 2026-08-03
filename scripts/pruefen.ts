@@ -7,6 +7,7 @@
 import "./checks/zeit";
 import "./checks/zusammenfuehren";
 import "./checks/excel";
+import "./checks/sync-import";
 import "./checks/backup";
 import "./checks/kodierung";
 import { alleLaufen } from "./helfer";

@@ -32,6 +32,20 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
             <ShieldCheck className="w-5 h-5 text-emerald-500" />
+            <span>Version 0.9.5: Geräte-Sync abgesichert</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-semibold text-[var(--text-muted)]">
+            <li><strong>Fehlerhafte Codes stürzen die App nicht mehr ab:</strong> Ein unvollständig kopierter oder fremder Code führte bisher beim Übernehmen zum Fehlerbildschirm. Jetzt wird jedes empfangene Paket zuerst geprüft, und Sie bekommen im Klartext gesagt, was nicht stimmt.</li>
+            <li><strong>„Alles ersetzen" fragt jetzt nach.</strong> Die folgenschwerste Aktion der App – sie überschreibt Ihr komplettes Archiv – ließ sich bisher mit einem einzigen Tipp auslösen. Die Rückfrage nennt jetzt konkret, wie viele Monate auf diesem Gerät liegen und wie viele im empfangenen Paket sind.</li>
+            <li><strong>Neu: Passwortschutz für den kopierten Code.</strong> Der Textcode zum Kopieren war bisher <em>nicht</em> verschlüsselt – wer ihn hatte, konnte alle Daten lesen. Jetzt können Sie beim Senden ein Passwort vergeben; ohne das Passwort lässt sich der Code nicht mehr öffnen.</li>
+            <li><strong>Ehrlichere Hinweise:</strong> Das Sync-Fenster empfahl, den Code per E-Mail zu verschicken, und versprach gleichzeitig, dass keine Daten auf fremde Server gelangen. Jetzt steht bei jedem Weg, was er wirklich bedeutet.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+            <ShieldCheck className="w-5 h-5 text-emerald-500" />
             <span>Version 0.9.4: Automatische Kontrolle vor jeder Veröffentlichung</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
           </h3>
