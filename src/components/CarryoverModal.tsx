@@ -113,13 +113,13 @@ export default function CarryoverModal({
           <ArrowLeft className="w-6 h-6" aria-hidden="true" />
         </button>
         <Calendar className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
-        <h2 id="carryover-modal-title" className="text-2xl md:text-3xl font-extrabold tracking-tight">
+        <h2 id="carryover-modal-title" className="text-2xl md:text-3xl font-black tracking-tight">
           Jahreskonto & Einstellungen
         </h2>
       </div>
 
         {/* Info text */}
-        <div className="p-3.5 mb-5 rounded-xl bg-blue-500/5 border border-blue-500/10 flex gap-2.5 items-start text-xs font-semibold leading-relaxed">
+        <div className="p-3.5 mb-5 rounded-xl bg-blue-500/5 border border-blue-500/10 flex gap-2.5 items-start text-xs font-bold leading-relaxed">
           <Info className="w-4 h-4 flex-shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" aria-hidden="true" />
           <p className="flex-1">
             Hier können Sie Ihre Startwerte für Urlaub und Überstunden eintragen.
@@ -130,7 +130,7 @@ export default function CarryoverModal({
           {/* Section 1: Urlaubskonto */}
           <div className="space-y-3 p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)]">
             <h3 className="text-xs font-black uppercase tracking-wider text-[var(--accent)] flex items-center gap-1.5">
-              🌴 Urlaubskonto-Konfiguration
+              Urlaubskonto-Konfiguration
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -164,7 +164,7 @@ export default function CarryoverModal({
                   onChange={(e) => handleFieldChange("additionalVacationEntitlement", parseFloat(e.target.value))}
                   className="w-full p-2.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm font-bold rounded-lg outline-none focus:border-[var(--border-focus)]"
                 />
-                <span className="text-[0.6875rem] text-[var(--text-muted)] block font-medium leading-none">
+                <span className="text-[0.6875rem] text-[var(--text-muted)] block font-normal leading-none">
                   (z.B. 5 Tage für Schwerbehinderte)
                 </span>
               </div>
@@ -211,7 +211,7 @@ export default function CarryoverModal({
                   onChange={(e) => handleFieldChange("overtimeCarryover", parseFloat(e.target.value))}
                   className="w-full p-2.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm font-bold rounded-lg outline-none focus:border-[var(--border-focus)]"
                 />
-                <span className="text-[0.6875rem] text-[var(--text-muted)] block font-medium leading-none">
+                <span className="text-[0.6875rem] text-[var(--text-muted)] block font-normal leading-none">
                   (Negativwert für Minusstunden)
                 </span>
               </div>
@@ -230,7 +230,7 @@ export default function CarryoverModal({
                   onChange={(e) => handleFieldChange("dailyTargetHours", parseFloat(e.target.value))}
                   className="w-full p-2.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm font-bold rounded-lg outline-none focus:border-[var(--border-focus)]"
                 />
-                <span className="text-[0.6875rem] text-[var(--text-muted)] block font-medium leading-none">
+                <span className="text-[0.6875rem] text-[var(--text-muted)] block font-normal leading-none">
                   (z.B. 8 Stunden bei Vollzeit)
                 </span>
               </div>

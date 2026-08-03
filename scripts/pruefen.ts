@@ -10,6 +10,7 @@ import "./checks/excel";
 import "./checks/sync-import";
 import "./checks/backup";
 import "./checks/kodierung";
+import "./checks/symbole";
 import { alleLaufen } from "./helfer";
 
 alleLaufen()

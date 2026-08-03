@@ -108,7 +108,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <Play className="w-5 h-5" />
                   Erste Schritte
                 </h3>
-                <p className="text-sm text-blue-900/80 dark:text-blue-200/80 leading-relaxed font-medium">
+                <p className="text-sm text-blue-900/80 dark:text-blue-200/80 leading-relaxed font-normal">
                   Willkommen bei RV Mobil. Diese App wurde speziell entwickelt, um Außendienstmitarbeitern die Erfassung von Tätigkeiten und Arbeitszeiten so einfach und barrierefrei wie möglich zu machen. Sie funktioniert komplett offline und speichert Ihre Daten sicher direkt auf Ihrem Gerät.
                 </p>
               </div>
@@ -248,7 +248,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <AlertTriangle className="w-5 h-5" />
                   Wichtiger Hinweis zum Backup
                 </h3>
-                <p className="text-sm text-amber-900/80 dark:text-amber-200/80 leading-relaxed font-medium">
+                <p className="text-sm text-amber-900/80 dark:text-amber-200/80 leading-relaxed font-normal">
                   Da diese App offline arbeitet und Ihre Daten nur auf Ihrem Gerät speichert, sind Sie <strong>selbst für die Sicherung Ihrer Daten verantwortlich</strong>. Wenn Sie den Browserverlauf komplett löschen oder Ihr Handy verlieren, sind die Daten weg, es sei denn, Sie haben ein Backup erstellt.
                 </p>
               </div>
@@ -296,7 +296,7 @@ function FAQItem({ icon, title, children }: { icon: React.ReactNode, title: stri
   return (
     <div className="bg-[var(--bg-color)] border border-[var(--border-color)] rounded-xl overflow-hidden shadow-sm">
       <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-b border-[var(--border-color)]">
-        <h4 className="font-extrabold text-sm text-[var(--text-color)] flex items-center gap-2">
+        <h4 className="font-black text-sm text-[var(--text-color)] flex items-center gap-2">
           {icon}
           {title}
         </h4>

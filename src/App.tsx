@@ -4,6 +4,10 @@ import { get, set } from "idb-keyval";
 import {
   Calendar,
   CalendarPlus,
+  Check,
+  Copy,
+  Target,
+  Share2,
   User,
   FileSpreadsheet,
   PlusCircle,
@@ -984,7 +988,7 @@ export default function App() {
       return {
         sichtbar: true,
         isUrgent: true,
-        message: `🚨 Achtung Abgabefrist: Sie haben ungesendete Zählerstände für ${formatMonthGerman(reportData?.month || "")}! Bitte exportieren Sie den Report sofort als Excel und senden ihn an die Vertriebsleitung (VL)!`,
+        message: `Achtung Abgabefrist: Sie haben ungesendete Zählerstände für ${formatMonthGerman(reportData?.month || "")}! Bitte exportieren Sie den Report sofort als Excel und senden ihn an die Vertriebsleitung (VL)!`,
       };
     }
 
@@ -1062,7 +1066,7 @@ export default function App() {
     const nowISO = new Date().toISOString();
     setClockInTime(nowISO);
     safeSetItem("aussendienst_pwa_clock_in_time_v2", nowISO);
-    triggerToast("🟢 Eingestempelt!");
+    triggerToast("Eingestempelt!");
 
     const timeStr = new Date().toLocaleTimeString("de-DE", {
       hour: "2-digit",
@@ -1112,7 +1116,7 @@ export default function App() {
     setClockInTime(null);
     localStorage.removeItem("aussendienst_pwa_clock_in_time_v2");
 
-    triggerToast("🔴 Ausgestempelt & Schicht verbucht!");
+    triggerToast("Ausgestempelt & Schicht verbucht!");
     announceToAriaAndSpeech(
       `Erfolgreich ausgestempelt. Schicht über ${newLog.duration.toFixed(2)} Stunden wurde verbucht.`,
       true,
@@ -1150,7 +1154,7 @@ export default function App() {
       };
     });
 
-    triggerToast("✓ Schicht gelöscht & Stunden korrigiert!");
+    triggerToast("Schicht gelöscht & Stunden korrigiert!");
     announceToAriaAndSpeech(
       `Schicht gelöscht. Stunden wurden automatisch korrigiert.`,
       true,
@@ -1190,7 +1194,7 @@ export default function App() {
       };
     });
 
-    triggerToast("✓ Schicht manuell nachgetragen!");
+    triggerToast("Schicht manuell nachgetragen!");
     announceToAriaAndSpeech(
       `Schicht über ${newLog.duration.toFixed(2)} Stunden erfolgreich manuell nachgetragen.`,
       true,
@@ -1366,7 +1370,7 @@ export default function App() {
 
     recognition.onstart = () => {
       setIsDictating(true);
-      triggerToast("🎤 Spracheingabe gestartet... Bitte sprechen Sie jetzt.");
+      triggerToast("Spracheingabe gestartet... Bitte sprechen Sie jetzt.");
       announceToAriaAndSpeech("Sprachaufnahme gestartet", true);
     };
 
@@ -1377,7 +1381,7 @@ export default function App() {
           "notes",
           (reportData?.notes || "") + (reportData?.notes ? " " : "") + text,
         );
-        triggerToast("✓ Sprache erfolgreich in Text umgewandelt!");
+        triggerToast("Sprache erfolgreich in Text umgewandelt!");
         announceToAriaAndSpeech(`Eingefügter Text: ${text}`, true);
       }
     };
@@ -1483,12 +1487,12 @@ export default function App() {
 
       utterance.onstart = () => {
         setIsReadingSummary(true);
-        triggerToast("🔊 Zusammenfassung wird vorgelesen...");
+        triggerToast("Zusammenfassung wird vorgelesen...");
       };
 
       utterance.onend = () => {
         setIsReadingSummary(false);
-        triggerToast("✓ Zusammenfassung beendet.");
+        triggerToast("Zusammenfassung beendet.");
       };
 
       utterance.onerror = (e) => {
@@ -2010,21 +2014,21 @@ export default function App() {
         newValues["std_aussendienst"] = (newValues["std_aussendienst"] || 0) + 2.5;
         newNotes = (newNotes ? newNotes + "\n" : "") + "Standard Geräte-Erprobung durchgeführt.";
         announceToAriaAndSpeech("Template Geräte-Erprobung angewendet.");
-        triggerToast("🚀 Template: Geräte-Erprobung geladen");
+        triggerToast("Vorlage Geräte-Erprobung geladen");
         break;
       case "Buerotag":
         newValues["std_buero"] = (newValues["std_buero"] || 0) + 8;
         newValues["tage_arbeit"] = (newValues["tage_arbeit"] || 0) + 1;
         newNotes = (newNotes ? newNotes + "\n" : "") + "Regulärer Bürotag.";
         announceToAriaAndSpeech("Template Bürotag angewendet.");
-        triggerToast("☕ Template: Bürotag geladen");
+        triggerToast("Vorlage Bürotag geladen");
         break;
       case "Schulung":
         newValues["schul_vorort"] = (newValues["schul_vorort"] || 0) + 1;
         newValues["std_aussendienst"] = (newValues["std_aussendienst"] || 0) + 4;
         newNotes = (newNotes ? newNotes + "\n" : "") + "Schulung vor Ort durchgeführt.";
         announceToAriaAndSpeech("Template Schulung angewendet.");
-        triggerToast("🎓 Template: Schulung geladen");
+        triggerToast("Vorlage Schulung geladen");
         break;
     }
 
@@ -2425,7 +2429,7 @@ export default function App() {
           className="mb-4 p-3.5 rounded-2xl border-2 border-[var(--accent)] bg-[var(--accent)]/10 flex flex-col sm:flex-row sm:items-center gap-3"
         >
           <p className="flex-1 min-w-0 text-sm font-bold text-[var(--text-color)] leading-snug">
-            <span aria-hidden="true">✅ </span>
+            <Check className="w-4 h-4 inline-block align-[-2px] mr-1" aria-hidden="true" />
             {formatMonthGerman(lastMonthClose.from)} ist im RV Archiv gesichert.
             Sie arbeiten jetzt in {formatMonthGerman(lastMonthClose.to)}.
           </p>
@@ -2567,7 +2571,7 @@ export default function App() {
       {deadlineInfo.sichtbar && (
         <div
           role="alert"
-          className={`p-3.5 mb-4 rounded-xl border flex gap-2.5 items-center text-xs font-semibold leading-snug ${
+          className={`p-3.5 mb-4 rounded-xl border flex gap-2.5 items-center text-xs font-bold leading-snug ${
             deadlineInfo.isUrgent
               ? "bg-red-50 dark:bg-red-950/20 border-red-500 text-red-900 dark:text-red-200 animate-pulse"
               : "bg-[var(--alert-bg)] border-[var(--alert-border)] text-[var(--alert-text)]"
@@ -2584,8 +2588,8 @@ export default function App() {
       {/* Bento Header title & interactive filter toggle */}
       <div className="flex items-center justify-between mb-2 px-1">
         <span className="text-[0.75rem] font-black text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
-          📊 Monats-Fortschritt{" "}
-          <span className="font-semibold text-xs text-[var(--text-muted)]/70 lowercase">
+          Monats-Fortschritt{" "}
+          <span className="font-bold text-xs text-[var(--text-muted)]/70 lowercase">
             (Bereich anklicken zum Filtern)
           </span>
         </span>
@@ -2599,7 +2603,7 @@ export default function App() {
             }}
             className="text-[0.75rem] font-black text-red-500 hover:text-red-600 hover:underline flex items-center gap-1 cursor-pointer bg-red-500/10 dark:bg-red-500/20 px-2 py-0.5 rounded-md transition-all active:scale-95"
           >
-            <span>Filter aufheben ✕</span>
+            <span>Filter aufheben</span>
           </button>
         )}
       </div>
@@ -2884,7 +2888,7 @@ export default function App() {
                   : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--border-color)]"
               }`}
             >
-              <span aria-hidden="true">📐 </span>
+              <LayoutGrid className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Kompakt</span>
             </button>
 
@@ -2897,7 +2901,7 @@ export default function App() {
                 title="Werte des letzten gesicherten Monats als Vorlage laden"
                 className="px-2.5 min-h-[44px] rounded-lg text-xs font-bold border bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
               >
-                <span aria-hidden="true">📋 </span>
+                <Copy className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>Vorlage</span>
               </button>
             )}
@@ -2956,7 +2960,7 @@ export default function App() {
                     : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--border-color)]"
               }`}
             >
-              <span aria-hidden="true">🎯 </span>
+              <Target className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Ziele</span>
             </button>
           </div>
@@ -2971,7 +2975,7 @@ export default function App() {
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-[var(--text-color)] flex items-center gap-1">
-                <span>🎯 Monatsziele festlegen</span>
+                <span>Monatsziele festlegen</span>
               </span>
               <label className="relative inline-flex items-center cursor-pointer select-none">
                 <input
@@ -3089,7 +3093,7 @@ export default function App() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Nach Produkten oder Kategorien suchen (z.B. WeWalk, Tactonom, Schulung)..."
               aria-label="Nach Produkten oder Kategorien suchen"
-              className="w-full pl-9 pr-8 min-h-[44px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-xl text-xs font-semibold focus:border-[var(--border-focus)] outline-none"
+              className="w-full pl-9 pr-8 min-h-[44px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-xl text-xs font-bold focus:border-[var(--border-focus)] outline-none"
             />
             {searchQuery && (
               <button
@@ -3115,7 +3119,7 @@ export default function App() {
           >
             <h2
               id="section1-heading"
-              className="text-lg md:text-xl font-extrabold pb-3 mb-4 border-b-2 border-slate-100 dark:border-slate-800 tracking-tight text-[var(--text-color)]"
+              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-slate-100 dark:border-slate-800 tracking-tight text-[var(--text-color)]"
             >
               1. Vorführungen & Auslieferungen
             </h2>
@@ -3144,7 +3148,7 @@ export default function App() {
 
             {/* Dynamic section total box with aria live attribute */}
             <div
-              className="mt-6 p-4 rounded-xl bg-[var(--total-bg)] text-[var(--total-text)] font-extrabold text-right text-lg border border-[var(--border-color)]"
+              className="mt-6 p-4 rounded-xl bg-[var(--total-bg)] text-[var(--total-text)] font-black text-right text-lg border border-[var(--border-color)]"
               aria-live="polite"
             >
               <span>Bereichs-Gesamtsumme: </span>
@@ -3165,7 +3169,7 @@ export default function App() {
           >
             <h2
               id="section2-heading"
-              className="text-lg md:text-xl font-extrabold pb-3 mb-4 border-b-2 border-slate-100 dark:border-slate-800 tracking-tight text-[var(--text-color)]"
+              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-slate-100 dark:border-slate-800 tracking-tight text-[var(--text-color)]"
             >
               2. Schulung, Support & Akquise
             </h2>
@@ -3203,7 +3207,7 @@ export default function App() {
           >
             <h2
               id="section3-heading"
-              className="text-lg md:text-xl font-extrabold pb-3 mb-4 border-b-2 border-slate-100 dark:border-slate-800 tracking-tight text-[var(--text-color)]"
+              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-slate-100 dark:border-slate-800 tracking-tight text-[var(--text-color)]"
             >
               3. Spezialprodukte (Fokus)
             </h2>
@@ -3241,7 +3245,7 @@ export default function App() {
           >
             <h2
               id="section4-heading"
-              className="text-lg md:text-xl font-extrabold pb-3 mb-4 border-b-2 border-slate-100 dark:border-slate-800 tracking-tight text-[var(--text-color)]"
+              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-slate-100 dark:border-slate-800 tracking-tight text-[var(--text-color)]"
             >
               4. Arbeitszeit & Büro
             </h2>
@@ -3283,7 +3287,7 @@ export default function App() {
         !hasVisibleFields(appFields.s3) &&
         !hasVisibleFields(appFields.s4) && (
           <div className="p-8 text-center border-2 border-dashed border-[var(--border-color)] rounded-2xl bg-[var(--card-bg)] mb-5 animate-fade-in">
-            <p className="text-sm font-semibold text-[var(--text-muted)]">
+            <p className="text-sm font-bold text-[var(--text-muted)]">
               Keine passenden Einträge gefunden für "{searchQuery}".
             </p>
             <button
@@ -3305,7 +3309,7 @@ export default function App() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b-2 border-slate-100 dark:border-slate-800">
           <h2
             id="notes-heading"
-            className="text-lg md:text-xl font-extrabold tracking-tight text-[var(--text-color)]"
+            className="text-lg md:text-xl font-black tracking-tight text-[var(--text-color)]"
           >
             Anmerkungen & Kommentare
           </h2>
@@ -3323,7 +3327,7 @@ export default function App() {
                   ? "Sprachaufnahme stoppen"
                   : "Notiz per Sprache diktieren"
               }
-              className={`py-2 px-3.5 rounded-xl border-2 transition-all cursor-pointer font-extrabold text-sm flex items-center gap-1.5 focus-visible:ring-4 ${
+              className={`py-2 px-3.5 rounded-xl border-2 transition-all cursor-pointer font-black text-sm flex items-center gap-1.5 focus-visible:ring-4 ${
                 isDictating
                   ? "bg-red-600 border-red-600 text-white animate-pulse"
                   : "bg-[var(--bg-color)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
@@ -3342,9 +3346,10 @@ export default function App() {
               type="button"
               onClick={addTimestamp}
               aria-label="Datumstempel in Kommentare einfügen"
-              className="py-2 px-3.5 rounded-xl border-2 border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:border-[var(--border-focus)] transition-all cursor-pointer font-extrabold text-sm focus-visible:ring-4"
+              className="py-2 px-3.5 rounded-xl border-2 border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:border-[var(--border-focus)] transition-all cursor-pointer font-black text-sm focus-visible:ring-4"
             >
-              🗓️ Datumstempel
+              <Calendar className="w-4 h-4" aria-hidden="true" />
+              <span>Datumstempel</span>
             </button>
           </div>
         </div>
@@ -3356,7 +3361,7 @@ export default function App() {
           Tragen Sie hier wichtige Notizen ein:{" "}
           {/* emerald-700 statt -600: erreicht auf weissem Grund 4,5:1 */}
           <span className="text-emerald-700 dark:text-emerald-400 font-black">
-            🔒 Wird nur auf Ihrem Gerät gespeichert
+            Wird nur auf Ihrem Gerät gespeichert
           </span>
         </label>
 
@@ -3367,19 +3372,19 @@ export default function App() {
         >
           {[
             {
-              label: "Alles planmäßig 📅",
+              label: "Alles planmäßig",
               text: "Alles planmäßig verlaufen. Keine besonderen Vorkommnisse.",
             },
             {
-              label: "Messewoche 🎪",
+              label: "Messewoche",
               text: "Fokus auf Repräsentanz, Messestand-Betreuung und Neukunden-Akquise vor Ort.",
             },
             {
-              label: "Erfolgreiche Schulungen 📈",
+              label: "Erfolgreiche Schulungen",
               text: "Kundenschulungen wurden sehr erfolgreich absolviert mit durchweg positivem Feedback.",
             },
             {
-              label: "Urlaubszeit 🏖️",
+              label: "Urlaubszeit",
               text: "Erhöhte Abwesenheiten im Berichtszeitraum wegen Urlaubs-/Ferienzeit.",
             },
           ].map((tpl, i) => (
@@ -3405,7 +3410,7 @@ export default function App() {
           }
           onChange={(e) => handleMetaChange("notes", e.target.value)}
           placeholder="Tragen Sie hier z.B. besondere Vorkommnisse oder Messeergebnisse ein..."
-          className="w-full h-36 p-4 border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-xl font-medium focus:border-[var(--border-focus)] outline-none resize-y leading-relaxed"
+          className="w-full h-36 p-4 border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-xl font-normal focus:border-[var(--border-focus)] outline-none resize-y leading-relaxed"
         />
       </section>
 
@@ -3435,7 +3440,7 @@ export default function App() {
             onClick={handleSendToVL}
             className="w-full py-4 px-6 rounded-2xl font-bold bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-base flex items-center justify-center gap-2.5 shadow-sm cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-4"
           >
-            <span className="text-xl">🚀</span>
+            <Share2 className="w-5 h-5" aria-hidden="true" />
             <span>Bericht an VL senden (Teilen/E-Mail)</span>
           </button>
         </div>
@@ -3478,7 +3483,7 @@ export default function App() {
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:right-8 md:translate-x-0 bg-slate-900 text-white dark:bg-white dark:text-slate-950 font-extrabold py-3.5 px-6 rounded-full shadow-2xl z-50 text-sm border border-slate-700 animate-bounce"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:right-8 md:translate-x-0 bg-slate-900 text-white dark:bg-white dark:text-slate-950 font-black py-3.5 px-6 rounded-full shadow-2xl z-50 text-sm border border-slate-700 animate-bounce"
         >
           {toastText}
         </div>
@@ -3681,7 +3686,7 @@ export default function App() {
                   type="button"
                   onClick={() => handleNavigateField("prev")}
                   aria-label="Vorheriges Eingabefeld"
-                  className="h-12 px-3 rounded-xl font-extrabold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
+                  className="h-12 px-3 rounded-xl font-black border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
                 >
                   ◀ Zurück
                 </button>
@@ -3700,7 +3705,7 @@ export default function App() {
                   type="button"
                   onClick={() => handleNavigateField("next")}
                   aria-label="Nächstes Eingabefeld"
-                  className="h-12 px-3 rounded-xl font-extrabold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
+                  className="h-12 px-3 rounded-xl font-black border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
                 >
                   Weiter ▶
                 </button>
@@ -3714,7 +3719,7 @@ export default function App() {
                   aria-label="Eingabe abschließen"
                   className="h-12 px-3.5 rounded-xl font-black bg-[var(--primary)] text-[var(--primary-text)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
                 >
-                  Fertig ✓
+                  Fertig
                 </button>
               </div>
             </div>
@@ -3765,8 +3770,8 @@ export default function App() {
                   }}
                   className={`flex-1 min-w-0 flex flex-col items-center justify-center py-1.5 rounded-xl relative transition-all active:scale-90 cursor-pointer ${
                     isSelected
-                      ? "text-[var(--accent)] font-extrabold"
-                      : "text-[var(--text-muted)] hover:text-[var(--text-color)] font-semibold"
+                      ? "text-[var(--accent)] font-black"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-color)] font-bold"
                   }`}
                 >
                   <div className="relative p-1">

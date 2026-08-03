@@ -135,7 +135,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
         <div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl flex-shrink-0">
           <Lock className="w-6 h-6" aria-hidden="true" />
         </div>
-        <h2 id="backup-title" className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white">Datensicherung</h2>
+        <h2 id="backup-title" className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white">Datensicherung</h2>
       </div>
 
       <div className="p-6 md:p-8 space-y-6 overflow-y-auto">
@@ -146,7 +146,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
           </div>
 
           <div className="space-y-4 bg-gray-50 dark:bg-slate-900/50 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
-            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <Lock className="w-4 h-4 text-gray-500" />
               Sicherheit
             </h3>
@@ -161,7 +161,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
                   aria-label="Verschlüsselung aktivieren"
                 />
               </div>
-              <span className="text-gray-700 dark:text-gray-300 font-medium group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+              <span className="text-gray-700 dark:text-gray-300 font-normal group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                 Backup mit Passwort schützen
               </span>
             </label>
@@ -212,7 +212,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
               aria-live="assertive"
             >
               {status.type === "success" ? <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" /> : <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />}
-              <p className="text-sm font-medium">{status.msg}</p>
+              <p className="text-sm font-normal">{status.msg}</p>
             </motion.div>
           )}
 
@@ -222,7 +222,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
               className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-md hover:shadow-lg focus:ring-4 focus:ring-blue-500/50 outline-none"
             >
               <Download className="w-6 h-6" />
-              <span className="font-semibold">Auf Gerät speichern</span>
+              <span className="font-bold">Auf Gerät speichern</span>
             </button>
             
             <button
@@ -230,7 +230,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
               className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-md hover:shadow-lg focus:ring-4 focus:ring-indigo-500/50 outline-none"
             >
               <Share2 className="w-6 h-6" />
-              <span className="font-semibold">Sicher Teilen / Senden</span>
+              <span className="font-bold">Sicher Teilen / Senden</span>
             </button>
             
             <input
@@ -247,7 +247,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
               className="sm:col-span-2 flex items-center justify-center gap-2 p-4 rounded-xl bg-white dark:bg-slate-800 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-700 dark:text-gray-300 transition-all focus:ring-4 focus:ring-blue-500/50 outline-none group"
             >
               <Upload className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
-              <span className="font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              <span className="font-normal group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                 Backup wiederherstellen
               </span>
             </button>

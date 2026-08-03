@@ -53,7 +53,7 @@ function MenuRow({
       </span>
       <span className="flex-1 min-w-0">
         <span className="block font-black text-[var(--text-color)] text-sm leading-tight">{label}</span>
-        <span className="block text-xs font-semibold text-[var(--text-muted)] truncate">{hint}</span>
+        <span className="block text-xs font-bold text-[var(--text-muted)] truncate">{hint}</span>
       </span>
       <ChevronRight className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors flex-shrink-0" aria-hidden="true" />
     </button>
@@ -84,7 +84,7 @@ function ToggleRow({
       <span className="flex-1 min-w-0">
         <span className="block font-black text-[var(--text-color)] text-sm leading-tight">{label}</span>
         {hint && (
-          <span id={describedById} className="block text-xs font-semibold text-[var(--text-muted)] leading-snug mt-0.5">
+          <span id={describedById} className="block text-xs font-bold text-[var(--text-muted)] leading-snug mt-0.5">
             {hint}
           </span>
         )}
@@ -202,7 +202,7 @@ export default function A11yModal({
       <div className="flex items-center gap-3 px-1">
         <Settings2 className="w-7 h-7 text-[var(--accent)]" aria-hidden="true" />
         <div className="flex-1 min-w-0">
-          <h2 id="a11y-modal-title" className="text-xl md:text-2xl font-extrabold tracking-tight">
+          <h2 id="a11y-modal-title" className="text-xl md:text-2xl font-black tracking-tight">
             Optionen
           </h2>
         </div>
@@ -217,7 +217,7 @@ export default function A11yModal({
         )}
       </div>
 
-      <p className="flex items-start gap-2 px-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 leading-relaxed">
+      <p className="flex items-start gap-2 px-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 leading-relaxed">
         <Lock className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
         <span>
           DSGVO-konform: Alle Daten bleiben lokal auf dem Gerät. Der Geräte-Sync läuft
@@ -285,7 +285,7 @@ export default function A11yModal({
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h2 className="text-lg md:text-xl font-extrabold tracking-tight">Anzeige & Bedienung</h2>
+        <h2 className="text-lg md:text-xl font-black tracking-tight">Anzeige & Bedienung</h2>
       </div>
 
       {/* Schriftgröße: eine kompakte Segment-Reihe */}
@@ -339,7 +339,7 @@ export default function A11yModal({
                   className="sr-only"
                 />
                 <Palette className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                <span className="font-extrabold text-sm leading-tight">{t.label}</span>
+                <span className="font-black text-sm leading-tight">{t.label}</span>
                 {isActive && <span className="ml-auto w-2.5 h-2.5 rounded-full bg-current flex-shrink-0" aria-hidden="true" />}
               </label>
             );
@@ -430,7 +430,7 @@ export default function A11yModal({
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h2 className="text-lg md:text-xl font-extrabold tracking-tight">Formular anpassen</h2>
+        <h2 className="text-lg md:text-xl font-black tracking-tight">Formular anpassen</h2>
       </div>
 
       <SectionCard title="Neues Feld hinzufügen">

@@ -407,7 +407,7 @@ export default function OnboardingModal({
           <button
             type="button"
             onClick={onFinish}
-            className="w-full min-h-[44px] text-sm font-semibold text-[var(--text-muted)] hover:underline cursor-pointer"
+            className="w-full min-h-[44px] text-sm font-bold text-[var(--text-muted)] hover:underline cursor-pointer"
           >
             Einrichtung überspringen
           </button>

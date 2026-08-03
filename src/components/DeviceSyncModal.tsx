@@ -669,7 +669,7 @@ export default function DeviceSyncModal({
             }`}
           >
             <div className="text-[0.6875rem] font-black mb-1">{step.label}</div>
-            <div className="text-[0.75rem] font-semibold">{step.help}</div>
+            <div className="text-[0.75rem] font-bold">{step.help}</div>
           </li>
         ))}
       </ol>
@@ -852,7 +852,7 @@ export default function DeviceSyncModal({
 
       <button
         onClick={cancelPairing}
-        className="text-sm text-[var(--accent)] font-semibold hover:underline cursor-pointer"
+        className="text-sm text-[var(--accent)] font-bold hover:underline cursor-pointer"
       >
         Abbrechen
       </button>
@@ -866,7 +866,7 @@ export default function DeviceSyncModal({
         <Link2 className="w-6 h-6 animate-pulse" aria-hidden="true" />
         <Smartphone className="w-8 h-8" aria-hidden="true" />
       </div>
-      <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-sm text-emerald-800 dark:text-emerald-300 font-semibold text-center">
+      <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-sm text-emerald-800 dark:text-emerald-300 font-bold text-center">
         Live verbunden – beide Geräte gleichen sich automatisch ab.
         {lastSyncTime && (
           <span className="block mt-1 text-xs font-bold">Letzter Abgleich: {lastSyncTime} Uhr</span>
@@ -1047,7 +1047,7 @@ export default function DeviceSyncModal({
               <div className="flex justify-center">
                 <button
                   onClick={resetView}
-                  className="mt-4 text-sm text-[var(--accent)] font-semibold hover:underline cursor-pointer"
+                  className="mt-4 text-sm text-[var(--accent)] font-bold hover:underline cursor-pointer"
                 >
                   Abbrechen
                 </button>
@@ -1067,7 +1067,7 @@ export default function DeviceSyncModal({
                 <CheckCircle2 className="w-6 h-6" aria-hidden="true" />
                 <Smartphone className="w-8 h-8" aria-hidden="true" />
               </div>
-              <p className="text-sm text-center font-medium">
+              <p className="text-sm text-center font-normal">
                 Daten vollständig empfangen. Wie sollen sie übernommen werden?
               </p>
 
@@ -1099,7 +1099,7 @@ export default function DeviceSyncModal({
 
               <button
                 onClick={resetView}
-                className="w-full text-sm text-[var(--text-muted)] font-semibold hover:underline cursor-pointer"
+                className="w-full text-sm text-[var(--text-muted)] font-bold hover:underline cursor-pointer"
               >
                 Verwerfen und zurück
               </button>
@@ -1125,7 +1125,7 @@ export default function DeviceSyncModal({
                       </button>
                       <button
                         onClick={cancelPairing}
-                        className="w-full text-sm text-[var(--text-muted)] font-semibold hover:underline cursor-pointer"
+                        className="w-full text-sm text-[var(--text-muted)] font-bold hover:underline cursor-pointer"
                       >
                         Abbrechen
                       </button>
@@ -1159,7 +1159,7 @@ export default function DeviceSyncModal({
                         </button>
                         <button
                           onClick={cancelPairing}
-                          className="w-full text-sm text-[var(--text-muted)] font-semibold hover:underline cursor-pointer"
+                          className="w-full text-sm text-[var(--text-muted)] font-bold hover:underline cursor-pointer"
                         >
                           Abbrechen
                         </button>

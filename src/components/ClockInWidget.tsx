@@ -251,7 +251,7 @@ export default React.memo(function ClockInWidget({
         const { latitude, longitude } = position.coords;
         // Construct a Google Maps link or just simple coordinates as placeholder
         // Since we don't have a reverse geocoding API, we'll just write the coords
-        const locationStr = `📍 GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+        const locationStr = `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
         if (isManual) {
           setManualNotes((prev) => prev ? `${prev} | ${locationStr}` : locationStr);
         } else {
@@ -383,7 +383,7 @@ export default React.memo(function ClockInWidget({
                 <div className="text-3xl font-black font-mono tracking-tight text-[var(--text-color)]">
                   {elapsed || "00:00:00"}
                 </div>
-                <span className="block text-[0.75rem] text-[var(--text-muted)] font-semibold">
+                <span className="block text-[0.75rem] text-[var(--text-muted)] font-bold">
                   Eingestempelt seit{" "}
                   {new Date(clockInTime).toLocaleTimeString("de-DE", {
                     hour: "2-digit",
@@ -408,7 +408,7 @@ export default React.memo(function ClockInWidget({
               className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] space-y-4 animate-slide-up"
             >
               <h4 className="text-xs font-black uppercase text-[var(--accent)] tracking-wider">
-                ✍️ Arbeitszeit verbuchen
+                Arbeitszeit verbuchen
               </h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -456,7 +456,7 @@ export default React.memo(function ClockInWidget({
                       +15
                     </button>
                   </div>
-                  <span className="text-[0.6875rem] text-[var(--text-muted)] block font-medium">
+                  <span className="text-[0.6875rem] text-[var(--text-muted)] block font-normal">
                     (Vorgeschrieben: 30 Min ab 6h, 45 Min ab 9h)
                   </span>
                 </div>
@@ -472,10 +472,10 @@ export default React.memo(function ClockInWidget({
                     aria-label="Arbeitszeit Aufteilung"
                   >
                     {[
-                      { id: "half", label: "⚖️ 50% / 50% " },
-                      { id: "office", label: "💻 100% Büro" },
-                      { id: "field", label: "🚗 100% Außen" },
-                      { id: "custom", label: "✏️ Eigene %" },
+                      { id: "half", label: "50% / 50%" },
+                      { id: "office", label: "100% Büro" },
+                      { id: "field", label: "100% Außen" },
+                      { id: "custom", label: "Eigene %" },
                     ].map((p) => {
                       const isActive = preset === p.id;
                       return (
@@ -490,7 +490,7 @@ export default React.memo(function ClockInWidget({
                             if (p.id === "field") setOfficeRatio(0.0);
                             if (p.id === "half") setOfficeRatio(0.5);
                           }}
-                          className={`p-1.5 rounded border text-[0.75rem] font-extrabold cursor-pointer transition-all ${
+                          className={`p-1.5 rounded border text-[0.75rem] font-black cursor-pointer transition-all ${
                             isActive
                               ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-text)]"
                               : "bg-[var(--card-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
@@ -534,7 +534,7 @@ export default React.memo(function ClockInWidget({
               <div className="p-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[0.75rem] font-black uppercase text-[var(--text-color)] tracking-wide flex items-center gap-1">
-                    💻 Büro vs. 🚗 Außendienst h
+                    Büro vs. Außendienst h
                   </span>
                   {(typedOfficeHours !== "" || typedFieldHours !== "") && (
                     <button
@@ -543,13 +543,13 @@ export default React.memo(function ClockInWidget({
                         setTypedOfficeHours("");
                         setTypedFieldHours("");
                       }}
-                      className="text-[0.75rem] text-red-500 hover:underline font-extrabold cursor-pointer"
+                      className="text-[0.75rem] text-red-500 hover:underline font-black cursor-pointer"
                     >
                       Zurücksetzen auf Automatik
                     </button>
                   )}
                 </div>
-                <p className="text-[0.75rem] text-[var(--text-muted)] font-medium leading-relaxed">
+                <p className="text-[0.75rem] text-[var(--text-muted)] font-normal leading-relaxed">
                   Tragen Sie die Stunden bei Bedarf direkt manuell ein (mit 2
                   Nachkommastellen):
                 </p>
@@ -569,7 +569,7 @@ export default React.memo(function ClockInWidget({
                       placeholder={calculatedOfficeHrs.toFixed(2)}
                       value={typedOfficeHours}
                       onChange={(e) => setTypedOfficeHours(e.target.value)}
-                      className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-semibold outline-none focus:border-[var(--border-focus)]"
+                      className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
                     />
                   </div>
                   <div className="space-y-1">
@@ -587,7 +587,7 @@ export default React.memo(function ClockInWidget({
                       placeholder={calculatedFieldHrs.toFixed(2)}
                       value={typedFieldHours}
                       onChange={(e) => setTypedFieldHours(e.target.value)}
-                      className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-semibold outline-none focus:border-[var(--border-focus)]"
+                      className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
                     />
                   </div>
                 </div>
@@ -619,7 +619,7 @@ export default React.memo(function ClockInWidget({
                     placeholder="z.B. Schulung an blindenschule Hannover, wewalk vorführung..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="flex-1 p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-semibold outline-none focus:border-[var(--border-focus)]"
+                    className="flex-1 p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
                   />
                   <button
                     type="button"
@@ -676,7 +676,7 @@ export default React.memo(function ClockInWidget({
             className="w-full py-2.5 px-3 border border-dashed border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-bold rounded-xl cursor-pointer hover:bg-[var(--bg-color)] hover:border-[var(--border-focus)] transition-all flex items-center justify-center gap-2 active:scale-95"
           >
             <Plus className="w-4 h-4 text-[var(--accent)]" />
-            <span>✍️ Vergessene Schicht manuell nachtragen</span>
+            <span>Vergessene Schicht manuell nachtragen</span>
           </button>
         </div>
       )}
@@ -690,7 +690,7 @@ export default React.memo(function ClockInWidget({
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-black uppercase text-[var(--accent)] tracking-wider flex items-center gap-1.5">
               <Plus className="w-4 h-4" />
-              <span>✍️ Schicht manuell nachtragen</span>
+              <span>Schicht manuell nachtragen</span>
             </h4>
             <span className="text-[0.75rem] bg-[var(--accent)]/10 text-[var(--accent)] px-2 py-0.5 rounded-full font-black uppercase">
               Manuell
@@ -713,7 +713,7 @@ export default React.memo(function ClockInWidget({
                 max={maxDate}
                 value={manualDate}
                 onChange={(e) => setManualDate(e.target.value)}
-                className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-semibold outline-none focus:border-[var(--border-focus)] cursor-pointer"
+                className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)] cursor-pointer"
                 required
               />
             </div>
@@ -731,7 +731,7 @@ export default React.memo(function ClockInWidget({
                 type="time"
                 value={manualClockIn}
                 onChange={(e) => setManualClockIn(e.target.value)}
-                className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-semibold outline-none focus:border-[var(--border-focus)] cursor-pointer"
+                className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)] cursor-pointer"
                 required
               />
             </div>
@@ -749,7 +749,7 @@ export default React.memo(function ClockInWidget({
                 type="time"
                 value={manualClockOut}
                 onChange={(e) => setManualClockOut(e.target.value)}
-                className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-semibold outline-none focus:border-[var(--border-focus)] cursor-pointer"
+                className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)] cursor-pointer"
                 required
               />
             </div>
@@ -813,10 +813,10 @@ export default React.memo(function ClockInWidget({
                 aria-label="Manuelle Arbeitszeit Aufteilung"
               >
                 {[
-                  { id: "half", label: "⚖️ 50% / 50% " },
-                  { id: "office", label: "💻 100% Büro" },
-                  { id: "field", label: "🚗 100% Außen" },
-                  { id: "custom", label: "✏️ Eigene %" },
+                  { id: "half", label: "50% / 50%" },
+                  { id: "office", label: "100% Büro" },
+                  { id: "field", label: "100% Außen" },
+                  { id: "custom", label: "Eigene %" },
                 ].map((p) => {
                   const isActive = manualPreset === p.id;
                   return (
@@ -831,7 +831,7 @@ export default React.memo(function ClockInWidget({
                         if (p.id === "field") setManualOfficeRatio(0.0);
                         if (p.id === "half") setManualOfficeRatio(0.5);
                       }}
-                      className={`p-1.5 rounded border text-[0.75rem] font-extrabold cursor-pointer transition-all ${
+                      className={`p-1.5 rounded border text-[0.75rem] font-black cursor-pointer transition-all ${
                         isActive
                           ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-text)]"
                           : "bg-[var(--card-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
@@ -875,7 +875,7 @@ export default React.memo(function ClockInWidget({
           <div className="p-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[0.75rem] font-black uppercase text-[var(--text-color)] tracking-wide flex items-center gap-1">
-                💻 Büro vs. 🚗 Außendienst h
+                Büro vs. Außendienst h
               </span>
               {(typedManualOfficeHours !== "" ||
                 typedManualFieldHours !== "") && (
@@ -885,13 +885,13 @@ export default React.memo(function ClockInWidget({
                     setTypedManualOfficeHours("");
                     setTypedManualFieldHours("");
                   }}
-                  className="text-[0.75rem] text-red-500 hover:underline font-extrabold cursor-pointer"
+                  className="text-[0.75rem] text-red-500 hover:underline font-black cursor-pointer"
                 >
                   Zurücksetzen auf Automatik
                 </button>
               )}
             </div>
-            <p className="text-[0.75rem] text-[var(--text-muted)] font-medium leading-relaxed">
+            <p className="text-[0.75rem] text-[var(--text-muted)] font-normal leading-relaxed">
               Tragen Sie die Stunden bei Bedarf direkt manuell ein (mit 2
               Nachkommastellen):
             </p>
@@ -911,7 +911,7 @@ export default React.memo(function ClockInWidget({
                   placeholder={calculatedManualOfficeHrs.toFixed(2)}
                   value={typedManualOfficeHours}
                   onChange={(e) => setTypedManualOfficeHours(e.target.value)}
-                  className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-semibold outline-none focus:border-[var(--border-focus)]"
+                  className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
                 />
               </div>
               <div className="space-y-1">
@@ -929,7 +929,7 @@ export default React.memo(function ClockInWidget({
                   placeholder={calculatedManualFieldHrs.toFixed(2)}
                   value={typedManualFieldHours}
                   onChange={(e) => setTypedManualFieldHours(e.target.value)}
-                  className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-semibold outline-none focus:border-[var(--border-focus)]"
+                  className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
                 />
               </div>
             </div>
@@ -961,7 +961,7 @@ export default React.memo(function ClockInWidget({
                 placeholder="z.B. Schulung an blindenschule Hannover, wewalk vorführung..."
                 value={manualNotes}
                 onChange={(e) => setManualNotes(e.target.value)}
-                className="flex-1 p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-semibold outline-none focus:border-[var(--border-focus)]"
+                className="flex-1 p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
               />
               <button
                 type="button"
@@ -1011,8 +1011,8 @@ export default React.memo(function ClockInWidget({
             aria-expanded={!isLogsCollapsed}
             aria-controls="shift-logs-list"
           >
-            <span>📅 Schicht-Protokoll ({timeLogs.length} Einträge)</span>
-            <span>{isLogsCollapsed ? "Anzeigen ➕" : "Ausblenden ➖"}</span>
+            <span>Schicht-Protokoll ({timeLogs.length} Einträge)</span>
+            <span>{isLogsCollapsed ? "Anzeigen" : "Ausblenden"}</span>
           </button>
 
           {!isLogsCollapsed && (
@@ -1049,20 +1049,20 @@ export default React.memo(function ClockInWidget({
                           <span className="font-bold text-[var(--text-color)]">
                             {log.duration.toFixed(2)}h
                           </span>
-                          <span className="text-[0.75rem] text-[var(--text-muted)] font-medium">
+                          <span className="text-[0.75rem] text-[var(--text-muted)] font-normal">
                             ({log.clockIn} - {log.clockOut}, Pause{" "}
                             {log.breakMinutes}m)
                           </span>
                         </div>
 
-                        <div className="text-[0.75rem] text-[var(--text-muted)] font-semibold mt-0.5 flex flex-wrap gap-x-2">
-                          <span>💻 Büro: {log.officeHours.toFixed(2)}h</span>
-                          <span>🚗 Außen: {log.fieldHours.toFixed(2)}h</span>
+                        <div className="text-[0.75rem] text-[var(--text-muted)] font-bold mt-0.5 flex flex-wrap gap-x-2">
+                          <span>Büro: {log.officeHours.toFixed(2)}h</span>
+                          <span>Außen: {log.fieldHours.toFixed(2)}h</span>
                         </div>
 
                         {log.notes && (
                           <p
-                            className="text-[0.75rem] text-[var(--text-muted)] italic font-medium mt-0.5 truncate"
+                            className="text-[0.75rem] text-[var(--text-muted)] italic font-normal mt-0.5 truncate"
                             title={log.notes}
                           >
                             "{log.notes}"

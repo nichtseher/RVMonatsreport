@@ -10,6 +10,80 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-03 — v0.9.6: Ein Symbolsystem, drei Schriftgewichte
+
+Grundlage ist das Design-Inventar (siehe unten). Umgesetzt sind die Schritte 1
+bis 3 des dortigen Vorschlags; Schritt 4 — die 677 fest verdrahteten
+Farbklassen — bleibt bewusst offen, weil er einen eigenen Durchgang braucht.
+
+### Ausgangslage, gemessen
+
+| | vorher |
+|---|---|
+| Emojis als Symbol | 51 verschiedene, 147 Fundstellen |
+| echte Icons | 90 verschiedene |
+| Schriftgewicht-Klassen | 6 (`black`, `extrabold`, `bold`, `semibold`, `medium`, `normal`) |
+| davon gleichzeitig sichtbar | 5 |
+
+### Was das praktisch bedeutete
+
+Emojis sehen auf jedem Betriebssystem anders aus, folgen keinem Farbschema und
+lassen sich im Hochkontrast-Modus nicht umfärben — ausgerechnet dort, wo es am
+meisten zählt. In Meldungen (`triggerToast`, `announceToAriaAndSpeech`) wurden
+sie zudem vom Screenreader mitgelesen.
+
+### Umsetzung
+
+**1. Symbolkarte vervollständigt.** `utils/iconMap.ts` übersetzte bereits 14
+Emojis in Icons — der halbe Weg war gebaut. Jetzt 27 Einträge, die *alle*
+Symbole abdecken, die die App vergeben kann: die Standardfelder, die
+Auswahlliste für eigene Kategorien und den Altbestand früherer Fassungen.
+Entscheidend: **Die Emojis bleiben als gespeicherter Wert erhalten.** Nur die
+Darstellung ändert sich — bestehende Kategorien, alte Datensicherungen und der
+Geräte-Sync mit einer älteren Fassung funktionieren unverändert.
+
+**2. Emojis aus der Oberfläche entfernt.** 45 Stellen in fünf Dateien: aus
+Meldungen ersatzlos gestrichen, in Bedienelementen durch das passende Icon
+ersetzt (Kompakt, Vorlage, Ziele, Datumstempel, „an VL senden“, Bestätigungen).
+Umgesetzt mit einem Skript, das jede Fundstelle vorher prüft und abbricht,
+bevor es schreibt, falls eine nicht genau einmal vorkommt.
+
+**3. Schriftgewichte auf drei reduziert.** 136 Stellen, jede nur *eine* Stufe:
+`extrabold` → `black`, `semibold` → `bold`, `medium` → `normal`. Die Schrift
+wird nirgends dünner — für die Zielgruppe wäre das ein Rückschritt. Übrig:
+900 für Überschriften und Zahlen, 700 für Bedienelemente, 400 für Fließtext.
+Der Sprunglink in `index.css` stand als einziges Element noch auf 800 und ist
+mitgezogen.
+
+Nebenbei: Das Kategorie-Symbol in der Zählerkarte stand auf einer fest
+verdrahteten Blaustufe und folgt jetzt `var(--accent)`.
+
+### Geprüft
+
+Neue Prüfgruppe `scripts/checks/symbole.ts` (6 Fälle), damit das nicht
+zurückfällt:
+- jedes Standard-Symbol und jedes wählbare Symbol hat einen Karten-Eintrag
+- die Symbole aus dem Altbestand sind weiterhin abgedeckt
+- unbekannte Zeichen liefern `null`, statt zu werfen
+- **Meldungen enthalten keine Emojis** (`triggerToast` / `announceToAriaAndSpeech`)
+
+`npm run check` steht damit bei **58 Fällen**. Am laufenden System über alle
+fünf Hauptansichten gemessen:
+
+| | vorher | nachher |
+|---|---|---|
+| sichtbare Emojis | 14 (nur RV Report) | **0 in allen fünf Ansichten** |
+| Schriftgewichte | 5 | **3 (400 / 700 / 900)** |
+| Symbolfarbe Zählerkarte | fest `blue-600` | `var(--accent)` |
+
+`npm run lint` und `npm run build` fehlerfrei, kein waagerechter Überlauf.
+
+**Bewusst offen:** die 677 fest verdrahteten Farbklassen. Erst danach kann die
+`!important`-Schicht aus 0.8.1 entfallen, mit der die Hochkontrast-Schemata
+diese Farben heute übermalen.
+
+---
+
 ## 2026-08-03 — v0.9.5: Geräte-Sync abgesichert
 
 Grundlage ist [KONZEPT-0.9.5.md](KONZEPT-0.9.5.md) — eine vollständige Prüfung

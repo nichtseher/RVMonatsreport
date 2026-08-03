@@ -181,7 +181,7 @@ export default function HistoryModal({
       <div className="p-5 border-b border-[var(--border-color)] flex items-center justify-between bg-slate-50 dark:bg-slate-900/40">
         <div className="flex items-center gap-2.5">
           <History className="w-5 h-5 text-[var(--accent)]" aria-hidden="true" />
-          <h2 id="history-modal-title" className="text-lg md:text-xl font-extrabold tracking-tight text-[var(--text-color)]">
+          <h2 id="history-modal-title" className="text-lg md:text-xl font-black tracking-tight text-[var(--text-color)]">
             RV Archiv - Gespeicherte Monate
           </h2>
         </div>
@@ -191,7 +191,7 @@ export default function HistoryModal({
       <div className="p-5 space-y-4 flex-1">
           {/* Storage Information box */}
           <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/20 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-900 text-xs font-bold leading-relaxed">
-            💡 <strong>Ihre Daten sind sicher:</strong> Alle Ihre Monatsdaten werden direkt auf Ihrem Gerät gespeichert. Es werden keine Daten ins Internet übertragen.
+            <strong>Ihre Daten sind sicher:</strong> Alle Ihre Monatsdaten werden direkt auf Ihrem Gerät gespeichert. Es werden keine Daten ins Internet übertragen.
           </div>
 
           {/* Search bar integration for clutter-free scaling */}
@@ -219,8 +219,8 @@ export default function HistoryModal({
 
           {records.length === 0 ? (
             <div className="text-center py-10 space-y-3">
-              <div className="text-4xl">📁</div>
-              <p className="text-sm font-extrabold text-[var(--text-muted)]">
+              <History className="w-10 h-10 mx-auto text-[var(--text-muted)]" aria-hidden="true" />
+              <p className="text-sm font-black text-[var(--text-muted)]">
                 Noch keine Monate im Archiv.
               </p>
               <p className="text-xs text-[var(--text-muted)] max-w-xs mx-auto leading-relaxed">
@@ -229,7 +229,7 @@ export default function HistoryModal({
             </div>
           ) : filteredRecords.length === 0 ? (
             <div className="text-center py-10">
-              <p className="text-sm font-extrabold text-[var(--text-muted)]">
+              <p className="text-sm font-black text-[var(--text-muted)]">
                 Keine passenden Einträge gefunden.
               </p>
             </div>
@@ -282,7 +282,7 @@ export default function HistoryModal({
                               >
                                 <div className="min-w-0 flex-1">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <span className="font-extrabold text-xs md:text-sm text-[var(--text-color)] flex items-center gap-1.5">
+                                    <span className="font-black text-xs md:text-sm text-[var(--text-color)] flex items-center gap-1.5">
                                       <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" aria-hidden="true" />
                                       {formatMonthGerman(record.month)}
                                     </span>
@@ -321,7 +321,7 @@ export default function HistoryModal({
                                           onLoadMonth(record.month);
                                         }}
                                         aria-label={`${formatMonthGerman(record.month)} laden und bearbeiten`}
-                                        className="col-span-3 h-11 rounded-xl bg-[var(--primary)] text-[var(--primary-text)] font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all focus-visible:ring-4"
+                                        className="col-span-3 h-11 rounded-xl bg-[var(--primary)] text-[var(--primary-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all focus-visible:ring-4"
                                       >
                                         <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
                                         <span>Laden / Editieren</span>
@@ -332,7 +332,7 @@ export default function HistoryModal({
                                           <button
                                             type="button"
                                             onClick={() => executeDelete()}
-                                            className="flex-1 rounded-xl border border-red-600 bg-red-500 text-white font-extrabold text-xs flex items-center justify-center cursor-pointer hover:bg-red-600 active:scale-95 transition-all focus-visible:ring-4"
+                                            className="flex-1 rounded-xl border border-red-600 bg-red-500 text-white font-black text-xs flex items-center justify-center cursor-pointer hover:bg-red-600 active:scale-95 transition-all focus-visible:ring-4"
                                             aria-label="Wirklich löschen? Ja"
                                           >
                                             Ja
@@ -340,7 +340,7 @@ export default function HistoryModal({
                                           <button
                                             type="button"
                                             onClick={() => setDeleteConfirm(null)}
-                                            className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-[var(--text-color)] font-extrabold text-xs flex items-center justify-center cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all focus-visible:ring-4"
+                                            className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-[var(--text-color)] font-black text-xs flex items-center justify-center cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all focus-visible:ring-4"
                                             aria-label="Abbrechen"
                                           >
                                             <X className="w-3.5 h-3.5" />
@@ -351,7 +351,7 @@ export default function HistoryModal({
                                           type="button"
                                           onClick={() => setDeleteConfirm(record.month)}
                                           aria-label={`${formatMonthGerman(record.month)} aus RV Archiv löschen`}
-                                          className="col-span-1 h-11 rounded-xl border border-red-200 dark:border-red-950/40 bg-red-50/20 text-red-600 dark:text-red-400 font-extrabold text-xs flex items-center justify-center cursor-pointer hover:bg-red-50 dark:hover:bg-red-950/20 active:scale-95 transition-all focus-visible:ring-4"
+                                          className="col-span-1 h-11 rounded-xl border border-red-200 dark:border-red-950/40 bg-red-50/20 text-red-600 dark:text-red-400 font-black text-xs flex items-center justify-center cursor-pointer hover:bg-red-50 dark:hover:bg-red-950/20 active:scale-95 transition-all focus-visible:ring-4"
                                         >
                                           <Trash2 className="w-4 h-4" aria-hidden="true" />
                                         </button>
@@ -363,7 +363,7 @@ export default function HistoryModal({
                                         type="button"
                                         onClick={() => handleDirectExport(record)}
                                         aria-label={`${formatMonthGerman(record.month)} RV Report als Excel exportieren und teilen`}
-                                        className="h-11 rounded-xl border border-emerald-600/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:bg-emerald-500/10 active:scale-95 transition-all focus-visible:ring-4"
+                                        className="h-11 rounded-xl border border-emerald-600/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:bg-emerald-500/10 active:scale-95 transition-all focus-visible:ring-4"
                                       >
                                         <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
                                         <span>Export RV Report</span>
@@ -374,7 +374,7 @@ export default function HistoryModal({
                                           type="button"
                                           onClick={() => handleDirectExportTimeLogs(record)}
                                           aria-label={`${formatMonthGerman(record.month)} RV Zeit Zeiterfassung als Excel exportieren und teilen`}
-                                          className="h-11 rounded-xl border border-teal-600/30 bg-teal-500/5 text-teal-600 dark:text-teal-400 font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:bg-teal-500/10 active:scale-95 transition-all focus-visible:ring-4"
+                                          className="h-11 rounded-xl border border-teal-600/30 bg-teal-500/5 text-teal-600 dark:text-teal-400 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:bg-teal-500/10 active:scale-95 transition-all focus-visible:ring-4"
                                         >
                                           <Clock className="w-3.5 h-3.5 text-teal-600" aria-hidden="true" />
                                           <span>Export RV Zeit</span>

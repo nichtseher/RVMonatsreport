@@ -273,7 +273,8 @@ button, input, select, textarea {
   border-radius: 999px;
   background: var(--primary);
   color: var(--primary-text);
-  font-weight: 800;
+  /* 700 statt 800: Die App kennt seit 0.9.6 nur noch 400 / 700 / 900. */
+  font-weight: 700;
   text-decoration: none;
 }
 

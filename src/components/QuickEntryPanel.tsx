@@ -124,7 +124,7 @@ export default function QuickEntryPanel({
       <div className="flex items-center justify-between gap-2 mb-3">
         <h2
           id="quick-entry-heading"
-          className="text-base font-extrabold tracking-tight text-[var(--text-color)] flex items-center gap-2 flex-wrap min-w-0"
+          className="text-base font-black tracking-tight text-[var(--text-color)] flex items-center gap-2 flex-wrap min-w-0"
         >
           <Zap className="w-5 h-5 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
           Schnell-Erfassung
@@ -206,7 +206,7 @@ export default function QuickEntryPanel({
               <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
               Automatisch (meistgenutzt)
             </button>
-            <span className="text-xs font-semibold text-[var(--text-muted)]">
+            <span className="text-xs font-bold text-[var(--text-muted)]">
               oder bis zu {MAX_QUICK_FIELDS} Kategorien selbst wählen:
             </span>
           </div>

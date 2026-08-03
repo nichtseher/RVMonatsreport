@@ -126,7 +126,7 @@ export default React.memo(function CounterField({
   };
 
   const parentPadding = isCompact ? "py-1.5 gap-2" : "py-4 gap-3";
-  const labelSize = isCompact ? "text-sm font-semibold" : "text-base font-semibold";
+  const labelSize = isCompact ? "text-sm font-bold" : "text-base font-bold";
   // Bedienflaechen bewusst in festen Pixeln statt in rem: Sie enthalten nur
   // Symbole, keinen Text. Mit rem wuchsen sie bei "Grosse Schrift" mit --
   // die Zeile wurde dann breiter als die Karte und die Minus-Taste rutschte
@@ -150,7 +150,9 @@ export default React.memo(function CounterField({
         >
           {(() => {
             const Icon = getIconForString(config.icon);
-            if (Icon) return <Icon className="w-5 h-5 flex-shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" aria-hidden="true" />;
+            {/* Theme-Farbe statt fester Palettenfarbe: Das Symbol soll dem
+                gewählten Farbschema folgen -- gerade im Hochkontrast-Modus. */}
+            if (Icon) return <Icon className="w-5 h-5 flex-shrink-0 mt-0.5 text-[var(--accent)]" aria-hidden="true" />;
             if (config.icon) return <span className="text-xl flex-shrink-0 mt-0.5" aria-hidden="true">{config.icon}</span>;
             return null;
           })()}
@@ -229,7 +231,7 @@ export default React.memo(function CounterField({
           tabIndex={-1}
           aria-hidden="true"
           onClick={() => handleQuickChange(-1)}
-          className={`${quickButtonSize} shrink-0 order-4 sm:order-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-red-500 font-extrabold transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
+          className={`${quickButtonSize} shrink-0 order-4 sm:order-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-red-500 font-black transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
         >
           -5
         </button>
@@ -240,7 +242,7 @@ export default React.memo(function CounterField({
           tabIndex={-1}
           aria-hidden="true"
           onClick={() => handleQuickChange(1)}
-          className={`${quickButtonSize} shrink-0 order-5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-emerald-500 font-extrabold transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
+          className={`${quickButtonSize} shrink-0 order-5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-emerald-500 font-black transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
         >
           +5
         </button>

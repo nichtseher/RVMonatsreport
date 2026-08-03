@@ -170,10 +170,10 @@ export default function TimeModal({
       <div className="flex items-center gap-3 border-b border-[var(--border-color)] pb-4">
           <Clock className="w-8 h-8 text-[var(--accent)]" aria-hidden="true" />
           <div>
-            <h2 id="time-modal-title" className="text-2xl font-extrabold tracking-tight">
+            <h2 id="time-modal-title" className="text-2xl font-black tracking-tight">
               Zeiterfassung
             </h2>
-            <p className="text-xs text-[var(--text-muted)] font-semibold mt-0.5">
+            <p className="text-xs text-[var(--text-muted)] font-bold mt-0.5">
               Hier erfassen Sie Ihre Arbeitszeiten und sehen Ihr Arbeitszeitkonto.
             </p>
           </div>
@@ -187,7 +187,7 @@ export default function TimeModal({
               setActiveTab("stempeln");
               announceToAriaAndSpeech("Stempeluhr und Schichten ausgewählt");
             }}
-            className={`flex-1 pb-3 text-sm font-extrabold border-b-2 transition-all cursor-pointer ${
+            className={`flex-1 pb-3 text-sm font-black border-b-2 transition-all cursor-pointer ${
               activeTab === "stempeln"
                 ? "border-[var(--accent)] text-[var(--text-color)]"
                 : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-color)]"
@@ -201,7 +201,7 @@ export default function TimeModal({
               setActiveTab("konto");
               announceToAriaAndSpeech("Jahreskonto und Abwesenheiten ausgewählt");
             }}
-            className={`flex-1 pb-3 text-sm font-extrabold border-b-2 transition-all cursor-pointer ${
+            className={`flex-1 pb-3 text-sm font-black border-b-2 transition-all cursor-pointer ${
               activeTab === "konto"
                 ? "border-[var(--accent)] text-[var(--text-color)]"
                 : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-color)]"
@@ -217,8 +217,8 @@ export default function TimeModal({
             <div className="p-4 rounded-xl border border-blue-100 dark:border-blue-900/30 bg-blue-50/50 dark:bg-blue-950/10 flex flex-col gap-3">
               <div className="flex gap-3 text-[var(--text-color)]">
                 <Briefcase className="w-5 h-5 flex-shrink-0 mt-0.5 text-blue-500" aria-hidden="true" />
-                <div className="text-xs space-y-1 leading-relaxed font-semibold">
-                  <p className="font-extrabold text-sm">Arbeitszeit- &amp; Urlaubskonto</p>
+                <div className="text-xs space-y-1 leading-relaxed font-bold">
+                  <p className="font-black text-sm">Arbeitszeit- &amp; Urlaubskonto</p>
                   <p className="text-[var(--text-muted)]">
                     Sollzeit: <strong className="text-[var(--text-color)]">{(carryover.dailyTargetHours * 5).toFixed(1)}h/Woche</strong> | 
                     Jahresanspruch: <strong className="text-[var(--text-color)]">{carryover.regularVacationEntitlement + carryover.additionalVacationEntitlement} Tage</strong>
@@ -268,11 +268,11 @@ export default function TimeModal({
                   </div>
 
                   <div className="space-y-2 mt-1">
-                    <div className="flex justify-between text-xs font-semibold">
+                    <div className="flex justify-between text-xs font-bold">
                       <span className="text-[var(--text-muted)]">Übertrag (Start):</span>
                       <span className="font-mono font-bold">{carryover.overtimeCarryover.toFixed(2)}h</span>
                     </div>
-                    <div className="flex justify-between text-xs font-semibold">
+                    <div className="flex justify-between text-xs font-bold">
                       <span className="text-[var(--text-muted)]">Aufbau im Jahr:</span>
                       <span className="font-mono font-bold">
                         {yearlyOvertime.totalOvertimeAccumulated >= 0 ? "+" : ""}{yearlyOvertime.totalOvertimeAccumulated.toFixed(2)}h
@@ -295,7 +295,7 @@ export default function TimeModal({
 
                 <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-[0.75rem] font-bold text-[var(--text-muted)]">
                   <span>Sollzeit:</span>
-                  <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[var(--text-color)] font-extrabold">
+                  <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[var(--text-color)] font-black">
                     {(carryover.dailyTargetHours * 5).toFixed(1)}h/Woche
                   </span>
                 </div>
@@ -312,17 +312,17 @@ export default function TimeModal({
                   </div>
 
                   <div className="space-y-2 mt-1">
-                    <div className="flex justify-between text-xs font-semibold">
+                    <div className="flex justify-between text-xs font-bold">
                       <span className="text-[var(--text-muted)]">Jahresanspruch:</span>
                       <span className="font-mono font-bold">
                         {carryover.regularVacationEntitlement + carryover.additionalVacationEntitlement} Tage
                       </span>
                     </div>
-                    <div className="flex justify-between text-xs font-semibold">
+                    <div className="flex justify-between text-xs font-bold">
                       <span className="text-[var(--text-muted)]">Resturlaub Übertrag:</span>
                       <span className="font-mono font-bold">+{carryover.vacationCarryover} Tage</span>
                     </div>
-                    <div className="flex justify-between text-xs font-semibold">
+                    <div className="flex justify-between text-xs font-bold">
                       <span className="text-[var(--text-muted)]">Genommen (YTD):</span>
                       <span className="font-mono font-bold text-red-600 dark:text-red-400">-{yearlyVacation.totalUrlaubTaken} Tage</span>
                     </div>
@@ -338,10 +338,10 @@ export default function TimeModal({
                 <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-[0.75rem] font-bold text-[var(--text-muted)]">
                   <span>Fehltage (YTD):</span>
                   <span className="flex gap-2">
-                    <span className="bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-extrabold">
+                    <span className="bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-black">
                       Krank: {yearlyVacation.totalKrankDays}
                     </span>
-                    <span className="bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-extrabold">
+                    <span className="bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-black">
                       Feiertag: {yearlyVacation.totalFeiertage}
                     </span>
                   </span>
@@ -367,7 +367,7 @@ export default function TimeModal({
                         <th className="p-2.5 text-right">Abweichung (Diff)</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-muted)] font-semibold">
+                    <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-muted)] font-bold">
                       {yearlyOvertime.monthsCalculated.map((mRow, idx) => (
                         <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/10">
                           <td className="p-2.5 font-black text-[var(--text-color)]">{formatMonthGerman(mRow.month)}</td>
@@ -401,7 +401,7 @@ export default function TimeModal({
                 onClick={() => {
                   onOpenCarryover();
                 }}
-                className="w-full py-2.5 px-3 bg-slate-50 dark:bg-slate-900/40 hover:bg-[var(--border-color)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                className="w-full py-2.5 px-3 bg-slate-50 dark:bg-slate-900/40 hover:bg-[var(--border-color)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                 aria-label="Jahreskonto-Einstellungen anpassen"
               >
                 <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" />

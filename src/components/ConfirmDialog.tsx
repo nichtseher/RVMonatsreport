@@ -112,18 +112,18 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
             </div>
             <h2
               id="confirm-dialog-title"
-              className="text-lg font-extrabold text-[var(--text-color)] leading-snug pt-1.5"
+              className="text-lg font-black text-[var(--text-color)] leading-snug pt-1.5"
             >
               {request.title}
             </h2>
           </div>
 
           <div id="confirm-dialog-desc" className="space-y-2">
-            <p className="text-sm font-medium text-[var(--text-color)] leading-relaxed">
+            <p className="text-sm font-normal text-[var(--text-color)] leading-relaxed">
               {request.message}
             </p>
             {request.details && request.details.length > 0 && (
-              <ul className="list-disc pl-5 space-y-1 text-sm font-semibold text-[var(--text-muted)]">
+              <ul className="list-disc pl-5 space-y-1 text-sm font-bold text-[var(--text-muted)]">
                 {request.details.map((d, i) => (
                   <li key={i}>{d}</li>
                 ))}

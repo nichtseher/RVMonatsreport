@@ -101,7 +101,7 @@ export default function ManageModal({
           <ArrowLeft className="w-6 h-6" aria-hidden="true" />
         </button>
         <Settings className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
-        <h2 id="manage-modal-title" className="text-2xl md:text-3xl font-extrabold tracking-tight">
+        <h2 id="manage-modal-title" className="text-2xl md:text-3xl font-black tracking-tight">
           Formularfelder verwalten
         </h2>
       </div>
@@ -128,7 +128,7 @@ export default function ManageModal({
                         key={field.id}
                         className="flex items-center justify-between p-3.5 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-xl"
                       >
-                        <span className="font-semibold text-sm leading-snug pr-3">
+                        <span className="font-bold text-sm leading-snug pr-3">
                           {field.label}
                         </span>
                         <button

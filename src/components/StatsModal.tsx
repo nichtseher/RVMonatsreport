@@ -119,10 +119,10 @@ export default function StatsModal({
             <BarChart3 className="w-5 h-5" />
           </div>
           <div>
-            <h2 id="stats-title" className="text-lg font-extrabold tracking-tight text-[var(--text-color)]">
+            <h2 id="stats-title" className="text-lg font-black tracking-tight text-[var(--text-color)]">
               RV Analyse & Trends
             </h2>
-            <p className="text-xs text-[var(--text-muted)] font-semibold">
+            <p className="text-xs text-[var(--text-muted)] font-bold">
               Automatische Auswertung für {formatMonthGerman(reportData.month)}
             </p>
           </div>
@@ -201,7 +201,7 @@ export default function StatsModal({
                   <span className="text-3xl font-black text-indigo-600 dark:text-indigo-400">
                     {totalActions}
                   </span>
-                  <span className="block text-[0.6875rem] text-[var(--text-muted)] font-semibold mt-1">
+                  <span className="block text-[0.6875rem] text-[var(--text-muted)] font-bold mt-1">
                     Gesamtaktionen
                   </span>
                 </div>
@@ -213,7 +213,7 @@ export default function StatsModal({
                   <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
                     {currentS1}
                   </span>
-                  <span className="block text-[0.6875rem] text-[var(--text-muted)] font-semibold mt-1">
+                  <span className="block text-[0.6875rem] text-[var(--text-muted)] font-bold mt-1">
                     Bereich 1
                   </span>
                 </div>
@@ -225,7 +225,7 @@ export default function StatsModal({
                   <span className="text-3xl font-black text-amber-600 dark:text-amber-400">
                     {currentS2}
                   </span>
-                  <span className="block text-[0.6875rem] text-[var(--text-muted)] font-semibold mt-1">
+                  <span className="block text-[0.6875rem] text-[var(--text-muted)] font-bold mt-1">
                     Bereich 2
                   </span>
                 </div>
@@ -237,7 +237,7 @@ export default function StatsModal({
                   <span className="text-3xl font-black text-blue-600 dark:text-blue-400">
                     {currentHours}h
                   </span>
-                  <span className="block text-[0.6875rem] text-[var(--text-muted)] font-semibold mt-1">
+                  <span className="block text-[0.6875rem] text-[var(--text-muted)] font-bold mt-1">
                     Arbeitszeit ca.
                   </span>
                 </div>
@@ -247,7 +247,7 @@ export default function StatsModal({
               {viewType === "visual" && (
                 <div className="p-5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-color)] space-y-4">
                   <h3 className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">
-                    📊 Verteilung der Aktivitäten dieses Monats
+                    Verteilung der Aktivitäten dieses Monats
                   </h3>
 
                   {totalActions === 0 ? (
@@ -343,7 +343,7 @@ export default function StatsModal({
                         <th className="p-4 text-right">Anteil (%)</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-muted)] font-semibold">
+                    <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-muted)] font-bold">
                       <tr>
                         <td className="p-4 font-bold text-[var(--text-color)]">1. Vorführungen & Auslieferungen</td>
                         <td className="p-4 text-right font-black text-emerald-500">{currentS1}</td>
@@ -377,8 +377,8 @@ export default function StatsModal({
               {sortedMonths.length < 2 ? (
                 <div className="p-6 rounded-2xl border border-[var(--border-color)] bg-amber-500/5 flex gap-3 text-amber-800 dark:text-amber-300">
                   <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                  <div className="text-xs space-y-1.5 leading-relaxed font-semibold">
-                    <p className="font-extrabold">Nicht genügend historische Daten für eine Trendanalyse vorhanden.</p>
+                  <div className="text-xs space-y-1.5 leading-relaxed font-bold">
+                    <p className="font-black">Nicht genügend historische Daten für eine Trendanalyse vorhanden.</p>
                     <p>
                       Die Trendanalyse vergleicht Ihre Monatsdaten über einen längeren Zeitraum. Sobald Sie Berichte für weitere Monate im RV Archiv sichern (dies geschieht automatisch, wenn Sie auf "Nächsten Monat starten" klicken), wird hier ein automatischer Monatsvergleich gezeichnet.
                     </p>
@@ -391,7 +391,7 @@ export default function StatsModal({
                   {viewType === "visual" && (
                     <div className="p-5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-color)] space-y-4">
                       <h3 className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)] flex items-center justify-between">
-                        <span>📈 Aktivitätsvergleich über {sortedMonths.length} Monate</span>
+                        <span>Aktivitätsvergleich über {sortedMonths.length} Monate</span>
                         <span className="text-[0.75rem] font-bold text-emerald-500 flex items-center gap-1">
                           <TrendingUp className="w-3.5 h-3.5" /> Trend
                         </span>
@@ -529,7 +529,7 @@ export default function StatsModal({
                               <th className="p-4 text-right text-blue-500">Bürozeit (h)</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-muted)] font-semibold">
+                          <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-muted)] font-bold">
                             {sortedMonths.map((m, idx) => (
                               <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/10">
                                 <td className="p-4 font-black text-[var(--text-color)]">{formatMonthGerman(m.month)}</td>

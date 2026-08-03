@@ -91,7 +91,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </button>
             </div>
             
-            <p className="mt-5 text-[0.75rem] text-slate-400 font-medium">
+            <p className="mt-5 text-[0.75rem] text-slate-400 font-normal">
               Ein kompletter Reset löscht alle lokalen Daten, kann aber helfen, wenn die App in einer Endlosschleife hängt.
             </p>
           </div>
