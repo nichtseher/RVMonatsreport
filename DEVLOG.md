@@ -10,6 +10,98 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-04 — v0.9.8: Zählerzeile — einheitliche Form, sichtbare Ränder
+
+Nachfassen zu 0.9.7. Marc schickte einen Screenshot vom iPhone: „so siehts
+aktuell auf meinem iphone aus". Die **Reihenfolge** stimmte jetzt — die Zeile
+sah trotzdem unruhig aus. 0.9.7 hatte also nur die Hälfte des ursprünglichen
+Befunds („Kraut und Rüben") getroffen.
+
+### Was der Screenshot zeigte
+
+Fünf Bedienelemente nebeneinander, mit **drei verschiedenen Eckradien und zwei
+verschiedenen Höhen**:
+
+| Element | Form | Höhe | Fläche |
+|---|---|---|---|
+| `−5` | `rounded-lg` | 44 px | Umriss |
+| `−` | `rounded-full` | 56 px | `bg-slate-200 dark:bg-slate-800` — fest verdrahtet |
+| Zahl | `rounded-xl` | ~52 px | Umriss |
+| `+` | `rounded-full` | 56 px | kräftiges Blau |
+| `+5` | `rounded-lg` | 44 px | Umriss |
+
+Dazu das eigentliche Ärgernis: Die Minus-Taste war auf der dunklen Karte
+nahezu unsichtbar (fest verdrahtetes `dark:bg-slate-800` auf einer fast
+gleichfarbigen Fläche), während die Plus-Taste laut leuchtete. Zwei
+gleichwertige Funktionen, völlig ungleiches Gewicht.
+
+### Umsetzung
+
+1. **Eine Form für alle fünf**: durchgehend `rounded-xl`, durchgehend 56 px
+   hoch. Breiten 48 / 64 / flexibel / 64 / 48 px mit Untergrenzen in Pixeln.
+2. **Plus ist das einzige gefüllte Element.** Minus, `−5`, `+5` und das
+   Zahlenfeld sind Umriss-Tasten aus Theme-Variablen statt aus fest
+   verdrahteten Palettenfarben. Die Karte selbst wechselte von
+   `bg-slate-50 dark:bg-slate-800/30` auf `var(--bg-color)`.
+3. **Zahlenfeld auf feste `h-[56px]`** statt rem-Innenabstand — sonst wäre es
+   das einzige Element, das aus der Reihe wächst.
+
+### Der Fund, der über die Zählerzeile hinausging
+
+Beim Nachmessen der Kontraste fiel `--border-color` (`#8593a8`) durch: **2,98:1**
+gegen `var(--bg-color)` — knapp unter den 3:1, die WCAG 1.4.11 für Umrisse von
+Bedienelementen verlangt. Der Wert stammt aus 0.7.0 und war damals gegen die
+**weiße Karte** geprüft (3,12:1) — korrekt gerechnet, aber nur für eine der
+beiden Flächen, auf denen er vorkommt. Auf der leicht grauen Fläche der
+Zählerkarten reichte er nicht.
+
+Korrigiert auf `#8290a5` — die kleinste Abdunklung (2 %), die beide Flächen
+trägt: **3,24:1** gegen die weiße Karte, **3,10:1** gegen `--bg-color`. Das
+betrifft alle Rahmen der App, nicht nur die Zählerzeile, und ausschließlich
+nach oben.
+
+### Gemessen
+
+Kontrast der Umrisse bzw. der Plus-Fläche gegen die Zählerkarte:
+
+| Thema | Minus-Umriss | Zahlfeld-Umriss | Plus-Fläche |
+|---|---|---|---|
+| Hell | 3,10 | 3,10 | 13,98 |
+| Dunkel | 3,49 | 3,49 | 3,90 |
+| Kontrast dunkel | 21 | 21 | 21 |
+| Kontrast gelb | 19,56 | 19,56 | 19,56 |
+
+Alle über 3:1 — vorher lagen Hell bei 2,98 und Dunkel bei 2,55 (Plus 2,85).
+
+Geometrie, je Breite × alle drei Schriftgrößen, mit echtem Viewport-Resize:
+
+| Breite | Zeilen | Höhen | Abstand zum Kartenrand |
+|---|---|---|---|
+| 375 px (SE 2022, 13 mini) | 1 | 56 px | 10,6 px beidseitig |
+| 393 px (15, 16) | 1 | 56 px | 10,6–12,1 px beidseitig |
+| 320 px (SE 2016) | 1 | 56 px | **−3,4 px bei „Groß", −10,4 px bei „Extra groß"** |
+
+„999" passt bei 375 px in jeder Schriftgröße vollständig ins Feld (13–26 px
+Luft). Kein seitliches Scrollen der Seite in keiner Kombination.
+
+**Offen und unverändert:** 320 px (iPhone SE 1./2. Gen., 2016) tritt bei den
+großen Schriftgrößen über den Kartenrand. Betrifft kein aktuell verkauftes
+Gerät; die Seite scrollt dabei nicht seitlich.
+
+**Ein Messfehler auf meiner Seite, der fast durchgegangen wäre:** Der erste
+Geometrie-Durchlauf iterierte über `[375, 390, 393]`, ohne den Viewport
+tatsächlich umzustellen — alle neun Zeilen entstanden bei derselben Breite.
+Aufgefallen an den auf 0,1 px identischen Überstandswerten. Wiederholt mit
+echtem `resize_window`; erst diese Zahlen stehen oben.
+
+**Nicht verifiziert:** ob es auf Marcs echtem iPhone jetzt ruhig aussieht. Der
+Browser-Pane war nicht eingeblendet, ein Screenshot ließ sich nicht erzeugen —
+belegt sind nur die Messwerte.
+
+`npm run lint`, `npm run check` (58/58) und `npm run build` grün.
+
+---
+
 ## 2026-08-03 — v0.9.7: Zählerzeile auf dem Handy — Reihenfolge korrigiert
 
 Praxis-Rückmeldung von Marcs iPhone: „Am PC siehts gut aus aber am Smartphone

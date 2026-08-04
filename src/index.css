@@ -33,9 +33,12 @@
   --accent-text: #ffffff;
   --text-color: #0f172a;
   --text-muted: #475569;
-  /* 3,12:1 gegen die weisse Karte -- erfuellt WCAG 1.4.11 (3:1) fuer
-     Bedienelement-Umrisse. Vorher #cbd5e1 mit nur 1,48:1 (kaum sichtbar). */
-  --border-color: #8593a8;
+  /* Erfuellt WCAG 1.4.11 (3:1) fuer Bedienelement-Umrisse auf BEIDEN Flaechen:
+     3,24:1 gegen die weisse Karte und 3,10:1 gegen --bg-color. Der Wert war
+     bis 0.9.7 nur gegen die weisse Karte geprueft (3,12:1) und lag auf der
+     helleren Flaeche der Zaehlerkarten bei 2,98:1 -- knapp darunter.
+     Vorgeschichte: urspruenglich #cbd5e1 mit nur 1,48:1 (kaum sichtbar). */
+  --border-color: #8290a5;
   --border-focus: #2563eb;
   --danger: #dc2626;
   --alert-bg: #fef9c3;

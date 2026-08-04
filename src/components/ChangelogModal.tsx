@@ -32,6 +32,19 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
             <Bug className="w-5 h-5 text-red-500" />
+            <span>Version 0.9.8: Zähler-Tasten sehen jetzt zusammengehörig aus</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Die fünf Tasten einer Zähler-Zeile hatten drei verschiedene Eckformen und zwei verschiedene Größen.</strong> Auf dem Handy wirkte die Zeile dadurch unruhig, obwohl die Reihenfolge stimmte. Jetzt haben alle fünf dieselbe Form und dieselbe Höhe.</li>
+            <li><strong>Die Minus-Taste war auf dunklem Hintergrund kaum noch zu sehen</strong>, während die Plus-Taste kräftig leuchtete. Jetzt ist Plus die einzige gefüllte Taste – alle anderen haben einen deutlich sichtbaren Rand.</li>
+            <li><strong>Alle Tastenränder sind jetzt in jedem Farbschema deutlich genug abgesetzt</strong> (mindestens das von der Norm geforderte Verhältnis von 3:1). Im hellen Schema lagen sie zuvor knapp darunter.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+            <Bug className="w-5 h-5 text-red-500" />
             <span>Version 0.9.7: Zähler-Tasten auf dem Handy in richtiger Reihenfolge</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
           </h3>

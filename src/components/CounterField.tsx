@@ -135,7 +135,7 @@ export default React.memo(function CounterField({
   // etwas nachgeben, statt aus der Karte zu ragen. Ueberall sonst 56 px.
   const buttonSize = isCompact
     ? "w-[44px] h-[44px] min-w-[44px]"
-    : "w-[56px] h-[56px] min-w-[48px]";
+    : "w-[64px] h-[56px] min-w-[52px]";
   /*
     Die Fuenferschritte duerfen als Einzige schrumpfen (44 -> 36 px), damit die
     Zeile auch bei "Extra grosse Schrift" auf einem schmalen Handy EINE Zeile
@@ -146,17 +146,25 @@ export default React.memo(function CounterField({
   */
   const quickButtonSize = isCompact
     ? "w-[36px] h-[36px] min-w-[32px] text-[0.75rem]"
-    : "w-[44px] h-[44px] min-w-[36px] text-xs";
+    : "w-[48px] h-[56px] min-w-[40px] text-xs";
   const iconSize = isCompact ? "w-4 h-4" : "w-6 h-6";
   // Die Zahl selbst ist Text und MUSS mitwachsen (WCAG 1.4.4), darf dafuer
   // aber schrumpfen, wenn der Platz knapp wird.
-  const inputSize = isCompact ? "py-1.5 text-base rounded-lg" : "py-3 text-xl rounded-xl";
+  // Feste Hoehe statt Innenabstand: Mit py-3 wuchs das Zahlenfeld mit der
+  // Schriftgroesse mit (gemessen 52 / 64 / 76 px) und war dadurch mal
+  // niedriger, mal deutlich hoeher als die Tasten daneben -- die Zeile wirkte
+  // dadurch unruhig. Die Zahl selbst skaliert weiterhin.
+  const inputSize = isCompact ? "h-[44px] text-base rounded-lg" : "h-[56px] text-xl rounded-xl";
 
   return (
     <div 
       /* Innenabstand in Pixeln: Er muss nicht mit der Schriftgroesse wachsen
          und nahm der Bedienzeile sonst genau den Platz weg, den sie braucht. */
-      className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl bg-slate-50 dark:bg-slate-800/30 p-[10px] sm:p-4 border border-slate-100 dark:border-slate-800/60 transition-all focus-within:ring-2 focus-within:ring-blue-500/50 hover:border-blue-500/30 gap-3`}
+      /* Flaeche und Rahmen aus dem Theme statt aus fester Palette: Die
+         Rahmenfarbe der Bedienelemente ist gegen --bg-color auf 3:1 abgestimmt
+         (WCAG 1.4.11). Auf dem alten slate-Hintergrund kam sie nur auf
+         2,55-2,98:1 -- die Tastenumrisse waren zu schwach. */
+      className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl bg-[var(--bg-color)] p-[10px] sm:p-4 border border-[var(--border-color)]/40 transition-all focus-within:ring-2 focus-within:ring-[var(--border-focus)] hover:border-[var(--border-focus)] gap-3`}
     >
       <div className="flex-1 pr-2 min-w-0">
         <label 
@@ -199,7 +207,7 @@ export default React.memo(function CounterField({
           tabIndex={-1}
           aria-hidden="true"
           onClick={() => handleQuickChange(-1)}
-          className={`${quickButtonSize} rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-red-500 font-black transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
+          className={`${quickButtonSize} rounded-xl border-2 border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-red-500 font-black transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
         >
           -5
         </button>
@@ -209,7 +217,11 @@ export default React.memo(function CounterField({
           type="button"
           onClick={handleDecrement}
           aria-label="Verringern"
-          className={`${buttonSize} rounded-full flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-[var(--text-color)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:bg-slate-300 dark:active:bg-slate-700 touch-manipulation shadow-sm`}
+          /* Gleiche Form und gleiches Gewicht wie die uebrigen Tasten. Vorher
+             ein dunkler Kreis aus fester Palettenfarbe (slate-800): Im dunklen
+             Schema war das Minus kaum vom Kartenhintergrund zu unterscheiden,
+             waehrend das Plus als leuchtender Kreis danebenstand. */
+          className={`${buttonSize} rounded-xl flex items-center justify-center border-2 border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:bg-[var(--border-color)] touch-manipulation`}
         >
           <Minus className={iconSize} aria-hidden="true" />
         </button>
@@ -254,7 +266,9 @@ export default React.memo(function CounterField({
           type="button"
           onClick={handleIncrement}
           aria-label="Erhöhen"
-          className={`${buttonSize} rounded-full flex items-center justify-center bg-[var(--primary)] text-[var(--primary-text)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:opacity-85 touch-manipulation shadow-sm`}
+          /* Einzige gefuellte Taste der Zeile: Ein Tipp = plus eins ist die
+             haeufigste Handlung und darf als einzige hervorstechen. */
+          className={`${buttonSize} rounded-xl flex items-center justify-center border-2 border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-text)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:opacity-85 touch-manipulation`}
         >
           <Plus className={iconSize} aria-hidden="true" />
         </button>
@@ -265,7 +279,7 @@ export default React.memo(function CounterField({
           tabIndex={-1}
           aria-hidden="true"
           onClick={() => handleQuickChange(1)}
-          className={`${quickButtonSize} rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-emerald-500 font-black transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
+          className={`${quickButtonSize} rounded-xl border-2 border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-emerald-500 font-black transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
         >
           +5
         </button>
