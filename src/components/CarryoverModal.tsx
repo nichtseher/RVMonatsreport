@@ -119,8 +119,8 @@ export default function CarryoverModal({
       </div>
 
         {/* Info text */}
-        <div className="p-3.5 mb-5 rounded-xl bg-blue-500/5 border border-blue-500/10 flex gap-2.5 items-start text-xs font-bold leading-relaxed">
-          <Info className="w-4 h-4 flex-shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" aria-hidden="true" />
+        <div className="p-3.5 mb-5 rounded-xl bg-[var(--cat-4-soft)] border border-[var(--cat-4)]/10 flex gap-2.5 items-start text-xs font-bold leading-relaxed">
+          <Info className="w-4 h-4 flex-shrink-0 text-[var(--cat-4-text)] mt-0.5" aria-hidden="true" />
           <p className="flex-1">
             Hier können Sie Ihre Startwerte für Urlaub und Überstunden eintragen.
           </p>

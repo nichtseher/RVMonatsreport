@@ -136,3 +136,49 @@ This is a first-class requirement, not a nice-to-have — the primary users are 
 ## TypeScript
 
 `tsconfig.json` has no `"strict": true`. This is known debt tracked toward 1.0, not a style to imitate — avoid new `any`-typed props where a real type is easy to give.
+
+---
+
+## Claude Code Ergänzungsregeln: Effizienz, UI-Design & Architektur-Sicherheit
+
+### 1. Token Economy & Code-Effizienz
+- **Surgical Edits:** Lese und überschreibe NIEMALS die gesamte `App.tsx` auf einmal. Nutze ausschließlich gezielte Diffs/Replace-Blöcke für spezifische Zeilen oder fokussierte Anpassungen in `src/components/`.
+- **Kompakte Antworten:** Keine Romane, keine langen Einleitungen. Gib nach Code-Änderungen nur eine kurze Bestätigung sowie die nötigen Test-Befehle (z.B. `npm run check`) aus.
+
+### 2. Barrierefreiheit (A11y) & Modernes Design
+- **Interaktives Feedback:** Jede Statusänderung muss zwingend über `announceToAriaAndSpeech` zurückgemeldet werden. Ton-Rückmeldungen für Zähler laufen strikt über `src/utils/audioFeedback.ts`.
+- **Aria & Semantik:** Verwende `aria-pressed` oder `aria-expanded` anstelle visueller Ein/Aus-Text-Badges. Buttons benötigen immer eindeutige `aria-label`-Attribute.
+- **Tastatur-Fokus:** Modale Dialoge brauchen einen strikten Focus-Trap. Überschriften mit `tabindex="-1"` dürfen den Fokuszyklus nicht unterbrechen. Nutze für die Tastaturbedienung moderne, leuchtende `:focus-visible`-Effekte statt Standard-Outline.
+- **Inhalts-Struktur:** Verstecke absolut keine Inhalte hinter einklappbaren Akkordeons, da dies Screenreader und die Suche bricht.
+- **UI-Ästhetik:** Nutze klare Kontraste, großzügigen Weißraum, sanfte `border-radius`-Werte, dezente Schatten und serifenlose Schriften. Das UI muss professionell, clean und hochwertig wirken.
+
+### 3. Responsive Layout & Skalierung (Cross-Platform)
+- **Touch-Ziele:** Müssen aufgrund des 0.99993 Rendierungsfaktors stets mindestens 43.5 px groß sein. Zähler-Buttons nutzen feste Pixelgrößen, Zahleneingaben bleiben zwingend auf `rem`-Basis für die Skalierung.
+- **Überprüfung & Breakpoints:** Teste Layouts immer bei 360 px Breite und über alle drei Schriftgrößen (`normal`, `large`, `extra-large`). Es darf NIEMALS ein horizontaler Scrollbar entstehen.
+- **Mobile Anpassung:** Nutze CSS Safe-Area-Insets (Padding für Notches/Home-Bars auf iOS/Android). Verwende CSS-Grid/Flexbox für eine saubere Darstellung vom Smartphone bis zum Mac-Desktop.
+
+### 4. Datenarchitektur, Offline-First & Datensicherheit
+- **Kein Backend:** Es gibt keine Server-Datenbank und darf keine geben. Alles bleibt im Browser (IndexedDB/localStorage).
+- **Archiv-Schreibschutz:** Schreibzugriffe aufs Archiv laufen ausnahmslos über `persistHistory(data, handleHistoryPersistFailure, context)`. Keine verschluckten `.catch(() => {})` Fehler.
+- **Sync-Validierung:** Alle extern eingehenden Daten (QR, Backup, Sync) passieren zwingend `pruefeSyncPaket()`, bevor sie den State berühren.
+- **Merge-Logik:** Zusammenführungen (`merge.ts`) müssen pro Feld zwingend den Zeitstempel `valuesUpdatedAt` berücksichtigen, um Datenverlust zu vermeiden.
+- **Deploy-Gefahr:** Jeder Push auf `main` geht sofort auf GitHub Pages live. Vorher MÜSSEN `npm run check` und `npm run lint` lokal fehlerfrei durchlaufen.
+
+### Nachtrag aus der Messung (2026-08-08)
+
+Die 43,5-px-Regel oben ist bei **360 px Breite in den Schriftgrößen „Groß" und
+„Extra groß" nicht erfüllbar** — nachgemessen, nicht geschätzt:
+
+| | |
+|---|---|
+| Verfügbare Breite der Bedienzeile | 253,9 px |
+| Bedarf für fünf Tasten à 44 px | 276,0 px |
+| Bedarf des Zahlenfelds für „999" bei 30 px Schrift | ~55 px |
+
+Drei Ziele, die sich hier gegenseitig ausschließen: Trefferfläche 44 px,
+Darstellung in einer Zeile, Lesbarkeit der Zahl. 0.9.7 hat sich entschieden,
+die **Fünferschritte** auf 40 px schrumpfen zu lassen (weiterhin über den 24 px
+der AA-Stufe) und dafür Zeile und Zahl zu erhalten; die primären Tasten `−`
+und `+` bleiben bei 52 px. Wer die Regel wörtlich durchsetzen will, muss eine
+der anderen beiden Eigenschaften aufgeben — das ist eine Produktentscheidung,
+keine Umsetzungsfrage.

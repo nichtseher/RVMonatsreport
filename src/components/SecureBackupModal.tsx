@@ -122,9 +122,9 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-lg w-full overflow-hidden flex flex-col border border-gray-200 dark:border-gray-700 animate-fade-in relative">
+    <div className="bg-[var(--card-bg)] rounded-3xl shadow-lg w-full overflow-hidden flex flex-col border border-[var(--border-color)] animate-fade-in relative">
       {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
-      <div className="flex items-center gap-3 p-6 md:p-8 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-slate-800/50">
+      <div className="flex items-center gap-3 p-6 md:p-8 border-b border-[var(--border-color)] bg-[var(--bg-color)]">
         <button
           onClick={onClose}
           className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] cursor-pointer transition-colors active:scale-95"
@@ -132,22 +132,22 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
         >
           <ArrowLeft className="w-6 h-6" aria-hidden="true" />
         </button>
-        <div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl flex-shrink-0">
+        <div className="p-3 bg-[var(--info-bg)] text-[var(--cat-4-text)] rounded-xl flex-shrink-0">
           <Lock className="w-6 h-6" aria-hidden="true" />
         </div>
-        <h2 id="backup-title" className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white">Datensicherung</h2>
+        <h2 id="backup-title" className="text-2xl md:text-3xl font-black text-[var(--text-color)]">Datensicherung</h2>
       </div>
 
       <div className="p-6 md:p-8 space-y-6 overflow-y-auto">
           
-          <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-4 rounded-xl text-sm leading-relaxed border border-blue-100 dark:border-blue-800/30">
+          <div className="bg-[var(--info-bg)] text-[var(--info-text)] p-4 rounded-xl text-sm leading-relaxed border border-[var(--info-border)]">
             Sichern Sie Ihre Daten oder übertragen Sie diese auf ein neues Gerät. 
             Mit einem <strong>Passwort</strong> können Sie die Datei sicher per E-Mail oder Messenger teilen.
           </div>
 
-          <div className="space-y-4 bg-gray-50 dark:bg-slate-900/50 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
-            <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <Lock className="w-4 h-4 text-gray-500" />
+          <div className="space-y-4 bg-[var(--bg-color)] p-5 rounded-xl border border-[var(--border-color)]">
+            <h3 className="font-bold text-[var(--text-color)] flex items-center gap-2">
+              <Lock className="w-4 h-4 text-[var(--text-muted)]" />
               Sicherheit
             </h3>
             
@@ -157,11 +157,11 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
                   type="checkbox"
                   checked={useEncryption}
                   onChange={(e) => setUseEncryption(e.target.checked)}
-                  className="w-6 h-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-all"
+                  className="w-6 h-6 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--border-focus)] transition-all"
                   aria-label="Verschlüsselung aktivieren"
                 />
               </div>
-              <span className="text-gray-700 dark:text-gray-300 font-normal group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+              <span className="text-[var(--text-color)] font-normal group-hover:text-[var(--text-color)] transition-colors">
                 Backup mit Passwort schützen
               </span>
             </label>
@@ -178,7 +178,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
             <div>
               <label
                 htmlFor="backup-passwort"
-                className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5"
+                className="block text-sm font-bold text-[var(--text-color)] mb-1.5"
               >
                 Passwort
               </label>
@@ -188,10 +188,10 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
                 placeholder="Passwort eingeben"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-lg"
+                className="w-full px-4 py-3 rounded-lg border border-[var(--border-color)] focus:ring-2 focus:ring-[var(--border-focus)] focus:border-[var(--cat-4)] transition-all text-lg"
                 aria-describedby="backup-passwort-hinweis"
               />
-              <p id="backup-passwort-hinweis" className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+              <p id="backup-passwort-hinweis" className="text-xs text-[var(--text-muted)] mt-2 leading-relaxed">
                 {useEncryption
                   ? "Wird zum Verschlüsseln Ihres neuen Backups verwendet – und um ein verschlüsseltes Backup wieder einzuspielen. Ohne dieses Passwort lässt sich die Datei später nicht mehr öffnen."
                   : "Nur nötig, um ein verschlüsseltes Backup (Endung .json.enc) wieder einzuspielen. Für ein neues Backup ohne Passwortschutz können Sie das Feld leer lassen."}
@@ -204,9 +204,9 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className={`p-4 rounded-xl flex items-start gap-3 ${
-                status.type === "success" ? "bg-green-50 text-green-800 border border-green-200" :
-                status.type === "error" ? "bg-red-50 text-red-800 border border-red-200" :
-                "bg-blue-50 text-blue-800 border border-blue-200"
+                status.type === "success" ? "bg-[var(--success-bg)] text-[var(--success-text)] border border-[var(--success-border)]" :
+                status.type === "error" ? "bg-[var(--danger-bg)] text-[var(--danger-text)] border border-[var(--danger-border)]" :
+                "bg-[var(--info-bg)] text-[var(--info-text)] border border-[var(--info-border)]"
               }`}
               role="alert"
               aria-live="assertive"
@@ -219,7 +219,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
               onClick={handleExport}
-              className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-md hover:shadow-lg focus:ring-4 focus:ring-blue-500/50 outline-none"
+              className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-[var(--primary)] hover:brightness-110 text-[var(--primary-text)] transition-all shadow-md hover:shadow-lg focus:ring-4 focus:ring-[var(--border-focus)] outline-none"
             >
               <Download className="w-6 h-6" />
               <span className="font-bold">Auf Gerät speichern</span>
@@ -227,7 +227,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
             
             <button
               onClick={handleShare}
-              className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-md hover:shadow-lg focus:ring-4 focus:ring-indigo-500/50 outline-none"
+              className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] transition-all shadow-md hover:shadow-lg focus:ring-4 focus:ring-[var(--border-focus)] outline-none"
             >
               <Share2 className="w-6 h-6" />
               <span className="font-bold">Sicher Teilen / Senden</span>
@@ -244,10 +244,10 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
             
             <button
               onClick={handleImportClick}
-              className="sm:col-span-2 flex items-center justify-center gap-2 p-4 rounded-xl bg-white dark:bg-slate-800 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-700 dark:text-gray-300 transition-all focus:ring-4 focus:ring-blue-500/50 outline-none group"
+              className="sm:col-span-2 flex items-center justify-center gap-2 p-4 rounded-xl bg-[var(--card-bg)] border-2 border-dashed border-[var(--border-color)] hover:border-[var(--cat-4)] hover:bg-[var(--info-bg)] text-[var(--text-color)] transition-all focus:ring-4 focus:ring-[var(--border-focus)] outline-none group"
             >
-              <Upload className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
-              <span className="font-normal group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              <Upload className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--cat-4-text)] transition-colors" />
+              <span className="font-normal group-hover:text-[var(--cat-4-text)] transition-colors">
                 Backup wiederherstellen
               </span>
             </button>

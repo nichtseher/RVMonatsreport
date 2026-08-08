@@ -347,7 +347,7 @@ export default function OnboardingModal({
           {step === 4 && (
             <div className="space-y-3 text-sm text-[var(--text-color)] leading-relaxed">
               <div className="flex justify-center py-1">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <div className="w-14 h-14 rounded-2xl bg-[var(--cat-1-soft)] flex items-center justify-center text-[var(--cat-1-text)]">
                   <ShieldCheck className="w-7 h-7" aria-hidden="true" />
                 </div>
               </div>
@@ -355,7 +355,7 @@ export default function OnboardingModal({
                 Alle Daten bleiben <strong>ausschließlich auf diesem Gerät</strong>. Es gibt
                 keinen Server, kein Konto und keine Übertragung im Hintergrund.
               </p>
-              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800 text-[var(--text-color)]">
+              <div className="p-3 rounded-xl bg-[var(--cat-2-soft)] border border-amber-300 dark:border-amber-800 text-[var(--text-color)]">
                 <p className="font-bold mb-1">Das bedeutet aber auch:</p>
                 <p className="text-[0.8125rem]">
                   Wenn Sie die Browserdaten löschen oder das Gerät verlieren, sind die Daten

@@ -128,7 +128,7 @@ export default function QuickEntryPanel({
         >
           <Zap className="w-5 h-5 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
           Schnell-Erfassung
-          <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--accent)]/10 text-[var(--accent)]">
+          <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--success-bg)] text-[var(--success-text)]">
             {config.mode === "custom" && config.ids.length > 0 ? "Eigene Auswahl" : "Automatisch"}
           </span>
         </h2>

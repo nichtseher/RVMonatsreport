@@ -49,9 +49,82 @@
   --total-text: #15803d;
   --custom-bg: #f8fafc;
   --modal-bg: rgba(15, 23, 42, 0.75);
-  
+
+  /* Semantische Statusfarben. Ersetzen die fest verdrahteten Palettenklassen
+     (bg-green-50, text-amber-800 ...), die jede Theme-Wahl ignorieren. Je
+     Status ein Dreiklang aus Flaeche, Rand und Schrift -- Schrift auf Flaeche
+     immer ueber 4,5:1, Rand auf Flaeche immer ueber 3:1. */
+  --success-bg: #f0fdf4;
+  --success-border: #15803d;
+  --success-text: #14532d;
+  --warning-bg: #fffbeb;
+  --warning-border: #b45309;
+  --warning-text: #78350f;
+  /* Gefuellte Warntaste. Vorher bg-amber-600 mit weisser Schrift -- 3,3:1 und
+     damit unter den 4,5:1 fuer normalen Text. Altbestandsfehler, kein neuer. */
+  --warning-solid: #92400e;
+  --warning-solid-text: #ffffff;
+  --info-bg: #eff6ff;
+  --info-border: #1d4ed8;
+  --info-text: #1e3a8a;
+  --danger-bg: #fef2f2;
+  --danger-border: #b91c1c;
+  --danger-text: #7f1d1d;
+  /* Gefuellte Warnflaeche (Schicht beenden, Loeschen). Eigenes Paar, weil
+     --danger als Schriftfarbe gewaehlt ist: weisse Schrift darauf erreicht im
+     dunklen Theme nur 3,76:1 und damit nicht die 4,5:1 fuer normalen Text. */
+  --danger-solid: #b91c1c;
+  --danger-solid-text: #ffffff;
+
+  /* Kategoriefarben der vier Zielkarten. Die Farbe ist hier bedeutungstragend
+     -- sie unterscheidet die vier Abschnitte -- und darf deshalb nicht auf
+     --accent zusammenfallen. Je Kategorie: Vollton, weiche Flaeche, Schrift.
+     In den Hochkontrast-Themes fallen alle vier bewusst auf das eine Farbpaar
+     zusammen; dort tragen Beschriftung und Symbol die Unterscheidung. */
+  --cat-1: #15803d;
+  --cat-1-soft: #f0fdf4;
+  --cat-1-text: #14532d;
+  --cat-2: #b45309;
+  --cat-2-soft: #fffbeb;
+  --cat-2-text: #78350f;
+  --cat-3: #4338ca;
+  --cat-3-soft: #eef2ff;
+  --cat-3-text: #312e81;
+  --cat-4: #1d4ed8;
+  --cat-4-soft: #eff6ff;
+  --cat-4-text: #1e3a8a;
+
+  /* Fokus-Schein. Der Ring selbst ist --border-focus; das hier ist der weiche
+     Hof darum. In den Hochkontrast-Themes bewusst deckend statt transparent. */
+  --focus-glow: rgba(37, 99, 235, 0.28);
+
+  /* Elevation. Vorher ad hoc (shadow-lg, feste rgba-Werte). Bewusst weich und
+     zurueckhaltend -- Tiefe soll Struktur zeigen, nicht auffallen.
+     rv--Praefix aus demselben Grund wie bei den Radien: --shadow-* gehoert in
+     Tailwind 4 den shadow-*-Utilities. */
+  --rv-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08);
+  --rv-shadow-md: 0 2px 4px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.08);
+  --rv-shadow-lg: 0 4px 8px rgba(15, 23, 42, 0.07), 0 12px 32px rgba(15, 23, 42, 0.12);
+
   /* Font Size Multipliers */
   --font-scale: 1;
+}
+
+/* Radiusskala -- themeunabhaengig, damit "sanfte Abrundung" ueberall dasselbe
+   bedeutet. Bewusst in px: eine rem-Rundung waechst mit der Schriftgroesse und
+   verformt bei "Extra gross" Karten zu Kapseln.
+
+   Das rv--Praefix ist Pflicht, kein Stilmittel: In Tailwind 4 SIND --radius-*
+   und --shadow-* die Theme-Variablen hinter den rounded-*- und shadow-*-
+   Utilities. Ohne Praefix definiert man hier nicht neben Tailwind, sondern
+   ueberschreibt dessen komplette Skala -- gemessen sprang rounded-xl damit von
+   12 px auf 24 px in der ganzen App. */
+:root {
+  --rv-radius-sm: 8px;
+  --rv-radius-md: 12px;
+  --rv-radius-lg: 16px;
+  --rv-radius-xl: 24px;
+  --rv-radius-pill: 999px;
 }
 
 /* Dark Theme */
@@ -78,6 +151,44 @@
   --total-text: #22c55e;
   --custom-bg: #0f172a;
   --modal-bg: rgba(2, 6, 23, 0.9);
+
+  --success-bg: #052e16;
+  --success-border: #22c55e;
+  --success-text: #86efac;
+  --warning-bg: #2e1a05;
+  --warning-border: #f59e0b;
+  --warning-text: #fcd34d;
+  --warning-solid: #b45309;
+  --warning-solid-text: #ffffff;
+  --info-bg: #0b1e3d;
+  --info-border: #3b82f6;
+  --info-text: #93c5fd;
+  --danger-bg: #3f0a0a;
+  --danger-border: #ef4444;
+  --danger-text: #fca5a5;
+  --danger-solid: #dc2626;
+  --danger-solid-text: #ffffff;
+
+  --cat-1: #22c55e;
+  --cat-1-soft: #052e16;
+  --cat-1-text: #86efac;
+  --cat-2: #f59e0b;
+  --cat-2-soft: #2e1a05;
+  --cat-2-text: #fcd34d;
+  --cat-3: #818cf8;
+  --cat-3-soft: #1e1b4b;
+  --cat-3-text: #c7d2fe;
+  --cat-4: #3b82f6;
+  --cat-4-soft: #0b1e3d;
+  --cat-4-text: #93c5fd;
+
+  --focus-glow: rgba(96, 165, 250, 0.32);
+
+  /* Auf dunklem Grund traegt ein heller Schatten keine Tiefe -- dort arbeitet
+     Elevation ueber staerkeres Schwarz. */
+  --rv-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --rv-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.35);
+  --rv-shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.45);
 }
 
 /* High Contrast Dark Theme */
@@ -102,6 +213,44 @@
   --total-text: #ffffff;
   --custom-bg: #000000;
   --modal-bg: rgba(0, 0, 0, 0.95);
+
+  /* Hochkontrast kennt genau ein Farbpaar -- Status wird ueber Beschriftung
+     und Symbol unterschieden, nicht ueber Farbe. */
+  --success-bg: #000000;
+  --success-border: #ffffff;
+  --success-text: #ffffff;
+  --warning-bg: #000000;
+  --warning-border: #ffffff;
+  --warning-text: #ffffff;
+  --warning-solid: #ffffff;
+  --warning-solid-text: #000000;
+  --info-bg: #000000;
+  --info-border: #ffffff;
+  --info-text: #ffffff;
+  --danger-bg: #000000;
+  --danger-border: #ffffff;
+  --danger-text: #ffffff;
+  --danger-solid: #ffffff;
+  --danger-solid-text: #000000;
+
+  --cat-1: #ffffff;
+  --cat-1-soft: #000000;
+  --cat-1-text: #ffffff;
+  --cat-2: #ffffff;
+  --cat-2-soft: #000000;
+  --cat-2-text: #ffffff;
+  --cat-3: #ffffff;
+  --cat-3-soft: #000000;
+  --cat-3-text: #ffffff;
+  --cat-4: #ffffff;
+  --cat-4-soft: #000000;
+  --cat-4-text: #ffffff;
+
+  --focus-glow: #ffff00;
+
+  --rv-shadow-sm: none;
+  --rv-shadow-md: none;
+  --rv-shadow-lg: none;
 }
 
 /* High Contrast Yellow Theme */
@@ -126,6 +275,42 @@
   --total-text: #ffff00;
   --custom-bg: #000000;
   --modal-bg: rgba(0, 0, 0, 0.95);
+
+  --success-bg: #000000;
+  --success-border: #ffff00;
+  --success-text: #ffff00;
+  --warning-bg: #000000;
+  --warning-border: #ffff00;
+  --warning-text: #ffff00;
+  --warning-solid: #ffff00;
+  --warning-solid-text: #000000;
+  --info-bg: #000000;
+  --info-border: #ffff00;
+  --info-text: #ffff00;
+  --danger-bg: #000000;
+  --danger-border: #ffff00;
+  --danger-text: #ffff00;
+  --danger-solid: #ffff00;
+  --danger-solid-text: #000000;
+
+  --cat-1: #ffff00;
+  --cat-1-soft: #000000;
+  --cat-1-text: #ffff00;
+  --cat-2: #ffff00;
+  --cat-2-soft: #000000;
+  --cat-2-text: #ffff00;
+  --cat-3: #ffff00;
+  --cat-3-soft: #000000;
+  --cat-3-text: #ffff00;
+  --cat-4: #ffff00;
+  --cat-4-soft: #000000;
+  --cat-4-text: #ffff00;
+
+  --focus-glow: #ffffff;
+
+  --rv-shadow-sm: none;
+  --rv-shadow-md: none;
+  --rv-shadow-lg: none;
 }
 
 /* ---------------------------------------------------------------
@@ -361,11 +546,22 @@ input[type="range"].rv-slider::-moz-range-thumb {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
-/* Accessible Interactive Focus */
+/* Tastaturfokus.
+
+   Vorher stand hier zusaetzlich `border-radius: 4px !important`. Das galt fuer
+   das Element selbst, nicht nur fuer den Ring: Beim Fokussieren sprangen die
+   Ecken jeder Karte (rounded-2xl = 16 px) und jeder Taste auf 4 px -- das
+   Element verformte sich sichtbar, sobald man es mit der Tastatur ansteuerte.
+   Entfernt; Outline und Schatten folgen der Rundung des Elements von selbst.
+
+   Der Ring ist jetzt zweistufig: harte Kante aus --border-focus fuer die
+   Erkennbarkeit, weicher Hof aus --focus-glow dahinter fuer die Auffaelligkeit.
+   In den Hochkontrast-Themes ist --focus-glow deckend statt transparent, damit
+   daraus ein einzelnes breites, hartes Band wird statt eines diffusen Scheins. */
 *:focus-visible {
-  outline: 4px solid var(--border-focus) !important;
-  outline-offset: 4px !important;
-  border-radius: 4px !important;
+  outline: 3px solid var(--border-focus) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 7px var(--focus-glow) !important;
 }
 
 /* Utility to hide elements visually but keep them readable by screen readers */

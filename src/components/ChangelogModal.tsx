@@ -31,6 +31,21 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="space-y-6">
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.9: Farben folgen jetzt überall Ihrer Theme-Wahl</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Der Schalter im Fenster „Barrierefreiheit" war teilweise unsichtbar.</strong> Sein runder Knopf war fest weiß – im hellen Schema auf weißem Grund, im Gelb-Schema auf gelbem Grund. Jetzt wechselt er die Farbe passend zum Schalter und ist in jeder Stellung deutlich zu sehen.</li>
+            <li><strong>Das Fenster „Datensicherung" hatte in den Kontrast-Schemata eine weiße Fläche</strong> statt der schwarzen. Behoben.</li>
+            <li><strong>Beim Bedienen mit der Tastatur verformten sich Karten und Tasten.</strong> Ihre runden Ecken sprangen auf eckig, sobald man sie ansteuerte. Der Rahmen folgt jetzt der Form – und ist als leuchtender Ring deutlicher zu sehen als vorher.</li>
+            <li><strong>Die Taste „Neu verbinden" war zu blass</strong>, um die Norm für Schriftkontrast zu erfüllen. Nachgedunkelt.</li>
+            <li><strong>Rund die Hälfte aller Farben im Programm folgt jetzt Ihrer Schema-Wahl</strong> statt fest eingebaut zu sein. Das betrifft vor allem die Zeiterfassung, die Bereichskarten und die Hinweisbalken. Der Rest folgt in einem späteren Schritt.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
             <Bug className="w-5 h-5 text-red-500" />
             <span>Version 0.9.8: Zähler-Tasten sehen jetzt zusammengehörig aus</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>

@@ -678,6 +678,10 @@ export default function DeviceSyncModal({
 
   const renderChunkDisplay = (label: string) => (
     <div className="flex flex-col items-center justify-center py-2">
+      {/* bg-white ist hier Absicht und darf NICHT auf eine Theme-Variable
+          umgestellt werden: Ein QR-Code braucht eine weisse Ruhezone mit
+          maximalem Kontrast zum schwarzen Muster, sonst erkennt ihn die Kamera
+          des anderen Geraets nicht. Gilt auch in den Hochkontrast-Themes. */}
       <div className="bg-white p-4 rounded-xl shadow-sm mb-4">
         <QRCodeSVG value={chunks[currentChunk]} size={230} marginSize={1} />
       </div>
@@ -861,7 +865,7 @@ export default function DeviceSyncModal({
 
   const renderConnectedView = () => (
     <div className="space-y-5">
-      <div className="flex items-center justify-center gap-4 py-3 text-emerald-600 dark:text-emerald-400">
+      <div className="flex items-center justify-center gap-4 py-3 text-[var(--cat-1-text)]">
         <Monitor className="w-8 h-8" aria-hidden="true" />
         <Link2 className="w-6 h-6 animate-pulse" aria-hidden="true" />
         <Smartphone className="w-8 h-8" aria-hidden="true" />
@@ -881,7 +885,7 @@ export default function DeviceSyncModal({
       </p>
       <button
         onClick={disconnectLive}
-        className="w-full py-3 px-4 rounded-xl font-bold border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex justify-center items-center gap-2 cursor-pointer"
+        className="w-full py-3 px-4 rounded-xl font-bold border border-red-300 dark:border-red-800 text-[var(--danger-text)] hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex justify-center items-center gap-2 cursor-pointer"
       >
         <Unplug className="w-5 h-5" aria-hidden="true" />
         Verbindung trennen
@@ -1001,9 +1005,9 @@ export default function DeviceSyncModal({
 
               <button
                 onClick={startLiveHost}
-                className="w-full p-4 rounded-xl border border-[var(--border-color)] hover:border-emerald-500 hover:bg-emerald-500/5 transition-all flex items-center gap-4 text-left group cursor-pointer"
+                className="w-full p-4 rounded-xl border border-[var(--border-color)] hover:border-[var(--cat-1)] hover:bg-[var(--cat-1-soft)] transition-all flex items-center gap-4 text-left group cursor-pointer"
               >
-                <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 rounded-full bg-[var(--cat-1-soft)] flex items-center justify-center text-[var(--cat-1-text)] group-hover:scale-110 transition-transform">
                   <Radio className="w-6 h-6" aria-hidden="true" />
                 </div>
                 <div>
@@ -1016,9 +1020,9 @@ export default function DeviceSyncModal({
 
               <button
                 onClick={startLiveJoin}
-                className="w-full p-4 rounded-xl border border-[var(--border-color)] hover:border-emerald-500 hover:bg-emerald-500/5 transition-all flex items-center gap-4 text-left group cursor-pointer"
+                className="w-full p-4 rounded-xl border border-[var(--border-color)] hover:border-[var(--cat-1)] hover:bg-[var(--cat-1-soft)] transition-all flex items-center gap-4 text-left group cursor-pointer"
               >
-                <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 rounded-full bg-[var(--cat-1-soft)] flex items-center justify-center text-[var(--cat-1-text)] group-hover:scale-110 transition-transform">
                   <Link2 className="w-6 h-6" aria-hidden="true" />
                 </div>
                 <div>

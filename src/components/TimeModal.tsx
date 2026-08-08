@@ -216,7 +216,7 @@ export default function TimeModal({
             {/* Info Card / Carryover Integration */}
             <div className="p-4 rounded-xl border border-blue-100 dark:border-blue-900/30 bg-blue-50/50 dark:bg-blue-950/10 flex flex-col gap-3">
               <div className="flex gap-3 text-[var(--text-color)]">
-                <Briefcase className="w-5 h-5 flex-shrink-0 mt-0.5 text-blue-500" aria-hidden="true" />
+                <Briefcase className="w-5 h-5 flex-shrink-0 mt-0.5 text-[var(--cat-4-text)]" aria-hidden="true" />
                 <div className="text-xs space-y-1 leading-relaxed font-bold">
                   <p className="font-black text-sm">Arbeitszeit- &amp; Urlaubskonto</p>
                   <p className="text-[var(--text-muted)]">
@@ -261,7 +261,7 @@ export default function TimeModal({
               <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-color)] shadow-xs flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center" aria-hidden="true">
+                    <div className="w-8 h-8 rounded-xl bg-[var(--cat-4-soft)] text-[var(--cat-4-text)] flex items-center justify-center" aria-hidden="true">
                       <Clock className="w-4 h-4" />
                     </div>
                     <h3 className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">Überstundenkonto</h3>
@@ -282,9 +282,9 @@ export default function TimeModal({
                       <span className="text-xs font-bold text-[var(--text-color)]">Gesamt-Saldo:</span>
                       <span className={`text-xl font-black font-mono ${
                         yearlyOvertime.totalBalance > 0 
-                          ? "text-emerald-600 dark:text-emerald-400" 
+                          ? "text-[var(--cat-1-text)]" 
                           : yearlyOvertime.totalBalance < 0 
-                            ? "text-red-600 dark:text-red-400" 
+                            ? "text-[var(--danger-text)]" 
                             : "text-[var(--text-color)]"
                       }`}>
                         {yearlyOvertime.totalBalance >= 0 ? "+" : ""}{yearlyOvertime.totalBalance.toFixed(2)}h
@@ -293,9 +293,9 @@ export default function TimeModal({
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-[0.75rem] font-bold text-[var(--text-muted)]">
+                <div className="mt-4 pt-3 border-t border-[var(--border-color)] flex justify-between items-center text-[0.75rem] font-bold text-[var(--text-muted)]">
                   <span>Sollzeit:</span>
-                  <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[var(--text-color)] font-black">
+                  <span className="bg-[var(--bg-color)] px-2 py-0.5 rounded text-[var(--text-color)] font-black">
                     {(carryover.dailyTargetHours * 5).toFixed(1)}h/Woche
                   </span>
                 </div>
@@ -305,7 +305,7 @@ export default function TimeModal({
               <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-color)] shadow-xs flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center" aria-hidden="true">
+                    <div className="w-8 h-8 rounded-xl bg-[var(--cat-1-soft)] text-[var(--cat-1-text)] flex items-center justify-center" aria-hidden="true">
                       <Umbrella className="w-4 h-4" />
                     </div>
                     <h3 className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">Urlaubskonto</h3>
@@ -324,18 +324,18 @@ export default function TimeModal({
                     </div>
                     <div className="flex justify-between text-xs font-bold">
                       <span className="text-[var(--text-muted)]">Genommen (YTD):</span>
-                      <span className="font-mono font-bold text-red-600 dark:text-red-400">-{yearlyVacation.totalUrlaubTaken} Tage</span>
+                      <span className="font-mono font-bold text-[var(--danger-text)]">-{yearlyVacation.totalUrlaubTaken} Tage</span>
                     </div>
                     <div className="border-t border-dashed border-[var(--border-color)] pt-2 mt-2 flex justify-between items-baseline">
                       <span className="text-xs font-bold text-[var(--text-color)]">Resturlaub aktuell:</span>
-                      <span className="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400">
+                      <span className="text-xl font-black font-mono text-[var(--cat-1-text)]">
                         {yearlyVacation.remainingVacation} Tage
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-[0.75rem] font-bold text-[var(--text-muted)]">
+                <div className="mt-4 pt-3 border-t border-[var(--border-color)] flex justify-between items-center text-[0.75rem] font-bold text-[var(--text-muted)]">
                   <span>Fehltage (YTD):</span>
                   <span className="flex gap-2">
                     <span className="bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-black">
@@ -360,7 +360,7 @@ export default function TimeModal({
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-[0.75rem]" aria-label="Monatliche Arbeitszeit-Aufschlüsselung">
                     <thead>
-                      <tr className="bg-slate-50 dark:bg-slate-900 border-b border-[var(--border-color)] text-[var(--text-color)] font-black">
+                      <tr className="bg-[var(--bg-color)] border-b border-[var(--border-color)] text-[var(--text-color)] font-black">
                         <th className="p-2.5">Monat</th>
                         <th className="p-2.5 text-right">Ist-Stunden</th>
                         <th className="p-2.5 text-right">Soll-Stunden</th>
@@ -369,7 +369,7 @@ export default function TimeModal({
                     </thead>
                     <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-muted)] font-bold">
                       {yearlyOvertime.monthsCalculated.map((mRow, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/10">
+                        <tr key={idx} className="hover:bg-[var(--bg-color)]">
                           <td className="p-2.5 font-black text-[var(--text-color)]">{formatMonthGerman(mRow.month)}</td>
                           <td className="p-2.5 text-right font-bold font-mono text-[var(--text-color)]">
                             {mRow.ist.toFixed(2)}h
@@ -379,9 +379,9 @@ export default function TimeModal({
                           </td>
                           <td className={`p-2.5 text-right font-black font-mono ${
                             mRow.diff > 0 
-                              ? "text-emerald-600 dark:text-emerald-400" 
+                              ? "text-[var(--cat-1-text)]" 
                               : mRow.diff < 0 
-                                ? "text-red-600 dark:text-red-400" 
+                                ? "text-[var(--danger-text)]" 
                                 : "text-[var(--text-color)]"
                           }`}>
                             {mRow.diff >= 0 ? "+" : ""}{mRow.diff.toFixed(2)}h
@@ -401,7 +401,7 @@ export default function TimeModal({
                 onClick={() => {
                   onOpenCarryover();
                 }}
-                className="w-full py-2.5 px-3 bg-slate-50 dark:bg-slate-900/40 hover:bg-[var(--border-color)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                className="w-full py-2.5 px-3 bg-[var(--bg-color)] hover:bg-[var(--border-color)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                 aria-label="Jahreskonto-Einstellungen anpassen"
               >
                 <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" />

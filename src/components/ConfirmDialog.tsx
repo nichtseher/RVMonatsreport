@@ -100,8 +100,8 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
             <div
               className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${
                 danger
-                  ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                  : "bg-[var(--accent)]/10 text-[var(--accent)]"
+                  ? "bg-red-100 text-[var(--danger)] dark:bg-red-900/30 dark:text-red-400"
+                  : "bg-[var(--success-bg)] text-[var(--success-text)]"
               }`}
             >
               {danger ? (
@@ -148,7 +148,7 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
               }}
               className={`flex-1 py-3 px-4 rounded-xl font-black transition-all cursor-pointer ${
                 danger
-                  ? "bg-red-600 text-white hover:bg-red-700"
+                  ? "bg-[var(--danger-solid)] text-white hover:bg-red-700"
                   : "bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90"
               }`}
             >

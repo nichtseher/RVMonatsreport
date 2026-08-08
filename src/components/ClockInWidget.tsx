@@ -343,7 +343,7 @@ export default React.memo(function ClockInWidget({
           <span>⏱️ Echtzeit-Stempeluhr</span>
         </h3>
         {clockInTime && (
-          <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/10 text-[0.6875rem] font-black tracking-wide uppercase animate-pulse">
+          <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--danger-bg)] text-[var(--danger-text)] border border-[var(--danger-border)] text-[0.6875rem] font-black tracking-wide uppercase animate-pulse">
             ● Aufnahme läuft
           </span>
         )}
@@ -365,9 +365,9 @@ export default React.memo(function ClockInWidget({
           <button
             type="button"
             onClick={handleStartClockIn}
-            className="w-full sm:w-auto py-3 px-6 font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl cursor-pointer text-sm transition-all focus-visible:ring-4 flex items-center justify-center gap-2 shadow-md shadow-emerald-600/10 active:scale-95"
+            className="w-full sm:w-auto py-3 px-6 font-black bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] rounded-xl cursor-pointer text-sm transition-all focus-visible:ring-4 flex items-center justify-center gap-2 shadow-md active:scale-95"
           >
-            <Play className="w-4 h-4 fill-white" />
+            <Play className="w-4 h-4 fill-current" />
             <span>Jetzt Einstempeln (Kommen)</span>
           </button>
         </div>
@@ -395,9 +395,9 @@ export default React.memo(function ClockInWidget({
               <button
                 type="button"
                 onClick={handleOpenClockOutForm}
-                className="w-full md:w-auto py-3.5 px-6 font-black bg-red-600 hover:bg-red-700 text-white rounded-xl cursor-pointer text-sm transition-all focus-visible:ring-4 flex items-center justify-center gap-2 shadow-md shadow-red-600/10 active:scale-95"
+                className="w-full md:w-auto py-3.5 px-6 font-black bg-[var(--danger-solid)] hover:brightness-110 text-[var(--danger-solid-text)] rounded-xl cursor-pointer text-sm transition-all focus-visible:ring-4 flex items-center justify-center gap-2 shadow-md active:scale-95"
               >
-                <Square className="w-3.5 h-3.5 fill-white" />
+                <Square className="w-3.5 h-3.5 fill-current" />
                 <span>Ausstempeln (Gehen)</span>
               </button>
             </div>
@@ -543,7 +543,7 @@ export default React.memo(function ClockInWidget({
                         setTypedOfficeHours("");
                         setTypedFieldHours("");
                       }}
-                      className="text-[0.75rem] text-red-500 hover:underline font-black cursor-pointer"
+                      className="text-[0.75rem] text-[var(--danger)] hover:underline font-black cursor-pointer"
                     >
                       Zurücksetzen auf Automatik
                     </button>
@@ -591,9 +591,9 @@ export default React.memo(function ClockInWidget({
                     />
                   </div>
                 </div>
-                <div className="text-[0.75rem] font-black text-slate-500 dark:text-slate-400 flex justify-between bg-slate-500/5 p-2 rounded-lg">
+                <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex justify-between bg-slate-500/5 p-2 rounded-lg">
                   <span>Gesamtstunden dieser Schicht:</span>
-                  <span className="font-mono text-emerald-600 dark:text-emerald-400">
+                  <span className="font-mono text-[var(--total-text)]">
                     {(typedOfficeHours !== "" || typedFieldHours !== ""
                       ? (parseFloat(typedOfficeHours) || 0) +
                         (parseFloat(typedFieldHours) || 0)
@@ -627,7 +627,7 @@ export default React.memo(function ClockInWidget({
                     aria-label="Aktuellen GPS-Standort abrufen und einfügen"
                     className="px-3 border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] rounded hover:border-[var(--border-focus)] active:scale-95 transition-all flex items-center justify-center"
                   >
-                    <MapPin className="w-4 h-4 text-blue-500" aria-hidden="true" />
+                    <MapPin className="w-4 h-4 text-[var(--accent)]" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -643,7 +643,7 @@ export default React.memo(function ClockInWidget({
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg cursor-pointer flex items-center justify-center gap-1"
+                  className="flex-1 py-2 px-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] text-xs font-black rounded-lg cursor-pointer flex items-center justify-center gap-1"
                 >
                   <Check className="w-3.5 h-3.5" />
                   <span>Schicht verbuchen</span>
@@ -692,7 +692,7 @@ export default React.memo(function ClockInWidget({
               <Plus className="w-4 h-4" />
               <span>Schicht manuell nachtragen</span>
             </h4>
-            <span className="text-[0.75rem] bg-[var(--accent)]/10 text-[var(--accent)] px-2 py-0.5 rounded-full font-black uppercase">
+            <span className="text-[0.75rem] bg-[var(--success-bg)] text-[var(--success-text)] px-2 py-0.5 rounded-full font-black uppercase">
               Manuell
             </span>
           </div>
@@ -885,7 +885,7 @@ export default React.memo(function ClockInWidget({
                     setTypedManualOfficeHours("");
                     setTypedManualFieldHours("");
                   }}
-                  className="text-[0.75rem] text-red-500 hover:underline font-black cursor-pointer"
+                  className="text-[0.75rem] text-[var(--danger)] hover:underline font-black cursor-pointer"
                 >
                   Zurücksetzen auf Automatik
                 </button>
@@ -933,9 +933,9 @@ export default React.memo(function ClockInWidget({
                 />
               </div>
             </div>
-            <div className="text-[0.75rem] font-black text-slate-500 dark:text-slate-400 flex justify-between bg-slate-500/5 p-2 rounded-lg">
+            <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex justify-between bg-slate-500/5 p-2 rounded-lg">
               <span>Gesamtstunden dieser Schicht:</span>
-              <span className="font-mono text-emerald-600 dark:text-emerald-400">
+              <span className="font-mono text-[var(--total-text)]">
                 {(typedManualOfficeHours !== "" || typedManualFieldHours !== ""
                   ? (parseFloat(typedManualOfficeHours) || 0) +
                     (parseFloat(typedManualFieldHours) || 0)
@@ -969,7 +969,7 @@ export default React.memo(function ClockInWidget({
                 aria-label="Aktuellen GPS-Standort abrufen und einfügen"
                 className="px-3 border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] rounded hover:border-[var(--border-focus)] active:scale-95 transition-all flex items-center justify-center"
               >
-                <MapPin className="w-4 h-4 text-blue-500" aria-hidden="true" />
+                <MapPin className="w-4 h-4 text-[var(--accent)]" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -985,7 +985,7 @@ export default React.memo(function ClockInWidget({
             </button>
             <button
               type="submit"
-              className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg cursor-pointer flex items-center justify-center gap-1"
+              className="flex-1 py-2 px-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] text-xs font-black rounded-lg cursor-pointer flex items-center justify-center gap-1"
             >
               <Check className="w-3.5 h-3.5" />
               <span>Schicht manuell verbuchen</span>
@@ -1021,7 +1021,7 @@ export default React.memo(function ClockInWidget({
                 <button
                   type="button"
                   onClick={onExportExcel}
-                  className="w-full py-2.5 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black cursor-pointer transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm shadow-emerald-600/10"
+                  className="w-full py-2.5 px-3.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] rounded-xl text-xs font-black cursor-pointer transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm"
                 >
                   <FileSpreadsheet className="w-4 h-4" />
                   <span>Schichtprotokoll als Excel exportieren</span>
@@ -1082,7 +1082,7 @@ export default React.memo(function ClockInWidget({
                           });
                         }}
                         aria-label={`Schicht vom ${formattedDate} löschen`}
-                        className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg cursor-pointer active:scale-90 transition-all flex-shrink-0"
+                        className="p-2 text-[var(--danger)] hover:bg-[var(--danger-bg)] rounded-lg cursor-pointer active:scale-90 transition-all flex-shrink-0"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

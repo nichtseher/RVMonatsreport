@@ -108,9 +108,17 @@ function ToggleRow({
               : "bg-[var(--input-bg)] border-[var(--border-color)]"
           }`}
         >
+          {/* Der Knopf war fest weiss. Gemessen gegen die jeweilige Spur war er
+              damit in drei von acht Zustaenden unsichtbar: hell/AUS 1,00 (weiss
+              auf weisser Spur), Kontrast-dunkel/EIN 1,00, Kontrast-gelb/EIN 1,07
+              -- und dunkel/EIN lag mit 2,28 unter den 3:1. Jetzt kippt er mit der
+              Spur: auf der Akzentspur die Akzentschriftfarbe, sonst die normale
+              Schriftfarbe. Damit ueberall zwischen 5,02 und 21. */}
           <span
-            className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-all ${
-              checked ? "left-[26px]" : "left-0.5"
+            className={`absolute top-0.5 w-6 h-6 rounded-full shadow transition-all ${
+              checked
+                ? "left-[26px] bg-[var(--accent-text)]"
+                : "left-0.5 bg-[var(--text-color)]"
             }`}
           />
         </span>
@@ -191,7 +199,7 @@ export default function A11yModal({
   // Alle Designs in EINER Gruppe (statt zwei getrennte Fieldsets)
   const themes: { id: AccessibilityTheme; label: string; swatch: string; swatchText: string }[] = [
     { id: "light", label: "Hell", swatch: "bg-white border-slate-300", swatchText: "text-slate-900" },
-    { id: "dark", label: "Dunkel", swatch: "bg-slate-900 border-slate-700", swatchText: "text-white" },
+    { id: "dark", label: "Dunkel", swatch: "bg-slate-900 border-[var(--border-color)]", swatchText: "text-white" },
     { id: "high-contrast-dark", label: "Weiß auf Schwarz", swatch: "bg-black border-white", swatchText: "text-white" },
     { id: "high-contrast-yellow", label: "Gelb auf Schwarz", swatch: "bg-black border-yellow-400", swatchText: "text-yellow-400" },
   ];
@@ -217,7 +225,7 @@ export default function A11yModal({
         )}
       </div>
 
-      <p className="flex items-start gap-2 px-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 leading-relaxed">
+      <p className="flex items-start gap-2 px-1 text-xs font-bold text-[var(--cat-1-text)] leading-relaxed">
         <Lock className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
         <span>
           DSGVO-konform: Alle Daten bleiben lokal auf dem Gerät. Der Geräte-Sync läuft
@@ -264,7 +272,7 @@ export default function A11yModal({
         {onOpenHelp && (
           <MenuRow
             icon={<HelpCircle className="w-5 h-5" />}
-            iconClass="bg-blue-500 text-white"
+            iconClass="bg-[var(--cat-4)] text-white"
             label="Hilfe & Anleitung"
             hint="Handbuch, FAQ und Richtlinien"
             onClick={onOpenHelp}
@@ -368,7 +376,7 @@ export default function A11yModal({
         <div className="px-4 py-3.5">
           <label htmlFor="speech-rate-range" className="flex justify-between items-center text-sm font-black text-[var(--text-color)]">
             <span>Vorlese-Tempo</span>
-            <span className="bg-[var(--accent)]/10 text-[var(--accent)] px-2.5 py-0.5 rounded-lg font-black text-xs">
+            <span className="bg-[var(--success-bg)] text-[var(--success-text)] px-2.5 py-0.5 rounded-lg font-black text-xs">
               {(settings.speechRate || 1.0).toFixed(1)}x
             </span>
           </label>

@@ -10,6 +10,126 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-08 — v0.9.9: Ein Farbsystem statt 278 Einzelentscheidungen
+
+Auftrag von Marc: Design überarbeiten — barrierefrei, modern, responsive.
+Dazu kam ein Regelblock, der ans Ende von `CLAUDE.md` sollte. Der ist dort
+angekommen (die `[cite: 1]`-Marker aus dem Quelldokument habe ich entfernt,
+das war Werkzeug-Rauschen, kein Regelinhalt).
+
+### Ausgangslage
+
+Das System war im Kern gut: vier Themes über CSS-Variablen, Safe-Area-Insets,
+`prefers-reduced-motion`, eigener Schieberegler, bewusster System-Schriftstapel.
+Kaputt war die Durchsetzung: **278 Stellen** nutzten feste Palettenfarben
+(`bg-emerald-600`, `text-slate-400` …), die jede Theme-Wahl ignorieren. Nur die
+beiden Hochkontrast-Themes bekamen die `!important`-Neutralisierung aus 0.8.1;
+Hell und Dunkel gingen leer aus. Genau diese Lücke machte in 0.9.8 die
+Minus-Taste unsichtbar.
+
+### Neu: semantische Tokens
+
+Je Status ein Dreiklang aus Fläche, Rand und Schrift (`success`, `warning`,
+`info`, `danger`), dazu gefüllte Varianten (`--danger-solid`,
+`--warning-solid`), vier Kategoriefarben für die Bereichskarten, eine
+Elevations- und eine Radiusskala. Alles für alle vier Themes.
+
+Die Kategoriefarben sind bewusst **nicht** auf `--accent` zusammengefallen: Auf
+der Report-Seite unterscheidet die Farbe die vier Bereiche, sie trägt also
+Bedeutung. In den Hochkontrast-Themes fallen sie zusammen — dort übernehmen
+Beschriftung und Symbol die Unterscheidung, wie im Rest der App auch.
+
+### Vier Defekte, die dabei aufgefallen sind
+
+1. **`:focus-visible` verformte jedes Element.** Die Regel setzte
+   `border-radius: 4px !important` — das galt nicht für den Ring, sondern für
+   das Element selbst. Jede `rounded-2xl`-Karte sprang beim Fokussieren von
+   16 px auf 4 px Ecken. Entfernt; Ring und Hof folgen jetzt der Rundung.
+
+2. **Der Umschalter-Knopf im Barrierefreiheits-Dialog war unsichtbar.** Er war
+   fest `bg-white`, gegen eine Spur, die im Ein-Zustand `--accent` ist.
+   Gemessen über alle acht Zustände:
+
+   | Thema | EIN (vorher) | AUS (vorher) |
+   |---|---|---|
+   | Hell | 5,02 | **1,00** |
+   | Dunkel | **2,28** | 20,17 |
+   | Kontrast dunkel | **1,00** | 21 |
+   | Kontrast gelb | **1,07** | 21 |
+
+   Drei Zustände buchstäblich unsichtbar, ein vierter unter den 3:1 — und das
+   ausgerechnet im Dialog für Barrierefreiheit. Der Knopf kippt jetzt mit der
+   Spur (`--accent-text` auf der Akzentspur, sonst `--text-color`): 5,02 bis 21
+   in allen acht Zuständen.
+
+3. **`bg-amber-600` mit weißer Schrift lag bei 3,3:1** — unter den 4,5:1 für
+   normalen Text. Betraf die „Neu verbinden"-Taste im Sync-Warnbanner. Ersetzt
+   durch `--warning-solid` (#92400e hell / #b45309 dunkel).
+
+4. **`bg-white` entkommt der Hochkontrast-Neutralisierung.** Die Selektorliste
+   kennt `bg-slate-`, `bg-gray-` usw., aber nicht `bg-white`. Nachgemessen im
+   Theme „Kontrast dunkel": `bg-white` bleibt `rgb(255,255,255)`,
+   `bg-slate-100` wird korrekt zu `rgb(0,0,0)`. Die Karte des
+   Backup-Dialogs war dort also eine weiße Fläche.
+
+### Zwei Stellen, an denen `bg-white` bleiben MUSS
+
+Die QR-Code-Fläche in `DeviceSyncModal` braucht eine weiße Ruhezone, sonst
+erkennt die Kamera des anderen Geräts den Code nicht — auch im
+Hochkontrast-Theme. Und die Theme-Vorschaukachel in `A11yModal` zeigt, wie das
+helle Theme aussieht; sie darf sich nicht mitfärben. Beides ist jetzt im Code
+kommentiert, damit ein späterer Durchgang es nicht „repariert".
+
+### Gemessen
+
+Alle sichtbaren Textelemente der Report-Seite, je Theme, Hintergrund über die
+Elternkette aufgelöst und mit Alpha verrechnet:
+
+| | vorher | nachher |
+|---|---|---|
+| Hell | 2 Verstöße | **0** von 116 |
+| Dunkel | 1 Verstoß | **0** von 116 |
+| Kontrast dunkel | 0 | **0** von 116 |
+| Kontrast gelb | 0 | **0** von 116 |
+
+Fest verdrahtete Palettenfarben: **278 → 137** (51 % migriert).
+`npm run lint`, `npm run check` (58/58) und `npm run build` grün.
+
+### Zwei eigene Fehler, beide von der Messung gefangen
+
+**Die erste Kontrastmessung war wertlos.** Sie meldete Werte von exakt 1,00.
+Ursache war mein Parser: Tailwind 4 gibt Farben als `oklch()` aus, und ich habe
+`[\d.]+` daraus gegriffen und als RGB gelesen. Aufschlussreich war, welche
+Elemente betroffen waren — genau die noch nicht migrierten, denn `var(--…)`
+liefert `rgb()`. Neu gemessen mit Canvas-Normalisierung.
+
+**Ich habe die Tailwind-Skala überschrieben.** Die neuen Tokens hießen zuerst
+`--radius-*` und `--shadow-*`. In Tailwind 4 *sind* das die Theme-Variablen
+hinter den `rounded-*`- und `shadow-*`-Utilities; `rounded-xl` sprang dadurch
+in der ganzen App von 12 px auf 24 px. Auf `--rv-*` umbenannt. Die Lehre steht
+als Kommentar an der Definition.
+
+### Offen
+
+**137 feste Farben** in 13 Dateien, im Wesentlichen Changelog (38), Hilfe (28)
+und der Rest von `App.tsx` (29). Die sind nicht kaputt — sie folgen nur der
+Theme-Wahl nicht und werden in den Hochkontrast-Themes vom `!important`-Layer
+aufgefangen. Erst wenn sie weg sind, kann dieser Layer entfallen.
+
+**Die 43,5-px-Regel ist bei 360 px nicht erfüllbar.** Verfügbar 253,9 px,
+nötig für fünf Tasten à 44 px 276 px, und das Zahlenfeld braucht ~55 px für
+„999" bei 30 px Schrift. Drei Ziele, die sich ausschließen; 0.9.7 hat die
+Fünferschritte auf 40 px schrumpfen lassen (weiterhin über den 24 px der
+AA-Stufe). Als Nachtrag mit den Zahlen in `CLAUDE.md` dokumentiert — welches
+Ziel weichen soll, ist eine Produktentscheidung.
+
+**Nicht verifiziert:** wie das Ergebnis aussieht. Der Browser-Pane war die
+ganze Zeit nicht eingeblendet, Screenshots liefen in den Timeout. Marc hat den
+Zwischenstand am Dev-Server selbst angesehen und bestätigt; alles Weitere sind
+Messwerte.
+
+---
+
 ## 2026-08-04 — v0.9.8: Zählerzeile — einheitliche Form, sichtbare Ränder
 
 Nachfassen zu 0.9.7. Marc schickte einen Screenshot vom iPhone: „so siehts

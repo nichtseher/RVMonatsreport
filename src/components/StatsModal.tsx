@@ -113,9 +113,9 @@ export default function StatsModal({
   return (
     <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-3xl w-full max-w-2xl shadow-lg overflow-hidden focus:outline-none flex flex-col animate-fade-in mx-auto">
       {/* Header */}
-      <div className="p-6 border-b border-[var(--border-color)] flex items-center justify-between bg-slate-50 dark:bg-slate-900/50">
+      <div className="p-6 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-color)]">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center border border-indigo-500/20">
+          <div className="w-10 h-10 rounded-xl bg-[var(--cat-3-soft)] text-[var(--cat-3-text)] flex items-center justify-center border border-[var(--cat-3)]">
             <BarChart3 className="w-5 h-5" />
           </div>
           <div>
@@ -130,8 +130,8 @@ export default function StatsModal({
       </div>
 
         {/* Segmented Toggles */}
-        <div className="px-6 pt-4 pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/20 border-b border-[var(--border-color)]">
-          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl self-start flex-wrap gap-0.5">
+        <div className="px-6 pt-4 pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--bg-color)] border-b border-[var(--border-color)]">
+          <div className="flex bg-[var(--bg-color)] p-1 rounded-xl self-start flex-wrap gap-0.5">
             <button
               type="button"
               onClick={() => handleTabChange("current")}
@@ -156,7 +156,7 @@ export default function StatsModal({
             </button>
           </div>
 
-          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl self-start sm:self-auto">
+          <div className="flex bg-[var(--bg-color)] p-1 rounded-xl self-start sm:self-auto">
             <button
               type="button"
               onClick={() => setViewType("visual")}
@@ -194,11 +194,11 @@ export default function StatsModal({
             <div className="space-y-6">
               {/* Bento Grid Metrics */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-indigo-500/5 text-center">
-                  <span className="block text-[0.75rem] font-black uppercase text-indigo-500 tracking-wider mb-1">
+                <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-3-soft)] text-center">
+                  <span className="block text-[0.75rem] font-black uppercase text-[var(--cat-3-text)] tracking-wider mb-1">
                     Aktivitäten
                   </span>
-                  <span className="text-3xl font-black text-indigo-600 dark:text-indigo-400">
+                  <span className="text-3xl font-black text-[var(--cat-3-text)]">
                     {totalActions}
                   </span>
                   <span className="block text-[0.6875rem] text-[var(--text-muted)] font-bold mt-1">
@@ -206,11 +206,11 @@ export default function StatsModal({
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-emerald-500/5 text-center">
-                  <span className="block text-[0.75rem] font-black uppercase text-emerald-500 tracking-wider mb-1">
+                <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-1-soft)] text-center">
+                  <span className="block text-[0.75rem] font-black uppercase text-[var(--cat-1-text)] tracking-wider mb-1">
                     Vorführungen
                   </span>
-                  <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
+                  <span className="text-3xl font-black text-[var(--cat-1-text)]">
                     {currentS1}
                   </span>
                   <span className="block text-[0.6875rem] text-[var(--text-muted)] font-bold mt-1">
@@ -218,11 +218,11 @@ export default function StatsModal({
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-amber-500/5 text-center">
-                  <span className="block text-[0.75rem] font-black uppercase text-amber-500 tracking-wider mb-1">
+                <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-2-soft)] text-center">
+                  <span className="block text-[0.75rem] font-black uppercase text-[var(--cat-2-text)] tracking-wider mb-1">
                     Schulungen
                   </span>
-                  <span className="text-3xl font-black text-amber-600 dark:text-amber-400">
+                  <span className="text-3xl font-black text-[var(--cat-2-text)]">
                     {currentS2}
                   </span>
                   <span className="block text-[0.6875rem] text-[var(--text-muted)] font-bold mt-1">
@@ -230,11 +230,11 @@ export default function StatsModal({
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-blue-500/5 text-center">
-                  <span className="block text-[0.75rem] font-black uppercase text-blue-500 tracking-wider mb-1">
+                <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-4-soft)] text-center">
+                  <span className="block text-[0.75rem] font-black uppercase text-[var(--cat-4-text)] tracking-wider mb-1">
                     Bürozeit
                   </span>
-                  <span className="text-3xl font-black text-blue-600 dark:text-blue-400">
+                  <span className="text-3xl font-black text-[var(--cat-4-text)]">
                     {currentHours}h
                   </span>
                   <span className="block text-[0.6875rem] text-[var(--text-muted)] font-bold mt-1">
@@ -308,9 +308,9 @@ export default function StatsModal({
                       {/* Customized Legends with details */}
                       <div className="space-y-3 w-full max-w-xs">
                         {[
-                          { val: currentS1, color: "bg-emerald-500", border: "border-emerald-500/20", title: "1. Vorführungen & Auslieferungen", desc: "Besuche an Schulen & Arbeitsplätzen" },
-                          { val: currentS2, color: "bg-amber-500", border: "border-amber-500/20", title: "2. Schulung & Akquise", desc: "Einweisungen, Telefonate & Messen" },
-                          { val: currentS3, color: "bg-indigo-500", border: "border-indigo-500/20", title: "3. Spezialprodukte", desc: "Tactonom, Feelspace, WeWalk" }
+                          { val: currentS1, color: "bg-[var(--cat-1)]", border: "border-[var(--cat-1)]", title: "1. Vorführungen & Auslieferungen", desc: "Besuche an Schulen & Arbeitsplätzen" },
+                          { val: currentS2, color: "bg-[var(--cat-2)]", border: "border-[var(--cat-2)]", title: "2. Schulung & Akquise", desc: "Einweisungen, Telefonate & Messen" },
+                          { val: currentS3, color: "bg-[var(--cat-3)]", border: "border-[var(--cat-3)]", title: "3. Spezialprodukte", desc: "Tactonom, Feelspace, WeWalk" }
                         ].map((category, idx) => {
                           const pct = totalActions > 0 ? ((category.val / totalActions) * 100).toFixed(0) : "0";
                           return (
@@ -337,7 +337,7 @@ export default function StatsModal({
                 <div className="overflow-hidden rounded-2xl border border-[var(--border-color)] bg-[var(--bg-color)]">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className="bg-slate-50 dark:bg-slate-900 border-b border-[var(--border-color)] text-[var(--text-color)] font-black">
+                      <tr className="bg-[var(--bg-color)] border-b border-[var(--border-color)] text-[var(--text-color)] font-black">
                         <th className="p-4">Bereich / Kategorie</th>
                         <th className="p-4 text-right">Anzahl / Stunden</th>
                         <th className="p-4 text-right">Anteil (%)</th>
@@ -346,22 +346,22 @@ export default function StatsModal({
                     <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-muted)] font-bold">
                       <tr>
                         <td className="p-4 font-bold text-[var(--text-color)]">1. Vorführungen & Auslieferungen</td>
-                        <td className="p-4 text-right font-black text-emerald-500">{currentS1}</td>
+                        <td className="p-4 text-right font-black text-[var(--cat-1-text)]">{currentS1}</td>
                         <td className="p-4 text-right">{totalActions > 0 ? ((currentS1 / totalActions) * 100).toFixed(1) : "0"}%</td>
                       </tr>
                       <tr>
                         <td className="p-4 font-bold text-[var(--text-color)]">2. Schulung & Akquise</td>
-                        <td className="p-4 text-right font-black text-amber-500">{currentS2}</td>
+                        <td className="p-4 text-right font-black text-[var(--cat-2-text)]">{currentS2}</td>
                         <td className="p-4 text-right">{totalActions > 0 ? ((currentS2 / totalActions) * 100).toFixed(1) : "0"}%</td>
                       </tr>
                       <tr>
                         <td className="p-4 font-bold text-[var(--text-color)]">3. Spezialprodukte</td>
-                        <td className="p-4 text-right font-black text-indigo-500">{currentS3}</td>
+                        <td className="p-4 text-right font-black text-[var(--cat-3-text)]">{currentS3}</td>
                         <td className="p-4 text-right">{totalActions > 0 ? ((currentS3 / totalActions) * 100).toFixed(1) : "0"}%</td>
                       </tr>
-                      <tr className="bg-slate-50/40 dark:bg-slate-900/10 font-bold">
+                      <tr className="bg-[var(--bg-color)] font-bold">
                         <td className="p-4 text-[var(--text-color)]">Arbeitszeit (Bürostunden ca.)</td>
-                        <td className="p-4 text-right font-black text-blue-500">{currentHours}h</td>
+                        <td className="p-4 text-right font-black text-[var(--cat-4-text)]">{currentHours}h</td>
                         <td className="p-4 text-right">-</td>
                       </tr>
                     </tbody>
@@ -375,7 +375,7 @@ export default function StatsModal({
           {activeTab === "trends" && (
             <div className="space-y-6">
               {sortedMonths.length < 2 ? (
-                <div className="p-6 rounded-2xl border border-[var(--border-color)] bg-amber-500/5 flex gap-3 text-amber-800 dark:text-amber-300">
+                <div className="p-6 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-2-soft)] flex gap-3 text-[var(--warning-text)]">
                   <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                   <div className="text-xs space-y-1.5 leading-relaxed font-bold">
                     <p className="font-black">Nicht genügend historische Daten für eine Trendanalyse vorhanden.</p>
@@ -392,7 +392,7 @@ export default function StatsModal({
                     <div className="p-5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-color)] space-y-4">
                       <h3 className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)] flex items-center justify-between">
                         <span>Aktivitätsvergleich über {sortedMonths.length} Monate</span>
-                        <span className="text-[0.75rem] font-bold text-emerald-500 flex items-center gap-1">
+                        <span className="text-[0.75rem] font-bold text-[var(--cat-1-text)] flex items-center gap-1">
                           <TrendingUp className="w-3.5 h-3.5" /> Trend
                         </span>
                       </h3>
@@ -496,19 +496,19 @@ export default function StatsModal({
                       {/* Legends */}
                       <div className="flex flex-wrap gap-x-5 gap-y-2 justify-center pt-2 border-t border-[var(--border-color)]">
                         <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-color)]">
-                          <span className="w-3 h-3 bg-emerald-500 rounded-full" />
+                          <span className="w-3 h-3 bg-[var(--cat-1)] rounded-full" />
                           <span>1. Vorführungen</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-color)]">
-                          <span className="w-3 h-3 bg-amber-500 rounded-full" />
+                          <span className="w-3 h-3 bg-[var(--cat-2)] rounded-full" />
                           <span>2. Schulungen</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-color)]">
-                          <span className="w-3 h-3 bg-indigo-500 rounded-full" />
+                          <span className="w-3 h-3 bg-[var(--cat-3)] rounded-full" />
                           <span>3. Spezialprodukte</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-color)]">
-                          <span className="w-3.5 h-1 border-b-2 border-dashed border-blue-500" />
+                          <span className="w-3.5 h-1 border-b-2 border-dashed border-[var(--cat-4)]" />
                           <span>Bürostunden ca.</span>
                         </div>
                       </div>
@@ -521,17 +521,17 @@ export default function StatsModal({
                       <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse text-xs min-w-[500px]">
                           <thead>
-                            <tr className="bg-slate-50 dark:bg-slate-900 border-b border-[var(--border-color)] text-[var(--text-color)] font-black">
+                            <tr className="bg-[var(--bg-color)] border-b border-[var(--border-color)] text-[var(--text-color)] font-black">
                               <th className="p-4">Monat</th>
-                              <th className="p-4 text-right text-emerald-500">1. Vorführungen</th>
-                              <th className="p-4 text-right text-amber-500">2. Schulungen</th>
-                              <th className="p-4 text-right text-indigo-500">3. Spezial</th>
-                              <th className="p-4 text-right text-blue-500">Bürozeit (h)</th>
+                              <th className="p-4 text-right text-[var(--cat-1-text)]">1. Vorführungen</th>
+                              <th className="p-4 text-right text-[var(--cat-2-text)]">2. Schulungen</th>
+                              <th className="p-4 text-right text-[var(--cat-3-text)]">3. Spezial</th>
+                              <th className="p-4 text-right text-[var(--cat-4-text)]">Bürozeit (h)</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-muted)] font-bold">
                             {sortedMonths.map((m, idx) => (
-                              <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/10">
+                              <tr key={idx} className="hover:bg-[var(--bg-color)]">
                                 <td className="p-4 font-black text-[var(--text-color)]">{formatMonthGerman(m.month)}</td>
                                 <td className="p-4 text-right font-black">{m.s1}</td>
                                 <td className="p-4 text-right font-black">{m.s2}</td>
