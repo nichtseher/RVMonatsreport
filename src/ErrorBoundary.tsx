@@ -53,13 +53,13 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center p-4">
-          <div className="max-w-md w-full bg-[var(--card-bg)] rounded-3xl shadow-2xl p-6 md:p-8 text-center border border-red-200 dark:border-red-900/30">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="min-h-screen bg-[var(--bg-color)] flex flex-col items-center justify-center p-4">
+          <div className="max-w-md w-full bg-[var(--card-bg)] rounded-3xl shadow-2xl p-6 md:p-8 text-center border border-[var(--danger-border)]">
+            <div className="w-16 h-16 bg-[var(--danger-bg)] rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-8 h-8 text-[var(--danger-text)]" />
             </div>
             
-            <h1 className="text-xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">
+            <h1 className="text-xl font-black text-[var(--text-color)] mb-2 tracking-tight">
               Ein unerwarteter Fehler ist aufgetreten
             </h1>
             
@@ -67,7 +67,7 @@ export class ErrorBoundary extends Component<Props, State> {
               Die App konnte leider nicht ordnungsgemäß geladen werden. Bitte versuchen Sie, die Seite neu zu laden.
             </p>
 
-            <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl text-left mb-6 overflow-auto max-h-32 border border-[var(--border-color)]">
+            <div className="bg-[var(--bg-color)] p-3 rounded-xl text-left mb-6 overflow-auto max-h-32 border border-[var(--border-color)]">
               <code className="text-[0.75rem] text-[var(--danger-text)] font-mono">
                 {this.state.errorMsg || "Unknown render error"}
               </code>
@@ -84,7 +84,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
               <button 
                 onClick={this.handleHardReset}
-                className="w-full flex items-center justify-center gap-2 bg-[var(--danger-bg)] text-[var(--danger-text)] font-bold py-3.5 px-4 rounded-xl border border-red-200 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 transition-all active:scale-95 text-sm"
+                className="w-full flex items-center justify-center gap-2 bg-[var(--danger-bg)] text-[var(--danger-text)] font-bold py-3.5 px-4 rounded-xl border border-[var(--danger-border)] hover:brightness-110 transition-all active:scale-95 text-sm"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Kompletten Reset durchführen</span>

@@ -218,7 +218,7 @@ export default function A11yModal({
           <button
             type="button"
             onClick={onOpenChangelog}
-            className="text-xs font-black px-3 min-h-[44px] inline-flex items-center rounded-full bg-purple-600/10 text-purple-600 dark:text-purple-400 border border-purple-600/30 hover:bg-purple-600/20 transition-colors cursor-pointer flex-shrink-0"
+            className="text-xs font-black px-3 min-h-[44px] inline-flex items-center rounded-full bg-[var(--success-bg)] text-[var(--success-text)] border border-[var(--success-border)] hover:bg-[var(--bg-color)] transition-colors cursor-pointer flex-shrink-0"
           >
             Was gibt's Neues?
           </button>
@@ -254,7 +254,7 @@ export default function A11yModal({
         {onOpenSync && (
           <MenuRow
             icon={<Smartphone className="w-5 h-5" />}
-            iconClass="bg-blue-600 text-white"
+            iconClass="bg-[var(--primary)] text-[var(--primary-text)]"
             label="Geräte-Sync"
             hint="Daten offline auf ein zweites Gerät übertragen – auch ohne Kamera"
             onClick={onOpenSync}
@@ -263,7 +263,7 @@ export default function A11yModal({
         {onOpenBackup && (
           <MenuRow
             icon={<Lock className="w-5 h-5" />}
-            iconClass="bg-slate-700 text-white"
+            iconClass="bg-[var(--accent)] text-[var(--accent-text)]"
             label="Datensicherung"
             hint="Verschlüsseltes Backup erstellen & einspielen"
             onClick={onOpenBackup}

@@ -135,7 +135,7 @@ export default function ManageModal({
                           type="button"
                           onClick={() => onDeleteField(secKey, field.id, field.label)}
                           aria-label={`Kategorie "${field.label}" unwiderruflich löschen`}
-                          className="w-10 h-10 rounded-xl flex items-center justify-center bg-red-100 dark:bg-red-950/40 hover:bg-red-200 dark:hover:bg-red-900/60 text-[var(--danger)] cursor-pointer transition-all"
+                          className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--danger-bg)] hover:brightness-110 text-[var(--danger)] cursor-pointer transition-all"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -157,7 +157,7 @@ export default function ManageModal({
           <button
             type="button"
             onClick={onFactoryReset}
-            className="w-full py-4 px-4 rounded-xl font-bold border-2 border-dashed border-[var(--danger)] text-[var(--danger)] hover:bg-red-50/20 dark:hover:bg-red-950/20 flex items-center justify-center gap-2 cursor-pointer transition-all text-sm"
+            className="w-full py-4 px-4 rounded-xl font-bold border-2 border-dashed border-[var(--danger)] text-[var(--danger)] hover:bg-[var(--danger-bg)] flex items-center justify-center gap-2 cursor-pointer transition-all text-sm"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Formular auf Standard-Felder zurücksetzen</span>

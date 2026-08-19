@@ -870,7 +870,7 @@ export default function DeviceSyncModal({
         <Link2 className="w-6 h-6 animate-pulse" aria-hidden="true" />
         <Smartphone className="w-8 h-8" aria-hidden="true" />
       </div>
-      <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-sm text-emerald-800 dark:text-emerald-300 font-bold text-center">
+      <div className="p-4 rounded-xl bg-[var(--success-bg)] border border-[var(--success-border)] text-sm text-[var(--success-text)] font-bold text-center">
         Live verbunden – beide Geräte gleichen sich automatisch ab.
         {lastSyncTime && (
           <span className="block mt-1 text-xs font-bold">Letzter Abgleich: {lastSyncTime} Uhr</span>
@@ -885,7 +885,7 @@ export default function DeviceSyncModal({
       </p>
       <button
         onClick={disconnectLive}
-        className="w-full py-3 px-4 rounded-xl font-bold border border-red-300 dark:border-red-800 text-[var(--danger-text)] hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex justify-center items-center gap-2 cursor-pointer"
+        className="w-full py-3 px-4 rounded-xl font-bold border border-[var(--danger-border)] text-[var(--danger-text)] hover:brightness-110 transition-all flex justify-center items-center gap-2 cursor-pointer"
       >
         <Unplug className="w-5 h-5" aria-hidden="true" />
         Verbindung trennen
@@ -934,10 +934,10 @@ export default function DeviceSyncModal({
               <div
                 className={`mb-6 p-4 rounded-xl text-sm flex items-start gap-3 ${
                   status.type === "success"
-                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                    ? "bg-[var(--success-bg)] text-[var(--success-text)]"
                     : status.type === "error"
-                      ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                      : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                      ? "bg-[var(--danger-bg)] text-[var(--danger-text)]"
+                      : "bg-[var(--info-bg)] text-[var(--info-text)]"
                 }`}
               >
                 {status.type === "success" ? (

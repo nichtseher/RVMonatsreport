@@ -2292,7 +2292,7 @@ export default function App() {
                      window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all cursor-pointer font-bold ${
-                    isSelected ? "bg-[var(--accent)] text-[var(--accent-text)] shadow-md shadow-indigo-500/20" : "text-[var(--text-muted)] hover:bg-[var(--input-bg)] hover:text-[var(--text-color)]"
+                    isSelected ? "bg-[var(--accent)] text-[var(--accent-text)] shadow-md" : "text-[var(--text-muted)] hover:bg-[var(--input-bg)] hover:text-[var(--text-color)]"
                   }`}
                 >
                   <IconComp className={`w-5 h-5 ${isSelected ? "stroke-[2.5]" : "stroke-[2]"}`} />
@@ -2329,7 +2329,7 @@ export default function App() {
             <h1 className="text-xl md:text-2xl font-black tracking-tight text-[var(--text-color)]">
               RV Mobil
             </h1>
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[0.75rem] font-black uppercase tracking-[0.2em] text-emerald-700">
+            <span className="rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2.5 py-1 text-[0.75rem] font-black uppercase tracking-[0.2em] text-[var(--success-text)]">
               DSGVO & barrierefrei
             </span>
           </div>
@@ -2338,17 +2338,17 @@ export default function App() {
           <div className="flex items-center gap-1.5 text-[0.75rem] font-bold text-[var(--text-muted)] uppercase tracking-wider pt-1">
             {saveStatus === "saving" ? (
               <>
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--warning-border)] animate-pulse"></span>
                 <span>Speichert lokal...</span>
               </>
             ) : saveStatus === "error" ? (
               <>
-                <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
-                <span className="text-red-600 dark:text-red-400">Speichern fehlgeschlagen!</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--danger-solid)]"></span>
+                <span className="text-[var(--danger-text)]">Speichern fehlgeschlagen!</span>
               </>
             ) : (
               <>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]"></span>
                 <span>Automatisch lokal gesichert ({lastSavedTime})</span>
               </>
             )}
@@ -2358,9 +2358,9 @@ export default function App() {
                 onClick={() => setActiveTab("sync")}
                 title="Live-Verbindung aktiv – zum Verwalten antippen"
                 aria-label={`Live-Verbindung mit dem anderen Gerät ist aktiv.${liveSync.lastSyncTime ? ` Letzter Abgleich um ${liveSync.lastSyncTime} Uhr.` : ""} Antippen zum Verwalten.`}
-                className="ml-2 flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-emerald-700 dark:text-emerald-400 cursor-pointer hover:bg-emerald-500/20 transition-colors"
+                className="ml-2 flex items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[var(--success-text)] cursor-pointer hover:brightness-110 transition-colors"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" aria-hidden="true"></span>
                 <span>Live verbunden</span>
               </button>
             )}
@@ -2371,7 +2371,7 @@ export default function App() {
             spart rund 100px Hoehe, ohne etwas zu verstecken. Die Hinweise
             "DSGVO-sicher lokal" und der Archiv-Link entfielen bewusst: beides
             steht bereits im Kopf-Abzeichen bzw. in der Navigation. */}
-        <div className="flex flex-row items-stretch gap-2 sm:gap-3 w-full md:w-auto md:max-w-md bg-slate-50 dark:bg-slate-900/40 p-2.5 sm:p-3 rounded-xl border border-dashed border-[var(--border-color)]" role="group" aria-label="Berichtsmetadaten">
+        <div className="flex flex-row items-stretch gap-2 sm:gap-3 w-full md:w-auto md:max-w-md bg-[var(--bg-color)] p-2.5 sm:p-3 rounded-xl border border-dashed border-[var(--border-color)]" role="group" aria-label="Berichtsmetadaten">
           {/* Month input */}
           <div className="flex-1 min-w-0 space-y-1">
             <label
@@ -2573,7 +2573,7 @@ export default function App() {
           role="alert"
           className={`p-3.5 mb-4 rounded-xl border flex gap-2.5 items-center text-xs font-bold leading-snug ${
             deadlineInfo.isUrgent
-              ? "bg-red-50 dark:bg-red-950/20 border-red-500 text-red-900 dark:text-red-200 animate-pulse"
+              ? "bg-[var(--danger-bg)] border-[var(--danger-border)] text-[var(--danger-text)] animate-pulse"
               : "bg-[var(--alert-bg)] border-[var(--alert-border)] text-[var(--alert-text)]"
           }`}
         >
@@ -2601,7 +2601,7 @@ export default function App() {
               setActiveSectionTab("all");
               announceToAriaAndSpeech("Alle Filter aufgehoben.");
             }}
-            className="text-[0.75rem] font-black text-red-500 hover:text-red-600 hover:underline flex items-center gap-1 cursor-pointer bg-red-500/10 dark:bg-red-500/20 px-2 py-0.5 rounded-md transition-all active:scale-95"
+            className="text-[0.75rem] font-black text-[var(--danger)] hover:text-[var(--danger-text)] hover:underline flex items-center gap-1 cursor-pointer bg-[var(--danger-bg)] px-2 py-0.5 rounded-md transition-all active:scale-95"
           >
             <span>Filter aufheben</span>
           </button>
@@ -2899,7 +2899,7 @@ export default function App() {
                 onClick={handleCopyPreviousMonth}
                 aria-label="Vormonats-Werte als Vorlage laden"
                 title="Werte des letzten gesicherten Monats als Vorlage laden"
-                className="px-2.5 min-h-[44px] rounded-lg text-xs font-bold border bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
+                className="px-2.5 min-h-[44px] rounded-lg text-xs font-bold border bg-[var(--success-bg)] text-[var(--success-text)] border-[var(--success-border)] hover:brightness-110 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
               >
                 <Copy className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>Vorlage</span>
@@ -2956,7 +2956,7 @@ export default function App() {
                 isGoalsEditorOpen
                   ? "bg-[var(--accent)] text-[var(--accent-text)] border-[var(--accent)] shadow-xs"
                   : goalsConfig.enabled
-                    ? "bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900"
+                    ? "bg-[var(--cat-3-soft)] text-[var(--cat-3-text)] border-[var(--cat-3)]"
                     : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--border-color)]"
               }`}
             >
@@ -2969,7 +2969,7 @@ export default function App() {
         {/* Inline goals configuration form */}
         {isGoalsEditorOpen && (
           <div
-            className="pt-2.5 mt-2.5 border-t border-slate-100 dark:border-slate-800 space-y-2.5 animate-slide-up"
+            className="pt-2.5 mt-2.5 border-t border-[var(--border-color)] space-y-2.5 animate-slide-up"
             role="group"
             aria-label="Ziele-Konfiguration"
           >
@@ -3022,7 +3022,7 @@ export default function App() {
                     const val = Math.max(1, parseInt(e.target.value) || 0);
                     updateGoalsConfig({ ...goalsConfig, s1: val });
                   }}
-                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg outline-none focus:border-emerald-500"
+                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg outline-none focus:border-[var(--border-focus)]"
                   disabled={!goalsConfig.enabled}
                 />
               </div>
@@ -3039,7 +3039,7 @@ export default function App() {
                     const val = Math.max(1, parseInt(e.target.value) || 0);
                     updateGoalsConfig({ ...goalsConfig, s2: val });
                   }}
-                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg outline-none focus:border-amber-500"
+                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg outline-none focus:border-[var(--border-focus)]"
                   disabled={!goalsConfig.enabled}
                 />
               </div>
@@ -3056,7 +3056,7 @@ export default function App() {
                     const val = Math.max(1, parseInt(e.target.value) || 0);
                     updateGoalsConfig({ ...goalsConfig, s3: val });
                   }}
-                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg outline-none focus:border-indigo-500"
+                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg outline-none focus:border-[var(--border-focus)]"
                   disabled={!goalsConfig.enabled}
                 />
               </div>
@@ -3073,7 +3073,7 @@ export default function App() {
                     const val = Math.max(1, parseInt(e.target.value) || 0);
                     updateGoalsConfig({ ...goalsConfig, s4: val });
                   }}
-                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg outline-none focus:border-blue-500"
+                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg outline-none focus:border-[var(--border-focus)]"
                   disabled={!goalsConfig.enabled}
                 />
               </div>
@@ -3082,9 +3082,9 @@ export default function App() {
         )}
 
         {/* Live Search bar (Incredibly efficient for finding products on-the-go) */}
-        <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+        <div className="pt-2 border-t border-[var(--border-color)]">
           <div className="relative">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400 dark:text-slate-600">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-[var(--text-muted)]">
               <Search className="w-4 h-4" aria-hidden="true" />
             </span>
             <input
@@ -3100,7 +3100,7 @@ export default function App() {
                 type="button"
                 onClick={() => setSearchQuery("")}
                 aria-label="Suche löschen"
-                className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400 hover:text-[var(--text-color)]"
+                className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-[var(--text-muted)] hover:text-[var(--text-color)]"
               >
                 <X className="w-4 h-4" aria-hidden="true" />
               </button>
@@ -3119,7 +3119,7 @@ export default function App() {
           >
             <h2
               id="section1-heading"
-              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-slate-100 dark:border-slate-800 tracking-tight text-[var(--text-color)]"
+              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] tracking-tight text-[var(--text-color)]"
             >
               1. Vorführungen & Auslieferungen
             </h2>
@@ -3169,7 +3169,7 @@ export default function App() {
           >
             <h2
               id="section2-heading"
-              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-slate-100 dark:border-slate-800 tracking-tight text-[var(--text-color)]"
+              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] tracking-tight text-[var(--text-color)]"
             >
               2. Schulung, Support & Akquise
             </h2>
@@ -3207,7 +3207,7 @@ export default function App() {
           >
             <h2
               id="section3-heading"
-              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-slate-100 dark:border-slate-800 tracking-tight text-[var(--text-color)]"
+              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] tracking-tight text-[var(--text-color)]"
             >
               3. Spezialprodukte (Fokus)
             </h2>
@@ -3245,7 +3245,7 @@ export default function App() {
           >
             <h2
               id="section4-heading"
-              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-slate-100 dark:border-slate-800 tracking-tight text-[var(--text-color)]"
+              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] tracking-tight text-[var(--text-color)]"
             >
               4. Arbeitszeit & Büro
             </h2>
@@ -3306,7 +3306,7 @@ export default function App() {
         className={`p-4 sm:p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]`}
         aria-labelledby="notes-heading"
       >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b-2 border-slate-100 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b-2 border-[var(--border-color)]">
           <h2
             id="notes-heading"
             className="text-lg md:text-xl font-black tracking-tight text-[var(--text-color)]"
@@ -3360,7 +3360,7 @@ export default function App() {
         >
           Tragen Sie hier wichtige Notizen ein:{" "}
           {/* emerald-700 statt -600: erreicht auf weissem Grund 4,5:1 */}
-          <span className="text-emerald-700 dark:text-emerald-400 font-black">
+          <span className="text-[var(--success-text)] font-black">
             Wird nur auf Ihrem Gerät gespeichert
           </span>
         </label>
@@ -3392,7 +3392,7 @@ export default function App() {
               key={i}
               type="button"
               onClick={() => handleApplyNoteTemplate(tpl.text)}
-              className="inline-flex items-center px-2.5 min-h-[44px] rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:border-[var(--border-focus)] hover:bg-slate-50 dark:hover:bg-slate-900 text-[0.75rem] font-black text-[var(--text-color)] transition-all cursor-pointer active:scale-95 focus-visible:ring-2"
+              className="inline-flex items-center px-2.5 min-h-[44px] rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:border-[var(--border-focus)] hover:bg-[var(--bg-color)] text-[0.75rem] font-black text-[var(--text-color)] transition-all cursor-pointer active:scale-95 focus-visible:ring-2"
               title={`Text einfügen: "${tpl.text}"`}
             >
               {tpl.label}
@@ -3438,7 +3438,7 @@ export default function App() {
           <button
             type="button"
             onClick={handleSendToVL}
-            className="w-full py-4 px-6 rounded-2xl font-bold bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-base flex items-center justify-center gap-2.5 shadow-sm cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-4"
+            className="w-full py-4 px-6 rounded-2xl font-bold bg-[var(--cat-3-soft)] hover:brightness-110 text-[var(--cat-3-text)] border border-[var(--cat-3)] text-base flex items-center justify-center gap-2.5 shadow-sm cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-4"
           >
             <Share2 className="w-5 h-5" aria-hidden="true" />
             <span>Bericht an VL senden (Teilen/E-Mail)</span>

@@ -10,6 +10,105 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-19 — v0.9.10: Die Notlösung von 0.8.1 ist entfallen
+
+Fortsetzung und Abschluss von 0.9.9. Dort waren 141 der 278 festen
+Palettenfarben migriert; die restlichen 137 lagen vor allem in den Modals.
+
+### Ergebnis
+
+**278 → 3.** Die drei verbliebenen sind Absicht und im Code als Schutzzone
+markiert: die Vorschaukacheln der Theme-Auswahl in `A11yModal`. Sie sollen
+*zeigen*, wie ein Design aussieht — würden sie den Variablen folgen, sähen alle
+vier gleich aus und die Auswahl wäre sinnlos.
+
+### Der eigentliche Gewinn: 100 Zeilen weniger
+
+Die Neutralisierungsschicht aus 0.8.1 ist entfallen — rund 90 Selektoren, die in
+den beiden Hochkontrast-Themes jede feste Palettenfarbe per `!important` auf die
+Theme-Farbe zwangen. Sie war eine Notlösung für ein Problem, das jetzt an der
+Wurzel behoben ist.
+
+Zwei Gründe, sie nicht zu vermissen:
+
+- Sie wirkte **nur** in den Hochkontrast-Themes. Hell und Dunkel waren nie
+  abgedeckt — genau die Lücke, durch die in 0.9.8 die Minus-Taste unsichtbar
+  wurde.
+- Sie erfasste `bg-white` nicht, weshalb die Backup-Karte im Theme „Kontrast
+  dunkel" eine weiße Fläche war (0.9.9).
+
+Nebeneffekt, der aus der Selektorliste folgt: Die Schicht enthielt
+`[class*="bg-slate-"]`, und die Vorschaukachel für „Dunkel" trägt `bg-slate-900`.
+Sie wurde in den Kontrast-Themes also auf `--card-bg` (#000000) gezwungen — die
+Vorschau für „Dunkel" zeigte dort Schwarz statt Dunkelgrau. Nachgemessen nach
+dem Entfernen: `oklch(0.208 0.042 265.755)`, also wieder slate-900, und zwar in
+jedem aktiven Theme.
+
+### Changelog-Symbole: Farbe sagt jetzt etwas
+
+Dort standen zehn Farben ohne System — `<Sparkles>` erschien in Violett, Cyan,
+Rosé, Himmelblau, Bernstein, Smaragd und Purpur. Die Farbe war reine Dekoration.
+Jetzt richtet sie sich nach dem **Symboltyp**:
+
+| Symbol | Bedeutung | Token |
+|---|---|---|
+| `Bug` | Fehlerbehebung | `--danger` |
+| `ShieldCheck` | Sicherheit / Stabilität | `--info-border` |
+| `Sparkles` | neue Funktion | `--accent` |
+| `Activity` | Verhalten / Tempo | `--warning-border` |
+
+### Gemessen
+
+Kontrast je Bildschirm × vier Themes, Hintergrund über die Elternkette
+aufgelöst und mit Alpha verrechnet — **ohne** die Neutralisierungsschicht:
+
+| Bildschirm | geprüfte Textelemente | Verstöße |
+|---|---|---|
+| Report | 99 | 0 |
+| Optionen | 24 | 0 |
+| Changelog | 191 | 0 |
+| Hilfe | 69 | 0 |
+| RV Analyse | 30 | 0 |
+| RV Archiv | 15 | 0 |
+| RV Zeit | 23 | 0 |
+| Datensicherung | 19 | 0 |
+
+Backup-Karte im Theme „Kontrast dunkel": `rgb(0, 0, 0)` — vorher weiß.
+
+Layout bei 360 px über vier Themes × drei Schriftgrößen: 12 von 12
+Kombinationen ohne seitliches Scrollen, Zählerzeile überall einzeilig.
+
+`npm run lint`, `npm run check` (58/58) und `npm run build` grün.
+
+### Zwei Fehler im eigenen Vorgehen
+
+**Ein Muster hat ein Präfix gefressen.** Die Ersetzungsliste enthielt
+`bg-red-500`, die Vorlage im Code war aber `bg-red-500/10`. Ergebnis:
+`bg-[var(--danger-solid)]/10` — ein Alpha-Suffix auf einer CSS-Variablen, was
+Tailwind nicht zuverlässig auflöst. Die Sortierung nach Länge schützt nur, wenn
+*beide* Varianten in der Liste stehen. Drei solcher Artefakte, alle im
+Nachlauf durch das passende fertige Token ersetzt.
+
+**Eine Messung hat den falschen Bildschirm gemessen.** Der erste Versuch, das
+Changelog zu prüfen, lief über `?tab=changelog` und meldete „0 von 99" — sauber.
+Nur: `App.tsx` akzeptiert im URL-Initializer ausschließlich `time`, `stats`,
+`history` und `options`; alles andere fällt auf `form` zurück. Gemessen wurde
+also erneut die Report-Seite. Aufgefallen an der identischen Elementzahl. Seither
+prüft der Messcode mit einem Kennzeichen aus dem Bildschirmtext, ob er
+überhaupt dort ist, wo er zu sein glaubt (`erkannt: true`), und die Elementzahlen
+unterscheiden sich entsprechend.
+
+### Offen
+
+Unverändert: die 43,5-px-Regel ist bei 360 px in den großen Schriftgrößen nicht
+erfüllbar (siehe Nachtrag in `CLAUDE.md`), und 320 px tritt dort über den
+Kartenrand.
+
+**Nicht verifiziert:** das optische Ergebnis. Der Browser-Pane war nicht
+eingeblendet, Screenshots liefen in den Timeout. Alles oben sind Messwerte.
+
+---
+
 ## 2026-08-08 — v0.9.9: Ein Farbsystem statt 278 Einzelentscheidungen
 
 Auftrag von Marc: Design überarbeiten — barrierefrei, modern, responsive.

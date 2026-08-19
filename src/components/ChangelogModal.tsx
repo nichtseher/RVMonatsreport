@@ -32,8 +32,22 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.10: Jede Farbe folgt jetzt Ihrer Schema-Wahl</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Der Rest der fest eingebauten Farben ist verschwunden.</strong> In 0.9.9 folgte etwa die Hälfte Ihrer Schema-Wahl, jetzt alle. Betroffen waren vor allem die Fenster „Was gibt's Neues", „Hilfe & Anleitung", „RV Analyse" und „RV Archiv".</li>
+            <li><strong>Die Symbole im Fenster „Was gibt's Neues" haben jetzt eine Bedeutung.</strong> Vorher hatte jede Version eine zufällige Farbe. Jetzt zeigt die Farbe die Art der Änderung: Fehlerbehebung, Sicherheit, neue Funktion oder Verhalten.</li>
+            <li><strong>Eine alte Notlösung konnte entfallen.</strong> In den beiden Kontrast-Schemata musste das Programm bisher rund 90 Sonderregeln anwenden, um fest eingebaute Farben zu überschreiben. Die sind jetzt überflüssig – das Ergebnis ist dasselbe, nur ohne Umweg.</li>
+            <li><strong>Die Vorschau-Kacheln der Schema-Auswahl zeigen wieder das richtige Bild.</strong> Im Kontrast-Schema war die Kachel für „Dunkel" schwarz statt dunkelgrau.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.9: Farben folgen jetzt überall Ihrer Theme-Wahl</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Der Schalter im Fenster „Barrierefreiheit" war teilweise unsichtbar.</strong> Sein runder Knopf war fest weiß – im hellen Schema auf weißem Grund, im Gelb-Schema auf gelbem Grund. Jetzt wechselt er die Farbe passend zum Schalter und ist in jeder Stellung deutlich zu sehen.</li>
@@ -46,9 +60,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <Bug className="w-5 h-5 text-red-500" />
+            <Bug className="w-5 h-5 text-[var(--danger)]" />
             <span>Version 0.9.8: Zähler-Tasten sehen jetzt zusammengehörig aus</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Die fünf Tasten einer Zähler-Zeile hatten drei verschiedene Eckformen und zwei verschiedene Größen.</strong> Auf dem Handy wirkte die Zeile dadurch unruhig, obwohl die Reihenfolge stimmte. Jetzt haben alle fünf dieselbe Form und dieselbe Höhe.</li>
@@ -59,9 +73,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <Bug className="w-5 h-5 text-red-500" />
+            <Bug className="w-5 h-5 text-[var(--danger)]" />
             <span>Version 0.9.7: Zähler-Tasten auf dem Handy in richtiger Reihenfolge</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Auf dem Handy standen die Tasten in einer anderen Reihenfolge als am PC.</strong> Statt „−5, Minus, Zahl, Plus, +5“ war es „Minus, Zahl, Plus, −5, +5“ – das „−5“ saß also rechts vom Plus. Jetzt ist die Reihenfolge auf jedem Gerät dieselbe.</li>
@@ -71,9 +85,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <Sparkles className="w-5 h-5 text-violet-500" />
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.6: Ruhigeres, einheitlicheres Erscheinungsbild</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Symbole folgen jetzt Ihrem Farbschema.</strong> Bisher standen an vielen Stellen Emojis. Die sehen auf jedem Gerät anders aus, bleiben im Hochkontrast-Modus bunt und werden vom Screenreader mitgelesen. Jetzt zeichnet die App überall dieselben klaren Symbole – in der Farbe Ihres gewählten Schemas und in der Größe Ihrer Schrift. <strong>Ihre Kategorien bleiben unverändert</strong>, auch selbst angelegte.</li>
@@ -84,9 +98,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <ShieldCheck className="w-5 h-5 text-emerald-500" />
+            <ShieldCheck className="w-5 h-5 text-[var(--info-border)]" />
             <span>Version 0.9.5: Geräte-Sync abgesichert</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Fehlerhafte Codes stürzen die App nicht mehr ab:</strong> Ein unvollständig kopierter oder fremder Code führte bisher beim Übernehmen zum Fehlerbildschirm. Jetzt wird jedes empfangene Paket zuerst geprüft, und Sie bekommen im Klartext gesagt, was nicht stimmt.</li>
@@ -98,9 +112,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <ShieldCheck className="w-5 h-5 text-emerald-500" />
+            <ShieldCheck className="w-5 h-5 text-[var(--info-border)]" />
             <span>Version 0.9.4: Automatische Kontrolle vor jeder Veröffentlichung</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>An dieser Version sehen Sie nichts – und das ist der Zweck.</strong> Bisher wurde jede Änderung unmittelbar veröffentlicht, ohne dass irgendetwas sie vorher geprüft hat. Ab jetzt laufen bei jeder Veröffentlichung 37 automatische Kontrollen; schlägt eine fehl, bleibt die bisherige Fassung online.</li>
@@ -111,9 +125,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <Activity className="w-5 h-5 text-cyan-500" />
+            <Activity className="w-5 h-5 text-[var(--warning-border)]" />
             <span>Version 0.9.3: Schnellerer Start, ehrlichere Meldungen, korrigierte Hilfe</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Die App startet spürbar schneller:</strong> Geräte-Sync und Datensicherung werden erst geladen, wenn Sie sie öffnen. Beim Start muss dadurch nur noch weniger als die Hälfte an Daten geladen werden – hilfreich bei schlechtem Empfang.</li>
@@ -125,9 +139,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <Activity className="w-5 h-5 text-amber-500" />
+            <Activity className="w-5 h-5 text-[var(--warning-border)]" />
             <span>Version 0.9.2: Abbruch der Live-Verbindung wird gemeldet</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Sie erfahren jetzt, wenn die Verbindung abreißt:</strong> Bricht die Live-Verbindung ab – WLAN weg, anderes Gerät zugeklappt oder gesperrt –, erscheint ein deutlicher Hinweis samt Sprachansage, mit einer Taste zum erneuten Verbinden. Bisher verschwand lediglich das grüne Zeichen oben; wer gerade Zahlen eintrug, bemerkte nichts und hielt beide Geräte für gleichauf. Trennen Sie selbst, kommt weiterhin keine Warnung.</li>
@@ -138,9 +152,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <Bug className="w-5 h-5 text-red-500" />
+            <Bug className="w-5 h-5 text-[var(--danger)]" />
             <span>Version 0.9.1: Live-Verbindung verliert keine Eingaben mehr</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Wichtiger Fehler behoben – Eingaben konnten spurlos verschwinden:</strong> Waren zwei Geräte live verbunden und wurde auf beiden kurz hintereinander etwas erfasst, überschrieb das eine Gerät sämtliche Zahlen des anderen. Die Eingabe war kurz zu sehen und wenige Sekunden später weg – ohne jeden Hinweis. Ab sofort wird <strong>jedes Feld einzeln</strong> abgeglichen: Zwei Erfassungen in verschiedenen Kategorien bleiben beide erhalten.</li>
@@ -151,9 +165,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <ShieldCheck className="w-5 h-5 text-emerald-500" />
+            <ShieldCheck className="w-5 h-5 text-[var(--info-border)]" />
             <span>Version 0.9.0: Zähler bleiben erreichbar & Monatsabschluss mit Rückfrage</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Wichtiger Fehler behoben – Minus-Taste war nicht erreichbar:</strong> Mit „Große Schrift“ liefen die Zähler-Tasten auf schmalen Handys seitlich aus dem Bildschirm heraus; die Minus-Taste war dort gar nicht mehr zu sehen. Betroffen war ausgerechnet die Einstellung, die bei eingeschränktem Sehen gebraucht wird. Die Tastenreihe passt sich jetzt an und rückt bei Bedarf um.</li>
@@ -167,9 +181,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <ShieldCheck className="w-5 h-5 text-emerald-500" />
+            <ShieldCheck className="w-5 h-5 text-[var(--info-border)]" />
             <span>Version 0.8.1: Farbschemata repariert & einheitliche Navigation</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Wichtiger Fehler behoben – Farbschemata wirkten nur halb:</strong> Ein Teil der Oberfläche richtete sich nach der Einstellung Ihres Geräts statt nach dem in der App gewählten Farbschema. Dadurch konnte Text nahezu unlesbar werden – etwa wenn Sie „Hell“ wählten, Ihr Handy aber im Dunkelmodus lief. Besonders betroffen waren die Hochkontrast-Schemata. Jetzt folgt die gesamte App Ihrer Wahl.</li>
@@ -180,9 +194,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <Sparkles className="w-5 h-5 text-violet-500" />
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.8.0: Mehr Platz auf dem Handy & geführter Einstieg</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Deutlich mehr Platz auf dem Handy:</strong> Der Kopfbereich ist nur noch halb so hoch. Dadurch sind jetzt <strong>alle Schnell-Erfassungs-Tasten sofort sichtbar</strong>, ohne zu scrollen – vorher musste man dafür erst nach unten wischen.</li>
@@ -194,9 +208,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <Sparkles className="w-5 h-5 text-cyan-500" />
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.7.0: Besser lesbar, besser am PC</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Wichtiger Fehler behoben:</strong> Bei neu installierter App wurden Umlaute und Symbole falsch dargestellt („Anzahl VorfÃ¼hrungen“). Betroffen waren nur neue Installationen – vorhandene Daten blieben unberührt.</li>
@@ -210,9 +224,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <Sparkles className="w-5 h-5 text-rose-500" />
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.6.0: Verlässlicheres Zählen & Sync im Hintergrund</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Wichtiger Fehler behoben:</strong> Bei schnellem mehrfachem Tippen auf die Plus- oder Minus-Tasten gingen Zählungen verloren (fünf Tipps zählten teilweise nur eins). Jetzt wird jeder einzelne Tipp zuverlässig erfasst – in der Schnell-Erfassung wie im Formular.</li>
@@ -224,9 +238,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <Sparkles className="w-5 h-5 text-sky-500" />
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.5.0: Sync ohne Kamera & Abschluss-Check</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Sync ohne Kamera:</strong> Jeder Kopplungs- und Datencode lässt sich jetzt auch kopieren und am anderen Gerät einfügen – ideal für PCs ohne Webcam (z. B. über die geteilte Zwischenablage der Windows-Handy-Kopplung).</li>
@@ -237,9 +251,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <Sparkles className="w-5 h-5 text-amber-500" />
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.4.0: Schnell-Erfassung</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Schnell-Erfassung:</strong> Ihre meistgenutzten Kategorien als große Tasten ganz oben im Report – ein Tipp direkt nach dem Termin genügt (+1 mit Ton und Vibration). Kein Suchen, kein Scrollen.</li>
@@ -250,9 +264,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <Sparkles className="w-5 h-5 text-emerald-500" />
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.3.0: Live-Sync & Zusammenführen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Live-Verbindung:</strong> PC und Handy koppeln sich per QR-Code und gleichen sich dann automatisch ab – Sie können an beiden Geräten gleichzeitig arbeiten (gleiches WLAN, direkt von Gerät zu Gerät, ohne Server).</li>
@@ -263,9 +277,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <Sparkles className="w-5 h-5 text-purple-500" />
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.2.0: Geräte-Synchronisation</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Sichere Datenübertragung:</strong> Neue direkte Geräte-Synchronisation zwischen Smartphone und PC über QR-Code.</li>
@@ -276,9 +290,9 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <ShieldCheck className="w-5 h-5 text-green-500" />
+            <ShieldCheck className="w-5 h-5 text-[var(--info-border)]" />
             <span>Version 0.1.0: DevSecOps & Sicherheit</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">Beta</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Erweiterte Sicherheits-Header im Backend integriert.</li>
@@ -289,7 +303,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <Activity className="w-5 h-5 text-blue-500" />
+            <Activity className="w-5 h-5 text-[var(--warning-border)]" />
             Neue Funktionen
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
@@ -302,7 +316,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
-            <Bug className="w-5 h-5 text-red-500" />
+            <Bug className="w-5 h-5 text-[var(--danger)]" />
             Fehlerbehebungen
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">

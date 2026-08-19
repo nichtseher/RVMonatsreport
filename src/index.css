@@ -314,103 +314,25 @@
 }
 
 /* ---------------------------------------------------------------
-   HOCHKONTRAST: fest verdrahtete Farben neutralisieren.
+   Hier stand bis 0.9.10 eine Neutralisierungsschicht: rund 90 Selektoren, die
+   in den beiden Hochkontrast-Themes jede feste Palettenfarbe per !important auf
+   die Theme-Farbe zwangen ([class*="bg-slate-"] und so weiter). Sie war noetig,
+   weil ueber 500 Stellen im Code feste Tailwind-Farben nutzten, die jede
+   Theme-Wahl ignorierten -- im Gelb-auf-Schwarz-Theme lagen dadurch 51 von 141
+   Textelementen unter dem Mindestkontrast, die schlimmsten bei 1,05:1.
 
-   Rund 570 Stellen im Code nutzen feste Tailwind-Farben (bg-slate-50,
-   text-emerald-700, border-red-200 ...) statt der Theme-Variablen. Die
-   ignorieren jede Theme-Wahl -- im Gelb-auf-Schwarz-Theme lagen dadurch
-   51 von 141 Textelementen unter dem Mindestkontrast, die schlimmsten
-   bei 1,05:1 (praktisch unsichtbar).
+   Sie ist entfallen, weil das Problem an der Wurzel behoben ist: 0.9.9 und
+   0.9.10 haben alle 278 verbliebenen festen Farben durch Theme-Variablen
+   ersetzt. Uebrig sind genau drei, alle bewusst -- die Vorschaukacheln der
+   Theme-Auswahl in A11yModal, die ZEIGEN sollen, wie ein Design aussieht.
+   Wuerden sie den Variablen folgen, saehen alle vier gleich aus.
 
-   In den Hochkontrast-Themes ist genau EIN Farbpaar erwuenscht, deshalb
-   werden hier alle Palettenfarben auf die Theme-Farben gezwungen -- so
-   arbeitet auch der Hochkontrast-Modus von Windows. Die Bedeutung geht
-   nicht verloren: Beschriftungen und Symbole bleiben erhalten.
+   Zwei Gruende, das nicht wieder einzufuehren: Die Schicht wirkte NUR in den
+   Hochkontrast-Themes -- Hell und Dunkel waren nie abgedeckt, was genau die
+   Luecke war, durch die in 0.9.8 die Minus-Taste unsichtbar wurde. Und sie
+   erfasste bg-white nicht, weshalb die Backup-Karte im Theme "Kontrast dunkel"
+   eine weisse Flaeche war.
    --------------------------------------------------------------- */
-[data-theme="high-contrast-dark"] [class*="bg-slate-"],
-[data-theme="high-contrast-dark"] [class*="bg-gray-"],
-[data-theme="high-contrast-dark"] [class*="bg-emerald-"],
-[data-theme="high-contrast-dark"] [class*="bg-green-"],
-[data-theme="high-contrast-dark"] [class*="bg-amber-"],
-[data-theme="high-contrast-dark"] [class*="bg-indigo-"],
-[data-theme="high-contrast-dark"] [class*="bg-blue-"],
-[data-theme="high-contrast-dark"] [class*="bg-red-"],
-[data-theme="high-contrast-dark"] [class*="bg-teal-"],
-[data-theme="high-contrast-dark"] [class*="bg-purple-"],
-[data-theme="high-contrast-dark"] [class*="bg-rose-"],
-[data-theme="high-contrast-dark"] [class*="bg-cyan-"],
-[data-theme="high-contrast-dark"] [class*="bg-violet-"],
-[data-theme="high-contrast-dark"] [class*="bg-sky-"],
-[data-theme="high-contrast-yellow"] [class*="bg-slate-"],
-[data-theme="high-contrast-yellow"] [class*="bg-gray-"],
-[data-theme="high-contrast-yellow"] [class*="bg-emerald-"],
-[data-theme="high-contrast-yellow"] [class*="bg-green-"],
-[data-theme="high-contrast-yellow"] [class*="bg-amber-"],
-[data-theme="high-contrast-yellow"] [class*="bg-indigo-"],
-[data-theme="high-contrast-yellow"] [class*="bg-blue-"],
-[data-theme="high-contrast-yellow"] [class*="bg-red-"],
-[data-theme="high-contrast-yellow"] [class*="bg-teal-"],
-[data-theme="high-contrast-yellow"] [class*="bg-purple-"],
-[data-theme="high-contrast-yellow"] [class*="bg-rose-"],
-[data-theme="high-contrast-yellow"] [class*="bg-cyan-"],
-[data-theme="high-contrast-yellow"] [class*="bg-violet-"],
-[data-theme="high-contrast-yellow"] [class*="bg-sky-"] {
-  background-color: var(--card-bg) !important;
-}
-
-[data-theme="high-contrast-dark"] [class*="text-slate-"],
-[data-theme="high-contrast-dark"] [class*="text-gray-"],
-[data-theme="high-contrast-dark"] [class*="text-emerald-"],
-[data-theme="high-contrast-dark"] [class*="text-green-"],
-[data-theme="high-contrast-dark"] [class*="text-amber-"],
-[data-theme="high-contrast-dark"] [class*="text-indigo-"],
-[data-theme="high-contrast-dark"] [class*="text-blue-"],
-[data-theme="high-contrast-dark"] [class*="text-red-"],
-[data-theme="high-contrast-dark"] [class*="text-teal-"],
-[data-theme="high-contrast-dark"] [class*="text-purple-"],
-[data-theme="high-contrast-dark"] [class*="text-rose-"],
-[data-theme="high-contrast-dark"] [class*="text-cyan-"],
-[data-theme="high-contrast-dark"] [class*="text-violet-"],
-[data-theme="high-contrast-dark"] [class*="text-sky-"],
-[data-theme="high-contrast-dark"] [class*="text-white"],
-[data-theme="high-contrast-yellow"] [class*="text-slate-"],
-[data-theme="high-contrast-yellow"] [class*="text-gray-"],
-[data-theme="high-contrast-yellow"] [class*="text-emerald-"],
-[data-theme="high-contrast-yellow"] [class*="text-green-"],
-[data-theme="high-contrast-yellow"] [class*="text-amber-"],
-[data-theme="high-contrast-yellow"] [class*="text-indigo-"],
-[data-theme="high-contrast-yellow"] [class*="text-blue-"],
-[data-theme="high-contrast-yellow"] [class*="text-red-"],
-[data-theme="high-contrast-yellow"] [class*="text-teal-"],
-[data-theme="high-contrast-yellow"] [class*="text-purple-"],
-[data-theme="high-contrast-yellow"] [class*="text-rose-"],
-[data-theme="high-contrast-yellow"] [class*="text-cyan-"],
-[data-theme="high-contrast-yellow"] [class*="text-violet-"],
-[data-theme="high-contrast-yellow"] [class*="text-sky-"],
-[data-theme="high-contrast-yellow"] [class*="text-white"] {
-  color: var(--text-color) !important;
-}
-
-[data-theme="high-contrast-dark"] [class*="border-slate-"],
-[data-theme="high-contrast-dark"] [class*="border-gray-"],
-[data-theme="high-contrast-dark"] [class*="border-emerald-"],
-[data-theme="high-contrast-dark"] [class*="border-green-"],
-[data-theme="high-contrast-dark"] [class*="border-amber-"],
-[data-theme="high-contrast-dark"] [class*="border-indigo-"],
-[data-theme="high-contrast-dark"] [class*="border-blue-"],
-[data-theme="high-contrast-dark"] [class*="border-red-"],
-[data-theme="high-contrast-dark"] [class*="border-teal-"],
-[data-theme="high-contrast-yellow"] [class*="border-slate-"],
-[data-theme="high-contrast-yellow"] [class*="border-gray-"],
-[data-theme="high-contrast-yellow"] [class*="border-emerald-"],
-[data-theme="high-contrast-yellow"] [class*="border-green-"],
-[data-theme="high-contrast-yellow"] [class*="border-amber-"],
-[data-theme="high-contrast-yellow"] [class*="border-indigo-"],
-[data-theme="high-contrast-yellow"] [class*="border-blue-"],
-[data-theme="high-contrast-yellow"] [class*="border-red-"],
-[data-theme="high-contrast-yellow"] [class*="border-teal-"] {
-  border-color: var(--border-color) !important;
-}
 
 /* Font Size Overrides */
 [data-size="large"] {

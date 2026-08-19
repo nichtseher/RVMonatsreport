@@ -375,7 +375,7 @@ export default React.memo(function ClockInWidget({
         // Clock-out View
         <div className="space-y-3.5">
           {!isFormOpen ? (
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-3 rounded-xl bg-slate-500/5 border border-[var(--border-color)]">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-3 rounded-xl bg-[var(--bg-color)] border border-[var(--border-color)]">
               <div className="text-center md:text-left space-y-1">
                 <span className="text-[0.75rem] font-black uppercase text-[var(--text-muted)] tracking-wider">
                   Laufende Arbeitszeit
@@ -591,7 +591,7 @@ export default React.memo(function ClockInWidget({
                     />
                   </div>
                 </div>
-                <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex justify-between bg-slate-500/5 p-2 rounded-lg">
+                <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex justify-between bg-[var(--bg-color)] p-2 rounded-lg">
                   <span>Gesamtstunden dieser Schicht:</span>
                   <span className="font-mono text-[var(--total-text)]">
                     {(typedOfficeHours !== "" || typedFieldHours !== ""
@@ -933,7 +933,7 @@ export default React.memo(function ClockInWidget({
                 />
               </div>
             </div>
-            <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex justify-between bg-slate-500/5 p-2 rounded-lg">
+            <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex justify-between bg-[var(--bg-color)] p-2 rounded-lg">
               <span>Gesamtstunden dieser Schicht:</span>
               <span className="font-mono text-[var(--total-text)]">
                 {(typedManualOfficeHours !== "" || typedManualFieldHours !== ""

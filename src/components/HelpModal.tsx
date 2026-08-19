@@ -47,10 +47,10 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
       aria-modal="true"
       ref={modalRef}
     >
-      <div className="bg-[var(--card-bg)] rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-200 dark:border-slate-800 flex flex-col max-h-[85vh]">
+      <div className="bg-[var(--card-bg)] rounded-3xl overflow-hidden shadow-2xl border-4 border-[var(--border-color)] flex flex-col max-h-[85vh]">
         
         {/* Header */}
-        <div className="bg-slate-100 dark:bg-slate-900 p-6 border-b-2 border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 z-10">
+        <div className="bg-[var(--bg-color)] p-6 border-b-2 border-[var(--border-color)] flex items-center justify-between sticky top-0 z-10">
           {/* Zurück-Pfeil links (einheitliches Navigationsmuster) */}
           <div className="flex items-center gap-3 min-w-0">
             <button
@@ -60,7 +60,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             >
               <ArrowLeft className="w-6 h-6" aria-hidden="true" />
             </button>
-            <div className="w-12 h-12 bg-blue-500 rounded-full hidden sm:flex items-center justify-center text-white shadow-inner flex-shrink-0">
+            <div className="w-12 h-12 bg-[var(--primary)] rounded-full hidden sm:flex items-center justify-center text-white shadow-inner flex-shrink-0">
               <HelpCircle className="w-6 h-6" aria-hidden="true" />
             </div>
             <div className="min-w-0">
@@ -87,8 +87,8 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`flex-1 min-w-[120px] min-h-[44px] py-4 px-4 text-sm font-bold flex items-center justify-center gap-2 border-b-4 transition-colors ${
                   activeTab === tab.id
-                    ? "border-[var(--accent)] text-[var(--accent)] bg-slate-50 dark:bg-slate-900/50"
-                    : "border-transparent text-[var(--text-muted)] hover:bg-slate-50 dark:hover:bg-slate-800"
+                    ? "border-[var(--accent)] text-[var(--accent)] bg-[var(--bg-color)]"
+                    : "border-transparent text-[var(--text-muted)] hover:bg-[var(--bg-color)]"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -103,19 +103,19 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
           
           {activeTab === "general" && (
             <div className="space-y-6 animate-fade-in">
-              <div className="bg-blue-50 dark:bg-blue-950/30 p-5 rounded-2xl border border-blue-200 dark:border-blue-900">
-                <h3 className="font-black text-lg text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
+              <div className="bg-[var(--info-bg)] p-5 rounded-2xl border border-[var(--info-border)]">
+                <h3 className="font-black text-lg text-[var(--info-text)] mb-2 flex items-center gap-2">
                   <Play className="w-5 h-5" />
                   Erste Schritte
                 </h3>
-                <p className="text-sm text-blue-900/80 dark:text-blue-200/80 leading-relaxed font-normal">
+                <p className="text-sm text-[var(--info-text)] leading-relaxed font-normal">
                   Willkommen bei RV Mobil. Diese App wurde speziell entwickelt, um Außendienstmitarbeitern die Erfassung von Tätigkeiten und Arbeitszeiten so einfach und barrierefrei wie möglich zu machen. Sie funktioniert komplett offline und speichert Ihre Daten sicher direkt auf Ihrem Gerät.
                 </p>
               </div>
 
               <div className="grid gap-4">
                 <FAQItem 
-                  icon={<AlertTriangle className="text-amber-500" />}
+                  icon={<AlertTriangle className="text-[var(--warning-border)]" />}
                   title="Sind meine Daten sicher? Werden sie ins Internet übertragen?"
                 >
                   <p><strong>Ihre Daten bleiben ausschließlich auf Ihrem Gerät.</strong></p>
@@ -123,7 +123,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 </FAQItem>
 
                 <FAQItem
-                  icon={<AlertTriangle className="text-red-500" />}
+                  icon={<AlertTriangle className="text-[var(--danger)]" />}
                   title="Was muss ich tun, damit meine Daten nicht verloren gehen?"
                 >
                   <p>Weil alles nur lokal gespeichert ist, gibt es zwei Dinge zu beachten:</p>
@@ -135,7 +135,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 </FAQItem>
 
                 <FAQItem
-                  icon={<Share2 className="text-emerald-500" />}
+                  icon={<Share2 className="text-[var(--accent)]" />}
                   title="Kann ich die App auf Handy und Laptop gleichzeitig nutzen?"
                 >
                   <p>Ja. Von sich aus synchronisieren sich Handy und Laptop nicht automatisch – ein Eintrag auf dem Handy erscheint erst dann auf dem Laptop, wenn Sie beide Geräte einmal koppeln. Das geht auf zwei Arten unter Optionen → Geräte-Sync:</p>
@@ -148,7 +148,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 </FAQItem>
 
                 <FAQItem
-                  icon={<Keyboard className="text-blue-500" />}
+                  icon={<Keyboard className="text-[var(--info-border)]" />}
                   title="Tastenkürzel (besonders praktisch am PC)"
                 >
                   <p>Diese Kürzel funktionieren überall in der App. Halten Sie <strong>Alt</strong> und <strong>Umschalt</strong> zusammen gedrückt und tippen Sie dann den Buchstaben:</p>
@@ -172,7 +172,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             <div className="space-y-6 animate-fade-in">
                <div className="grid gap-4">
                 <FAQItem
-                  icon={<Zap className="text-amber-500" />}
+                  icon={<Zap className="text-[var(--warning-border)]" />}
                   title="Am schnellsten: die Schnell-Erfassung direkt nach dem Termin"
                 >
                   <p>Ganz oben im <strong>RV Report</strong> finden Sie die <strong>Schnell-Erfassung</strong>: große Tasten für Ihre wichtigsten Kategorien. <strong>Ein Tipp erhöht den Zähler um eins</strong>, mit Ton und kurzer Vibration als Bestätigung. So erfassen Sie einen Termin in wenigen Sekunden, ohne zu scrollen oder zu suchen.</p>
@@ -182,7 +182,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 </FAQItem>
 
                 <FAQItem
-                  icon={<LayoutGrid className="text-indigo-500" />}
+                  icon={<LayoutGrid className="text-[var(--info-border)]" />}
                   title="Wie trage ich meine Tätigkeiten im RV Report ein?"
                 >
                   <p>Unter dem Reiter <strong>RV Report</strong> finden Sie verschiedene Bereiche (z.B. Vorführungen, Schulungen). Tippen Sie einfach auf das <strong>+</strong> Symbol, um den Zähler für eine Tätigkeit um 1 zu erhöhen. Tippen Sie auf das <strong>-</strong> Symbol, um ihn wieder zu verringern.</p>
@@ -192,7 +192,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 </FAQItem>
 
                 <FAQItem 
-                  icon={<CalendarDays className="text-blue-500" />}
+                  icon={<CalendarDays className="text-[var(--info-border)]" />}
                   title="Was passiert, wenn ich auf 'Monat abschließen & neu starten' drücke?"
                 >
                   <p>Zuerst kommt eine <strong>Rückfrage</strong>. Sie zeigt Ihnen, was gesichert wird – wie viele Vorgänge Sie gezählt und wie viele Schichten Sie erfasst haben. Erst wenn Sie dort auf „Monat abschließen“ tippen, passieren zwei Dinge:</p>
@@ -205,7 +205,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 </FAQItem>
 
                 <FAQItem 
-                  icon={<FileText className="text-emerald-500" />}
+                  icon={<FileText className="text-[var(--accent)]" />}
                   title="Wie exportiere ich die Daten (z.B. für die Vertriebsleitung)?"
                 >
                   <p>Ganz unten im RV Report finden Sie den Knopf <strong>Bericht an VL senden (Teilen/E-Mail)</strong>. Damit erzeugt die App den Monatsbericht als Excel-Datei und öffnet den Teilen-Dialog Ihres Geräts – dort wählen Sie selbst, wie Sie ihn verschicken (z. B. per E-Mail). <strong>Die Empfängeradresse ist nicht hinterlegt</strong>, Sie geben sie im E-Mail-Programm ein. Auf Geräten ohne Teilen-Funktion (meist am PC) wird die Datei stattdessen heruntergeladen.</p>
@@ -220,17 +220,17 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             <div className="space-y-6 animate-fade-in">
               <div className="grid gap-4">
                 <FAQItem 
-                  icon={<Clock className="text-teal-500" />}
+                  icon={<Clock className="text-[var(--info-border)]" />}
                   title="Wie funktioniert die Stempeluhr (RV Zeit)?"
                 >
                   <p>Der Reiter <strong>RV Zeit</strong> ersetzt einen Stundenzettel. Wenn Sie morgens anfangen, drücken Sie auf <strong>Einstempeln</strong>. Die Uhr beginnt zu laufen.</p>
                   <p>Wenn Sie Feierabend machen, drücken Sie auf <strong>Ausstempeln</strong>. Es öffnet sich ein Dialog, in dem Sie Ihre Pausenzeit anpassen und die gearbeitete Zeit auf Büro- und Außendienst aufteilen können. Bestätigen Sie dies, um den Eintrag zu speichern.</p>
-                  <p className="mt-2 text-teal-700 dark:text-teal-400 font-bold">Automatisch übernommen werden: Ihre Arbeitsstunden (Büro und Außendienst) sowie die Anzahl der Arbeitstage – diese müssen Sie nicht doppelt eintragen.</p>
-                  <p className="mt-2 text-amber-700 dark:text-amber-400 font-bold">Bitte selbst eintragen: <strong>Urlaubs- und Krankheitstage</strong> tragen Sie im RV Report (Bereich 4 „Arbeitszeit &amp; Büro“) von Hand ein. Die Stempeluhr erfasst diese nicht automatisch – sie rechnet damit aber in der Jahresübersicht weiter.</p>
+                  <p className="mt-2 text-[var(--info-text)] font-bold">Automatisch übernommen werden: Ihre Arbeitsstunden (Büro und Außendienst) sowie die Anzahl der Arbeitstage – diese müssen Sie nicht doppelt eintragen.</p>
+                  <p className="mt-2 text-[var(--warning-text)] font-bold">Bitte selbst eintragen: <strong>Urlaubs- und Krankheitstage</strong> tragen Sie im RV Report (Bereich 4 „Arbeitszeit &amp; Büro“) von Hand ein. Die Stempeluhr erfasst diese nicht automatisch – sie rechnet damit aber in der Jahresübersicht weiter.</p>
                 </FAQItem>
 
                 <FAQItem 
-                  icon={<BarChart3 className="text-amber-500" />}
+                  icon={<BarChart3 className="text-[var(--warning-border)]" />}
                   title="Wie werden Überstunden und Urlaub berechnet?"
                 >
                   <p>Die App berechnet Ihr Gleitzeitkonto automatisch anhand Ihrer täglichen Soll-Stunden. Im Bereich <strong>RV Zeit</strong> wechseln Sie dafür oben auf den Reiter <strong>Jahreskonto</strong>.</p>
@@ -243,29 +243,29 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
 
           {activeTab === "backup" && (
             <div className="space-y-6 animate-fade-in">
-              <div className="bg-amber-50 dark:bg-amber-950/30 p-5 rounded-2xl border border-amber-200 dark:border-amber-900">
-                <h3 className="font-black text-lg text-amber-800 dark:text-amber-300 mb-2 flex items-center gap-2">
+              <div className="bg-[var(--warning-bg)] p-5 rounded-2xl border border-[var(--warning-border)]">
+                <h3 className="font-black text-lg text-[var(--warning-text)] mb-2 flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5" />
                   Wichtiger Hinweis zum Backup
                 </h3>
-                <p className="text-sm text-amber-900/80 dark:text-amber-200/80 leading-relaxed font-normal">
+                <p className="text-sm text-[var(--warning-text)] leading-relaxed font-normal">
                   Da diese App offline arbeitet und Ihre Daten nur auf Ihrem Gerät speichert, sind Sie <strong>selbst für die Sicherung Ihrer Daten verantwortlich</strong>. Wenn Sie den Browserverlauf komplett löschen oder Ihr Handy verlieren, sind die Daten weg, es sei denn, Sie haben ein Backup erstellt.
                 </p>
               </div>
 
               <div className="grid gap-4">
                 <FAQItem 
-                  icon={<Shield className="text-purple-500" />}
+                  icon={<Shield className="text-[var(--accent)]" />}
                   title="Wie erstelle ich ein Backup meiner Daten?"
                 >
                   <p>Gehen Sie im Menü auf <strong>Optionen</strong> und dort auf <strong>Datensicherung</strong>.</p>
                   <p>Setzen Sie das Häkchen bei <strong>„Backup mit Passwort schützen“</strong> und tragen Sie darunter im Feld <strong>„Passwort“</strong> eines ein. Mit <strong>Auf Gerät speichern</strong> laden Sie die Datei herunter, mit <strong>Sicher Teilen / Senden</strong> geben Sie sie direkt weiter (z. B. an sich selbst per E-Mail).</p>
                   <p>Ohne Passwort entsteht eine normale Datei (Endung <code>.json</code>), mit Passwort eine verschlüsselte (Endung <code>.json.enc</code>). Heben Sie diese Datei sicher auf.</p>
-                  <p className="text-amber-700 dark:text-amber-400 font-bold">Wichtig: Ohne das Passwort lässt sich ein verschlüsseltes Backup später nicht mehr öffnen.</p>
+                  <p className="text-[var(--warning-text)] font-bold">Wichtig: Ohne das Passwort lässt sich ein verschlüsseltes Backup später nicht mehr öffnen.</p>
                 </FAQItem>
 
                 <FAQItem
-                  icon={<Lock className="text-slate-500" />}
+                  icon={<Lock className="text-[var(--text-muted)]" />}
                   title="Wie stelle ich ein Backup wieder her?"
                 >
                   <p>Ebenfalls unter <strong>Optionen &gt; Datensicherung</strong> finden Sie den Knopf <strong>Backup wiederherstellen</strong>.</p>
@@ -279,7 +279,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-5 bg-slate-100 dark:bg-slate-900 border-t-2 border-slate-200 dark:border-slate-800 flex justify-end">
+        <div className="p-5 bg-[var(--bg-color)] border-t-2 border-[var(--border-color)] flex justify-end">
           <button
             onClick={onClose}
             className="px-6 py-3 bg-[var(--primary)] hover:opacity-90 text-[var(--primary-text)] font-black rounded-xl transition-all active:scale-95 focus-visible:ring-4 shadow-sm"
@@ -295,7 +295,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
 function FAQItem({ icon, title, children }: { icon: React.ReactNode, title: string, children: React.ReactNode }) {
   return (
     <div className="bg-[var(--bg-color)] border border-[var(--border-color)] rounded-xl overflow-hidden shadow-sm">
-      <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-b border-[var(--border-color)]">
+      <div className="p-4 bg-[var(--bg-color)] border-b border-[var(--border-color)]">
         <h4 className="font-black text-sm text-[var(--text-color)] flex items-center gap-2">
           {icon}
           {title}

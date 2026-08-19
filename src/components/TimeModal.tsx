@@ -214,7 +214,7 @@ export default function TimeModal({
         {activeTab === "stempeln" ? (
           <div className="space-y-4 flex flex-col flex-1">
             {/* Info Card / Carryover Integration */}
-            <div className="p-4 rounded-xl border border-blue-100 dark:border-blue-900/30 bg-blue-50/50 dark:bg-blue-950/10 flex flex-col gap-3">
+            <div className="p-4 rounded-xl border border-[var(--info-border)] bg-[var(--info-bg)] flex flex-col gap-3">
               <div className="flex gap-3 text-[var(--text-color)]">
                 <Briefcase className="w-5 h-5 flex-shrink-0 mt-0.5 text-[var(--cat-4-text)]" aria-hidden="true" />
                 <div className="text-xs space-y-1 leading-relaxed font-bold">
@@ -338,10 +338,10 @@ export default function TimeModal({
                 <div className="mt-4 pt-3 border-t border-[var(--border-color)] flex justify-between items-center text-[0.75rem] font-bold text-[var(--text-muted)]">
                   <span>Fehltage (YTD):</span>
                   <span className="flex gap-2">
-                    <span className="bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-black">
+                    <span className="bg-[var(--warning-bg)] text-[var(--warning-text)] px-1.5 py-0.5 rounded flex items-center gap-0.5 font-black">
                       Krank: {yearlyVacation.totalKrankDays}
                     </span>
-                    <span className="bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-black">
+                    <span className="bg-[var(--cat-3-soft)] text-[var(--cat-3-text)] px-1.5 py-0.5 rounded flex items-center gap-0.5 font-black">
                       Feiertag: {yearlyVacation.totalFeiertage}
                     </span>
                   </span>
