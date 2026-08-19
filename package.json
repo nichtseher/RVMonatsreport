@@ -1,7 +1,7 @@
 {
   "name": "rv-monatsreport",
   "private": true,
-  "version": "0.9.10",
+  "version": "0.9.11",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -17,6 +17,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
+    "exceljs": "^4.4.0",
     "express": "^4.21.2",
     "framer-motion": "^12.42.2",
     "html5-qrcode": "^2.3.8",

@@ -32,6 +32,21 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.11: Der Export ist jetzt das Formular der Vertriebsleitung</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Das erste Tabellenblatt IST die Vorlage Ihrer Vertriebsleitung</strong> – nicht mehr eine eigene Darstellung davon. Gleiche Zeilen, gleiche Reihenfolge, gleiche gelbe Eingabefelder, gleiche Summenformel. Ihr Chef bekommt genau das Blatt, das er kennt.</li>
+            <li><strong>Alles, wofür die Vorlage keine Zeile hat, steht auf einem zweiten Blatt</strong> – Urlaubs- und Krankheitstage, Reisezeit, Ihre eigenen Kategorien und die Summen je Bereich. So geht nichts verloren und lässt sich einzeln herauskopieren.</li>
+            <li><strong>Ihre Schichten aus der Stempeluhr kommen als drittes Blatt mit</strong> in dieselbe Datei. Der getrennte Stundenzettel-Export bleibt zusätzlich bestehen.</li>
+            <li><strong>Neues Feld „Anzahl Vorführungen Envision".</strong> Die Vorlage hat dafür eine eigene Zeile, in der App fehlte das Feld bisher. Es erscheint in Bereich 3 direkt hinter Tactonom – auch auf Geräten, auf denen Sie die Kategorien schon angepasst haben.</li>
+            <li><strong>Der Monat steht jetzt als 08/2026 statt „August 2026"</strong>, weil die Vorlage dieses Format vorgibt.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.10: Jede Farbe folgt jetzt Ihrer Schema-Wahl</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>

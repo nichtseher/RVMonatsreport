@@ -10,6 +10,119 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-19 — v0.9.11: Der Export ist die Firmenvorlage, kein Nachbau
+
+Marc hat die Vorlage der Vertriebsleitung geliefert (`2600_apa_pd.xls`, Stand
+01.2026) — der Blocker, der seit Monaten in der ROADMAP stand und den nur er
+auflösen konnte. Vorgabe: Blatt 1 deckungsgleich, alles Übrige auf ein zweites
+Blatt.
+
+### Was die Vorlage ist
+
+Ein Blatt `Monatsinfo`, B1:D32, 22 verbundene Bereiche, feste Spaltenbreiten
+(16/14/334/153 px) und Zeilenhöhen, genau eine Formel: `D10 = SUM(D6:D9)`.
+
+Die Vorlage sagt selbst, wohin was gehört: **20 Zellen sind gelb hinterlegt**
+(`FFFF99`) — genau die vorgesehenen Eingabefelder. `D10` ist nicht dabei, dort
+steht die Summe. Die Zuordnungstabelle in `vorlageExport.ts` ist daraus
+abgeleitet, nicht geschätzt.
+
+### Zwei Lücken, die der Abgleich zutage gefördert hat
+
+1. **`D22 „Vorführungen Envision"` hatte kein Gegenstück in der App.** Das Feld
+   war schlicht nie angelegt — die Zeile wäre in jedem bisherigen Bericht leer
+   geblieben. Als `envision_vf` in Bereich 3 ergänzt, direkt hinter Tactonom wie
+   in der Vorlage, mit Nachrüstung für bestehende Installationen (dieselbe
+   Stelle, an der schon `wewalk_tel` nachgerüstet wird — ohne sie bekämen es nur
+   Neuinstallationen, weil bestehende Geräte ihre Feldliste in `localStorage`
+   halten).
+2. **Vier App-Felder haben in der Vorlage keinen Platz**: Reisezeit, Urlaubs-,
+   Krankheits- und Feiertage. Dazu eigene Kategorien und die Schichtliste. Die
+   stehen jetzt auf Blatt 2 und 3.
+
+### Der Grund für eine neue Abhängigkeit
+
+Gemessen, bevor entschieden wurde:
+
+| Weg | erhalten | verloren |
+|---|---|---|
+| SheetJS → `.xlsx` | Positionen, 22 Verbünde, Breiten, Höhen, Formel | Fettdruck, Rahmen, **die gelbe Markierung** |
+| SheetJS → `.xls` | dasselbe, aber | **zusätzlich Formel und Zeilenhöhen** |
+
+Der Beleg war eindeutig: Nach einem SheetJS-Umlauf kam `FFFF99` in der Datei
+**nirgends** mehr vor, die `styles.xml` enthielt eine Schrift, keinen Fettdruck
+und zwei Rahmen. Zellformatierung ist in der Community-Fassung nicht enthalten.
+
+Damit war „Vorlage genau so verwenden" mit dem vorhandenen Werkzeug nicht
+erfüllbar. Entscheidung von Marc: Gelb ist Pflicht. Also **ExcelJS** — es liest
+und schreibt `.xlsx` mit vollständiger Formatierung.
+
+Die Vorlage selbst wurde einmalig mit Excel (COM, Original nur lesend geöffnet)
+nach `.xlsx` gewandelt und als base64 eingebettet. Kein Nachbau: Beschriftungen,
+Verbünde und Formel kommen aus der Originaldatei. Eine neue Vorlagenversion ist
+ein Dateitausch, keine Code-Änderung.
+
+### Gemessen
+
+Die erzeugte Datei in **echtem Excel** geöffnet (nicht nur zurückgelesen):
+
+```
+Oeffnet ohne Reparatur:   JA
+Blaetter:                 Monatsinfo | RV Mobil - Zusatzangaben | RV Mobil - Arbeitszeiten
+B1 fett:                  True
+D3 Monat:                 '08/2026'   Fuellung FFFF99
+D10 Formel = Ergebnis:    '=SUM(D6:D9)' = 11
+D22 Envision:             6           Fuellung FFFF99
+B28 Kommentar:            'Browsertest mit Umlauten äöüß.'
+B30 Fusstext erhalten:    Formular bitte bis spätestens zum 8. Arbeitst...
+Spalte C / D Breite:      55 / 24.86
+```
+
+Browserpfad separat geprüft: Das Modul im Browser aufgerufen, Ergebnis
+**10.570 Bytes** — byte-genau dieselbe Größe wie die Node-Ausgabe mit
+identischen Eingaben. Damit steht die Excel-Prüfung oben auch für den
+Browserpfad.
+
+13 neue Prüfungen in `scripts/checks/vorlage.ts` (67 gesamt), darunter: jeder
+Zähler in seiner Zelle, die gelbe Markierung überlebt, Formel bleibt Formel,
+kein Feld steht doppelt auf Blatt 1 und 2, leerer Monat erzeugt Nullen statt
+leerer Zellen.
+
+Bundle: Hauptbundle unverändert bei 499,35 KB (133,16 gzip). ExcelJS liegt in
+einem eigenen nachgeladenen Chunk (940 KB / 271 KB gzip), die Vorlage in einem
+zweiten (19,7 KB / 11,9 gzip). Beide laden erst beim Export.
+
+### Was das kostet, ehrlich
+
+**ExcelJS bringt eine bekannte Sicherheitsmeldung mit**: `uuid < 11.1.1`
+(moderat, fehlende Puffergrenzenprüfung in v3/v5/v6). `npm audit fix --force`
+würde auf ExcelJS 3.4.0 zurückstufen — ein Bruch. Der Deploy-Gate meldet
+`npm audit` nur (`|| true`) und blockiert nicht. Die Meldung betrifft eine
+Funktion, die dieser Export nicht aufruft; trotzdem steht sie jetzt in der
+Abhängigkeitsliste, und das ist eine Verschlechterung gegenüber vorher.
+
+**`.xls` wäre möglich, aber teurer:** Die Vorlage fordert im Fußtext „als
+xls-Datei". Als `.xls` geschrieben geht die Formel in D10 verloren — die
+Vertriebsleitung sähe dort eine feste Zahl. Marcs Entscheidung: `.xlsx`.
+
+Der alte `exportReportToExcel` (99 Zeilen SheetJS) ist entfallen. `excelUtils.ts`
+trägt nur noch den separaten Stundenzettel-Export und die Dateiauslieferung.
+
+### Ein Fund der eigenen Prüfung
+
+Für Envision hatte ich 👓 als Symbol gewählt — der Prüflauf schlug fehl, weil
+das Zeichen kein Icon in `ICON_KARTE` hatte und `CounterField` es roh als Emoji
+gezeichnet hätte. Genau der Fall, für den die Prüfung in 0.9.6 angelegt wurde.
+`Glasses` aus lucide-react ergänzt.
+
+**Nicht verifiziert:** wie lange der Export auf einem echten Handy dauert. Im
+Dev-Server (ExcelJS unkompiliert, hunderte Modulanfragen) waren es 9 Sekunden —
+das ist keine belastbare Zahl für die gebaute Fassung, und ein Handy ist
+langsamer als dieser Rechner. Sollte es spürbar sein, gehört ein Fortschritts-
+hinweis dazu.
+
+---
+
 ## 2026-08-19 — v0.9.10: Die Notlösung von 0.8.1 ist entfallen
 
 Fortsetzung und Abschluss von 0.9.9. Dort waren 141 der 278 festen

@@ -53,7 +53,6 @@ import { pruefeSyncPaket, PAKET_APP, PAKET_FORMAT } from "./utils/syncSchema";
 // hier und in HistoryModal.tsx -- drei Kopien, die auseinanderlaufen konnten.
 import { formatMonthGerman } from "./utils/dateUtils";
 import {
-  exportReportToExcel,
   exportTimeLogsToExcel,
   triggerFileDownload,
 } from "./utils/excelUtils";
@@ -284,6 +283,15 @@ const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
       icon: "🎯",
     },
     {
+      // Steht in der Firmenvorlage als Zeile D22 ("Vorführungen Envision"),
+      // fehlte aber in der App -- das Feld war schlicht nie angelegt. Die
+      // Reihenfolge folgt der Vorlage: Tactonom, Envision, Feelspace, WeWalk.
+      id: "envision_vf",
+      label: "Anzahl Vorführungen Envision",
+      step: 1,
+      icon: "👓",
+    },
+    {
       id: "feel_vf",
       label: "Anzahl Vorführungen Feelspace",
       step: 1,
@@ -379,6 +387,25 @@ export default function App() {
           step: 1,
           icon: "☎️",
         });
+      }
+
+      // Envision nachruesten: Die Firmenvorlage hat dafuer eine eigene Zeile
+      // (D22), die App hatte das Feld nie. Ohne diese Nachruestung bekaemen es
+      // nur Neuinstallationen -- bestehende Geraete haben ihre Feldliste in
+      // localStorage und wuerden die Zeile leer lassen.
+      // Einsortiert direkt hinter Tactonom, wie in der Vorlage.
+      if (!fields.s3.some((f: FieldConfig) => f.id === "envision_vf")) {
+        const envision = {
+          id: "envision_vf",
+          label: "Anzahl Vorführungen Envision",
+          step: 1,
+          icon: "👓",
+        };
+        const nachTactonom = fields.s3.findIndex(
+          (f: FieldConfig) => f.id === "tac_vf"
+        );
+        if (nachTactonom === -1) fields.s3.push(envision);
+        else fields.s3.splice(nachTactonom + 1, 0, envision);
       }
     }
 
@@ -2045,15 +2072,18 @@ export default function App() {
   };
 
   // --- EXPORT TO EXCEL ---
-  // Die Tabellenerzeugung liegt zentral in utils/excelUtils.ts. Vorher stand
-  // sie hier ein zweites Mal -- mit anderen Beschriftungen als im Archiv-Export.
+  // Blatt 1 IST die Firmenvorlage der Vertriebsleitung, nicht ein Nachbau --
+  // siehe utils/vorlageExport.ts. Alles, was dort keine Zeile hat, steht auf
+  // Blatt 2 und 3.
   const handleExportExcel = async () => {
     triggerHaptic(25);
     try {
-      const { wbout, monthVal, nameVal } = await exportReportToExcel(
-        reportData,
-        appFields,
-      );
+      // Erst beim Export laden: Das Modul zieht ExcelJS (271 KB gzip) und die
+      // eingebettete Vorlage (19 KB) nach. Beides braucht niemand beim Start.
+      const { erzeugeVorlagenDatei } = await import("./utils/vorlageExport");
+      const wbout = await erzeugeVorlagenDatei(reportData, appFields);
+      const monthVal = reportData.month || "Monat";
+      const nameVal = reportData.name || "Mitarbeitende_r";
       const cleanName = nameVal.replace(/\s+/g, "_") || "Mitarbeiter";
       const formattedMonthName = formatMonthGerman(monthVal).replace(/\s+/g, "_");
       const fileName = `RV_Mobil_Report_${cleanName}_${formattedMonthName}.xlsx`;

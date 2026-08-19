@@ -1,7 +1,16 @@
 import * as XLSX from "xlsx";
 import { gruppe, pruefe, gleich, wahr } from "../helfer";
-import { exportReportToExcel, exportTimeLogsToExcel } from "../../src/utils/excelUtils";
+import { exportTimeLogsToExcel } from "../../src/utils/excelUtils";
 import type { SectionsConfig, ReportData, HistoryRecord } from "../../src/types";
+
+/*
+  Der Report-Export selbst wird nicht mehr hier geprueft, sondern in
+  checks/vorlage.ts: Seit 0.9.11 ist Blatt 1 die Firmenvorlage der
+  Vertriebsleitung und wird mit ExcelJS befuellt, weil SheetJS keine
+  Zellformatierung schreibt (gemessen -- die gelbe Markierung der
+  Eingabefelder ueberlebte den Umlauf nicht). Hier bleibt nur der
+  Zeiterfassungs-Export, der weiterhin ueber SheetJS laeuft.
+*/
 
 const felder: SectionsConfig = {
   s1: [
@@ -32,45 +41,6 @@ const alsText = (wbout: unknown) => {
 };
 /** ohne die ersten drei Kopfzeilen (dort steht die Archiv-Kennzeichnung) */
 const rumpf = (t: string) => t.split("\n").slice(3).join("\n");
-
-gruppe("Excel-Export");
-
-pruefe("Formular und Archiv erzeugen dieselbe Datei", async () => {
-  // Bis 0.9.0 gab es die Logik zweimal und sie war auseinandergelaufen.
-  const ausFormular = await exportReportToExcel(laufend, felder, false);
-  const ausArchiv = await exportReportToExcel(archiviert, felder, true);
-  gleich(rumpf(alsText(ausArchiv.wbout)), rumpf(alsText(ausFormular.wbout)));
-});
-
-pruefe("Summenformeln zeigen auf die richtigen Zeilen", async () => {
-  const { wbout } = await exportReportToExcel(laufend, felder, false);
-  const wb = XLSX.read(wbout, { type: "array" });
-  const ws = wb.Sheets[wb.SheetNames[0]] as Record<string, { f?: string }>;
-  const formeln = Object.keys(ws)
-    .filter((k) => !k.startsWith("!") && ws[k]?.f)
-    .map((k) => `${k}==${ws[k].f}`)
-    .sort();
-  gleich(formeln, [
-    "B10==SUM(B8:B9)",
-    "B14==SUM(B13:B13)",
-    "B18==SUM(B17:B17)",
-    "B22==SUM(B21:B21)",
-    "B25==B10+B14+B18",
-  ]);
-});
-
-pruefe("die Arbeitszeit zählt nicht in die Aktivitäten-Summe", async () => {
-  const { wbout } = await exportReportToExcel(laufend, felder, false);
-  const wb = XLSX.read(wbout, { type: "array" });
-  const ws = wb.Sheets[wb.SheetNames[0]] as Record<string, { f?: string }>;
-  // B22 ist die Summe von Bereich 4 und darf in B25 nicht vorkommen
-  wahr(!/B22/.test(ws["B25"]?.f || ""), "Bereich 4 taucht in der Aktivitäten-Summe auf");
-});
-
-pruefe("Kommentarblock erscheint auch ohne Kommentar", async () => {
-  const { wbout } = await exportReportToExcel({ ...laufend, notes: "" }, felder, false);
-  wahr(/Keine Anmerkungen eingetragen/.test(alsText(wbout)));
-});
 
 gruppe("Zeiterfassungs-Export");
 

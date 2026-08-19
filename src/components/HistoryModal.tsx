@@ -14,7 +14,7 @@ import {
   Filter
 } from "lucide-react";
 import { SectionsConfig, HistoryRecord } from "../types";
-import { exportReportToExcel, exportTimeLogsToExcel, triggerFileDownload } from "../utils/excelUtils";
+import { exportTimeLogsToExcel, triggerFileDownload } from "../utils/excelUtils";
 import { formatMonthGerman } from "../utils/dateUtils";
 
 interface HistoryModalProps {
@@ -85,7 +85,11 @@ export default function HistoryModal({
   const handleDirectExport = async (record: HistoryRecord) => {
     announceToAriaAndSpeech(`Direkt-Export für ${formatMonthGerman(record.month)} wird vorbereitet.`);
     try {
-      const { wbout, monthVal, nameVal } = await exportReportToExcel(record, appFields, true);
+      // Erst beim Export laden -- siehe App.tsx: ExcelJS plus eingebettete Vorlage.
+      const { erzeugeVorlagenDatei } = await import("../utils/vorlageExport");
+      const wbout = await erzeugeVorlagenDatei(record, appFields);
+      const monthVal = record.month || "Monat";
+      const nameVal = record.name || "Mitarbeitende_r";
       const cleanName = nameVal.replace(/\s+/g, "_") || "Mitarbeiter";
       const formattedMonthName = formatMonthGerman(monthVal).replace(/\s+/g, "_");
       const fileName = `RV_Mobil_Report_${cleanName}_${formattedMonthName}_Archiv.xlsx`;

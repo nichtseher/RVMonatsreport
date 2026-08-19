@@ -23,6 +23,7 @@ import {
   Wrench,
   Globe,
   Car,
+  Glasses,
 } from "lucide-react";
 
 /**
@@ -59,6 +60,7 @@ export const ICON_KARTE: Record<string, any> = {
   // Spezialprodukte
   "🌍": Globe,
   "🦯": Navigation,
+  "👓": Glasses,
   // Arbeitszeit & Büro
   "🗓️": CalendarDays,
   "⌨️": Keyboard,
