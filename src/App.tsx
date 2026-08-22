@@ -49,6 +49,7 @@ import {
 import { baueArchivEintrag } from "./utils/archivEintrag";
 import { persistHistory, safeSetItem } from "./utils/speicher";
 import { useGeraeteSync } from "./hooks/useGeraeteSync";
+import { useExport } from "./hooks/useExport";
 import { stableStringify } from "./utils/stableJson";
 import { pruefeSyncPaket } from "./utils/syncSchema";
 // Eine Quelle für die Monatsnamen: Dieselbe Funktion lag zuvor zusätzlich
@@ -1321,46 +1322,28 @@ export default function App() {
     });
   };
 
-  /**
-   * Versand-Markierung eines Monats setzen oder zurücknehmen.
-   *
-   * `sentUpdatedAt` wird IMMER mitgeschrieben -- auch beim Zurücknehmen. Nur
-   * daran erkennt der Geräte-Abgleich, welche der beiden Entscheidungen die
-   * jüngere ist; ohne den Stempel würde eine Zurücknahme beim nächsten Sync
-   * von der alten Markierung des anderen Geräts überschrieben.
-   */
-  const setzeVersandStatus = useCallback(
-    (monthStr: string, versendet: boolean, zeitpunkt?: string) => {
-      setHistory((prev) => {
-        if (!prev) return prev;
-        const rec = prev[monthStr];
-        if (!rec) return prev;
-        const jetzt = new Date().toISOString();
-        const neu: HistoryRecord = { ...rec, sentUpdatedAt: jetzt };
-        if (versendet) neu.sentAt = zeitpunkt || jetzt;
-        else delete neu.sentAt;
-        const updated = { ...prev, [monthStr]: neu };
-        persistHistory(updated, handleHistoryPersistFailure, "versand-status");
-        return updated;
-      });
-    },
-    [handleHistoryPersistFailure],
-  );
-
-  const handleToggleVersandStatus = useCallback(
-    (monthStr: string, versendet: boolean) => {
-      setzeVersandStatus(monthStr, versendet);
-      triggerHaptic(15);
-      const monatText = formatMonthGerman(monthStr);
-      announceToAriaAndSpeech(
-        versendet
-          ? `${monatText} als an die Vertriebsleitung gesendet markiert.`
-          : `Markierung für ${monatText} zurückgenommen. Der Monat gilt wieder als offen.`,
-        true,
-      );
-    },
-    [setzeVersandStatus, announceToAriaAndSpeech],
-  );
+  // --- EXPORT & VERSANDSTAND (ausgelagert nach hooks/useExport) ---
+  // Die beiden Excel-Ausgaben, der Abschluss-Check davor und die Markierung
+  // danach. Die Prüfregeln selbst liegen als reine Funktion in
+  // utils/abschlussCheck.ts -- sie entscheiden, was beim Chef landet.
+  const {
+    setzeVersandStatus,
+    handleToggleVersandStatus,
+    getReportWarnings,
+    handleExportExcel,
+    handleExportTimeLogsExcel,
+    handleSendToVL,
+  } = useExport({
+    reportData,
+    appFields,
+    accessibility,
+    setHistory,
+    announceToAriaAndSpeech,
+    triggerToast,
+    triggerHaptic,
+    setConfirmRequest,
+    onPersistFailure: handleHistoryPersistFailure,
+  });
 
   const getPreviousSavedMonthRecord = (): HistoryRecord | null => {
     if (!history) return null;
@@ -1874,72 +1857,6 @@ export default function App() {
     onPersistFailure: handleHistoryPersistFailure,
   });
 
-  // --- MONATSABSCHLUSS-CHECK (Plausibilität vor dem Senden an die VL) ---
-  const getReportWarnings = (): string[] => {
-    const warnings: string[] = [];
-    if (!reportData?.name || !String(reportData.name).trim()) {
-      warnings.push("Der Name (Mitarbeiter/in) ist noch nicht eingetragen.");
-    }
-    const vals = reportData?.values || {};
-    const hasValues = Object.values(vals).some((v) => typeof v === "number" && v > 0);
-    if (!hasValues) {
-      warnings.push("Es sind noch keine Zählerstände eingetragen – der Report wäre leer.");
-    }
-    const logs = Array.isArray(reportData?.timeLogs) ? reportData.timeLogs : [];
-    if (accessibility.enableTimeTracking !== false && logs.length > 0) {
-      const shiftDays = new Set(logs.map((l) => l.date)).size;
-      const tageArbeit = typeof vals.tage_arbeit === "number" ? vals.tage_arbeit : 0;
-      if (tageArbeit < shiftDays) {
-        warnings.push(
-          `Es sind nur ${tageArbeit} Arbeitstage eingetragen, aber Schichten an ${shiftDays} Tagen erfasst.`,
-        );
-      }
-      const logHours = logs.reduce((sum, l) => sum + (l.officeHours || 0) + (l.fieldHours || 0), 0);
-      const valueHours =
-        (typeof vals.std_buero === "number" ? vals.std_buero : 0) +
-        (typeof vals.std_aussendienst === "number" ? vals.std_aussendienst : 0);
-      if (Math.abs(logHours - valueHours) > 1) {
-        warnings.push(
-          `Die Stunden im Report (${valueHours.toFixed(1)} h) weichen von der Stempeluhr-Summe (${logHours.toFixed(1)} h) ab.`,
-        );
-      }
-    }
-    return warnings;
-  };
-
-  // --- BERICHT AN VL SENDEN (serverlos über den Teilen-Dialog) ---
-  const sendReportToVL = async () => {
-    // DSGVO-konform ohne Server: Der Bericht wird als Excel-Datei über den
-    // System-Teilen-Dialog (z. B. E-Mail an die VL) weitergegeben.
-    announceToAriaAndSpeech("Teilen-Dialog wird geöffnet, um den Bericht an die VL zu senden.");
-    await handleExportExcel();
-  };
-
-  const handleSendToVL = async () => {
-    triggerHaptic(25);
-    if (!reportData) return;
-    // Plausibilitäts-Check: typische Flüchtigkeitsfehler abfangen, bevor
-    // der Bericht bei der Vertriebsleitung landet.
-    const warnings = getReportWarnings();
-    if (warnings.length > 0) {
-      setConfirmRequest({
-        title: "Monatsabschluss-Check",
-        message:
-          warnings.length === 1
-            ? "Vor dem Senden ist eine Sache aufgefallen:"
-            : `Vor dem Senden sind ${warnings.length} Dinge aufgefallen:`,
-        details: warnings,
-        confirmLabel: "Trotzdem senden",
-        cancelLabel: "Erst korrigieren",
-        onConfirm: () => {
-          void sendReportToVL();
-        },
-      });
-      return;
-    }
-    await sendReportToVL();
-  };
-
   // --- LOKALE MONATSBERICHT-ERINNERUNG (serverlos, ohne Push-Dienst) ---
   useEffect(() => {
     if (!reportData) return;
@@ -2009,99 +1926,6 @@ export default function App() {
       ),
       notes: newNotes,
     });
-  };
-
-  // --- EXPORT TO EXCEL ---
-  // Blatt 1 IST die Firmenvorlage der Vertriebsleitung, nicht ein Nachbau --
-  // siehe utils/vorlageExport.ts. Alles, was dort keine Zeile hat, steht auf
-  // Blatt 2 und 3.
-  const handleExportExcel = async () => {
-    triggerHaptic(25);
-    // Vor dem Laden aus der IndexedDB gibt es nichts zu exportieren. Still
-    // nichts zu tun waere hier falsch: Wer die Taste drueckt, braucht eine
-    // Rueckmeldung -- gerade mit Screenreader.
-    const daten = reportData;
-    if (!daten) {
-      triggerToast("Die Daten werden noch geladen. Bitte einen Moment warten.");
-      announceToAriaAndSpeech("Die Daten werden noch geladen. Bitte einen Moment warten.", true);
-      return;
-    }
-    try {
-      // Erst beim Export laden: Das Modul zieht ExcelJS (271 KB gzip) und die
-      // eingebettete Vorlage (19 KB) nach. Beides braucht niemand beim Start.
-      const { erzeugeVorlagenDatei } = await import("./utils/vorlageExport");
-      const wbout = await erzeugeVorlagenDatei(daten, appFields);
-      const monthVal = daten.month || "Monat";
-      const nameVal = daten.name || "Mitarbeitende_r";
-      const cleanName = nameVal.replace(/\s+/g, "_") || "Mitarbeiter";
-      const formattedMonthName = formatMonthGerman(monthVal).replace(/\s+/g, "_");
-      const fileName = `RV_Mobil_Report_${cleanName}_${formattedMonthName}.xlsx`;
-
-      const ergebnis = await triggerFileDownload(
-        wbout,
-        fileName,
-        `Anbei der aktuelle Monatsreport für ${formatMonthGerman(monthVal)}`,
-      );
-      if (ergebnis === "abgebrochen") {
-        triggerToast("Teilen abgebrochen – es wurde nichts gesendet.");
-        announceToAriaAndSpeech("Teilen abgebrochen. Es wurde nichts gesendet.");
-        return;
-      }
-      // Erst hier markieren, nicht vor dem Teilen-Dialog: Ein Abbruch ist oben
-      // schon rausgesprungen, sonst stünde der Monat als erledigt da, obwohl
-      // nichts das Gerät verlassen hat.
-      setzeVersandStatus(monthVal, true);
-      triggerToast(`Excel-Report erfolgreich ${ergebnis}!`);
-      announceToAriaAndSpeech(
-        `Excel-Report ${ergebnis}. Der Monat ist im RV Archiv als gesendet markiert.`,
-      );
-    } catch (err) {
-      console.error("Excel-Export fehlgeschlagen", err);
-      triggerToast("Fehler beim Erstellen der Excel-Datei.");
-      announceToAriaAndSpeech("Fehler beim Erstellen der Excel-Datei.", true);
-    }
-  };
-
-  // --- EXPORT TIME LOGS TO EXCEL (Variante B) ---
-  const handleExportTimeLogsExcel = async () => {
-    triggerHaptic(25);
-    const daten = reportData;
-    if (!daten) {
-      triggerToast("Die Daten werden noch geladen. Bitte einen Moment warten.");
-      announceToAriaAndSpeech("Die Daten werden noch geladen. Bitte einen Moment warten.", true);
-      return;
-    }
-    try {
-      const result = await exportTimeLogsToExcel(daten);
-      if (!result) {
-        triggerToast("Keine Zeiterfassungsdaten vorhanden!");
-        announceToAriaAndSpeech(
-          "Keine Zeiterfassungsdaten zum Exportieren vorhanden.",
-        );
-        return;
-      }
-      const { wbout, monthVal, nameVal } = result;
-      const cleanName = nameVal.replace(/\s+/g, "_") || "Mitarbeiter";
-      const formattedMonthName = formatMonthGerman(monthVal).replace(/\s+/g, "_");
-      const fileName = `RV_Zeiterfassung_${cleanName}_${formattedMonthName}.xlsx`;
-
-      const ergebnis = await triggerFileDownload(
-        wbout,
-        fileName,
-        `Anbei das Zeiterfassungs-Protokoll für ${formatMonthGerman(monthVal)}`,
-      );
-      if (ergebnis === "abgebrochen") {
-        triggerToast("Teilen abgebrochen – es wurde nichts gesendet.");
-        announceToAriaAndSpeech("Teilen abgebrochen. Es wurde nichts gesendet.");
-        return;
-      }
-      triggerToast(`Zeiterfassung erfolgreich ${ergebnis}!`);
-      announceToAriaAndSpeech(`Zeiterfassung ${ergebnis}.`);
-    } catch (err) {
-      console.error("Zeiterfassungs-Export fehlgeschlagen", err);
-      triggerToast("Fehler beim Erstellen der Excel-Datei.");
-      announceToAriaAndSpeech("Fehler beim Erstellen der Excel-Datei.", true);
-    }
   };
 
   // --- COMPUTE LIVE TOTALS FOR DASHBOARD ---
