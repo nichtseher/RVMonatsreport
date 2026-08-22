@@ -47,6 +47,7 @@ import {
   ValueTimestamps,
 } from "./types";
 import { mergeSyncPayload } from "./utils/merge";
+import { baueArchivEintrag } from "./utils/archivEintrag";
 import { stableStringify } from "./utils/stableJson";
 import { pruefeSyncPaket, PAKET_APP, PAKET_FORMAT } from "./utils/syncSchema";
 // Eine Quelle für die Monatsnamen: Dieselbe Funktion lag zuvor zusätzlich
@@ -934,19 +935,30 @@ export default function App() {
 
   // Automatic saving into history list upon any relevant data changes
   useEffect(() => {
-    if (!reportData?.month) return;
+    // Einmal festhalten statt ueberall `reportData?.`: Innerhalb des
+    // setHistory-Callbacks kann TypeScript die Pruefung oben nicht mehr
+    // zuordnen -- und ein `?.` an dieser Stelle wuerde stillschweigend einen
+    // Archiveintrag unter dem Schluessel "undefined" anlegen.
+    const daten = reportData;
+    if (!daten?.month) return;
 
     // Nur Monate mit echtem Inhalt archivieren (siehe monthHasContent)
-    if (!monthHasContent(reportData)) return;
+    if (!monthHasContent(daten)) return;
 
     setHistory((prev) => {
+      // `null` heisst "Archiv noch nicht aus der IndexedDB geladen". Dann NICHT
+      // schreiben: Ein `prev || {}` wuerde den gespeicherten Bestand durch einen
+      // einzelnen Monat ersetzen. In der Praxis kann das nicht eintreten, weil
+      // setReportData und setHistory beim Laden im selben Block stehen -- aber
+      // das ist ein Implementierungsdetail von React, keine Zusicherung.
+      if (!prev) return prev;
       const inhalt = {
-        month: reportData?.month,
-        name: reportData?.name,
-        notes: reportData?.notes,
-        values: reportData?.values,
-        valuesUpdatedAt: reportData?.valuesUpdatedAt,
-        timeLogs: reportData?.timeLogs || [],
+        month: daten.month,
+        name: daten.name,
+        notes: daten.notes,
+        values: daten.values,
+        valuesUpdatedAt: daten.valuesUpdatedAt,
+        timeLogs: daten.timeLogs || [],
         fieldsSnapshot: appFields,
       };
 
@@ -956,25 +968,24 @@ export default function App() {
       // ununterbrochen in die IndexedDB (gemessen am 2026-08-02). Nebenwirkung
       // war, dass savedAt als "zuletzt gespeichert" nichts mehr aussagte --
       // obwohl genau dieses Feld beim Zusammenführen entscheidet.
-      const bestehend = prev[reportData.month];
+      const bestehend = prev[daten.month];
       if (bestehend && inhaltsFingerabdruck(bestehend) === inhaltsFingerabdruck(inhalt)) {
         return prev;
       }
 
-      // Versand-Markierung mitnehmen: `inhalt` wird bei jedem Speichern neu
-      // gebaut und kennt sie nicht. Ohne diese Zeile würde jede getippte Zahl
-      // die Markierung "an die Vertriebsleitung gesendet" stillschweigend
-      // löschen. Sie geht bewusst NICHT in den Fingerabdruck ein -- sonst
-      // erzeugte das Setzen der Markierung einen Speicherlauf mit neuem
-      // savedAt, und das entscheidet beim Geräte-Abgleich.
+      // Bauen laeuft ueber baueArchivEintrag -- dieselbe Stelle wie beim
+      // Monatswechsel. Die Versand-Markierung wird dort uebernommen; sie geht
+      // bewusst NICHT in den Fingerabdruck ein, sonst erzeugte das Setzen der
+      // Markierung einen Speicherlauf mit neuem savedAt, und das entscheidet
+      // beim Geraete-Abgleich.
       const updated = {
         ...prev,
-        [reportData?.month]: {
-          ...inhalt,
-          ...(bestehend?.sentAt ? { sentAt: bestehend.sentAt } : {}),
-          ...(bestehend?.sentUpdatedAt ? { sentUpdatedAt: bestehend.sentUpdatedAt } : {}),
-          savedAt: new Date().toISOString(),
-        },
+        [daten.month]: baueArchivEintrag(
+          daten,
+          appFields,
+          bestehend,
+          new Date().toISOString(),
+        ),
       };
       persistHistory(updated, handleHistoryPersistFailure, "auto-save");
       return updated;
@@ -1049,15 +1060,20 @@ export default function App() {
     // Sobald im neuen Monat gearbeitet wird, ist das Rückgängig-Angebot
     // hinfällig -- ein Rücksprung würde sonst frische Eingaben gefährden.
     setLastMonthClose(null);
-    setReportData((prev) => ({
-      ...prev,
-      values: {
-        ...prev.values,
-        [id]: val,
-      },
-      // Zeitstempel je Feld -- Grundlage des feldweisen Abgleichs
-      valuesUpdatedAt: stempeln(prev.valuesUpdatedAt, [id]),
-    }));
+    setReportData((prev) => {
+      // Solange kein Bericht geladen ist, darf eine Eingabe nichts anlegen --
+      // sonst entstünde ein Datensatz ohne Monat und Namen.
+      if (!prev) return prev;
+      return {
+        ...prev,
+        values: {
+          ...prev.values,
+          [id]: val,
+        },
+        // Zeitstempel je Feld -- Grundlage des feldweisen Abgleichs
+        valuesUpdatedAt: stempeln(prev.valuesUpdatedAt, [id]),
+      };
+    });
   }, []);
 
   // Synchron mitgeführter Spiegel der Zählerstände.
@@ -1121,6 +1137,7 @@ export default function App() {
 
     // 1. Add log to list
     setReportData((prev) => {
+      if (!prev) return prev;
       const updatedLogs = [
         ...(Array.isArray(prev.timeLogs) ? prev.timeLogs : []),
         newLog,
@@ -1165,6 +1182,7 @@ export default function App() {
     triggerHaptic(20);
 
     setReportData((prev) => {
+      if (!prev) return prev;
       const updatedLogs = (
         Array.isArray(prev.timeLogs) ? prev.timeLogs : []
       ).filter((l) => l.id !== logToDelete.id);
@@ -1203,6 +1221,7 @@ export default function App() {
     triggerHaptic(25);
 
     setReportData((prev) => {
+      if (!prev) return prev;
       const updatedLogs = [
         ...(Array.isArray(prev.timeLogs) ? prev.timeLogs : []),
         newLog,
@@ -1244,7 +1263,7 @@ export default function App() {
     val: string,
   ) => {
     setLastMonthClose(null);
-    setReportData((prev) => ({ ...prev, [key]: val }));
+    setReportData((prev) => (prev ? { ...prev, [key]: val } : prev));
   }, []);
 
   const handleMonthChange = (newMonth: string) => {
@@ -1258,17 +1277,13 @@ export default function App() {
     const hasData = monthHasContent(reportData);
 
     let updatedHistory = { ...history };
-    if (hasData && currentMonth) {
-      updatedHistory[currentMonth] = {
-        month: currentMonth,
-        name: reportData?.name,
-        notes: reportData?.notes,
-        values: reportData?.values,
-        valuesUpdatedAt: reportData?.valuesUpdatedAt,
-        timeLogs: reportData?.timeLogs || [],
-        fieldsSnapshot: appFields,
-        savedAt: new Date().toISOString(),
-      };
+    if (hasData && currentMonth && reportData) {
+      updatedHistory[currentMonth] = baueArchivEintrag(
+        { ...reportData, month: currentMonth },
+        appFields,
+        updatedHistory[currentMonth],
+        new Date().toISOString(),
+      );
       setHistory(updatedHistory);
       persistHistory(updatedHistory, handleHistoryPersistFailure, "month-change");
     }
@@ -1278,7 +1293,7 @@ export default function App() {
     if (savedRecord) {
       setReportData({
         month: newMonth,
-        name: savedRecord.name || reportData?.name,
+        name: savedRecord.name || reportData?.name || "",
         notes: savedRecord.notes || "",
         values: savedRecord.values || {},
         // Zeitstempel des Archivstands mitnehmen und fehlende mit dessen
@@ -1303,7 +1318,7 @@ export default function App() {
       // Start a fresh month template, but retain user name
       setReportData({
         month: newMonth,
-        name: reportData?.name,
+        name: reportData?.name || "",
         notes: "",
         values: {},
         timeLogs: [],
@@ -1343,6 +1358,7 @@ export default function App() {
   const setzeVersandStatus = useCallback(
     (monthStr: string, versendet: boolean, zeitpunkt?: string) => {
       setHistory((prev) => {
+        if (!prev) return prev;
         const rec = prev[monthStr];
         if (!rec) return prev;
         const jetzt = new Date().toISOString();
@@ -1373,6 +1389,7 @@ export default function App() {
   );
 
   const getPreviousSavedMonthRecord = (): HistoryRecord | null => {
+    if (!history) return null;
     const savedMonths = Object.keys(history).filter(
       (m) => m !== reportData?.month,
     );
@@ -1392,16 +1409,19 @@ export default function App() {
       message: `Die Zahlen und Kategorien aus „${formattedMonth}“ werden als Vorlage übernommen. Ihre aktuellen Zählerstände für diesen Monat werden dabei überschrieben.`,
       confirmLabel: "Vorlage laden",
       onConfirm: () => {
-        setReportData((prev) => ({
-          ...prev,
-          notes: prevRecord.notes || "",
-          values: prevRecord.values || {},
-          valuesUpdatedAt: stempelnGeaenderte(
-            prev.valuesUpdatedAt,
-            prev.values || {},
-            prevRecord.values || {},
-          ),
-        }));
+        setReportData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            notes: prevRecord.notes || "",
+            values: prevRecord.values || {},
+            valuesUpdatedAt: stempelnGeaenderte(
+              prev.valuesUpdatedAt,
+              prev.values || {},
+              prevRecord.values || {},
+            ),
+          };
+        });
         if (prevRecord.fieldsSnapshot) {
           setAppFields(prevRecord.fieldsSnapshot);
         }
@@ -1500,7 +1520,7 @@ export default function App() {
     }
 
     // Compile summary text
-    const formattedMonth = formatMonthGerman(reportData?.month);
+    const formattedMonth = formatMonthGerman(reportData?.month || "");
     const parts: string[] = [];
     parts.push(`Zusammenfassung für ${formattedMonth}.`);
     if (reportData?.name) {
@@ -1735,11 +1755,15 @@ export default function App() {
         // Also clean up value
         const updatedValues = { ...(reportData?.values || {}) };
         delete updatedValues[fieldId];
-        setReportData((prev) => ({
-          ...prev,
-          values: updatedValues,
-          valuesUpdatedAt: stempeln(prev.valuesUpdatedAt, [fieldId]),
-        }));
+        setReportData((prev) =>
+          prev
+            ? {
+                ...prev,
+                values: updatedValues,
+                valuesUpdatedAt: stempeln(prev.valuesUpdatedAt, [fieldId]),
+              }
+            : prev,
+        );
 
         triggerToast(`Kategorie "${label}" wurde gelöscht.`);
         announceToAriaAndSpeech(`Kategorie ${label} gelöscht.`);
@@ -1757,11 +1781,15 @@ export default function App() {
       tone: "danger",
       onConfirm: () => {
         setAppFields(DEFAULT_FIELDS_CONFIG);
-        setReportData((prev) => ({
-          ...prev,
-          values: {},
-          valuesUpdatedAt: stempelnGeaenderte(prev.valuesUpdatedAt, prev.values || {}, {}),
-        }));
+        setReportData((prev) =>
+          prev
+            ? {
+                ...prev,
+                values: {},
+                valuesUpdatedAt: stempelnGeaenderte(prev.valuesUpdatedAt, prev.values || {}, {}),
+              }
+            : prev,
+        );
         setActiveTab("options");
         triggerToast("Erfolgreich auf Standard-Felder zurückgesetzt!");
         announceToAriaAndSpeech(
@@ -2128,13 +2156,22 @@ export default function App() {
   // Blatt 2 und 3.
   const handleExportExcel = async () => {
     triggerHaptic(25);
+    // Vor dem Laden aus der IndexedDB gibt es nichts zu exportieren. Still
+    // nichts zu tun waere hier falsch: Wer die Taste drueckt, braucht eine
+    // Rueckmeldung -- gerade mit Screenreader.
+    const daten = reportData;
+    if (!daten) {
+      triggerToast("Die Daten werden noch geladen. Bitte einen Moment warten.");
+      announceToAriaAndSpeech("Die Daten werden noch geladen. Bitte einen Moment warten.", true);
+      return;
+    }
     try {
       // Erst beim Export laden: Das Modul zieht ExcelJS (271 KB gzip) und die
       // eingebettete Vorlage (19 KB) nach. Beides braucht niemand beim Start.
       const { erzeugeVorlagenDatei } = await import("./utils/vorlageExport");
-      const wbout = await erzeugeVorlagenDatei(reportData, appFields);
-      const monthVal = reportData.month || "Monat";
-      const nameVal = reportData.name || "Mitarbeitende_r";
+      const wbout = await erzeugeVorlagenDatei(daten, appFields);
+      const monthVal = daten.month || "Monat";
+      const nameVal = daten.name || "Mitarbeitende_r";
       const cleanName = nameVal.replace(/\s+/g, "_") || "Mitarbeiter";
       const formattedMonthName = formatMonthGerman(monthVal).replace(/\s+/g, "_");
       const fileName = `RV_Mobil_Report_${cleanName}_${formattedMonthName}.xlsx`;
@@ -2167,8 +2204,14 @@ export default function App() {
   // --- EXPORT TIME LOGS TO EXCEL (Variante B) ---
   const handleExportTimeLogsExcel = async () => {
     triggerHaptic(25);
+    const daten = reportData;
+    if (!daten) {
+      triggerToast("Die Daten werden noch geladen. Bitte einen Moment warten.");
+      announceToAriaAndSpeech("Die Daten werden noch geladen. Bitte einen Moment warten.", true);
+      return;
+    }
     try {
-      const result = await exportTimeLogsToExcel(reportData);
+      const result = await exportTimeLogsToExcel(daten);
       if (!result) {
         triggerToast("Keine Zeiterfassungsdaten vorhanden!");
         announceToAriaAndSpeech(

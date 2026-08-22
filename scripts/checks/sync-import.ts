@@ -1,6 +1,7 @@
 import "../browserShim";
 import { gruppe, pruefe, gleich, wahr } from "../helfer";
 import { pruefeSyncPaket, monateImPaket, PAKET_APP } from "../../src/utils/syncSchema";
+import type { FieldConfig, TimeLog } from "../../src/types";
 
 const { buildTextCode, parseTextCode, istVerschluesselterCode, buildChunks, parseChunk } =
   await import("../../src/utils/syncCode");
@@ -10,9 +11,9 @@ const gueltigesPaket = {
   fmt: 1,
   appFields: {
     s1: [{ id: "vf_schule", label: "Vorführungen Schule", step: 1 }],
-    s2: [],
-    s3: [],
-    s4: [],
+    s2: [] as FieldConfig[],
+    s3: [] as FieldConfig[],
+    s4: [] as FieldConfig[],
   },
   history: {
     "2026-08": {
@@ -21,7 +22,7 @@ const gueltigesPaket = {
       notes: "Messe",
       values: { vf_schule: 4 },
       savedAt: "2026-08-31T10:00:00.000Z",
-      timeLogs: [],
+      timeLogs: [] as TimeLog[],
     },
   },
   carryover: {

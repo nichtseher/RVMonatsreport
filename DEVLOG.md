@@ -10,6 +10,104 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-22 — v0.9.13: Das Typnetz — und was es sofort gefangen hat
+
+Erster Schritt der Planung für die Strecke bis 1.0. `strict: true` steht,
+`npm run lint` läuft mit 0 Fehlern, und weil `lint` genau dieses `tsc --noEmit`
+ist, sichert der Deploy-Gate es ohne Zusatzschritt ab.
+
+### Die Zahl, mit der ich angefangen habe, war falsch
+
+Erste Messung: **3022 Fehler** unter `strict`. Das klang nach Monaten. Beim
+Aufschlüsseln waren 2883 davon derselbe Code — „JSX element implicitly has type
+any". Kein Typschuldenberg, sondern ein einziges fehlendes Paket:
+
+**`@types/react` und `@types/react-dom` waren nie installiert.** Ohne sie ist
+jedes JSX-Element `any` und jeder Hook untypisiert; weil `noImplicitAny` aus
+war, fiel es nirgends auf. `npm run lint` lief die ganze Projektlaufzeit grün
+über eine Codebasis, in der React praktisch ungeprüft war.
+
+| | Fehler unter `strict` |
+|---|---|
+| ohne `@types/react` | 3022 (davon 2883 nur JSX-`any`) |
+| mit `@types/react` | **57** |
+
+Die Lehre steht in `CLAUDE.md`: Sieht eine solche Zahl unplausibel groß aus,
+zuerst die Typpakete prüfen.
+
+### Der Weg in Stufen
+
+| Stufe | Fehler | Art |
+|---|---|---|
+| `@types/react` installieren | 1 | ungültiges SVG-Attribut |
+| `noImplicitAny` | 4 | untypisierte leere Arrays in einer Prüfdatei |
+| `strictNullChecks` | 56 | `setState`-Rückrufe ohne Null-Wächter, alle in `App.tsx` |
+| `strict: true` | 0 | der Rest war schon abgedeckt |
+
+Die 56 folgten einem Muster: `setReportData((prev) => ({ ...prev, ... }))`, wo
+`prev` `ReportData | null` ist. Der Wächter `if (!prev) return prev` ist dabei
+nicht nur typrichtig, sondern sachlich richtig — ohne geladenen Bericht darf
+eine Eingabe nichts anlegen, sonst entstünde ein Datensatz ohne Monat und Namen.
+
+Eine Stelle war mehr als Formsache: Im Auto-Save steht jetzt ausdrücklich
+`if (!prev) return prev` statt eines `prev || {}`. Wäre das Archiv noch nicht
+aus der IndexedDB geladen, hätte `|| {}` den gespeicherten Bestand durch einen
+einzelnen Monat ersetzt. In der Praxis kann das nicht eintreten, weil
+`setReportData` und `setHistory` beim Laden im selben Block stehen — aber das
+ist ein Implementierungsdetail von React, keine Zusicherung.
+
+### Zwei echte Fehler, keiner vom Compiler allein
+
+**1. Die Sprechblasen im Ringdiagramm haben nie funktioniert.** Sobald
+`@types/react` da war, meldete `tsc` sofort: Der Tooltip stand als
+`title`-*Attribut* an einem SVG-`<circle>`. In SVG braucht es dafür ein
+`<title>`-*Kindelement*; das Attribut tut nichts. `cursor-help` versprach die
+ganze Zeit eine Erklärung, die nie erschien.
+
+**2. Der Monatswechsel löschte die Versand-Markierung.** Nachgestellt im
+Browser: August als gesendet markiert, in den September gewechselt, August
+stand wieder auf „Noch offen". Dieselbe Falle wie in 0.9.12 — der
+Archiv-Datensatz wird neu gebaut, `sentAt` fehlt in der Aufzählung, es fällt
+still heraus — nur an einer zweiten Stelle, die ich damals übersehen hatte.
+
+**Der Typprüfer fängt das nicht.** Ein fehlendes optionales Feld ist
+typkorrekt. Gefunden hat es das Durchspielen, nicht `strict`. Das ist der
+ehrliche Befund über den Nutzen dieser Version: Strict hilft gegen eine
+Fehlerklasse, nicht gegen alle.
+
+### Die Konsequenz aus Fehler 2
+
+Der Archiv-Datensatz wurde an **zwei** Stellen von Hand zusammengesetzt.
+Genau daraus entstand der Fehler — zweimal. Jetzt gibt es dafür eine Stelle:
+`src/utils/archivEintrag.ts`, benutzt vom Auto-Save und vom Monatswechsel.
+Dazu sechs Prüfungen, darunter eine, die **jedes Feld von `HistoryRecord`**
+gegen das Ergebnis abgleicht: Kommt ein Feld dazu und niemand trägt es ein,
+fällt es beim Prüflauf auf und nicht erst, wenn ein Nutzer es vermisst.
+
+### Gemessen
+
+Im Browser durchgespielt, nicht nur gelesen — die Wächter hätten stillschweigend
+Funktionen abwürgen können:
+
+| Ablauf | Ergebnis |
+|---|---|
+| Zähler dreimal tippen | 0 → 3, in IndexedDB, im Archiv |
+| Name eintragen | gespeichert, Typ `string` |
+| Export „Bericht an VL senden" | 10.298-Byte-Datei, Monat markiert, Ansage korrekt |
+| Monatswechsel 08 → 09 | Name übernommen, Werte zurückgesetzt, August intakt |
+| Monatswechsel mit Markierung | **Markierung überlebt** (war der Fehler) |
+
+Prüflauf: 81 Prüfungen, davon 6 neue. `npm run lint`, `npm run check` und
+`npm run build` grün.
+
+### Nicht verifiziert
+
+Der Geräte-Abgleich über eine echte WebRTC-Verbindung. Und ob die neuen
+Null-Wächter in einem Randfall doch etwas abwürgen, den ich nicht durchgespielt
+habe — die fünf Abläufe oben decken die Hauptwege ab, nicht jeden Pfad.
+
+---
+
 ## 2026-08-22 — v0.9.12: Welcher Monat ist noch offen?
 
 Letzter Punkt aus dem 0.9.x-Block, der ohne Zulieferung machbar war. Aus dem

@@ -167,15 +167,135 @@ Prüffall reproduziert.
 
 ---
 
+## Version 0.9.13 – 0.9.16 — der Weg zur 1.0
+
+Aufgestellt am 2026-08-22, nachdem der 0.9.x-Block abgeschlossen war. Die
+Reihenfolge ist nicht beliebig: Jeder Schritt macht den nächsten sicherer.
+Alle Zahlen unten sind gemessen, nicht geschätzt.
+
+### 0.9.13 — Das Typnetz aufspannen — ERLEDIGT (2026-08-22)
+
+`strict: true` steht, `npm run lint` läuft mit **0 Fehlern**, der Deploy-Gate
+sichert es ab (denn `lint` *ist* dieses `tsc --noEmit`).
+
+Der Weg: 3022 gemeldete Fehler waren ein Messartefakt der fehlenden
+React-Typen. Nach deren Installation waren es 57 — davon 4 unter
+`noImplicitAny` und 56 unter `strictNullChecks`, alle in `App.tsx`, überwiegend
+`setState`-Rückrufe ohne Null-Wächter.
+
+**Zwei echte Fehler kamen dabei ans Licht**, keiner davon vom Compiler
+allein:
+1. Der Tooltip am Ringdiagramm war ein `title`-*Attribut* an einem SVG-
+   `<circle>` und hat nie funktioniert (gefunden, sobald `@types/react` da war).
+2. Der **Monatswechsel löschte die Versand-Markierung** des abgeschlossenen
+   Monats — dieselbe Falle wie in 0.9.12, an einer zweiten Stelle. Gefunden
+   beim Durchspielen im Browser, *nicht* vom Typprüfer: Ein fehlendes optionales
+   Feld ist typkorrekt. Behoben, indem der Archiv-Datensatz jetzt an genau
+   einer Stelle gebaut wird (`utils/archivEintrag.ts`), mit einer Prüfung, die
+   die Vollständigkeit aller `HistoryRecord`-Felder erzwingt.
+
+Ursprüngliche Planung (zur Nachvollziehbarkeit):
+
+**Der Befund, der diese Planung ausgelöst hat: `@types/react` und
+`@types/react-dom` waren nie installiert.** Ohne sie ist jedes JSX-Element
+`any`, jeder Hook untypisiert — und weil `noImplicitAny` aus ist, fällt das
+nirgends auf. `npm run lint` lief grün über eine Codebasis, in der React
+praktisch ungeprüft war.
+
+Beim Nachinstallieren fand `tsc` **sofort einen echten Fehler**: Im
+Ringdiagramm der RV Analyse stand der Tooltip als `title`-*Attribut* an einem
+SVG-`<circle>`. In SVG braucht es dafür ein `<title>`-*Kindelement* — die
+Sprechblasen haben nie funktioniert, während `cursor-help` sie versprach.
+(Behoben, während dieser Plan entstand.)
+
+Was das für die Zahlen bedeutet:
+
+| | Fehler bei `strict: true` |
+|---|---|
+| ohne `@types/react` | 3022 — davon 2883 nur „JSX hat implizit any" |
+| mit `@types/react` | **57** |
+
+Die 3022 waren ein Messartefakt. Der echte Umfang sind **57 Fehler**, davon 56
+in `App.tsx`:
+
+| Code | Anzahl | Bedeutung |
+|---|---|---|
+| TS18047 | 42 | „ist möglicherweise null" |
+| TS2345 | 11 | Argumenttyp passt nicht |
+| TS2322 | 3 | Zuweisungstyp passt nicht |
+| TS2769 | 1 | keine passende Überladung |
+
+Schritte:
+1. `@types/react` + `@types/react-dom` als Entwicklungsabhängigkeit (erledigt)
+2. Die Fehler beheben, die schon ohne Strict-Modus auftauchen
+3. `noImplicitAny` einschalten, beheben
+4. `strictNullChecks` einschalten, beheben — das sind die 42 Null-Prüfungen
+5. `strict: true` setzen und im Deploy-Gate absichern
+
+**Warum das zuerst kommt:** Punkt 2 (`App.tsx` aufteilen) ist ein großes
+Verschieben von Code. Ohne Typnetz ist das Blindflug; mit Netz fängt der
+Compiler jeden verrutschten Aufruf.
+
+### 0.9.14 — `App.tsx` aufteilen
+
+**3.889 Zeilen** (gemessen, nicht die „rund 3.500" von früher — die Datei ist
+seither weiter gewachsen). Sie enthält Zustand, Speicherlogik, Export,
+Sprachausgabe und die komplette Oberfläche. In der Sitzung vom 2026-08-22 ist
+zweimal aufgefallen, wie leicht man dort etwas übersieht: Der Auto-Save baute
+den Archiv-Datensatz neu auf und hätte beinahe still die neue
+Versand-Markierung gelöscht.
+
+Vorschlag für den Schnitt — als Hooks, nicht als Komponenten, damit die
+Oberfläche unangetastet bleibt:
+
+| Neu | Inhalt |
+|---|---|
+| `useBerichtsdaten` | `reportData`, `history`, Auto-Save, Notfall-Speicherung |
+| `useEinstellungen` | Barrierefreiheit, Felder, Ziele, Übertrag |
+| `useSprachausgabe` | `announceToAriaAndSpeech`, Diktat, TTS |
+| `useExport` | die drei Export-Wege plus Versand-Markierung |
+
+`App.tsx` bleibt die Oberfläche und das Zusammenstecken. Ziel: unter 1.200
+Zeilen.
+
+**Risiko und Gegenmittel:** Ein Umbau dieser Größe kann still etwas kaputt
+machen. Deshalb erst nach 0.9.13, und die 75 Prüfungen laufen nach jedem
+Teilschritt.
+
+### 0.9.15 — Zweitgrößte Dateien entzerren
+
+`DeviceSyncModal.tsx` (1.188 Zeilen) und `ClockInWidget.tsx` (1.106 Zeilen)
+sind die nächsten beiden. Beide enthalten mehrere Bildschirme in einer Datei.
+Kein Selbstzweck — aber `ClockInWidget` trägt das Ausstempel-Formular doppelt
+(einmal für die laufende Schicht, einmal für den Nachtrag), und diese
+Verdopplung ist genau die Bauart, aus der der Excel-Export-Fehler von 0.9.0
+entstand.
+
+### 0.9.16 — Aufräumen vor der Abnahme
+
+- **`npm run deploy` entfernen.** Der Befehl veröffentlicht auf einen
+  `gh-pages`-Branch, der nichts mehr bestimmt. Er steht seit 0.9.2 als
+  „Ballast" in CLAUDE.md und ist eine Falle für jeden, der ihn für echt hält.
+- **ExcelJS-Abhängigkeit prüfen.** Sie bringt eine bekannte Meldung in `uuid`
+  mit (moderat). Falls bis dahin eine Fassung ohne diese Unterabhängigkeit
+  vorliegt, wechseln.
+- **Die 44-px-Frage bei 360 px entscheiden** (siehe Nachtrag in CLAUDE.md).
+  Produktentscheidung, keine Umsetzungsfrage.
+- **320 px** (iPhone SE 1./2. Gen.): tritt bei den großen Schriftgrößen über
+  den Kartenrand. Betrifft kein aktuell verkauftes Gerät — entweder bewusst
+  als Nicht-Ziel festschreiben oder beheben.
+
+---
+
 ## Version 1.0 — „Abnahmefähig"
 
-### 4. TypeScript-Strict-Modus
-`tsconfig.json` hat `strict` nicht gesetzt. Genau die Null- und
-Undefined-Fehler, die dadurch unsichtbar bleiben, mussten bisher von Hand
-gefunden werden (z. B. „undefined" im Notizfeld, fehlender Monat beim Laden).
-Die beste Versicherung gegen künftige Fehler dieser Art.
+Ab hier hängt alles an Zulieferungen, die nur der Auftraggeber leisten kann.
 
-### 5. `App.tsx` aufteilen
+### 4. TypeScript-Strict-Modus — verschoben nach 0.9.13
+Siehe oben. Der Umfang ist mit 57 Fehlern deutlich kleiner als angenommen,
+sobald die React-Typen installiert sind.
+
+### 5. `App.tsx` aufteilen — verschoben nach 0.9.14
 Die Datei hat rund 3.500 Zeilen und enthält Zustand, Speicherlogik, Export,
 Sprachausgabe und die komplette Oberfläche. Jede Änderung daran ist riskanter
 als nötig. Aufteilen in Bereiche (Formular, Export, Speicher, Sprache).

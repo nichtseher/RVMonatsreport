@@ -137,7 +137,14 @@ This is a first-class requirement, not a nice-to-have — the primary users are 
 
 ## TypeScript
 
-`tsconfig.json` has no `"strict": true`. This is known debt tracked toward 1.0, not a style to imitate — avoid new `any`-typed props where a real type is easy to give.
+**`tsconfig.json` has `"strict": true` since 0.9.13.** `npm run lint` is exactly that `tsc --noEmit`, so the deploy gate enforces it — no separate step needed.
+
+Two things worth knowing about how it got there:
+
+- **`@types/react` and `@types/react-dom` had never been installed.** Without them every JSX element is `any` and every hook untyped, and because `noImplicitAny` was off, nothing surfaced. `npm run lint` ran green over a codebase where React was effectively unchecked. Installing them immediately produced a real error `tsc` had been waving through: a tooltip written as a `title` *attribute* on an SVG `<circle>`, which does nothing — SVG needs a `<title>` *child element*. Those tooltips had never worked.
+- **The measurement before that install was worthless.** Enabling `strict` reported 3022 errors, of which 2883 were just "JSX element implicitly has type any". With the React types present the real number was **57**, all but one in `App.tsx`, mostly null checks. If a similar number ever looks implausibly large, check the types packages first.
+
+**Strict mode does not catch a dropped optional field.** `HistoryRecord` gains a field, somewhere a record is rebuilt by hand without it, and it silently disappears — that is type-correct. It happened twice (`sentAt` in 0.9.12 and again in 0.9.13) and was found by exercising the app, not by the compiler. Archive records are therefore built in exactly one place, `src/utils/archivEintrag.ts`, with a check that asserts every field of `HistoryRecord` is present.
 
 ---
 

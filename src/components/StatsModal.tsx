@@ -282,6 +282,12 @@ export default function StatsModal({
                               accumulatedPercent += pct;
 
                               return (
+                                // Der Tooltip stand hier als title-ATTRIBUT und hat nie
+                                // funktioniert: In SVG braucht es dafuer ein <title>-
+                                // KINDELEMENT. Aufgefallen erst, als @types/react
+                                // installiert war -- ohne die Typen war jedes JSX-Element
+                                // any, und der ungueltige Attributname fiel niemandem auf,
+                                // waehrend cursor-help eine Sprechblase versprach.
                                 <circle
                                   key={idx}
                                   cx="50"
@@ -293,8 +299,9 @@ export default function StatsModal({
                                   strokeDasharray={strokeDashArray}
                                   strokeDashoffset={strokeDashOffset}
                                   className="transition-all duration-700 hover:scale-[1.02] origin-center cursor-help"
-                                  title={`${item.name}: ${pct.toFixed(0)}%`}
-                                />
+                                >
+                                  <title>{`${item.name}: ${pct.toFixed(0)} Prozent`}</title>
+                                </circle>
                               );
                             });
                           })()}

@@ -7,6 +7,7 @@
 import "./checks/zeit";
 import "./checks/zusammenfuehren";
 import "./checks/versand";
+import "./checks/archiv-eintrag";
 import "./checks/excel";
 import "./checks/vorlage";
 import "./checks/sync-import";

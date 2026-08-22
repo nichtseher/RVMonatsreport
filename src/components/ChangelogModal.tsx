@@ -31,6 +31,19 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="space-y-6">
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+            <Bug className="w-5 h-5 text-[var(--danger)]" />
+            <span>Version 0.9.13: Zwei Fehler behoben, die niemand sehen konnte</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Ein Monatswechsel löschte die Markierung „Gesendet".</strong> Schlossen Sie einen Monat ab und wechselten in den nächsten, stand der abgeschlossene Monat im RV Archiv wieder als „Noch offen" – obwohl Sie ihn verschickt hatten. Behoben.</li>
+            <li><strong>Die Sprechblasen im Ringdiagramm der RV Analyse haben nie funktioniert.</strong> Der Mauszeiger versprach eine Erklärung, es erschien aber keine. Jetzt zeigt jeder Ringabschnitt seinen Namen und Anteil.</li>
+            <li><strong>Unter der Haube:</strong> Das Programm prüft sich beim Bauen jetzt deutlich strenger selbst. Das verhindert keine Fehler, die man sieht – aber es fängt künftig die Sorte ab, die still im Hintergrund passiert, so wie die beiden oben.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.12: Sie sehen jetzt, welcher Monat noch offen ist</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
