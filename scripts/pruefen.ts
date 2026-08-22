@@ -10,6 +10,7 @@ import "./checks/versand";
 import "./checks/archiv-eintrag";
 import "./checks/abschluss-check";
 import "./checks/zusammenfassung";
+import "./checks/zeitstempel";
 import "./checks/excel";
 import "./checks/vorlage";
 import "./checks/sync-import";

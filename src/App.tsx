@@ -51,6 +51,8 @@ import { persistHistory, safeSetItem } from "./utils/speicher";
 import { useGeraeteSync } from "./hooks/useGeraeteSync";
 import { useExport } from "./hooks/useExport";
 import { useSprachausgabe } from "./hooks/useSprachausgabe";
+import { useEinstellungen } from "./hooks/useEinstellungen";
+import { stempeln, stempelNachtragen, stempelnGeaenderte } from "./utils/zeitstempel";
 import { stableStringify } from "./utils/stableJson";
 import { pruefeSyncPaket } from "./utils/syncSchema";
 // Eine Quelle für die Monatsnamen: Dieselbe Funktion lag zuvor zusätzlich
@@ -108,64 +110,6 @@ const ONBOARDING_KEY = "aussendienst_pwa_onboarding_v1";
  * "Zaehler: 0", und ein Rueckgaengig nach dem Monatsabschluss haette einen
  * leeren Monat zurueckgelassen.
  */
-/**
- * Zeitstempel für geänderte Zählerfelder setzen.
- * Grundlage für das feldweise Zusammenführen beim Geräte-Abgleich
- * (siehe mergeValues in utils/merge.ts).
- */
-const stempeln = (
-  vorher: ValueTimestamps | undefined,
-  ids: string[],
-  zeit: string = new Date().toISOString(),
-): ValueTimestamps => {
-  const out: ValueTimestamps = { ...(vorher || {}) };
-  ids.forEach((id) => {
-    out[id] = zeit;
-  });
-  return out;
-};
-
-/**
- * Fehlende Feld-Zeitstempel nachtragen (für Daten aus Versionen vor 0.9.1).
- *
- * WICHTIG und beim Testen teuer gelernt: Ein Feld ohne eigenen Zeitstempel
- * fällt beim Zusammenführen auf den Monats-Zeitstempel zurück. Der springt
- * aber nach vorn, sobald irgendein *anderes* Feld getippt wird -- damit
- * bekäme ein unverändert alter Wert plötzlich einen taufrischen Stempel und
- * würde die echte Änderung des anderen Geräts überschreiben (genau der
- * Fehler, der behoben werden sollte, nur subtiler).
- *
- * Deshalb werden fehlende Stempel *einmal beim Laden* mit dem damaligen
- * Speicherzeitpunkt nachgetragen, bevor er sich weiterbewegen kann.
- */
-const stempelNachtragen = (
-  values: Record<string, number | ""> | undefined,
-  vorhanden: ValueTimestamps | undefined,
-  zeitpunkt: string,
-): ValueTimestamps => {
-  const out: ValueTimestamps = { ...(vorhanden || {}) };
-  Object.keys(values || {}).forEach((id) => {
-    if (!out[id]) out[id] = zeitpunkt;
-  });
-  return out;
-};
-
-/** Wie stempeln(), aber nur für Felder, deren Wert sich tatsächlich geändert hat. */
-const stempelnGeaenderte = (
-  vorher: ValueTimestamps | undefined,
-  alteWerte: Record<string, number | "">,
-  neueWerte: Record<string, number | "">,
-): ValueTimestamps => {
-  const ids = new Set([
-    ...Object.keys(alteWerte || {}),
-    ...Object.keys(neueWerte || {}),
-  ]);
-  const geaendert = Array.from(ids).filter(
-    (id) => (alteWerte || {})[id] !== (neueWerte || {})[id],
-  );
-  return stempeln(vorher, geaendert);
-};
-
 /**
  * Inhaltlicher Fingerabdruck eines Monats -- ohne savedAt.
  * Damit lässt sich erkennen, ob ein Speichervorgang überhaupt etwas ändert.
@@ -599,89 +543,7 @@ export default function App() {
   const notesInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Goals configuration state with local storage persistence
-  const [goalsConfig, setGoalsConfig] = useState<{
-    enabled: boolean;
-    s1: number;
-    s2: number;
-    s3: number;
-    s4: number;
-  }>(() => {
-    const defaultGoals = {
-      enabled: false,
-      s1: 15,
-      s2: 10,
-      s3: 5,
-      s4: 40,
-    };
-    const saved = localStorage.getItem("aussendienst_pwa_goals_v2");
-    if (saved) {
-      try {
-        return { ...defaultGoals, ...JSON.parse(saved) };
-      } catch (e) {
-        return defaultGoals;
-      }
-    }
-    return defaultGoals;
-  });
-
   const [isGoalsEditorOpen, setIsGoalsEditorOpen] = useState(false);
-
-  // --- SCHNELL-ERFASSUNG (meistgenutzte Kategorien als große Tasten) ---
-  const [quickConfig, setQuickConfig] = useState<QuickEntryConfig>(() => {
-    const saved = localStorage.getItem("aussendienst_pwa_quick_v1");
-    if (saved) {
-      try {
-        return { ...DEFAULT_QUICK_CONFIG, ...JSON.parse(saved) };
-      } catch (e) {
-        return DEFAULT_QUICK_CONFIG;
-      }
-    }
-    return DEFAULT_QUICK_CONFIG;
-  });
-
-  const updateQuickConfig = (newConfig: QuickEntryConfig) => {
-    setQuickConfig(newConfig);
-    safeSetItem("aussendienst_pwa_quick_v1", JSON.stringify(newConfig));
-  };
-
-  const updateGoalsConfig = (newConfig: typeof goalsConfig) => {
-    setGoalsConfig(newConfig);
-    safeSetItem(
-      "aussendienst_pwa_goals_v2",
-      JSON.stringify(newConfig),
-    );
-  };
-
-  // --- YEARLY ACCOUNT CARRYOVER & SETTINGS STATE ---
-  const [carryover, setCarryover] = useState<YearlyCarryover>(() => {
-    const saved = localStorage.getItem("aussendienst_pwa_carryover_v2");
-    const defaultCarryover: YearlyCarryover = {
-      regularVacationEntitlement: 30,
-      additionalVacationEntitlement: 5,
-      vacationCarryover: 0,
-      overtimeCarryover: 0,
-      dailyTargetHours: 8.0,
-    };
-    if (saved) {
-      try {
-        return { ...defaultCarryover, ...JSON.parse(saved) };
-      } catch (e) {
-        return defaultCarryover;
-      }
-    }
-    return defaultCarryover;
-  });
-
-  const updateCarryover = (newCarryover: YearlyCarryover) => {
-    const stamped = { ...newCarryover, updatedAt: new Date().toISOString() };
-    setCarryover(stamped);
-    safeSetItem(
-      "aussendienst_pwa_carryover_v2",
-      JSON.stringify(stamped),
-    );
-    triggerToast("Jahreskonto erfolgreich aktualisiert!");
-    announceToAriaAndSpeech("Jahreskonto-Einstellungen gespeichert.", true);
-  };
 
   // --- STAMPELUHR TIME TRACKING STATE ---
   const [clockInTime, setClockInTime] = useState<string | null>(() => {
@@ -814,11 +676,29 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [announceToAriaAndSpeech, focusAndAnnounce]);
 
-  // --- SYNC LOCALSTORAGE & ACCESSIBILITY ATTRIBUTES ---
-  useEffect(() => {
-    safeSetItem("aussendienst_pwa_fields", JSON.stringify(appFields));
-  }, [appFields]);
+  // --- EINSTELLUNGEN (ausgelagert nach hooks/useEinstellungen) ---
+  // Alles, was der Nutzer EINMAL einstellt und was danach bleibt -- getrennt
+  // von den Monatsdaten, die sich staendig aendern. Die Trennung folgt der
+  // Speicherung: Einstellungen liegen in localStorage (klein, beim Start
+  // sofort lesbar), Bericht und Archiv in der IndexedDB.
+  const {
+    quickConfig,
+    updateQuickConfig,
+    goalsConfig,
+    updateGoalsConfig,
+    carryover,
+    setCarryover,
+    updateCarryover,
+  } = useEinstellungen({
+    appFields,
+    accessibility,
+    isCompactView,
+    mobileComfortMode,
+    triggerToast,
+    announceToAriaAndSpeech,
+  });
 
+  // --- SPEICHERN DES BERICHTS (Einstellungen: siehe hooks/useEinstellungen) ---
   useEffect(() => {
     setSaveStatus("saving");
     const t = setTimeout(() => {
@@ -852,10 +732,6 @@ export default function App() {
     }, 400);
     return () => clearTimeout(t);
   }, [reportData]);
-
-  useEffect(() => {
-    safeSetItem("aussendienst_pwa_compact", String(isCompactView));
-  }, [isCompactView]);
 
   // Clean up speech synthesis on unmount
   useEffect(() => {
@@ -934,26 +810,6 @@ export default function App() {
     appFields,
     handleHistoryPersistFailure,
   ]);
-
-  useEffect(() => {
-    safeSetItem(
-      "aussendienst_pwa_a11y",
-      JSON.stringify(accessibility),
-    );
-    document.documentElement.setAttribute("data-theme", accessibility.theme);
-    document.documentElement.setAttribute("data-size", accessibility.fontSize);
-    // Steuert Tailwinds dark:-Varianten (siehe @custom-variant in index.css).
-    // Ohne dies folgen sie dem Betriebssystem statt der App-Einstellung.
-    const dunkleThemes = ["dark", "high-contrast-dark", "high-contrast-yellow"];
-    document.documentElement.setAttribute(
-      "data-dark",
-      dunkleThemes.includes(accessibility.theme) ? "true" : "false",
-    );
-  }, [accessibility]);
-
-  useEffect(() => {
-    safeSetItem("aussendienst_pwa_mobile_comfort", mobileComfortMode ? "true" : "false");
-  }, [mobileComfortMode]);
 
   // --- DEADLINE LOGIC ---
   const getDeadlineAlert = () => {
