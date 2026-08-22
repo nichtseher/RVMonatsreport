@@ -78,6 +78,38 @@ export function mergeValues(
   return { values, valuesUpdatedAt };
 }
 
+/**
+ * Versand-Markierung zusammenführen.
+ *
+ * Läuft bewusst NICHT über `savedAt`: Der wandert bei jeder Änderung am Monat
+ * weiter. Markiert Gerät A den Monat als versendet und tippt Gerät B danach
+ * eine Zahl, hätte B den jüngeren `savedAt` -- und die Markierung von A wäre
+ * weg. Entscheidend ist deshalb `sentUpdatedAt`, der sich nur ändert, wenn
+ * jemand die Markierung selbst anfasst.
+ *
+ * Zurücknehmen muss möglich sein (man markiert sich auch mal falsch), deshalb
+ * gewinnt die jüngere ÄNDERUNG -- nicht einfach "Markierung schlägt keine".
+ */
+export function mergeVersand(
+  a: Pick<HistoryRecord, "sentAt" | "sentUpdatedAt">,
+  b: Pick<HistoryRecord, "sentAt" | "sentUpdatedAt">,
+): Pick<HistoryRecord, "sentAt" | "sentUpdatedAt"> {
+  const zeitA = a.sentUpdatedAt || "";
+  const zeitB = b.sentUpdatedAt || "";
+
+  // Altbestand ohne Änderungsstempel (vor 0.9.12): Dort kann es keine
+  // Zurücknahme gegeben haben, also schlägt eine vorhandene Markierung keine.
+  if (!zeitA && !zeitB) {
+    const vorhanden = a.sentAt || b.sentAt;
+    return vorhanden ? { sentAt: vorhanden } : {};
+  }
+
+  const gewinner = zeitA >= zeitB ? a : b;
+  return gewinner.sentAt
+    ? { sentAt: gewinner.sentAt, sentUpdatedAt: gewinner.sentUpdatedAt }
+    : { sentUpdatedAt: gewinner.sentUpdatedAt };
+}
+
 function mergeRecord(a?: HistoryRecord, b?: HistoryRecord): HistoryRecord | undefined {
   if (!a) return b;
   if (!b) return a;
@@ -86,8 +118,14 @@ function mergeRecord(a?: HistoryRecord, b?: HistoryRecord): HistoryRecord | unde
   const newer = (a.savedAt || "") >= (b.savedAt || "") ? a : b;
   const other = newer === a ? b : a;
   const { values, valuesUpdatedAt } = mergeValues(a, b);
+  const versand = mergeVersand(a, b);
+  // sentAt/sentUpdatedAt aus dem Gewinner erst entfernen, dann das Ergebnis des
+  // eigenen Abgleichs setzen -- sonst zöge `...newer` eine veraltete Markierung
+  // wieder herein.
+  const { sentAt: _weg1, sentUpdatedAt: _weg2, ...rest } = newer;
   return {
-    ...newer,
+    ...rest,
+    ...versand,
     values,
     valuesUpdatedAt,
     timeLogs: mergeTimeLogs(other.timeLogs, newer.timeLogs),

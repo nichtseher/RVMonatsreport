@@ -120,18 +120,50 @@ Bisher wurde alles in einem Desktop-Browser mit verkleinertem Fenster geprüft.
 
 Ohne diese Tests ist eine 1.0 nicht seriös vertretbar.
 
-### 2. Excel-Export im Firmenformat
-Zurückgestellt, weil die Originalvorlage noch fehlt. Sobald sie vorliegt: Der
-Export soll exakt dem internen Formular entsprechen (gleiche Zellen,
-Reihenfolge, Summenzeilen), damit die Vertriebsleitung nichts nacharbeiten
-muss. **Braucht eine Zulieferung.** Die technische Voraussetzung dafür steht:
-Es gibt jetzt nur noch eine Export-Stelle (`utils/excelUtils.ts`).
+### 2. Excel-Export im Firmenformat — ERLEDIGT in 0.9.11 (2026-08-19)
+Die Zulieferung kam (`2600_apa_pd.xls`, Stand 01.2026). Umgesetzt ist mehr als
+hier stand: Blatt 1 **ist** die Vorlage, kein Nachbau — die Originaldatei wird
+eingebettet und nur befüllt, samt gelber Eingabefelder, Rahmen, Verbünden und
+der Formel in D10. Alles, wofür die Vorlage keine Zeile hat, steht auf Blatt 2,
+die Schichten auf Blatt 3.
 
-### 3. Status je Monat im Archiv
-Aus dem Archiv ist nicht ersichtlich, welcher Monat schon an die
-Vertriebsleitung ging und welcher nicht. Bei mehreren offenen Monaten ist das
-die Stelle, an der ein Bericht liegen bleibt. (Aus dem offenen
-UI-Verbesserungsplan vom 2026-08-01, noch nicht angefangen.)
+Zwei Nebenwirkungen, die hier nicht vorhergesehen waren:
+- Der Abgleich hat ein **fehlendes Feld** zutage gefördert: „Vorführungen
+  Envision" (D22) gab es in der App nicht; die Zeile wäre in jedem bisherigen
+  Bericht leer geblieben.
+- Die Anforderung „gelbe Markierung" hat eine **neue Abhängigkeit** erzwungen
+  (ExcelJS). Gemessen: SheetJS in der Community-Fassung schreibt keine
+  Zellformatierung. Kosten offen dokumentiert im DEVLOG — u. a. eine bekannte
+  Sicherheitsmeldung in einer Unterabhängigkeit (`uuid`).
+
+**Nachgemessen am 2026-08-22 — die 9 Sekunden aus dem ersten Eindruck waren ein
+Messfehler.** Sie bestanden vollständig aus dem einmaligen Modulladen über den
+unkompilierten Dev-Server, nicht aus der Arbeit. Sauber getrennt gemessen, voller
+Monat mit 22 Schichten:
+
+| | |
+|---|---|
+| Modul laden (gecacht) | 13 ms |
+| Erster Export | 495 ms |
+| Folgeexporte | 83–144 ms (Median 139) |
+
+Ein Fortschrittshinweis ist damit nicht nötig. Was auf dem Handy hinzukommt, ist
+das einmalige Herunterladen des ExcelJS-Chunks (271 KB gzip) — danach liegt er
+im Cache des Service Workers.
+
+### 3. Status je Monat im Archiv — ERLEDIGT in 0.9.12 (2026-08-22)
+Jeder Monat trägt jetzt ein Abzeichen „Gesendet TT.MM.JJJJ" oder „Noch offen" —
+**in der Kopfzeile, nicht im ausklappbaren Teil**, weil der ganze Zweck ist,
+offene Monate zu sehen, ohne jeden einzeln aufzuklappen. Der Stand wird beim
+Export automatisch gesetzt (nur bei tatsächlich geteilter oder
+heruntergeladener Datei — ein abgebrochener Teilen-Dialog markiert nichts) und
+lässt sich von Hand korrigieren.
+
+Der nicht offensichtliche Teil war der Geräte-Abgleich: Die Markierung läuft
+über einen **eigenen** Zeitstempel (`sentUpdatedAt`), nicht über `savedAt`.
+Sonst hätte eine spätere Zahleneingabe auf dem zweiten Gerät die Markierung des
+ersten gelöscht — derselbe Fehler, der bis 0.9.0 die Zählerstände traf. Als
+Prüffall reproduziert.
 
 ---
 

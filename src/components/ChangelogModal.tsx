@@ -32,6 +32,20 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.12: Sie sehen jetzt, welcher Monat noch offen ist</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Jeder Monat im RV Archiv trägt jetzt ein Abzeichen:</strong> „Gesendet" mit Datum oder „Noch offen". Es steht direkt in der Zeile – Sie müssen keinen Monat aufklappen, um zu sehen, was noch aussteht.</li>
+            <li><strong>Das Abzeichen setzt sich von selbst</strong>, sobald Sie einen Monat exportiert und die Datei wirklich verschickt haben. Brechen Sie den Teilen-Dialog ab, bleibt der Monat offen – es wird nichts markiert, was Ihr Gerät nie verlassen hat.</li>
+            <li><strong>Sie können es jederzeit von Hand korrigieren</strong>, in beide Richtungen. Beim Abgleich mit einem zweiten Gerät gewinnt immer die neuere Entscheidung – auch eine Rücknahme.</li>
+            <li><strong>Die Löschen-Schaltfläche im RV Archiv war zu klein</strong> und bei großer Schrift nur noch 34 Pixel breit. Jetzt ist sie überall mindestens 44 Pixel groß; die Sicherheitsabfrage nimmt die ganze Zeile ein.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.11: Der Export ist jetzt das Formular der Vertriebsleitung</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>

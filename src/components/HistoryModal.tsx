@@ -11,7 +11,9 @@ import {
   ChevronDown,
   ChevronUp,
   Search,
-  Filter
+  Filter,
+  Check,
+  Undo2
 } from "lucide-react";
 import { SectionsConfig, HistoryRecord } from "../types";
 import { exportTimeLogsToExcel, triggerFileDownload } from "../utils/excelUtils";
@@ -24,7 +26,25 @@ interface HistoryModalProps {
   onDeleteRecord: (monthStr: string) => void;
   announceToAriaAndSpeech: (msg: string) => void;
   triggerToast: (msg: string) => void;
+  /** Markierung von Hand umschalten (meldet selbst zurück). */
+  onToggleVersand: (monthStr: string, versendet: boolean) => void;
+  /** Nach erfolgreichem Export markieren -- ohne eigene Ansage. */
+  onVersandGemeldet: (monthStr: string) => void;
 }
+
+/** ISO-Zeit -> "03.09.2026". Leere/unbrauchbare Eingabe ergibt "". */
+const kurzesDatum = (iso?: string): string => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+};
+
+/** Ansage-Text fuer den Versandstand eines Monats. */
+const versandText = (r: HistoryRecord): string =>
+  r.sentAt
+    ? `am ${kurzesDatum(r.sentAt)} an die Vertriebsleitung gesendet`
+    : "noch nicht an die Vertriebsleitung gesendet";
 
 export default function HistoryModal({
   appFields,
@@ -32,7 +52,9 @@ export default function HistoryModal({
   onLoadMonth,
   onDeleteRecord,
   announceToAriaAndSpeech,
-  triggerToast
+  triggerToast,
+  onToggleVersand,
+  onVersandGemeldet
 }: HistoryModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
@@ -104,8 +126,13 @@ export default function HistoryModal({
         announceToAriaAndSpeech("Teilen abgebrochen. Es wurde nichts gesendet.");
         return;
       }
+      // Erst nach dem Abbruch-Zweig: Ein abgebrochener Teilen-Dialog darf den
+      // Monat nicht als erledigt markieren.
+      onVersandGemeldet(monthVal);
       triggerToast(`Excel RV Report für ${formatMonthGerman(monthVal)} ${ergebnis}!`);
-      announceToAriaAndSpeech(`Excel RV Report für ${formatMonthGerman(monthVal)} ${ergebnis}.`);
+      announceToAriaAndSpeech(
+        `Excel RV Report für ${formatMonthGerman(monthVal)} ${ergebnis}. Monat als gesendet markiert.`,
+      );
     } catch (err) {
       console.error(err);
       triggerToast("Fehler beim Exportieren des Reports.");
@@ -281,7 +308,7 @@ export default function HistoryModal({
                                 type="button"
                                 onClick={() => toggleMonth(record.month)}
                                 aria-expanded={isExpanded}
-                                aria-label={`${formatMonthGerman(record.month)} details ${isExpanded ? "einklappen" : "ausklappen"}`}
+                                aria-label={`${formatMonthGerman(record.month)}, ${versandText(record)}. Details ${isExpanded ? "einklappen" : "ausklappen"}`}
                                 className="w-full text-left p-3.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-[var(--bg-color)] transition-all select-none focus:outline-none focus-visible:ring-4"
                               >
                                 <div className="min-w-0 flex-1">
@@ -293,6 +320,21 @@ export default function HistoryModal({
                                     <span className="text-[0.6875rem] font-mono font-bold bg-[var(--bg-color)] px-2 py-0.5 rounded-full text-[var(--text-muted)]">
                                       Zähler: {totalCount}
                                     </span>
+                                    {/* Bewusst in der Kopfzeile und NICHT im ausklappbaren
+                                        Teil: Der ganze Sinn ist, offene Monate auf einen
+                                        Blick zu sehen, ohne jeden einzeln aufzuklappen.
+                                        Fuer Screenreader steht derselbe Text zusaetzlich
+                                        im aria-label der Zeile. */}
+                                    {record.sentAt ? (
+                                      <span className="text-[0.6875rem] font-black px-2 py-0.5 rounded-full bg-[var(--success-bg)] text-[var(--success-text)] border border-[var(--success-border)] flex items-center gap-1">
+                                        <Check className="w-3 h-3" aria-hidden="true" />
+                                        Gesendet {kurzesDatum(record.sentAt)}
+                                      </span>
+                                    ) : (
+                                      <span className="text-[0.6875rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">
+                                        Noch offen
+                                      </span>
+                                    )}
                                   </div>
                                   <p className="text-[0.75rem] font-bold text-[var(--text-muted)] mt-1">
                                     Mitarbeiter: {record.name ? String(record.name) : "Kein Name eingetragen"}
@@ -316,51 +358,95 @@ export default function HistoryModal({
                                     </p>
                                   )}
 
-                                  {/* Action buttons (Touch-optimized heights of 44px) */}
-                                  <div className="space-y-2 select-none">
-                                    <div className="grid grid-cols-4 gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          onLoadMonth(record.month);
-                                        }}
-                                        aria-label={`${formatMonthGerman(record.month)} laden und bearbeiten`}
-                                        className="col-span-3 h-11 rounded-xl bg-[var(--primary)] text-[var(--primary-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all focus-visible:ring-4"
-                                      >
-                                        <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
-                                        <span>Laden / Editieren</span>
-                                      </button>
+                                  {/* Versandstand von Hand korrigieren. aria-pressed statt
+                                      eines Ein/Aus-Abzeichens -- der Screenreader sagt den
+                                      Zustand von selbst an und es kostet keine Breite. */}
+                                  <button
+                                    type="button"
+                                    aria-pressed={!!record.sentAt}
+                                    onClick={() => onToggleVersand(record.month, !record.sentAt)}
+                                    aria-label={
+                                      record.sentAt
+                                        ? `${formatMonthGerman(record.month)} ist ${versandText(record)}. Markierung zurücknehmen`
+                                        : `${formatMonthGerman(record.month)} als an die Vertriebsleitung gesendet markieren`
+                                    }
+                                    className={`w-full min-h-[44px] px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all focus-visible:ring-4 border ${
+                                      record.sentAt
+                                        ? "border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)]"
+                                        : "border-[var(--success-border)] bg-[var(--success-bg)] text-[var(--success-text)]"
+                                    }`}
+                                  >
+                                    {record.sentAt ? (
+                                      <>
+                                        <Undo2 className="w-3.5 h-3.5" aria-hidden="true" />
+                                        <span>Doch noch offen</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Check className="w-3.5 h-3.5" aria-hidden="true" />
+                                        <span>Als gesendet markieren</span>
+                                      </>
+                                    )}
+                                  </button>
 
-                                      {deleteConfirm === record.month ? (
-                                        <div className="col-span-1 h-11 flex gap-1">
-                                          <button
-                                            type="button"
-                                            onClick={() => executeDelete()}
-                                            className="flex-1 rounded-xl border border-[var(--danger-border)] bg-[var(--danger-solid)] text-white font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[var(--danger-solid)] active:scale-95 transition-all focus-visible:ring-4"
-                                            aria-label="Wirklich löschen? Ja"
-                                          >
-                                            Ja
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => setDeleteConfirm(null)}
-                                            className="flex-1 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[var(--border-color)] active:scale-95 transition-all focus-visible:ring-4"
-                                            aria-label="Abbrechen"
-                                          >
-                                            <X className="w-3.5 h-3.5" />
-                                          </button>
-                                        </div>
-                                      ) : (
+                                  {/* Action buttons (Touch-optimized heights of 44px)
+
+                                      Raster war grid-cols-4 mit der Loeschtaste als
+                                      col-span-1. Nachgemessen bei 360 px: Die Taste war in
+                                      der Schriftgroesse "Gross" 43,2 px und bei "Extra
+                                      gross" nur noch 34,2 px breit -- eine Loeschtaste, die
+                                      man kaum trifft und daneben ebenso leicht danebentippt.
+                                      Im Bestaetigungszustand steckten dort sogar ZWEI Tasten
+                                      in denselben 34 px.
+
+                                      Jetzt nimmt die Loeschtaste ihre natuerliche Breite
+                                      (mindestens 44 px), "Laden" bekommt den Rest. Die
+                                      Bestaetigung belegt die ganze Zeile -- bei einer
+                                      Loeschabfrage zaehlt Treffsicherheit mehr als Platz. */}
+                                  <div className="space-y-2 select-none">
+                                    {deleteConfirm === record.month ? (
+                                      <div className="flex gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => executeDelete()}
+                                          className="flex-1 min-h-[44px] px-3 rounded-xl border border-[var(--danger-border)] bg-[var(--danger-solid)] text-[var(--danger-solid-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:brightness-110 active:scale-95 transition-all focus-visible:ring-4"
+                                          aria-label={`${formatMonthGerman(record.month)} wirklich aus dem RV Archiv löschen`}
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                                          <span>Wirklich löschen</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setDeleteConfirm(null)}
+                                          className="min-w-[44px] min-h-[44px] px-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[var(--border-color)] active:scale-95 transition-all focus-visible:ring-4"
+                                          aria-label="Löschen abbrechen"
+                                        >
+                                          <X className="w-3.5 h-3.5" aria-hidden="true" />
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <div className="flex gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            onLoadMonth(record.month);
+                                          }}
+                                          aria-label={`${formatMonthGerman(record.month)} laden und bearbeiten`}
+                                          className="flex-1 min-h-[44px] px-3 rounded-xl bg-[var(--primary)] text-[var(--primary-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all focus-visible:ring-4"
+                                        >
+                                          <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
+                                          <span>Laden / Editieren</span>
+                                        </button>
                                         <button
                                           type="button"
                                           onClick={() => setDeleteConfirm(record.month)}
                                           aria-label={`${formatMonthGerman(record.month)} aus RV Archiv löschen`}
-                                          className="col-span-1 h-11 rounded-xl border border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger-text)] font-black text-xs flex items-center justify-center cursor-pointer hover:brightness-110 active:scale-95 transition-all focus-visible:ring-4"
+                                          className="min-w-[44px] min-h-[44px] px-3 rounded-xl border border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger-text)] font-black text-xs flex items-center justify-center cursor-pointer hover:brightness-110 active:scale-95 transition-all focus-visible:ring-4"
                                         >
                                           <Trash2 className="w-4 h-4" aria-hidden="true" />
                                         </button>
-                                      )}
-                                    </div>
+                                      </div>
+                                    )}
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                       <button

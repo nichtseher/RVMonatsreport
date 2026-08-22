@@ -10,6 +10,95 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-22 — v0.9.12: Welcher Monat ist noch offen?
+
+Letzter Punkt aus dem 0.9.x-Block, der ohne Zulieferung machbar war. Aus dem
+Archiv war nicht ersichtlich, welcher Monat schon an die Vertriebsleitung ging —
+bei mehreren offenen Monaten die Stelle, an der ein Bericht liegen bleibt. Mit
+dem fertigen Export aus 0.9.11 wird das erst richtig relevant.
+
+### Sichtbar, nicht versteckt
+
+Das Abzeichen steht in der **Kopfzeile** jedes Monats, nicht im ausklappbaren
+Teil. Der ganze Zweck ist, offene Monate auf einen Blick zu sehen; hinter einem
+Akkordeon wäre es wertlos (siehe ROADMAP, „Bewusst NICHT geplant"). Für
+Screenreader steht derselbe Text zusätzlich im `aria-label` der Zeile:
+
+```
+"Juli 2026, noch nicht an die Vertriebsleitung gesendet. Details ausklappen"
+"Juni 2026, am 03.07.2026 an die Vertriebsleitung gesendet. Details ausklappen"
+```
+
+Die Schaltfläche zum Korrigieren nutzt `aria-pressed` statt eines Ein/Aus-
+Abzeichens — der Screenreader sagt den Zustand von selbst an.
+
+### Der eigentliche Knackpunkt: der Geräte-Abgleich
+
+Die Markierung ist Zustand, den **beide** Geräte setzen können. Sie läuft
+deshalb über einen eigenen Zeitstempel `sentUpdatedAt`, nicht über `savedAt`.
+
+Warum das kein Detail ist, als Ablauf:
+
+1. Gerät A exportiert den Monat → `sentAt` gesetzt, `savedAt` bleibt alt
+2. Gerät B tippt danach eine Zahl → `savedAt` von B ist jünger
+3. Abgleich
+
+Hinge die Markierung an `savedAt`, gewänne B (ohne Markierung) und der Monat
+stünde wieder als offen da — obwohl er nachweislich raus ist. Das ist derselbe
+Fehler, der bis 0.9.0 die Zählerstände getroffen hat, nur an anderer Stelle. Als
+Prüffall reproduziert, samt Gegenprobe (eine Rücknahme darf nicht von einer
+älteren Markierung überholt werden).
+
+**Zweite Falle, im Code gefunden:** Der Auto-Save baut den Archiv-Datensatz des
+aktiven Monats bei jedem Speichern aus `inhalt` **neu** — und `inhalt` kannte die
+neuen Felder nicht. Jede getippte Zahl hätte die Markierung stillschweigend
+gelöscht. Sie werden jetzt ausdrücklich mitgenommen, gehen aber bewusst **nicht**
+in den Inhalts-Fingerabdruck ein: Sonst erzeugte das Setzen der Markierung einen
+Speicherlauf mit neuem `savedAt` — und genau der entscheidet beim Abgleich.
+
+### Nur markieren, was wirklich raus ist
+
+`triggerFileDownload` liefert seit 0.9.0 `geteilt` / `heruntergeladen` /
+`abgebrochen` zurück. Markiert wird erst **nach** dem Abbruch-Zweig — ein
+abgebrochener Teilen-Dialog darf keinen Monat als erledigt ausweisen.
+
+### Nebenbefund: eine 34-Pixel-Löschtaste
+
+Beim Nachmessen der Trefferflächen fiel die Löschen-Schaltfläche im Archiv
+durch. Sie saß als `col-span-1` in einem Vierer-Raster:
+
+| Schriftgröße bei 360 px | Breite |
+|---|---|
+| Standard | 44,0 px |
+| Groß | 43,2 px |
+| Extra groß | **34,2 px** |
+
+Im Bestätigungszustand steckten dort sogar **zwei** Tasten in denselben 34 px.
+Das ist Altbestand, nicht neu — aber eine Löschtaste, die man knapp verfehlt,
+ist die falsche Stelle zum Sparen. Jetzt nimmt sie ihre natürliche Breite
+(mindestens 44 px), „Laden" bekommt den Rest, und die Sicherheitsabfrage belegt
+die ganze Zeile.
+
+### Gemessen
+
+| | |
+|---|---|
+| Kontrast, Archiv-Ansicht, 4 Themes | **0 Verstöße** von je 36 Textelementen |
+| Kleinste Trefferfläche bei 360 px | 44,0 / 51,3 / 44,0 px (Standard / Groß / Extra groß) |
+| Seitliches Scrollen | keines |
+| Prüflauf | 75 Prüfungen, davon 8 neue zum Versandstand |
+
+Umschalten und Zurücknehmen im Browser durchgespielt: `aria-pressed` kippt,
+das Abzeichen in der Kopfzeile folgt, beide Felder landen in der IndexedDB, und
+beim Zurücknehmen wird `sentUpdatedAt` **trotzdem** gesetzt — ohne diesen
+Stempel würde die Rücknahme beim nächsten Abgleich von der alten Markierung des
+anderen Geräts überholt.
+
+**Nicht verifiziert:** der Abgleich mit zwei echten Geräten. Die Merge-Logik ist
+als Prüffall abgesichert, der Weg über eine reale WebRTC-Verbindung nicht.
+
+---
+
 ## 2026-08-19 — v0.9.11: Der Export ist die Firmenvorlage, kein Nachbau
 
 Marc hat die Vorlage der Vertriebsleitung geliefert (`2600_apa_pd.xls`, Stand

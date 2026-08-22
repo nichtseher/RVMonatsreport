@@ -961,9 +961,20 @@ export default function App() {
         return prev;
       }
 
+      // Versand-Markierung mitnehmen: `inhalt` wird bei jedem Speichern neu
+      // gebaut und kennt sie nicht. Ohne diese Zeile würde jede getippte Zahl
+      // die Markierung "an die Vertriebsleitung gesendet" stillschweigend
+      // löschen. Sie geht bewusst NICHT in den Fingerabdruck ein -- sonst
+      // erzeugte das Setzen der Markierung einen Speicherlauf mit neuem
+      // savedAt, und das entscheidet beim Geräte-Abgleich.
       const updated = {
         ...prev,
-        [reportData?.month]: { ...inhalt, savedAt: new Date().toISOString() },
+        [reportData?.month]: {
+          ...inhalt,
+          ...(bestehend?.sentAt ? { sentAt: bestehend.sentAt } : {}),
+          ...(bestehend?.sentUpdatedAt ? { sentUpdatedAt: bestehend.sentUpdatedAt } : {}),
+          savedAt: new Date().toISOString(),
+        },
       };
       persistHistory(updated, handleHistoryPersistFailure, "auto-save");
       return updated;
@@ -1320,6 +1331,46 @@ export default function App() {
       return updated;
     });
   };
+
+  /**
+   * Versand-Markierung eines Monats setzen oder zurücknehmen.
+   *
+   * `sentUpdatedAt` wird IMMER mitgeschrieben -- auch beim Zurücknehmen. Nur
+   * daran erkennt der Geräte-Abgleich, welche der beiden Entscheidungen die
+   * jüngere ist; ohne den Stempel würde eine Zurücknahme beim nächsten Sync
+   * von der alten Markierung des anderen Geräts überschrieben.
+   */
+  const setzeVersandStatus = useCallback(
+    (monthStr: string, versendet: boolean, zeitpunkt?: string) => {
+      setHistory((prev) => {
+        const rec = prev[monthStr];
+        if (!rec) return prev;
+        const jetzt = new Date().toISOString();
+        const neu: HistoryRecord = { ...rec, sentUpdatedAt: jetzt };
+        if (versendet) neu.sentAt = zeitpunkt || jetzt;
+        else delete neu.sentAt;
+        const updated = { ...prev, [monthStr]: neu };
+        persistHistory(updated, handleHistoryPersistFailure, "versand-status");
+        return updated;
+      });
+    },
+    [handleHistoryPersistFailure],
+  );
+
+  const handleToggleVersandStatus = useCallback(
+    (monthStr: string, versendet: boolean) => {
+      setzeVersandStatus(monthStr, versendet);
+      triggerHaptic(15);
+      const monatText = formatMonthGerman(monthStr);
+      announceToAriaAndSpeech(
+        versendet
+          ? `${monatText} als an die Vertriebsleitung gesendet markiert.`
+          : `Markierung für ${monatText} zurückgenommen. Der Monat gilt wieder als offen.`,
+        true,
+      );
+    },
+    [setzeVersandStatus, announceToAriaAndSpeech],
+  );
 
   const getPreviousSavedMonthRecord = (): HistoryRecord | null => {
     const savedMonths = Object.keys(history).filter(
@@ -2098,8 +2149,14 @@ export default function App() {
         announceToAriaAndSpeech("Teilen abgebrochen. Es wurde nichts gesendet.");
         return;
       }
+      // Erst hier markieren, nicht vor dem Teilen-Dialog: Ein Abbruch ist oben
+      // schon rausgesprungen, sonst stünde der Monat als erledigt da, obwohl
+      // nichts das Gerät verlassen hat.
+      setzeVersandStatus(monthVal, true);
       triggerToast(`Excel-Report erfolgreich ${ergebnis}!`);
-      announceToAriaAndSpeech(`Excel-Report ${ergebnis}.`);
+      announceToAriaAndSpeech(
+        `Excel-Report ${ergebnis}. Der Monat ist im RV Archiv als gesendet markiert.`,
+      );
     } catch (err) {
       console.error("Excel-Export fehlgeschlagen", err);
       triggerToast("Fehler beim Erstellen der Excel-Datei.");
@@ -3622,6 +3679,8 @@ export default function App() {
             onDeleteRecord={handleDeleteRecordFromHistory}
             announceToAriaAndSpeech={announceToAriaAndSpeech}
             triggerToast={triggerToast}
+            onToggleVersand={handleToggleVersandStatus}
+            onVersandGemeldet={(monat) => setzeVersandStatus(monat, true)}
           />
         </div>
       )}
