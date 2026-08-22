@@ -46,10 +46,11 @@ import {
   TimeLog,
   ValueTimestamps,
 } from "./types";
-import { mergeSyncPayload } from "./utils/merge";
 import { baueArchivEintrag } from "./utils/archivEintrag";
+import { persistHistory, safeSetItem } from "./utils/speicher";
+import { useGeraeteSync } from "./hooks/useGeraeteSync";
 import { stableStringify } from "./utils/stableJson";
-import { pruefeSyncPaket, PAKET_APP, PAKET_FORMAT } from "./utils/syncSchema";
+import { pruefeSyncPaket } from "./utils/syncSchema";
 // Eine Quelle für die Monatsnamen: Dieselbe Funktion lag zuvor zusätzlich
 // hier und in HistoryModal.tsx -- drei Kopien, die auseinanderlaufen konnten.
 import { formatMonthGerman } from "./utils/dateUtils";
@@ -57,12 +58,7 @@ import {
   exportTimeLogsToExcel,
   triggerFileDownload,
 } from "./utils/excelUtils";
-import {
-  registerLiveSyncHandlers,
-  disconnectLiveSync,
-  subscribeLiveSync,
-  getLiveSyncSnapshot,
-} from "./utils/liveSync";
+import { subscribeLiveSync, getLiveSyncSnapshot } from "./utils/liveSync";
 import A11yModal from "./components/A11yModal";
 import CounterField from "./components/CounterField";
 import QuickEntryPanel, { QuickEntryConfig, DEFAULT_QUICK_CONFIG } from "./components/QuickEntryPanel";
@@ -98,17 +94,6 @@ function BereichLaedt({ name }: { name: string }) {
   );
 }
 import { ChangelogModal } from "./components/ChangelogModal";
-
-// Kein throw, kein "as any" -- nur eine gemeinsame Stelle für den
-// Fehlerfall, damit alle Archiv-Speicherpunkte gleich reagieren.
-type OnPersistFailure = (context: string, err: unknown) => void;
-const persistHistory = (
-  data: Record<string, unknown>,
-  onFailure: OnPersistFailure,
-  context: string,
-) => {
-  set("aussendienst_pwa_history", data).catch((err) => onFailure(context, err));
-};
 
 const ONBOARDING_KEY = "aussendienst_pwa_onboarding_v1";
 
@@ -210,17 +195,6 @@ const monthHasContent = (data?: {
   if (Object.values(data.values || {}).some((v) => typeof v === "number" && v !== 0))
     return true;
   return Array.isArray(data.timeLogs) && data.timeLogs.length > 0;
-};
-
-const safeSetItem = (key: string, value: string) => {
-  try {
-    localStorage.setItem(key, value);
-  } catch (e: any) {
-    console.error(`Error saving to localStorage (key: ${key}):`, e);
-    if (e.name === "QuotaExceededError" || e.code === 22) {
-      alert("Speicherlimit erreicht! Bitte exportieren Sie Ihre Daten und löschen Sie alte Monate aus dem Archiv, da sonst keine neuen Daten gespeichert werden können.");
-    }
-  }
 };
 
 const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
@@ -1879,139 +1853,26 @@ export default function App() {
     );
   };
 
-  // --- LIVE-SYNC: läuft im Hintergrund weiter, auch außerhalb des Sync-Fensters ---
-  // stableStringify statt JSON.stringify: Der Live-Abgleich vergleicht den
-  // erzeugten Text, um Unveränderliches nicht erneut zu senden. Ohne stabile
-  // Schlüsselreihenfolge sahen inhaltsgleiche Stände verschieden aus.
-  // Der frühere Zusatzschlüssel "timeLogs" ist entfallen: Die Gegenseite hat
-  // ihn nie gelesen (mergeSyncPayload kennt ihn nicht, die Ersetzen-Variante
-  // ebenso wenig) -- er war reiner Ballast in jeder Nachricht. Die Schichten
-  // stecken ohnehin in reportData und im Archiv.
-  const buildSyncPayload = useCallback((): string => {
-    // app/fmt seit 0.9.5: Damit lässt sich ein fremder oder unvollständiger
-    // Code klar als solcher erkennen, statt ihn zu erraten (siehe syncSchema).
-    return stableStringify({
-      app: PAKET_APP,
-      fmt: PAKET_FORMAT,
-      appFields,
-      history,
-      carryover,
-      reportData,
-    });
-  }, [appFields, history, carryover, reportData]);
-
-  /**
-   * Kompletten Datenbestand aus einem Paket übernehmen.
-   * Gemeinsame Grundlage für "Ersetzen" beim Geräte-Sync und für das
-   * Einspielen einer Datensicherung -- vorher zweimal fast gleich
-   * ausgeschrieben, mit dem üblichen Risiko, nur eine Stelle zu pflegen.
-   */
-  const ersetzeGesamtstand = useCallback((parsed: any) => {
-    if (parsed.appFields) setAppFields(parsed.appFields);
-    if (parsed.history) {
-      setHistory(parsed.history);
-      // Direkt in IndexedDB sichern, sonst ist das Archiv nach dem Neuladen weg.
-      // Über persistHistory statt mit verschlucktem Fehler: Sonst meldet die App
-      // "erfolgreich wiederhergestellt", obwohl nichts geschrieben wurde -- und
-      // beim nächsten Öffnen ist alles weg.
-      persistHistory(parsed.history, handleHistoryPersistFailure, "wiederherstellung");
-    }
-    if (parsed.carryover) {
-      setCarryover(parsed.carryover);
-      safeSetItem("aussendienst_pwa_carryover_v2", JSON.stringify(parsed.carryover));
-    }
-    if (parsed.reportData) setReportData(parsed.reportData);
-  }, [handleHistoryPersistFailure]);
-
-  // --- GERÄTE-SYNC: ZUSAMMENFÜHREN ODER ERSETZEN ---
-  const handleSyncImport = useCallback(
-    (dataStr: string, strategy: "merge" | "replace", options?: { silent?: boolean }): boolean => {
-      try {
-        const roh = JSON.parse(dataStr);
-        // Letzte Verteidigungslinie: Auch der Live-Kanal und ältere Fassungen
-        // können unbrauchbare Pakete liefern. Ungeprüft übernommen führte das
-        // direkt in den Fehlerbildschirm (reproduziert am 2026-08-03).
-        const geprueft = pruefeSyncPaket(roh);
-        if (!geprueft.ok) {
-          console.error("Sync-Paket abgelehnt:", geprueft.grund);
-          if (!options?.silent) {
-            triggerToast(geprueft.grund);
-            announceToAriaAndSpeech(geprueft.grund, true);
-          }
-          return false;
-        }
-        const parsed = geprueft.paket;
-        if (strategy === "merge") {
-          const merged = mergeSyncPayload(
-            { appFields, history: history || {}, carryover, reportData },
-            parsed,
-          );
-          setAppFields(merged.appFields);
-          setHistory(merged.history);
-          // Fehler beim Schreiben müssen sichtbar werden -- gerade beim
-          // Zusammenführen, wo der Nutzer glaubt, beide Geräte seien gleichauf.
-          persistHistory(merged.history, handleHistoryPersistFailure, "sync-zusammenfuehren");
-          setCarryover(merged.carryover);
-          safeSetItem("aussendienst_pwa_carryover_v2", JSON.stringify(merged.carryover));
-          if (merged.reportData) setReportData(merged.reportData);
-        } else {
-          ersetzeGesamtstand(parsed);
-        }
-        if (!options?.silent) {
-          setActiveTab("options");
-          const msg =
-            strategy === "merge"
-              ? "Daten beider Geräte erfolgreich zusammengeführt!"
-              : "Daten erfolgreich ersetzt!";
-          triggerToast(msg);
-          announceToAriaAndSpeech(msg, true);
-        }
-        return true;
-      } catch (e) {
-        console.error("Sync import failed", e);
-        triggerToast("Fehler bei der Datensynchronisation.");
-        announceToAriaAndSpeech("Fehler bei der Datensynchronisation.", true);
-        return false;
-      }
-    },
-    [
-      appFields,
-      history,
-      carryover,
-      reportData,
-      announceToAriaAndSpeech,
-      ersetzeGesamtstand,
-      handleHistoryPersistFailure,
-    ],
-  );
-
-  // Aktuelle Export-/Merge-Funktionen beim Live-Sync-Dienst hinterlegen,
-  // damit der Hintergrund-Abgleich immer den aktuellen Stand sendet.
-  useEffect(() => {
-    registerLiveSyncHandlers(buildSyncPayload, (dataStr) => {
-      handleSyncImport(dataStr, "merge", { silent: true });
-    });
-  }, [buildSyncPayload, handleSyncImport]);
-
-  // Abbruch der Live-Verbindung hörbar UND sichtbar machen. Vorher verschwand
-  // nur das grüne Abzeichen im Kopfbereich -- wer gerade Zahlen eintippt,
-  // bemerkt das nicht und glaubt weiter, beide Geräte seien gleichauf.
-  useEffect(() => {
-    if (!liveSync.failed) return;
-    setSyncAbbruchAusgeblendet(false);
-    triggerToast("Live-Verbindung unterbrochen – es wird nicht mehr abgeglichen.");
-    announceToAriaAndSpeech(
-      "Achtung: Die Live-Verbindung zum anderen Gerät ist unterbrochen. Ihre Eingaben werden weiter auf diesem Gerät gespeichert, aber nicht mehr übertragen.",
-      true,
-    );
-  }, [liveSync.failed, announceToAriaAndSpeech]);
-
-  // Live-Verbindung sauber beenden, wenn die App geschlossen wird
-  useEffect(() => {
-    const handleUnload = () => disconnectLiveSync();
-    window.addEventListener("pagehide", handleUnload);
-    return () => window.removeEventListener("pagehide", handleUnload);
-  }, []);
+  // --- GERÄTE-SYNC (ausgelagert nach hooks/useGeraeteSync) ---
+  // Paket bauen, Paket übernehmen, Live-Verbindung anbinden. Der Hook macht
+  // sichtbar, woran dieser Teil hängt -- im Monolithen war das unsichtbar,
+  // weil alles im selben Sichtbarkeitsbereich lag.
+  const { buildSyncPayload, ersetzeGesamtstand, handleSyncImport } = useGeraeteSync({
+    appFields,
+    setAppFields,
+    history,
+    setHistory,
+    carryover,
+    setCarryover,
+    reportData,
+    setReportData,
+    liveSyncFailed: liveSync.failed,
+    zeigeAbbruchHinweis: () => setSyncAbbruchAusgeblendet(false),
+    announceToAriaAndSpeech,
+    triggerToast,
+    setActiveTab,
+    onPersistFailure: handleHistoryPersistFailure,
+  });
 
   // --- MONATSABSCHLUSS-CHECK (Plausibilität vor dem Senden an die VL) ---
   const getReportWarnings = (): string[] => {

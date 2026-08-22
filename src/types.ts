@@ -87,6 +87,26 @@ export interface HistoryRecord {
   sentUpdatedAt?: string;
 }
 
+/**
+ * Die Bildschirme der App. Es gibt keinen Router -- `activeTab` in `App.tsx`
+ * schaltet um, die untere Leiste und die Seitenleiste setzen ihn.
+ *
+ * Steht hier, seit die Logik in Hooks wandert (0.9.14): Mehrere davon müssen
+ * den Bildschirm wechseln können, und ein `string` wäre eine offene Flanke.
+ */
+export type AppTab =
+  | "form"
+  | "time"
+  | "stats"
+  | "history"
+  | "options"
+  | "help"
+  | "backup"
+  | "manage"
+  | "carryover"
+  | "sync"
+  | "changelog";
+
 export type AccessibilityTheme =
   | "light"
   | "dark"
