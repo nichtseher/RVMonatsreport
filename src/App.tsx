@@ -50,6 +50,7 @@ import { baueArchivEintrag } from "./utils/archivEintrag";
 import { persistHistory, safeSetItem } from "./utils/speicher";
 import { useGeraeteSync } from "./hooks/useGeraeteSync";
 import { useExport } from "./hooks/useExport";
+import { useSprachausgabe } from "./hooks/useSprachausgabe";
 import { stableStringify } from "./utils/stableJson";
 import { pruefeSyncPaket } from "./utils/syncSchema";
 // Eine Quelle für die Monatsnamen: Dieselbe Funktion lag zuvor zusätzlich
@@ -586,8 +587,6 @@ export default function App() {
   const [newFieldIcon, setNewFieldIcon] = useState("⭐");
 
   // Speech Recognition dictation state
-  const [isDictating, setIsDictating] = useState(false);
-  const recognitionRef = useRef<any>(null);
 
   // Active focused field for Mobile Touch-Accessory Toolbar helper
   const [focusedFieldId, setFocusedFieldId] = useState<string | null>(null);
@@ -690,76 +689,56 @@ export default function App() {
   });
 
   // Acoustic Auditor state
-  const [isReadingSummary, setIsReadingSummary] = useState(false);
 
   // Toast notification state
   const [toastText, setToastText] = useState("");
-  const [ariaAnnouncement, setAriaAnnouncement] = useState("");
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const speechTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastAnnouncedFieldRef = useRef<{ id: string; time: number } | null>(
-    null,
-  );
 
-  // --- ARIA LIVE REGION ANNOUNCEMENT HELPER ---
-  const announceToAriaAndSpeech = useCallback((
-    message: string,
-    immediate = false,
-    fieldId?: string,
-    newValue?: number | "",
-  ) => {
-    let finalMessage = message;
-
-    // Smart Speech Reduction: If editing the same field within 3 seconds, speak only the naked number!
-    if (fieldId && typeof newValue !== "undefined") {
-      const now = Date.now();
-      const last = lastAnnouncedFieldRef.current;
-      if (last && last.id === fieldId && now - last.time < 3000) {
-        finalMessage = newValue === "" ? "leer" : String(newValue);
-      }
-      lastAnnouncedFieldRef.current = { id: fieldId, time: now };
-    } else {
-      lastAnnouncedFieldRef.current = null;
-    }
-
-    // 1. Screen Reader Live Region update (only keep the single latest announcement to prevent speech chains)
-    setAriaAnnouncement(finalMessage);
-
-    // 2. TTS Voice Synthesis (custom browser speaker if active) - Debounced for incremental values
+  // --- HAPTIK UND TOAST (vor der Sprachausgabe: sie braucht beide) ---
+  const triggerHaptic = (ms = 12) => {
     if (
-      accessibility.screenReaderNarration &&
       typeof window !== "undefined" &&
-      "speechSynthesis" in window
+      window.navigator &&
+      window.navigator.vibrate
     ) {
-      if (speechTimeoutRef.current) {
-        clearTimeout(speechTimeoutRef.current);
-      }
-
-      const speakNow = () => {
-        try {
-          window.speechSynthesis.cancel(); // Interrupt any currently playing text
-          const utterance = new SpeechSynthesisUtterance(finalMessage);
-          utterance.lang = "de-DE";
-          utterance.rate = accessibility.speechRate || 1.0;
-          utterance.onerror = (e) => {
-            console.warn("ScreenReaderNarration SpeechSynthesis error:", e);
-          };
-          window.speechSynthesis.speak(utterance);
-        } catch (err) {
-          console.warn(
-            "ScreenReaderNarration SpeechSynthesis play exception:",
-            err,
-          );
-        }
-      };
-
-      if (immediate) {
-        speakNow();
-      } else {
-        speechTimeoutRef.current = setTimeout(speakNow, 600); // 600ms debounce
-      }
+      window.navigator.vibrate(ms);
     }
-  }, [accessibility.screenReaderNarration, accessibility.speechRate]);
+  };
+
+  const triggerToast = (text: string) => {
+    setToastText(text);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastText("");
+    }, 2800);
+  };
+
+  // --- SPRACHAUSGABE (ausgelagert nach hooks/useSprachausgabe) ---
+  // Ansagen, Diktat und Vorlesefunktion. Der vorgelesene Text selbst liegt als
+  // reine Funktion in utils/zusammenfassung.ts -- er ist die Kontrollinstanz
+  // vor dem Senden und gehoert einzeln pruefbar.
+  //
+  // Die Umleitung ueber diktatRef ist kein Schnoerkel: Das Diktat haengt das
+  // Ergebnis ans Notizfeld, und handleMetaChange steht rund 500 Zeilen weiter
+  // unten. Ein direkter Zugriff waere ein Zugriff vor der Definition. Die
+  // Referenz wird gleich nach handleMetaChange gefuellt.
+  const diktatRef = useRef<(text: string) => void>(() => {});
+
+  const {
+    ariaAnnouncement,
+    announceToAriaAndSpeech,
+    isDictating,
+    toggleDictation,
+    isReadingSummary,
+    handleReadSummaryAloud,
+  } = useSprachausgabe({
+    accessibility,
+    reportData,
+    appFields,
+    triggerToast,
+    triggerHaptic,
+    onDiktatText: (text) => diktatRef.current(text),
+  });
 
   // Zentrale Reaktion, wenn ein Archiv-Schreibvorgang (RV Archiv in
   // IndexedDB) fehlschlägt -- z. B. Speicher voll, IndexedDB durch
@@ -834,26 +813,6 @@ export default function App() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [announceToAriaAndSpeech, focusAndAnnounce]);
-
-  // --- TRIGGER HAPTIC VIBRATION ---
-  const triggerHaptic = (ms = 12) => {
-    if (
-      typeof window !== "undefined" &&
-      window.navigator &&
-      window.navigator.vibrate
-    ) {
-      window.navigator.vibrate(ms);
-    }
-  };
-
-  // --- TOAST HELPER ---
-  const triggerToast = (text: string) => {
-    setToastText(text);
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    toastTimeoutRef.current = setTimeout(() => {
-      setToastText("");
-    }, 2800);
-  };
 
   // --- SYNC LOCALSTORAGE & ACCESSIBILITY ATTRIBUTES ---
   useEffect(() => {
@@ -1241,6 +1200,16 @@ export default function App() {
     setReportData((prev) => (prev ? { ...prev, [key]: val } : prev));
   }, []);
 
+  // Diktat-Ergebnis ans Notizfeld anhängen. Die Zuweisung steht hier und nicht
+  // beim Hook-Aufruf, weil handleMetaChange erst an dieser Stelle existiert --
+  // siehe Kommentar bei diktatRef.
+  diktatRef.current = (text: string) => {
+    handleMetaChange(
+      "notes",
+      (reportData?.notes || "") + (reportData?.notes ? " " : "") + text,
+    );
+  };
+
   const handleMonthChange = (newMonth: string) => {
     if (!newMonth) return;
     // Jeder Monatswechsel beendet ein offenes Rückgängig-Angebot; der
@@ -1389,185 +1358,6 @@ export default function App() {
         );
       },
     });
-  };
-
-  // --- DICTATION ENGINE ---
-  const toggleDictation = () => {
-    triggerHaptic(20);
-    if (
-      !("webkitSpeechRecognition" in window) &&
-      !("SpeechRecognition" in window)
-    ) {
-      triggerToast(
-        "Spracherkennung wird von diesem Browser leider nicht unterstützt.",
-      );
-      announceToAriaAndSpeech(
-        "Fehler: Spracherkennung nicht unterstützt",
-        true,
-      );
-      return;
-    }
-
-    const SpeechRec =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
-
-    if (isDictating) {
-      recognitionRef.current?.stop();
-      setIsDictating(false);
-      return;
-    }
-
-    const recognition = new SpeechRec();
-    recognition.lang = "de-DE";
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      setIsDictating(true);
-      triggerToast("Spracheingabe gestartet... Bitte sprechen Sie jetzt.");
-      announceToAriaAndSpeech("Sprachaufnahme gestartet", true);
-    };
-
-    recognition.onresult = (e: any) => {
-      const text = e.results[0][0].transcript;
-      if (text) {
-        handleMetaChange(
-          "notes",
-          (reportData?.notes || "") + (reportData?.notes ? " " : "") + text,
-        );
-        triggerToast("Sprache erfolgreich in Text umgewandelt!");
-        announceToAriaAndSpeech(`Eingefügter Text: ${text}`, true);
-      }
-    };
-
-    recognition.onerror = (err: any) => {
-      console.error(err);
-      setIsDictating(false);
-      triggerToast("Fehler bei der Spracherkennung. Bitte erneut versuchen.");
-      announceToAriaAndSpeech("Fehler bei der Spracherkennung", true);
-    };
-
-    recognition.onend = () => {
-      setIsDictating(false);
-      announceToAriaAndSpeech("Sprachaufnahme beendet", true);
-    };
-
-    recognitionRef.current = recognition;
-    recognition.start();
-  };
-
-  // --- ACOUSTIC AUDITOR / SUMMARY READBACK ---
-  const handleReadSummaryAloud = () => {
-    triggerHaptic(20);
-
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      triggerToast(
-        "Sprachausgabe wird in diesem Browser leider nicht unterstützt.",
-      );
-      return;
-    }
-
-    if (isReadingSummary) {
-      window.speechSynthesis.cancel();
-      setIsReadingSummary(false);
-      triggerToast("Vorlesen gestoppt.");
-      announceToAriaAndSpeech("Zusammenfassung gestoppt.", true);
-      return;
-    }
-
-    // Compile summary text
-    const formattedMonth = formatMonthGerman(reportData?.month || "");
-    const parts: string[] = [];
-    parts.push(`Zusammenfassung für ${formattedMonth}.`);
-    if (reportData?.name) {
-      parts.push(`Mitarbeiter: ${reportData?.name}.`);
-    }
-
-    // Iterate through sections and find values > 0
-    let valueFound = false;
-
-    // Helper to extract non-zero fields from a section
-    const getSectionSummaryText = (title: string, fields: FieldConfig[]) => {
-      const sectionParts: string[] = [];
-      fields.forEach((f) => {
-        const val = (reportData?.values || {})[f.id];
-        if (typeof val === "number" && val > 0) {
-          sectionParts.push(`${f.label}: ${val}`);
-          valueFound = true;
-        }
-      });
-      if (sectionParts.length > 0) {
-        return `Im Bereich ${title}: ${sectionParts.join(". ")}.`;
-      }
-      return "";
-    };
-
-    const s1Text = getSectionSummaryText(
-      "Vorführungen und Auslieferungen",
-      appFields.s1,
-    );
-    if (s1Text) parts.push(s1Text);
-
-    const s2Text = getSectionSummaryText(
-      "Schulung, Support und Akquise",
-      appFields.s2,
-    );
-    if (s2Text) parts.push(s2Text);
-
-    const s3Text = getSectionSummaryText("Spezialprodukte", appFields.s3);
-    if (s3Text) parts.push(s3Text);
-
-    const s4Text = getSectionSummaryText("Arbeitszeit und Büro", appFields.s4);
-    if (s4Text) parts.push(s4Text);
-
-    if (reportData?.notes && reportData?.notes.trim()) {
-      parts.push(`Notizen: ${reportData?.notes}.`);
-      valueFound = true;
-    }
-
-    if (!valueFound) {
-      parts.push("Es wurden noch keine Werte für diesen Monat eingetragen.");
-    } else {
-      parts.push("Bericht vollständig vorgelesen.");
-    }
-
-    const textToSpeak = parts.join(" ");
-
-    try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      utterance.lang = "de-DE";
-      utterance.rate = accessibility.speechRate || 1.0;
-
-      utterance.onstart = () => {
-        setIsReadingSummary(true);
-        triggerToast("Zusammenfassung wird vorgelesen...");
-      };
-
-      utterance.onend = () => {
-        setIsReadingSummary(false);
-        triggerToast("Zusammenfassung beendet.");
-      };
-
-      utterance.onerror = (e) => {
-        console.warn("SpeechSynthesis utterance error", e);
-        setIsReadingSummary(false);
-        if (e.error === "not-allowed") {
-          triggerToast(
-            "Info: Sprachausgabe im Vorschaufenster durch Browser blockiert.",
-          );
-        } else {
-          triggerToast("Sprachausgabe abgebrochen oder blockiert.");
-        }
-      };
-
-      window.speechSynthesis.speak(utterance);
-    } catch (err) {
-      console.warn("SpeechSynthesis speak exception", err);
-      setIsReadingSummary(false);
-      triggerToast("Sprachausgabe konnte nicht gestartet werden.");
-    }
   };
 
   const addTimestamp = () => {
