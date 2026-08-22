@@ -10,6 +10,109 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-22 — v0.9.14: `App.tsx` aufteilen, Schritte 1 bis 5
+
+Die Datei hatte **3.932 Zeilen** — nicht die „rund 3.500" aus der alten
+Roadmap, sie war seither weiter gewachsen. Aufgeteilt wird in Hooks, nicht in
+Komponenten: Das JSX (1.547 Zeilen) bleibt unangetastet, nur die Logik wandert.
+
+**Ein Schritt pro Commit, nach jedem Gate plus Durchspielen im Browser.** Geht
+einer schief, ist genau ein Commit zurückzunehmen statt sechs. Reihenfolge nach
+Risiko, das kleinste zuerst.
+
+| Schritt | Neu | `App.tsx` danach |
+|---|---|---|
+| 1 | `useGeraeteSync` + `utils/speicher` | 3.793 |
+| 2 | `useExport` + `utils/abschlussCheck` | 3.617 |
+| 3 | `useSprachausgabe` + `utils/zusammenfassung` | 3.407 |
+| 4 | `useEinstellungen` + `utils/zeitstempel` | 3.263 |
+| 5 | `useStempeluhr` + `utils/schichtVerrechnung` | 3.132 |
+
+Schritt 6 (`useBerichtsdaten`) folgt als eigene Version — er fasst den
+Auto-Save an, und der hat in dieser Session zweimal gebissen. Getrennt
+ausgeliefert ist der Suchbereich kleiner, falls etwas klemmt.
+
+### Was dabei herausgefallen ist
+
+Bei jedem Schritt wurde geprüft, ob der Block eine **reine Funktion** enthält,
+die bisher ungeprüft mitlief. Fünfmal war es so — und das ist der eigentliche
+Gewinn, nicht die Zeilenzahl:
+
+| Neu geprüft | Warum es zählt |
+|---|---|
+| `pruefeMonatsabschluss` | entscheidet, was den Betrieb verlässt |
+| `baueZusammenfassung` | die Kontrolle blinder Nutzer vor dem Senden |
+| `stempeln` & Co. | entscheiden beim Abgleich, welche Eingabe gewinnt |
+| `verrechneSchicht` | legt Schichten auf den Bericht um |
+
+Prüfungen: 91 → **121**.
+
+### Der Fehler, den Schritt 5 gefunden hat
+
+Die Verrechnung einer Schicht auf die drei Summenfelder stand **dreimal** in
+`App.tsx` — Ausstempeln, Löschen, Nachtragen. Zusammengezogen und geprüft,
+schlug sofort fehl:
+
+```
+Start                7,25 h
++ Schicht 3,875 h    11,125 -> gerundet 11,13
+- dieselbe Schicht    7,255 -> gerundet  7,26
+```
+
+Wer eine Schicht anlegt und wieder löscht, hatte danach eine Hundertstelstunde
+**mehr** im Bericht. Erreichbar, weil `ClockInWidget` *getippte* Stunden
+ungerundet übernahm (`parseFloat(eingabe)`) — die berechneten sind längst auf
+zwei Stellen gerundet, die getippten waren es nicht. An der Quelle behoben.
+
+Klein, aber er summiert sich über Korrekturen und landet im Bericht an die
+Vertriebsleitung.
+
+### Beinahe eine stille Verhaltensänderung
+
+In Schritt 4 hatte ich beim Übertragen der Standard-Monatsziele Werte
+**erfunden** (20/15/10/160) statt die vorhandenen zu übernehmen — tatsächlich
+sind es 15/10/5/40. Jede Neuinstallation wäre mit anderen Zielvorgaben
+gestartet, und bestehende Geräte hätten es nie gezeigt, weil sie ihre Werte
+gespeichert haben. Beim Abgleich mit dem Original aufgefallen.
+
+Die Lehre steht im Code: Vorbelegungen sind sichtbares Verhalten, kein
+Aufräumkandidat.
+
+### Eine Umleitung, die Erklärung braucht
+
+Das Diktat hängt sein Ergebnis ans Notizfeld, `handleMetaChange` steht rund 500
+Zeilen weiter unten — ein direkter Zugriff wäre einer vor der Definition. Statt
+unbeteiligten Code umzustellen läuft es über `diktatRef`, gefüllt direkt nach
+`handleMetaChange`. Nachgewiesen, dass sie greift.
+
+### Gemessen — jeder Schritt über die echte Oberfläche
+
+| Schritt | Nachweis |
+|---|---|
+| 1 | Sync-Import über Textcode; Live-Registrierung über eine Kanal-Attrappe, **Leerlauf still** |
+| 2 | Abschluss-Check mit beiden Warnungen, „Erst korrigieren" erzeugt **0 Dateien** |
+| 3 | Kurzform der Ansage: voll → „4" → nach 3 s wieder voll |
+| 4 | Mit **geleertem Speicher**: Design überlebt Neuladen, steht sofort richtig |
+| 5 | Ausstempeln setzt alle drei Zeitstempel; Löschen: 4h/4h/1 Tag → 0/0/0 |
+
+`npm run lint`, `npm run check` (121) und `npm run build` grün.
+
+### Zwei Messfehler auf meiner Seite
+
+Der erste Abschluss-Check-Test meldete „Dialog nicht erschienen" — mein
+Selektor war falsch, `ConfirmDialog` nutzt `role="alertdialog"`. Und in
+Schritt 1 hielt ich stale HMR-Fehler für einen echten Defekt; ein hartes
+Neuladen zeigte, dass die App lief.
+
+### Nicht verifiziert
+
+Der Geräte-Abgleich über eine echte WebRTC-Verbindung. Das manuelle Nachtragen
+einer Schicht über das Formular (die Rechnung dahinter ist geprüft, der Weg
+durchs Formular nicht). Und ob die Null-Wächter aus 0.9.13 in einem Randfall
+doch etwas blockieren, den ich nicht durchgespielt habe.
+
+---
+
 ## 2026-08-22 — v0.9.13: Das Typnetz — und was es sofort gefangen hat
 
 Erster Schritt der Planung für die Strecke bis 1.0. `strict: true` steht,

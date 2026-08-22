@@ -236,7 +236,25 @@ Schritte:
 Verschieben von Code. Ohne Typnetz ist das Blindflug; mit Netz fängt der
 Compiler jeden verrutschten Aufruf.
 
-### 0.9.14 — `App.tsx` aufteilen
+### 0.9.14 — `App.tsx` aufteilen — SCHRITTE 1–5 ERLEDIGT (2026-08-22)
+
+`App.tsx`: **3.932 → 3.132 Zeilen**. Fünf Hooks und fünf reine Funktionen
+herausgelöst, ein Schritt pro Commit, jeder einzeln im Browser durchgespielt.
+Prüfungen 91 → 121.
+
+Die Aufteilung ergab **sechs** Blöcke, nicht die vier aus der ursprünglichen
+Planung — die Stempeluhr war mit ~340 Zeilen der größte und stand hier gar
+nicht. Schritt 6 (`useBerichtsdaten`, Auto-Save und Monatsabschluss) folgt als
+eigene Version, weil er die Stelle anfasst, die in dieser Session zweimal
+gebissen hat.
+
+**Der Gewinn ist nicht die Zeilenzahl**, sondern was beim Herauslösen sichtbar
+wurde: In jedem Block steckte eine reine Funktion, die ungeprüft mitlief —
+darunter die Plausibilitätsregeln vor dem Senden, der vorgelesene Text und die
+Verrechnung von Schichten auf den Bericht. Letztere fand sofort einen echten
+Rundungsfehler (siehe DEVLOG).
+
+Ursprüngliche Planung (zur Nachvollziehbarkeit):
 
 **3.889 Zeilen** (gemessen, nicht die „rund 3.500" von früher — die Datei ist
 seither weiter gewachsen). Sie enthält Zustand, Speicherlogik, Export,
