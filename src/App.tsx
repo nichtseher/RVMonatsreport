@@ -52,6 +52,7 @@ import { useGeraeteSync } from "./hooks/useGeraeteSync";
 import { useExport } from "./hooks/useExport";
 import { useSprachausgabe } from "./hooks/useSprachausgabe";
 import { useEinstellungen } from "./hooks/useEinstellungen";
+import { useStempeluhr } from "./hooks/useStempeluhr";
 import { stempeln, stempelNachtragen, stempelnGeaenderte } from "./utils/zeitstempel";
 import { stableStringify } from "./utils/stableJson";
 import { pruefeSyncPaket } from "./utils/syncSchema";
@@ -545,11 +546,6 @@ export default function App() {
   // Goals configuration state with local storage persistence
   const [isGoalsEditorOpen, setIsGoalsEditorOpen] = useState(false);
 
-  // --- STAMPELUHR TIME TRACKING STATE ---
-  const [clockInTime, setClockInTime] = useState<string | null>(() => {
-    return localStorage.getItem("aussendienst_pwa_clock_in_time_v2");
-  });
-
   // Acoustic Auditor state
 
   // Toast notification state
@@ -675,6 +671,23 @@ export default function App() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [announceToAriaAndSpeech, focusAndAnnounce]);
+
+  // --- STEMPELUHR (ausgelagert nach hooks/useStempeluhr) ---
+  // Der laufende Einstempel-Zeitpunkt liegt in localStorage, nicht im Bericht:
+  // Er ueberlebt damit ein Neuladen und das Entladen der Seite durch iOS. Wer
+  // morgens einstempelt, findet die Schicht abends wieder.
+  const {
+    clockInTime,
+    handleClockIn,
+    handleClockOut,
+    handleDeleteLog,
+    handleManualLogAdd,
+  } = useStempeluhr({
+    setReportData,
+    announceToAriaAndSpeech,
+    triggerToast,
+    triggerHaptic,
+  });
 
   // --- EINSTELLUNGEN (ausgelagert nach hooks/useEinstellungen) ---
   // Alles, was der Nutzer EINMAL einstellt und was danach bleibt -- getrennt
@@ -903,150 +916,6 @@ export default function App() {
     const newVal = applyValueDelta(field.id, field.step);
     announceToAriaAndSpeech(`${field.label}: ${newVal}`, false, field.id, newVal);
   }, [applyValueDelta, announceToAriaAndSpeech]);
-
-  // --- STAMPELUHR HANDLERS ---
-  const handleClockIn = useCallback(() => {
-    triggerHaptic(25);
-    const nowISO = new Date().toISOString();
-    setClockInTime(nowISO);
-    safeSetItem("aussendienst_pwa_clock_in_time_v2", nowISO);
-    triggerToast("Eingestempelt!");
-
-    const timeStr = new Date().toLocaleTimeString("de-DE", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    announceToAriaAndSpeech(
-      `Erfolgreich eingestempelt um ${timeStr} Uhr. Gute Schicht!`,
-      true,
-    );
-  }, [announceToAriaAndSpeech]);
-
-  const handleClockOut = useCallback((newLog: TimeLog) => {
-    triggerHaptic(25);
-
-    // 1. Add log to list
-    setReportData((prev) => {
-      if (!prev) return prev;
-      const updatedLogs = [
-        ...(Array.isArray(prev.timeLogs) ? prev.timeLogs : []),
-        newLog,
-      ];
-
-      const currentOffice = typeof prev.values.std_buero === "number" ? prev.values.std_buero : 0;
-      const currentField = typeof prev.values.std_aussendienst === "number" ? prev.values.std_aussendienst : 0;
-      const currentWorkDays = typeof prev.values.tage_arbeit === "number" ? prev.values.tage_arbeit : 0;
-
-      const newValues = {
-        ...prev.values,
-        std_buero: Math.round((currentOffice + newLog.officeHours) * 100) / 100,
-        std_aussendienst:
-          Math.round((currentField + newLog.fieldHours) * 100) / 100,
-        tage_arbeit: currentWorkDays + 1,
-      };
-
-      return {
-        ...prev,
-        values: newValues,
-        valuesUpdatedAt: stempeln(prev.valuesUpdatedAt, [
-          "std_buero",
-          "std_aussendienst",
-          "tage_arbeit",
-        ]),
-        timeLogs: updatedLogs,
-      };
-    });
-
-    // 3. Reset clock-in timer
-    setClockInTime(null);
-    localStorage.removeItem("aussendienst_pwa_clock_in_time_v2");
-
-    triggerToast("Ausgestempelt & Schicht verbucht!");
-    announceToAriaAndSpeech(
-      `Erfolgreich ausgestempelt. Schicht über ${newLog.duration.toFixed(2)} Stunden wurde verbucht.`,
-      true,
-    );
-  }, [announceToAriaAndSpeech]);
-
-  const handleDeleteLog = useCallback((logToDelete: TimeLog) => {
-    triggerHaptic(20);
-
-    setReportData((prev) => {
-      if (!prev) return prev;
-      const updatedLogs = (
-        Array.isArray(prev.timeLogs) ? prev.timeLogs : []
-      ).filter((l) => l.id !== logToDelete.id);
-
-      const currentOffice = typeof prev.values.std_buero === "number" ? prev.values.std_buero : 0;
-      const currentField = typeof prev.values.std_aussendienst === "number" ? prev.values.std_aussendienst : 0;
-      const currentWorkDays = typeof prev.values.tage_arbeit === "number" ? prev.values.tage_arbeit : 0;
-
-      const newValues = {
-        ...prev.values,
-        std_buero: Math.max(0, Math.round((currentOffice - logToDelete.officeHours) * 100) / 100),
-        std_aussendienst: Math.max(0, Math.round((currentField - logToDelete.fieldHours) * 100) / 100),
-        tage_arbeit: Math.max(0, currentWorkDays - 1),
-      };
-
-      return {
-        ...prev,
-        values: newValues,
-        valuesUpdatedAt: stempeln(prev.valuesUpdatedAt, [
-          "std_buero",
-          "std_aussendienst",
-          "tage_arbeit",
-        ]),
-        timeLogs: updatedLogs,
-      };
-    });
-
-    triggerToast("Schicht gelöscht & Stunden korrigiert!");
-    announceToAriaAndSpeech(
-      `Schicht gelöscht. Stunden wurden automatisch korrigiert.`,
-      true,
-    );
-  }, [announceToAriaAndSpeech]);
-
-  const handleManualLogAdd = useCallback((newLog: TimeLog) => {
-    triggerHaptic(25);
-
-    setReportData((prev) => {
-      if (!prev) return prev;
-      const updatedLogs = [
-        ...(Array.isArray(prev.timeLogs) ? prev.timeLogs : []),
-        newLog,
-      ];
-
-      const currentOffice = typeof prev.values.std_buero === "number" ? prev.values.std_buero : 0;
-      const currentField = typeof prev.values.std_aussendienst === "number" ? prev.values.std_aussendienst : 0;
-      const currentWorkDays = typeof prev.values.tage_arbeit === "number" ? prev.values.tage_arbeit : 0;
-
-      const newValues = {
-        ...prev.values,
-        std_buero: Math.round((currentOffice + newLog.officeHours) * 100) / 100,
-        std_aussendienst:
-          Math.round((currentField + newLog.fieldHours) * 100) / 100,
-        tage_arbeit: currentWorkDays + 1,
-      };
-
-      return {
-        ...prev,
-        values: newValues,
-        valuesUpdatedAt: stempeln(prev.valuesUpdatedAt, [
-          "std_buero",
-          "std_aussendienst",
-          "tage_arbeit",
-        ]),
-        timeLogs: updatedLogs,
-      };
-    });
-
-    triggerToast("Schicht manuell nachgetragen!");
-    announceToAriaAndSpeech(
-      `Schicht über ${newLog.duration.toFixed(2)} Stunden erfolgreich manuell nachgetragen.`,
-      true,
-    );
-  }, [announceToAriaAndSpeech]);
 
   const handleMetaChange = useCallback((
     key: keyof Omit<ReportData, "values">,

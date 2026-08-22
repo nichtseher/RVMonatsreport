@@ -205,16 +205,22 @@ export default React.memo(function ClockInWidget({
     const startDate = new Date(clockInTime);
     const endDate = new Date();
 
+    // Getippte Stunden auf zwei Nachkommastellen runden -- so wie die
+    // berechneten. Ohne das landete eine Eingabe wie "3,875" ungerundet in der
+    // Schicht, und das Verrechnen im Bericht waere nicht mehr umkehrbar:
+    // 7,25 + 3,875 ergibt gerundet 11,13, davon 3,875 abgezogen 7,26. Wer eine
+    // Schicht anlegt und wieder loescht, haette danach eine Hundertstelstunde
+    // mehr im Bericht als vorher (gemessen 2026-08-22).
+    const aufZwei = (n: number) => Math.round(n * 100) / 100;
     const finalOfficeHrs =
       typedOfficeHours !== ""
-        ? parseFloat(typedOfficeHours) || 0
+        ? aufZwei(parseFloat(typedOfficeHours) || 0)
         : calculatedOfficeHrs;
     const finalFieldHrs =
       typedFieldHours !== ""
-        ? parseFloat(typedFieldHours) || 0
+        ? aufZwei(parseFloat(typedFieldHours) || 0)
         : calculatedFieldHrs;
-    const finalDuration =
-      Math.round((finalOfficeHrs + finalFieldHrs) * 100) / 100;
+    const finalDuration = aufZwei(finalOfficeHrs + finalFieldHrs);
 
     const newLog: TimeLog = {
       id: `log_${Date.now()}`,
@@ -296,16 +302,17 @@ export default React.memo(function ClockInWidget({
     e.preventDefault();
     if (!manualDate || !manualClockIn || !manualClockOut) return;
 
+    // Runden wie beim Ausstempeln -- siehe Kommentar dort.
+    const aufZwei = (n: number) => Math.round(n * 100) / 100;
     const finalOfficeHrs =
       typedManualOfficeHours !== ""
-        ? parseFloat(typedManualOfficeHours) || 0
+        ? aufZwei(parseFloat(typedManualOfficeHours) || 0)
         : calculatedManualOfficeHrs;
     const finalFieldHrs =
       typedManualFieldHours !== ""
-        ? parseFloat(typedManualFieldHours) || 0
+        ? aufZwei(parseFloat(typedManualFieldHours) || 0)
         : calculatedManualFieldHrs;
-    const finalDuration =
-      Math.round((finalOfficeHrs + finalFieldHrs) * 100) / 100;
+    const finalDuration = aufZwei(finalOfficeHrs + finalFieldHrs);
 
     const newLog: TimeLog = {
       id: `log_${Date.now()}`,
