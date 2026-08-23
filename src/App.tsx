@@ -53,6 +53,8 @@ import { useExport } from "./hooks/useExport";
 import { useSprachausgabe } from "./hooks/useSprachausgabe";
 import { useEinstellungen } from "./hooks/useEinstellungen";
 import { useStempeluhr } from "./hooks/useStempeluhr";
+import { useBerichtsdaten } from "./hooks/useBerichtsdaten";
+import { monthHasContent } from "./utils/monatInhalt";
 import { stempeln, stempelNachtragen, stempelnGeaenderte } from "./utils/zeitstempel";
 import { stableStringify } from "./utils/stableJson";
 import { pruefeSyncPaket } from "./utils/syncSchema";
@@ -111,39 +113,6 @@ const ONBOARDING_KEY = "aussendienst_pwa_onboarding_v1";
  * "Zaehler: 0", und ein Rueckgaengig nach dem Monatsabschluss haette einen
  * leeren Monat zurueckgelassen.
  */
-/**
- * Inhaltlicher Fingerabdruck eines Monats -- ohne savedAt.
- * Damit lässt sich erkennen, ob ein Speichervorgang überhaupt etwas ändert.
- */
-const inhaltsFingerabdruck = (r: {
-  name?: string;
-  notes?: string;
-  values?: Record<string, number | "">;
-  valuesUpdatedAt?: ValueTimestamps;
-  timeLogs?: TimeLog[];
-  fieldsSnapshot?: SectionsConfig;
-}): string =>
-  stableStringify({
-    name: r.name || "",
-    notes: r.notes || "",
-    values: r.values || {},
-    valuesUpdatedAt: r.valuesUpdatedAt || {},
-    timeLogs: r.timeLogs || [],
-    fieldsSnapshot: r.fieldsSnapshot || null,
-  });
-
-const monthHasContent = (data?: {
-  notes?: string;
-  values?: Record<string, number | "">;
-  timeLogs?: TimeLog[];
-} | null): boolean => {
-  if (!data) return false;
-  if (typeof data.notes === "string" && data.notes.trim() !== "") return true;
-  if (Object.values(data.values || {}).some((v) => typeof v === "number" && v !== 0))
-    return true;
-  return Array.isArray(data.timeLogs) && data.timeLogs.length > 0;
-};
-
 const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
   s1: [
     {
@@ -411,7 +380,6 @@ export default function App() {
     return fields;
   });
 
-  const [reportData, setReportData] = useState<ReportData | null>(null);
 
   const [accessibility, setAccessibility] = useState<AccessibilitySettings>(
     () => {
@@ -435,7 +403,6 @@ export default function App() {
   );
 
   // History State
-  const [history, setHistory] = useState<Record<string, HistoryRecord> | null>(null);
 
   // Ergonomic Field Service states
   const [isCompactView, setIsCompactView] = useState<boolean>(() => {
@@ -478,22 +445,15 @@ export default function App() {
     trackMouse: false
   });
 
-  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "error">("saved");
   // Sticky, bis ein Speichervorgang wieder erfolgreich war -- damit ein
   // Außendienstler nie fälschlich "gesichert" sieht, während im Hintergrund
   // etwas schiefgeht (z. B. Speicher voll, IndexedDB blockiert).
-  const [storageWriteFailed, setStorageWriteFailed] = useState(false);
 
   // Live-Sync-Status (Verbindung lebt außerhalb dieses Fensters weiter)
   const liveSync = useSyncExternalStore(subscribeLiveSync, getLiveSyncSnapshot);
 
   // Barrierefreier Ersatz für window.confirm() (siehe ConfirmDialog.tsx)
   const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null);
-  // Zuletzt abgeschlossener Monat -- Grundlage für das Rückgängig-Angebot
-  const [lastMonthClose, setLastMonthClose] = useState<{
-    from: string;
-    to: string;
-  } | null>(null);
   // Hinweis auf eine abgebrochene Live-Verbindung weggeklickt?
   const [syncAbbruchAusgeblendet, setSyncAbbruchAusgeblendet] = useState(false);
 
@@ -515,14 +475,6 @@ export default function App() {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  const [lastSavedTime, setLastSavedTime] = useState<string>(() => {
-    const now = new Date();
-    return now.toLocaleTimeString("de-DE", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  });
 
   // Custom field creator inputs
   const [newFieldName, setNewFieldName] = useState("");
@@ -551,6 +503,27 @@ export default function App() {
   // Toast notification state
   const [toastText, setToastText] = useState("");
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // --- BERICHTSDATEN (ausgelagert nach hooks/useBerichtsdaten) ---
+  // Monatsdaten, Archiv und ihre Speicherung. Steht VOR allen anderen Hooks,
+  // weil praktisch jeder reportData oder history braucht.
+  //
+  // Der Hook sagt bewusst nichts an: Er meldet ueber speicherFehler nur, DASS
+  // etwas fehlschlug. Braeuchte er die Sprachausgabe, haetten wir einen Ring --
+  // die braucht ihrerseits reportData von hier.
+  const {
+    reportData, setReportData,
+    history, setHistory,
+    saveStatus, lastSavedTime,
+    storageWriteFailed, setStorageWriteFailed,
+    speicherFehler, handleHistoryPersistFailure,
+    handleValueChange, applyValueDelta, handleValueInput, handleMetaChange,
+    lastMonthClose, setLastMonthClose,
+  } = useBerichtsdaten({
+    appFields,
+    setShowOnboarding,
+    onboardingSchluessel: ONBOARDING_KEY,
+  });
 
   // --- HAPTIK UND TOAST (vor der Sprachausgabe: sie braucht beide) ---
   const triggerHaptic = (ms = 12) => {
@@ -598,18 +571,26 @@ export default function App() {
     onDiktatText: (text) => diktatRef.current(text),
   });
 
-  // Zentrale Reaktion, wenn ein Archiv-Schreibvorgang (RV Archiv in
-  // IndexedDB) fehlschlägt -- z. B. Speicher voll, IndexedDB durch
-  // Browser-Richtlinie blockiert. Ohne diese Rückmeldung würde ein
-  // Außendienstler nie erfahren, dass eine Änderung nicht gesichert wurde.
-  const handleHistoryPersistFailure = useCallback((context: string, err: unknown) => {
-    console.error(`Speichern des RV Archivs fehlgeschlagen (${context})`, err);
-    setStorageWriteFailed(true);
+  /**
+   * Speicherfehler ansagen.
+   *
+   * Der Datenhook meldet nur, DASS etwas fehlschlug -- die Ansage sitzt hier,
+   * weil sie sonst eine Ringabhängigkeit erzeugte: Die Sprachausgabe braucht
+   * `reportData`, das aus eben jenem Hook kommt.
+   *
+   * Ein fehlgeschlagener Schreibvorgang MUSS hörbar sein. Ohne diese Meldung
+   * arbeitet jemand weiter im guten Glauben, und beim nächsten Öffnen ist die
+   * Arbeit weg.
+   */
+  useEffect(() => {
+    if (!speicherFehler) return;
     announceToAriaAndSpeech(
-      "Achtung: Das RV Archiv konnte nicht gespeichert werden. Bitte jetzt ein Backup erstellen.",
+      speicherFehler === "archiv"
+        ? "Achtung: Das RV Archiv konnte nicht gespeichert werden. Bitte jetzt ein Backup erstellen."
+        : "Achtung: Speichern fehlgeschlagen. Bitte jetzt ein Backup erstellen, damit keine Daten verloren gehen.",
       true,
     );
-  }, [announceToAriaAndSpeech]);
+  }, [speicherFehler, announceToAriaAndSpeech]);
 
   const finishOnboarding = useCallback(() => {
     safeSetItem(ONBOARDING_KEY, "1");
@@ -711,119 +692,6 @@ export default function App() {
     announceToAriaAndSpeech,
   });
 
-  // --- SPEICHERN DES BERICHTS (Einstellungen: siehe hooks/useEinstellungen) ---
-  useEffect(() => {
-    setSaveStatus("saving");
-    const t = setTimeout(() => {
-      if (!reportData) return;
-      set("aussendienst_pwa_data", reportData)
-        .then(() => {
-          setSaveStatus("saved");
-          setStorageWriteFailed(false);
-          const now = new Date();
-          setLastSavedTime(
-            now.toLocaleTimeString("de-DE", {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-            }),
-          );
-        })
-        .catch((err) => {
-          // Muss dem Nutzer ehrlich angezeigt werden: Ohne diesen Fehlerpfad
-          // hätte die Anzeige weiterhin "gesichert" gemeldet, obwohl die
-          // Eingaben nicht persistiert wurden (z. B. Speicher voll,
-          // IndexedDB durch Browser/Richtlinie blockiert).
-          console.error("Speichern des Reports fehlgeschlagen", err);
-          setSaveStatus("error");
-          setStorageWriteFailed(true);
-          announceToAriaAndSpeech(
-            "Achtung: Speichern fehlgeschlagen. Bitte jetzt ein Backup erstellen, damit keine Daten verloren gehen.",
-            true,
-          );
-        });
-    }, 400);
-    return () => clearTimeout(t);
-  }, [reportData]);
-
-  // Clean up speech synthesis on unmount
-  useEffect(() => {
-    return () => {
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, []);
-
-
-  // Automatic saving into history list upon any relevant data changes
-  useEffect(() => {
-    // Einmal festhalten statt ueberall `reportData?.`: Innerhalb des
-    // setHistory-Callbacks kann TypeScript die Pruefung oben nicht mehr
-    // zuordnen -- und ein `?.` an dieser Stelle wuerde stillschweigend einen
-    // Archiveintrag unter dem Schluessel "undefined" anlegen.
-    const daten = reportData;
-    if (!daten?.month) return;
-
-    // Nur Monate mit echtem Inhalt archivieren (siehe monthHasContent)
-    if (!monthHasContent(daten)) return;
-
-    setHistory((prev) => {
-      // `null` heisst "Archiv noch nicht aus der IndexedDB geladen". Dann NICHT
-      // schreiben: Ein `prev || {}` wuerde den gespeicherten Bestand durch einen
-      // einzelnen Monat ersetzen. In der Praxis kann das nicht eintreten, weil
-      // setReportData und setHistory beim Laden im selben Block stehen -- aber
-      // das ist ein Implementierungsdetail von React, keine Zusicherung.
-      if (!prev) return prev;
-      const inhalt = {
-        month: daten.month,
-        name: daten.name,
-        notes: daten.notes,
-        values: daten.values,
-        valuesUpdatedAt: daten.valuesUpdatedAt,
-        timeLogs: daten.timeLogs || [],
-        fieldsSnapshot: appFields,
-      };
-
-      // Ohne inhaltliche Änderung KEIN neues savedAt und kein Schreibvorgang.
-      // Vorher erzeugte jedes Zusammenführen neue Objekte, dadurch lief der
-      // Live-Abgleich endlos im Dreisekundentakt weiter und schrieb dabei
-      // ununterbrochen in die IndexedDB (gemessen am 2026-08-02). Nebenwirkung
-      // war, dass savedAt als "zuletzt gespeichert" nichts mehr aussagte --
-      // obwohl genau dieses Feld beim Zusammenführen entscheidet.
-      const bestehend = prev[daten.month];
-      if (bestehend && inhaltsFingerabdruck(bestehend) === inhaltsFingerabdruck(inhalt)) {
-        return prev;
-      }
-
-      // Bauen laeuft ueber baueArchivEintrag -- dieselbe Stelle wie beim
-      // Monatswechsel. Die Versand-Markierung wird dort uebernommen; sie geht
-      // bewusst NICHT in den Fingerabdruck ein, sonst erzeugte das Setzen der
-      // Markierung einen Speicherlauf mit neuem savedAt, und das entscheidet
-      // beim Geraete-Abgleich.
-      const updated = {
-        ...prev,
-        [daten.month]: baueArchivEintrag(
-          daten,
-          appFields,
-          bestehend,
-          new Date().toISOString(),
-        ),
-      };
-      persistHistory(updated, handleHistoryPersistFailure, "auto-save");
-      return updated;
-    });
-  }, [
-    reportData?.name,
-    reportData?.notes,
-    reportData?.values,
-    reportData?.valuesUpdatedAt,
-    reportData?.month,
-    reportData?.timeLogs,
-    appFields,
-    handleHistoryPersistFailure,
-  ]);
-
   // --- DEADLINE LOGIC ---
   const getDeadlineAlert = () => {
     const today = new Date();
@@ -858,72 +726,12 @@ export default function App() {
 
   const deadlineInfo = getDeadlineAlert();
 
-  // --- VALUE UPDATERS ---
-  const handleValueChange = useCallback((id: string, val: number | "") => {
-    // Sobald im neuen Monat gearbeitet wird, ist das Rückgängig-Angebot
-    // hinfällig -- ein Rücksprung würde sonst frische Eingaben gefährden.
-    setLastMonthClose(null);
-    setReportData((prev) => {
-      // Solange kein Bericht geladen ist, darf eine Eingabe nichts anlegen --
-      // sonst entstünde ein Datensatz ohne Monat und Namen.
-      if (!prev) return prev;
-      return {
-        ...prev,
-        values: {
-          ...prev.values,
-          [id]: val,
-        },
-        // Zeitstempel je Feld -- Grundlage des feldweisen Abgleichs
-        valuesUpdatedAt: stempeln(prev.valuesUpdatedAt, [id]),
-      };
-    });
-  }, []);
-
-  // Synchron mitgeführter Spiegel der Zählerstände.
-  // Grund: Schnelles mehrfaches Tippen darf keine Zählungen verlieren. Würde
-  // der neue Wert aus dem React-State gelesen, läse jeder Tipp vor dem
-  // nächsten Rendern denselben alten Stand ("3x tippen" ergab nur +1).
-  const valuesRef = useRef<Record<string, number | "">>({});
-  useEffect(() => {
-    valuesRef.current = reportData?.values || {};
-  }, [reportData?.values]);
-
-  /**
-   * Zähler um einen Betrag ändern und den neuen Wert sofort zurückgeben.
-   * Nutzt den synchronen Spiegel, damit auch schnelles Tippen jede einzelne
-   * Zählung erfasst. Gibt den neuen Wert zurück, damit der Aufrufer ihn
-   * direkt ansagen und vertonen kann.
-   */
-  const applyValueDelta = useCallback((id: string, delta: number): number => {
-    const current =
-      typeof valuesRef.current[id] === "number" ? (valuesRef.current[id] as number) : 0;
-    const newVal = Math.max(0, parseFloat((current + delta).toFixed(1)));
-    const stored: number | "" = newVal === 0 ? "" : newVal;
-    valuesRef.current = { ...valuesRef.current, [id]: stored };
-    handleValueChange(id, stored);
-    return newVal;
-  }, [handleValueChange]);
-
-  /** Direkte Eingabe (Tastatur) -- Spiegel mitziehen, damit +/- danach stimmt. */
-  const handleValueInput = useCallback((id: string, val: number | "") => {
-    valuesRef.current = { ...valuesRef.current, [id]: val };
-    handleValueChange(id, val);
-  }, [handleValueChange]);
-
   // --- SCHNELL-ERFASSUNG: EIN TIPP = +1 ---
   const handleQuickIncrement = useCallback((field: FieldConfig) => {
     triggerHaptic(15);
     const newVal = applyValueDelta(field.id, field.step);
     announceToAriaAndSpeech(`${field.label}: ${newVal}`, false, field.id, newVal);
   }, [applyValueDelta, announceToAriaAndSpeech]);
-
-  const handleMetaChange = useCallback((
-    key: keyof Omit<ReportData, "values">,
-    val: string,
-  ) => {
-    setLastMonthClose(null);
-    setReportData((prev) => (prev ? { ...prev, [key]: val } : prev));
-  }, []);
 
   // Diktat-Ergebnis ans Notizfeld anhängen. Die Zuweisung steht hier und nicht
   // beim Hook-Aufruf, weil handleMetaChange erst an dieser Stelle existiert --
@@ -1474,102 +1282,6 @@ export default function App() {
     return filterFields(fields).length > 0;
   };
 
-  // Initial loading from idb-keyval
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [savedData, savedHistory] = await Promise.all([
-          get("aussendienst_pwa_data"),
-          get("aussendienst_pwa_history")
-        ]);
-        
-        // Handle emergency synchronous save fallback
-        const emergencyData = localStorage.getItem("aussendienst_pwa_emergency_data");
-        let initialData = savedData;
-        if (emergencyData) {
-          try {
-            initialData = JSON.parse(emergencyData);
-            localStorage.removeItem("aussendienst_pwa_emergency_data");
-          } catch (e) {}
-        }
-
-        const d = new Date();
-        const currentMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-        if (initialData) {
-          // Monat absichern, falls er im gespeicherten Stand fehlt
-          if (!initialData.month) initialData.month = currentMonthStr;
-          // Feld-Zeitstempel aus älteren Ständen nachtragen, solange der
-          // Monats-Zeitstempel noch der alte ist (siehe stempelNachtragen).
-          initialData.valuesUpdatedAt = stempelNachtragen(
-            initialData.values,
-            initialData.valuesUpdatedAt,
-            savedHistory?.[initialData.month]?.savedAt || new Date(0).toISOString(),
-          );
-          setReportData(initialData);
-        } else {
-          setReportData({ month: currentMonthStr, name: "", notes: "", values: {}, timeLogs: [] });
-        }
-
-        if (savedHistory) {
-          setHistory(savedHistory);
-        } else {
-          setHistory({});
-        }
-
-        // Einstieg nur bei echter Erstnutzung zeigen. Bestehende Nutzer
-        // erkennen wir an vorhandenen Daten -- bei ihnen wird die Markierung
-        // still gesetzt, damit der Einstieg nicht nachtraeglich aufpoppt.
-        const bereitsGesehen = localStorage.getItem(ONBOARDING_KEY) === "1";
-        const hatDaten =
-          (savedHistory && Object.keys(savedHistory).length > 0) ||
-          (initialData &&
-            (initialData.name ||
-              (initialData.values &&
-                Object.values(initialData.values).some((v: any) => typeof v === "number" && v > 0))));
-        if (bereitsGesehen || hatDaten) {
-          if (!bereitsGesehen) safeSetItem(ONBOARDING_KEY, "1");
-          setShowOnboarding(false);
-        } else {
-          setShowOnboarding(true);
-        }
-      } catch (e) {
-        console.error("Failed to load from IDB", e);
-        const d = new Date();
-        const currentMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-        setReportData({ month: currentMonthStr, name: "", notes: "", values: {}, timeLogs: [] });
-        setHistory({});
-        // Im Fehlerfall keinen Einstieg erzwingen -- der Nutzer hat
-        // moeglicherweise Daten, die nur gerade nicht lesbar waren.
-        setShowOnboarding(false);
-      }
-    }
-    loadData();
-  }, []);
-
-  // Emergency synchronous save on visibility change
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden' && reportData) {
-        // Synchronous emergency save to localStorage to prevent data loss on iOS swipe-close.
-        // try/catch statt safeSetItem: hier darf kein alert() das Backgrounding blockieren.
-        try {
-          localStorage.setItem("aussendienst_pwa_emergency_data", JSON.stringify(reportData));
-        } catch (err) {
-          console.error("Notfallspeicherung fehlgeschlagen", err);
-        }
-        // Zusätzlich der normale Weg. Ein Fehler ist hier nicht dramatisch --
-        // die Notfallkopie oben in localStorage greift --, aber er gehört
-        // wenigstens in die Konsole statt komplett verschluckt zu werden.
-        set("aussendienst_pwa_data", reportData).catch((err) =>
-          console.error("Sicherung beim Wechsel in den Hintergrund fehlgeschlagen", err),
-        );
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [reportData]);
-
-  
   if (!reportData || !history) {
     return <div className="flex h-screen w-screen items-center justify-center bg-[var(--bg-color)] text-[var(--text-muted)]">Lade Daten...</div>;
   }

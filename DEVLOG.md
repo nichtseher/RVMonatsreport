@@ -10,6 +10,92 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-22 — v0.9.15: Schritt 6 — der Kern
+
+Letzter Schritt der Aufteilung. `useBerichtsdaten` übernimmt Monatsdaten,
+Archiv, Speicherung, Laden, Notfallkopie und die Zähleränderungen.
+
+**`App.tsx`: 3.932 → 2.844 Zeilen** (−1.088). Davon 1.547 Zeilen JSX und
+1.296 Zeilen Logik — der Rest verteilt sich auf sechs Hooks und zehn
+Hilfsmodule.
+
+### Eine Ringabhängigkeit, die nicht mit einem Trick gelöst wurde
+
+`useBerichtsdaten` muss **vor** allen anderen Hooks stehen, weil fast jeder
+`reportData` oder `history` braucht. Gleichzeitig sagte der Auto-Save
+Speicherfehler an — und die Ansage kommt aus `useSprachausgabe`, die ihrerseits
+`reportData` braucht. Ein Ring.
+
+Die naheliegende Lösung wäre eine Referenz gewesen wie beim Diktat in
+Schritt 3. Im **Kern-Datenfluss** wäre das die falsche Antwort: Man versteckt
+damit die Abhängigkeit, statt sie aufzulösen.
+
+Stattdessen sagt der Hook gar nichts mehr an. Er meldet über `speicherFehler`
+nur, *dass* etwas fehlschlug (`"bericht"` oder `"archiv"`), und `App.tsx`
+formuliert die Ansage. Beide Meldungstexte bleiben unterscheidbar, der Ring ist
+weg, und der Datenhook hat eine Abhängigkeit weniger.
+
+### Zwei Stellen, an denen ich beim Abschreiben danebenlag
+
+**`monthHasContent` prüfte im Original `v !== 0`, meine Kopie `v > 0`.** Ein
+negativer Zählerstand hätte im Original als Inhalt gegolten, bei mir nicht —
+der Monat wäre nicht archiviert worden. Negative Werte sind nicht vorgesehen,
+aber wenn einer entsteht, ist er erst recht etwas, das nicht stillschweigend
+verschwinden darf. Beim Abgleich mit dem Original gefunden; die Funktion liegt
+jetzt in `utils/monatInhalt.ts` mit dem Grund im Kommentar.
+
+**`lastSavedTime` startete im Original mit der aktuellen Uhrzeit, bei mir mit
+`""`.** Die Anzeige „zuletzt gesichert um" wäre bis zum ersten Speicherlauf
+leer geblieben.
+
+Beides hätte kein Typprüfer gefunden. Beides fiel nur auf, weil ich vor dem
+Löschen gegen das Original verglichen habe.
+
+### Gemessen — mit geleertem Speicher, über die echte Oberfläche
+
+| Ablauf | Ergebnis |
+|---|---|
+| Erstnutzung | Einstieg erscheint („Schritt 1 von 5"), Bericht angelegt |
+| **Sechs schnelle Tipps** | **6** — der synchrone Spiegel greift |
+| Speicherung | in IndexedDB, Zeitstempel gesetzt, ins Archiv gespiegelt |
+| Notfallkopie | bei `visibilitychange` geschrieben |
+| Neustart | Wert 6 wiederhergestellt, Notfallkopie aufgeräumt |
+| Einstieg beim 2. Start | erscheint korrekt **nicht** mehr |
+
+Die sechs schnellen Tipps sind der Test für den synchronen Spiegel: Ohne ihn
+las jeder Tipp vor dem nächsten Rendern denselben alten Stand, „dreimal tippen"
+ergab +1.
+
+**Der Fehlerpfad mit einem echten Schreibfehler geprüft** — `IDBObjectStore.put`
+zum Werfen gebracht:
+
+```
+Warnbanner erschienen:       ja
+Ansage:  "Achtung: Speichern fehlgeschlagen. Bitte jetzt ein Backup
+          erstellen, damit keine Daten verloren gehen."
+Banner verschwindet wieder:  ja, sobald Speichern gelingt
+```
+
+Das ist genau die Stelle, die ich umgebaut habe. Sie funktioniert.
+
+`npm run lint`, `npm run check` (121) und `npm run build` grün.
+
+### Was bewusst in `App.tsx` geblieben ist
+
+Der Monats-Lebenszyklus (Abschluss, Rückgängig, Vorlage laden, Monatswechsel)
+und die Verwaltung eigener Kategorien. Beide fassen mehrere Bereiche zugleich
+an — Felder, Zählerwerte, Rückfragen, Bildschirmwechsel — und sind eher
+Oberflächen-Steuerung als Datenhaltung. Sie gehören in einen künftigen
+Formular-Hook, nicht hierher.
+
+### Nicht verifiziert
+
+Der Geräte-Abgleich über eine echte WebRTC-Verbindung. Und ob die
+Notfallkopie auf einem echten iPhone greift, wenn iOS die Seite entlädt — hier
+wurde `visibilitychange` von Hand ausgelöst, nicht vom Betriebssystem.
+
+---
+
 ## 2026-08-22 — v0.9.14: `App.tsx` aufteilen, Schritte 1 bis 5
 
 Die Datei hatte **3.932 Zeilen** — nicht die „rund 3.500" aus der alten

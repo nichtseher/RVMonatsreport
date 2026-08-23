@@ -31,6 +31,18 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="space-y-6">
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+            <ShieldCheck className="w-5 h-5 text-[var(--info-border)]" />
+            <span>Version 0.9.15: Aufräumarbeiten abgeschlossen</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Für Sie ändert sich nichts – bewusst.</strong> Das Programm wurde intern in klar getrennte Bausteine zerlegt. Alle Abläufe wurden danach einzeln durchgespielt: Zählen, Speichern, Ein- und Ausstempeln, Export, Archiv und der Geräte-Abgleich.</li>
+            <li><strong>Warum das trotzdem für Sie zählt:</strong> Beim Aufräumen kamen mehrere Fehler zum Vorschein, die vorher niemand sehen konnte – zuletzt der Rundungsfehler im Stundenzettel. Solche Dinge fallen jetzt früher auf, bevor sie in einem Bericht landen.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
             <Bug className="w-5 h-5 text-[var(--danger)]" />
             <span>Version 0.9.14: Stundenzettel rechnet jetzt exakt zurück</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>

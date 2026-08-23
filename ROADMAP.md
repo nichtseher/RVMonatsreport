@@ -236,17 +236,28 @@ Schritte:
 Verschieben von Code. Ohne Typnetz ist das Blindflug; mit Netz fängt der
 Compiler jeden verrutschten Aufruf.
 
-### 0.9.14 — `App.tsx` aufteilen — SCHRITTE 1–5 ERLEDIGT (2026-08-22)
+### 0.9.14 / 0.9.15 — `App.tsx` aufteilen — ERLEDIGT (2026-08-22)
 
-`App.tsx`: **3.932 → 3.132 Zeilen**. Fünf Hooks und fünf reine Funktionen
-herausgelöst, ein Schritt pro Commit, jeder einzeln im Browser durchgespielt.
+`App.tsx`: **3.932 → 2.844 Zeilen** (−1.088). Davon sind 1.547 Zeilen JSX; die
+Logik ist von rund 2.400 auf 1.296 Zeilen geschrumpft. Sechs Hooks, zehn
+Hilfsmodule, ein Schritt pro Commit, jeder einzeln im Browser durchgespielt.
 Prüfungen 91 → 121.
 
 Die Aufteilung ergab **sechs** Blöcke, nicht die vier aus der ursprünglichen
 Planung — die Stempeluhr war mit ~340 Zeilen der größte und stand hier gar
-nicht. Schritt 6 (`useBerichtsdaten`, Auto-Save und Monatsabschluss) folgt als
-eigene Version, weil er die Stelle anfasst, die in dieser Session zweimal
-gebissen hat.
+nicht.
+
+**Der Gewinn ist nicht die Zeilenzahl**, sondern was beim Herauslösen sichtbar
+wurde: In jedem Block steckte eine reine Funktion, die ungeprüft mitlief. Eine
+davon (`verrechneSchicht`) enthielt einen echten Rundungsfehler; zweimal hätte
+ich beim Abschreiben still das Verhalten geändert (Standard-Monatsziele,
+`monthHasContent`). Beides fiel nur durch den Abgleich mit dem Original auf,
+nicht durch den Typprüfer.
+
+**Bewusst in `App.tsx` geblieben:** der Monats-Lebenszyklus und die Verwaltung
+eigener Kategorien. Beide fassen Felder, Zählerwerte, Rückfragen und
+Bildschirmwechsel zugleich an — das ist Oberflächen-Steuerung, nicht
+Datenhaltung.
 
 **Der Gewinn ist nicht die Zeilenzahl**, sondern was beim Herauslösen sichtbar
 wurde: In jedem Block steckte eine reine Funktion, die ungeprüft mitlief —
