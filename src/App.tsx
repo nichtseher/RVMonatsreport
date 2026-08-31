@@ -58,6 +58,14 @@ import { monthHasContent } from "./utils/monatInhalt";
 import { stempeln, stempelNachtragen, stempelnGeaenderte } from "./utils/zeitstempel";
 import { stableStringify } from "./utils/stableJson";
 import { pruefeSyncPaket } from "./utils/syncSchema";
+import {
+  sichereSpeicher,
+  beurteileSpeicher,
+  beurteileSicherung,
+  leseLetzteSicherung,
+  SpeicherUrteil,
+  SicherungsUrteil,
+} from "./utils/speicherSchutz";
 // Eine Quelle für die Monatsnamen: Dieselbe Funktion lag zuvor zusätzlich
 // hier und in HistoryModal.tsx -- drei Kopien, die auseinanderlaufen konnten.
 import { formatMonthGerman } from "./utils/dateUtils";
@@ -249,7 +257,11 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"form" | "time" | "stats" | "history" | "options" | "help" | "backup" | "manage" | "carryover" | "sync" | "changelog">(() => {
     try {
       const tab = new URLSearchParams(window.location.search).get("tab");
-      if (tab === "time" || tab === "stats" || tab === "history" || tab === "options") return tab;
+      // "form" steht hier, obwohl es auch der Standard unten ist: Die
+      // Manifest-Verknuepfung "Zahlen erfassen" zeigt auf ./?tab=form und traf
+      // bisher nur zufaellig das Richtige. Aendert sich der Standard je, waere
+      // sie stillschweigend kaputt.
+      if (tab === "form" || tab === "time" || tab === "stats" || tab === "history" || tab === "options") return tab;
     } catch {
       /* ignore */
     }
@@ -503,6 +515,13 @@ export default function App() {
   // Toast notification state
   const [toastText, setToastText] = useState("");
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Datenverlust-Schutz (0.9.16) -- Begruendung im Effekt-Block weiter unten.
+  const [speicherUrteil, setSpeicherUrteil] = useState<SpeicherUrteil | null>(null);
+  const [sicherungUrteil, setSicherungUrteil] = useState<SicherungsUrteil | null>(null);
+  const [speicherHinweisAusgeblendet, setSpeicherHinweisAusgeblendet] = useState(false);
+  const [sicherungHinweisAusgeblendet, setSicherungHinweisAusgeblendet] = useState(false);
+  const speicherGeprueftRef = useRef(false);
 
   // --- BERICHTSDATEN (ausgelagert nach hooks/useBerichtsdaten) ---
   // Monatsdaten, Archiv und ihre Speicherung. Steht VOR allen anderen Hooks,
@@ -1180,6 +1199,53 @@ export default function App() {
     onPersistFailure: handleHistoryPersistFailure,
   });
 
+  // --- DATENVERLUST-SCHUTZ (0.9.16) ---
+  //
+  // Bis hierher lag das Archiv in "best effort"-Speicher, den der Browser
+  // jederzeit raeumen darf: iOS loescht ihn bei nicht installierten Seiten nach
+  // sieben Tagen ohne Nutzung, Chrome bei Speicherdruck. Fuer eine App, in der
+  // jemand nach einem Termin Zahlen erfasst und danach zwei Wochen keinen
+  // Termin hat, ist das der Fehler mit dem groessten Schaden.
+  //
+  // Die Beurteilung liegt als reine Funktion in utils/speicherSchutz.ts.
+  useEffect(() => {
+    // Erst wenn die App wirklich steht: Eine Ansage vor dem Laden der
+    // Barrierefreiheits-Einstellungen ginge verloren.
+    if (!reportData) return;
+    if (speicherGeprueftRef.current) return;
+    speicherGeprueftRef.current = true;
+
+    sichereSpeicher().then((lage) => {
+      const urteil = beurteileSpeicher(lage);
+      setSpeicherUrteil(urteil);
+      if (urteil.stufe === "sicher") return;
+
+      // Abgestuft, damit die Warnung nicht abstumpft: "kritisch" heisst, der
+      // Verlust kommt nach dokumentierter Browser-Regel -- das wird bei jedem
+      // Start gesagt, bis es behoben ist. Die weicheren Stufen sagen es einmal;
+      // danach steht es nur noch im Band.
+      const nurEinmal = urteil.stufe !== "kritisch";
+      const einmalSchluessel = "aussendienst_pwa_speicherhinweis_" + urteil.stufe;
+      if (nurEinmal) {
+        if (localStorage.getItem(einmalSchluessel)) return;
+        safeSetItem(einmalSchluessel, "1");
+      }
+      announceToAriaAndSpeech(`${urteil.ansage} ${urteil.rat ?? ""}`.trim(), true);
+    });
+  }, [reportData, announceToAriaAndSpeech]);
+
+  // --- SICHERUNGS-ERINNERUNG ---
+  // Getrennt von der Abgabe-Erinnerung weiter unten: Die erinnert an die
+  // Abgabe an die VL, nicht daran, die Daten vor Verlust zu schuetzen. Bis
+  // 0.9.16 gab es fuer Letzteres gar nichts.
+  useEffect(() => {
+    if (!reportData || !history) return;
+    const hatInhalt =
+      Object.keys(history).length > 0 || monthHasContent(reportData);
+    const urteil = beurteileSicherung(leseLetzteSicherung(), new Date(), hatInhalt);
+    setSicherungUrteil(urteil.faellig ? urteil : null);
+  }, [reportData, history]);
+
   // --- LOKALE MONATSBERICHT-ERINNERUNG (serverlos, ohne Push-Dienst) ---
   useEffect(() => {
     if (!reportData) return;
@@ -1344,7 +1410,9 @@ export default function App() {
             })}
           </nav>
           <div className="p-6 text-center border-t border-[var(--border-color)]">
-             <p className="text-[0.75rem] text-[var(--text-muted)] font-bold opacity-70">
+             {/* Ohne `opacity-70`: Damit lag der Kontrast bei 3,59:1 statt der
+                 geforderten 4,5:1 (WCAG 1.4.3, gemessen von axe-core). */}
+             <p className="text-[0.75rem] text-[var(--text-muted)] font-bold">
                © 2026 Reinecker Vision
              </p>
           </div>
@@ -1548,6 +1616,87 @@ export default function App() {
         </div>
       )}
 
+            {/* SPEICHER-SCHUTZ (0.9.16)
+                Der Browser darf "best effort"-Speicher jederzeit raeumen -- auf
+                iOS bei nicht installierten Seiten nach sieben Tagen ohne
+                Nutzung. Ohne diesen Hinweis verliert jemand einen ganzen Monat,
+                ohne etwas falsch gemacht zu haben.
+                Kein role="alert": Der Effekt sagt den Text bereits ueber
+                announceToAriaAndSpeech an, das ergaebe sonst eine Dopplung. */}
+            {speicherUrteil &&
+              speicherUrteil.stufe !== "sicher" &&
+              !(speicherUrteil.stufe !== "kritisch" && speicherHinweisAusgeblendet) && (
+                <div
+                  className={`p-4 mb-4 rounded-xl border-2 flex flex-col sm:flex-row sm:items-center gap-3 ${
+                    speicherUrteil.stufe === "kritisch"
+                      ? "border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger-text)]"
+                      : "border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)]"
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                    <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                    <p className="text-sm font-bold leading-snug">
+                      {speicherUrteil.ansage}
+                      {speicherUrteil.rat ? " " + speicherUrteil.rat : ""}
+                    </p>
+                  </div>
+                  {/* Kein `whitespace-nowrap` und auf schmalen Geraeten
+                      gestapelt: Nebeneinander ragten die beiden Knoepfe bei
+                      Schriftgroesse "Extra groß" 51 px aus dem 360-px-Bildschirm
+                      (nachgemessen 2026-08-31). */}
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("backup")}
+                      className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-xl font-black text-sm bg-[var(--primary)] text-[var(--primary-text)] hover:brightness-110 transition-all cursor-pointer"
+                    >
+                      Jetzt sichern
+                    </button>
+                    {speicherUrteil.stufe !== "kritisch" && (
+                      <button
+                        type="button"
+                        onClick={() => setSpeicherHinweisAusgeblendet(true)}
+                        aria-label="Hinweis zum Speicherzustand ausblenden"
+                        className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-xl font-black text-sm border-2 border-current hover:brightness-110 transition-all cursor-pointer"
+                      >
+                        Ausblenden
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            {/* SICHERUNGS-ERINNERUNG (0.9.16)
+                Getrennt von der Abgabe-Erinnerung: Die erinnert daran, den
+                Bericht an die VL zu schicken -- nicht daran, die Daten gegen
+                Geraeteverlust zu sichern. Fuer Letzteres gab es bis 0.9.16
+                nichts. */}
+            {sicherungUrteil && !sicherungHinweisAusgeblendet && (
+              <div className="p-4 mb-4 rounded-xl border-2 border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)] flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <p className="text-sm font-bold leading-snug">{sicherungUrteil.ansage}</p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("backup")}
+                    className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-xl font-black text-sm bg-[var(--primary)] text-[var(--primary-text)] hover:brightness-110 transition-all cursor-pointer"
+                  >
+                    Jetzt sichern
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSicherungHinweisAusgeblendet(true)}
+                    aria-label="Erinnerung an die Datensicherung ausblenden"
+                    className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-xl font-black text-sm border-2 border-current hover:brightness-110 transition-all cursor-pointer"
+                  >
+                    Später
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* SPEICHER-FEHLER BANNER: bleibt sichtbar, bis ein Speichervorgang wieder klappt */}
             {storageWriteFailed && (
               <div
@@ -1586,14 +1735,19 @@ export default function App() {
                     übertragen.
                   </p>
                 </div>
-                <div className="flex gap-2 flex-shrink-0">
+                {/* Gestapelt auf schmalen Geraeten: Nebeneinander brauchten die
+                    beiden Knoepfe bei "Extra groß" 390 px in einem 356 px
+                    breiten Band -- 34 px Ueberlauf (nachgemessen 2026-08-31).
+                    Faellt nur auf, wenn eine Live-Verbindung tatsaechlich
+                    abreisst, und war deshalb nie jemandem aufgefallen. */}
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:flex-shrink-0">
                   <button
                     type="button"
                     onClick={() => {
                       setSyncAbbruchAusgeblendet(true);
                       setActiveTab("sync");
                     }}
-                    className="min-h-[44px] px-4 rounded-xl font-black text-sm bg-[var(--warning-solid)] text-[var(--warning-solid-text)] hover:brightness-110 transition-all cursor-pointer whitespace-nowrap focus-visible:ring-4"
+                    className="min-h-[44px] px-4 py-2 w-full sm:w-auto rounded-xl font-black text-sm bg-[var(--warning-solid)] text-[var(--warning-solid-text)] hover:brightness-110 transition-all cursor-pointer focus-visible:ring-4"
                   >
                     Neu verbinden
                   </button>
@@ -1601,7 +1755,7 @@ export default function App() {
                     type="button"
                     onClick={() => setSyncAbbruchAusgeblendet(true)}
                     aria-label="Hinweis zur unterbrochenen Live-Verbindung ausblenden"
-                    className="min-h-[44px] px-4 rounded-xl font-bold text-sm border border-[var(--warning-border)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--warning-bg)] transition-all cursor-pointer whitespace-nowrap focus-visible:ring-4"
+                    className="min-h-[44px] px-4 py-2 w-full sm:w-auto rounded-xl font-bold text-sm border border-[var(--warning-border)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--warning-bg)] transition-all cursor-pointer focus-visible:ring-4"
                   >
                     Ausblenden
                   </button>
@@ -2493,7 +2647,12 @@ export default function App() {
         className="mt-12 pt-6 pb-2 border-t border-[var(--border-color)] text-center text-xs font-bold text-[var(--text-muted)] space-y-4"
         role="contentinfo"
       >
-        <p className="opacity-80 text-[0.75rem]">
+        {/* Kein `opacity-80` mehr: Auf --text-muted angewandt ergab das einen
+            Kontrast von 4,41:1 gegen die geforderten 4,5:1 (WCAG 1.4.3) --
+            gemessen von axe-core, siehe tests/oberflaeche.spec.ts. Die
+            Deckkraft war reine Zier und hat ausgerechnet in einer App fuer
+            sehbehinderte Nutzer Text unlesbarer gemacht. */}
+        <p className="text-[0.75rem]">
           © 2026 Reinecker Vision GmbH | RV Mobil – Konzeptioniert &amp;
           entwickelt von Marc Petry Stramov
         </p>
@@ -2552,11 +2711,13 @@ export default function App() {
             isOpen={true}
             onClose={() => setActiveTab("options")}
             onExport={buildSyncPayload}
-            onImport={(dataStr) => {
+            onImport={(dataStr, strategie) => {
               try {
                 // Gleiche Struktur-Prüfung wie beim Geräte-Sync: Eine
                 // beschädigte Backup-Datei darf die App nicht in den
-                // Fehlerbildschirm schicken.
+                // Fehlerbildschirm schicken. Bleibt hier stehen, weil sie den
+                // konkreten Grund liefert -- handleSyncImport meldet im stillen
+                // Modus nichts.
                 const geprueft = pruefeSyncPaket(JSON.parse(dataStr));
                 if (!geprueft.ok) {
                   const text = `Diese Datei konnte nicht eingespielt werden. ${geprueft.grund}`;
@@ -2564,10 +2725,23 @@ export default function App() {
                   announceToAriaAndSpeech(text, true);
                   return;
                 }
-                ersetzeGesamtstand(geprueft.paket);
+                // Seit 0.9.17 über denselben Weg wie der Geräte-Sync, damit
+                // "Zusammenführen" auch hier möglich ist. Vorher rief diese
+                // Stelle direkt ersetzeGesamtstand -- eine per Datei
+                // übertragene Sicherung löschte damit den Stand des Zielgeräts.
+                const ok = handleSyncImport(dataStr, strategie, { silent: true });
+                if (!ok) {
+                  triggerToast("Fehler beim Laden des Backups.");
+                  announceToAriaAndSpeech("Fehler beim Laden des Backups.", true);
+                  return;
+                }
                 setActiveTab("options");
-                triggerToast("Backup erfolgreich geladen!");
-                announceToAriaAndSpeech("Backup erfolgreich geladen.", true);
+                const text =
+                  strategie === "merge"
+                    ? "Sicherung eingespielt und mit den vorhandenen Daten zusammengeführt."
+                    : "Sicherung eingespielt. Die vorhandenen Daten wurden ersetzt.";
+                triggerToast(text);
+                announceToAriaAndSpeech(text, true);
               } catch (e) {
                 triggerToast("Fehler beim Laden des Backups.");
                 announceToAriaAndSpeech("Fehler beim Laden des Backups.", true);

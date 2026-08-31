@@ -49,6 +49,19 @@ jobs:
       - name: Rechenkerne und Textkodierung pruefen
         run: npm run check
 
+      # Ab 0.9.18. Bis dahin pruefte dieses Tor Typen, Rechenkerne und
+      # Sicherheitsmeldungen -- ausgerechnet die Barrierefreiheit, also die
+      # erklaerte Kernanforderung dieser App, war ungeprueft. Geprueft werden
+      # waagerechter Ueberlauf bei 360 px in allen drei Schriftgroessen,
+      # Trefferflaechen nach WCAG 2.5.8 und ein axe-core-Durchlauf je Ansicht.
+      # Nur Chromium: Ein zweiter Motor verdoppelt die Laufzeit, ohne die
+      # Fehlerklasse zu erweitern.
+      - name: Browser fuer die Oberflaechenpruefung
+        run: npx playwright install --with-deps chromium
+
+      - name: Oberflaeche und Barrierefreiheit pruefen
+        run: npm run check:ui
+
       - name: Bekannte Sicherheitsluecken melden
         # Nur Bericht, kein Abbruch: Ein neuer Fund in einer Unterabhaengigkeit
         # soll nicht die Veroeffentlichung einer fertigen Version blockieren.

@@ -1,7 +1,7 @@
 {
   "name": "rv-monatsreport",
   "private": true,
-  "version": "0.9.15",
+  "version": "0.9.18",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -12,7 +12,8 @@
     "deploy": "gh-pages -d dist",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "check": "tsx scripts/pruefen.ts"
+    "check": "tsx scripts/pruefen.ts",
+    "check:ui": "playwright test"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
@@ -31,6 +32,8 @@
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.62.1",
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.18",

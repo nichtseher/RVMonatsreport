@@ -10,6 +10,233 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-31 — v0.9.18: Barrierefreiheit kommt ins Deploy-Tor
+
+Bis hierher prüfte das Tor Typen, Rechenkerne und Sicherheitsmeldungen.
+**Ausgerechnet die Barrierefreiheit — die erklärte Kernanforderung dieser App —
+war ungeprüft.** Jetzt läuft `npm run check:ui` (Playwright + `@axe-core/
+playwright`) vor dem Bauen: 48 Prüfungen, zwei Geräteprofile, rund 70 Sekunden.
+
+### Eine Roadmap-Annahme widerlegt
+
+Diese Datei und die ROADMAP hielten die Touch-Zweige (`@media (pointer:
+coarse)`) für nicht prüfbar, weil ein verkleinertes Desktop-Fenster weiterhin
+`pointer: fine` meldet. Das stimmt für ein Browserfenster, aber nicht für
+Playwrights Geräte-Nachbildung: Mit `hasTouch` und `isMobile` kippt die
+Medienabfrage wirklich. Der Prüffall `pruefe-medienabfrage` weist das nach,
+statt es zu behaupten — `pointer: coarse` = true, `maxTouchPoints` > 0.
+
+### Der Lauf hat sofort zwei echte Fehler gefunden
+
+Beide derselbe Fehlgriff an zwei Stellen: eine dekorative Deckkraft auf ohnehin
+gedämpftem Text.
+
+| Stelle | Klasse | Kontrast | gefordert |
+|---|---|---|---|
+| Fußzeile (`App.tsx:2648`) | `opacity-80` | **4,41:1** | 4,5:1 |
+| Seitenleiste (`App.tsx:1413`) | `opacity-70` | **3,59:1** | 4,5:1 |
+
+Beide Male reine Zier — und beide Male hat sie in einer App für sehbehinderte
+Nutzer Text unlesbarer gemacht. Deckkraft entfernt, keine andere Änderung nötig.
+
+### Ein Falschbefund, der fast durchgegangen wäre
+
+Der erste Lauf meldete **9 von 30 Fehlschlägen** — darunter „Formular bei
+Schriftgröße normal", eine Ansicht, die ich zwei Stunden vorher von Hand auf
+exakt 360 px gemessen hatte. Das Muster war unregelmäßig: „Zeit bei normal"
+grün, „Zeit bei large" rot.
+
+Ursache war nicht das Layout, sondern der geteilte Dev-Server: Vite übersetzt
+Module auf Zuruf, und gleichzeitige Seitenaufrufe mehrerer Arbeiter rissen den
+Ausführungskontext mitten in der Messung weg. **Mit `--workers=1` lief exakt
+derselbe Test durch.** Die Konfiguration steht deshalb dauerhaft auf seriell;
+der ganze Lauf dauert ohnehin nur gut eine Minute. Ohne die Gegenprobe hätte
+ich acht Layouts „repariert", die nie kaputt waren.
+
+### Was der Lauf abdeckt — und was nicht
+
+Abgedeckt: waagerechter Überlauf für fünf Ansichten × drei Schriftgrößen ×
+zwei Geräteprofile, Trefferflächen gegen die 24-px-Schwelle aus WCAG 2.5.8 AA
+(nicht 44 px — das ist Stufe AAA und war nie die Anforderung), axe-core je
+Ansicht auf `critical` und `serious`.
+
+**Nicht abgedeckt:** alles, was einen Screenreader oder ein echtes Gerät
+braucht. axe findet erfahrungsgemäß einen Teil der WCAG-Verstöße, nie alle. Ein
+grüner Lauf ist keine Konformitätsaussage, und die Prüfmeldung sagt das auch
+so. Ebenfalls nicht abgedeckt: die Kamerawege und die Modaldialoge, weil beide
+eine Ansteuerung über Klickfolgen bräuchten — das ist der nächste Ausbau.
+
+---
+
+## 2026-08-31 — v0.9.17: Die eine Minute gab es nie
+
+Ausgangspunkt war die Rückmeldung, dass die blinden Kolleginnen und Kollegen
+den Geräte-Abgleich nicht bedienen können. Beim Lesen des Codes zeigte sich:
+**Es fehlt keine Funktion.** Der kameralose Weg ist in beide Richtungen
+vollständig gebaut — `startSend` erzeugt immer auch einen Textcode, und
+`renderScannerView` enthielt ein Einfügefeld. Es war nur der **vierte** Block,
+hinter Kamerabild, Fortschrittsbalken und Hinweistext, innerhalb eines
+Abschnitts, der sich „Einmal-Übertragung per QR-Code" nannte. „Zu komplex" hieß
+nicht „fehlt", sondern „nicht auffindbar".
+
+### Die Messung, die den Rest entschieden hat
+
+Im Text stand „am besten innerhalb von einer Minute". Im Code gab es dafür
+keinen Beleg — die Frist war eine Vermutung. Nachgebaut wurde der echte
+Ablauf: A erzeugt ein Angebot, B erzeugt die Antwort, und A bekommt sie erst
+nach einer Wartezeit.
+
+| Antwort eingesetzt nach | Ausgang |
+|---|---|
+| 117 s | **beide Seiten verbunden** |
+| 180 s | **beide Seiten verbunden** |
+| 300 s | ICE verbunden, aber `B.connectionState = failed` — DTLS abgelaufen |
+
+Das nutzbare Fenster liegt also **zwischen drei und fünf Minuten**, nicht bei
+einer. Der Antwort-Code ist damit gut dreimal so lange gültig wie behauptet —
+genug für eine Übertragung über das Teilen-Menü, zu wenig für „später".
+
+Nebenbei gemessen: Der Verbindungscode ist **670 Zeichen roh, 627 komprimiert**.
+Die Komprimierung bringt hier praktisch nichts, weil base64 wieder auffüllt,
+was deflate spart. Das bestätigt die frühere Verwerfung, die Codes kürzen zu
+wollen: Es würde nichts ändern.
+
+**Vorbehalt, der dazugehört:** gemessen mit zwei Gegenstellen im selben
+Browser auf demselben Rechner. Mit zwei echten Geräten im WLAN kann das
+anders aussehen — und auf dem Handy kommt ein Effekt hinzu, den diese Messung
+gar nicht erfassen kann: Wer die App verlässt, um den Code einzufügen, schickt
+sie in den Hintergrund, wo das Betriebssystem sie anhalten darf. Es ist gut
+möglich, dass die erlebte „eine Minute" in Wahrheit daher kam und nie eine
+ICE-Frist war.
+
+### Was umgebaut ist
+
+- **Das Einfügefeld steht im Empfangsbildschirm jetzt an erster Stelle**, die
+  Kameravorschau zuletzt. Nachgeprüft, Lesereihenfolge: Beschriftung „Ohne
+  Kamera: Code einfügen" → Eingabefeld → „Code übernehmen" → Kameravorschau.
+- **Einfügen genügt.** Ein gültiger, unverschlüsselter Code wird beim `onPaste`
+  sofort übernommen. Das anschließende Suchen nach der Schaltfläche war der
+  Schritt, an dem mit Screenreader die Zeit verloren ging.
+- **Kein Auto-Fokus** — bewusst. Er würde auf dem Handy die Bildschirmtastatur
+  hochklappen und ausgerechnet die Kameravorschau verdecken, die sehende
+  Nutzer hier brauchen. Die erste Position in der Lesereihenfolge genügt.
+- **Beschriftungen nennen das Ziel, nicht die Technik:** „Daten an anderes
+  Gerät senden" statt „Dieses Gerät zeigt QR-Codes an", Abschnittsüberschrift
+  „Einmal übertragen — auch ohne Kamera".
+- **Die Frist ist aus allen Texten raus.** Ohne Ersatzzahl: Die Messung
+  rechtfertigt „lassen Sie sich Zeit", nicht ein neues Versprechen. Ein
+  Zeitlimit ohne Verlängerung verstößt zudem gegen WCAG 2.2.1.
+- **Der Backup-Import kann zusammenführen.** Bis hierher rief `App.tsx` direkt
+  `ersetzeGesamtstand` — eine per Datei übertragene Sicherung löschte damit den
+  Stand des Zielgeräts. Für die blinden Kollegen ist die Datei der
+  zuverlässigste Übertragungsweg überhaupt, und ausgerechnet der war der
+  gefährlichste. Die Wahl fällt jetzt **vor** der Dateiauswahl, wie beim
+  Verschlüsselungs-Schalter, statt in einem Dialog danach.
+
+### Nachgemessen
+
+Kein waagerechter Überlauf im Sync-Fenster und im Backup-Bildschirm, bei
+360 px in allen drei Schriftgrößen (360 px Scrollbreite bei 360 px
+Fensterbreite). Prüfungen unverändert 135, `tsc --noEmit` fehlerfrei.
+
+### Was offen bleibt
+
+- **Die Kamera startet weiterhin von selbst**, sobald der Empfangsbildschirm
+  öffnet. Sie erst auf Anforderung zu starten, ist der nächste Schritt — dafür
+  fehlt hier eine Umgebung mit echter Kamera, in der sich das Anhalten und
+  Wiederanlaufen prüfen lässt.
+- **`navigator.share()` für die Codes** — erst sinnvoll zu bauen, wenn geklärt
+  ist, ob bei den Kollegen die geteilte Zwischenablage eingerichtet werden kann.
+- Der Durchlauf mit NVDA und VoiceOver.
+
+---
+
+## 2026-08-31 — v0.9.16: Der Speicher war nie angefordert
+
+Der Befund kam aus einer Frage nach blinden Flecken, nicht aus der Roadmap.
+**`navigator.storage.persist()` kam im gesamten Projekt nicht vor** — geprüft,
+kein einziger Treffer. Damit lag das Archiv in „best effort"-Speicher, den der
+Browser jederzeit räumen darf. Auf iOS heißt das bei Seiten, die nicht zum
+Home-Bildschirm hinzugefügt wurden: **nach sieben Tagen ohne Nutzung ist alles
+weg** — IndexedDB, localStorage und Cache zusammen.
+
+Für eine App, deren Zweck es ist, Zahlen direkt nach dem Termin zu erfassen und
+deren Nutzer zwei Wochen ohne Termin haben können, ist das der Fehler mit dem
+größten Schaden: ein kompletter Monat, ohne dass jemand etwas falsch macht.
+
+Drei Lücken verstärkten sich dabei gegenseitig:
+1. kein `persist()`,
+2. keine Sicherungs-Erinnerung — die vorhandene Erinnerung am 8. betrifft die
+   *Abgabe an die VL*, nicht das Sichern (`App.tsx:1193`),
+3. der Geräte-Sync als Rettungsweg ist genau der, den die blinden Kollegen
+   laut Rückmeldung aus dem Außendienst nicht bedienen können.
+
+### Was umgesetzt ist
+
+`utils/speicherSchutz.ts` mit zwei reinen Funktionen (`beurteileSpeicher`,
+`beurteileSicherung`) plus den Browser-Zugriffen. Die Abstufung ist bewusst
+unsymmetrisch: **„kritisch" bekommt nur der Fall, in dem der Verlust nach
+dokumentierter Browser-Regel eintritt** (WebKit + nicht installiert), nicht der,
+in dem er eintreten *kann*. Nur „kritisch" wird bei jedem Start angesagt; die
+weicheren Stufen sagen es einmal und stehen danach nur noch im Band. Eine
+Warnung, die immer kommt, wird weggehört — und trifft dann auch den Ernstfall
+nicht mehr.
+
+Der Absturz-Bildschirm bot bis hierher als einzigen Ausweg „Kompletten Reset
+durchführen" an, also `localStorage.clear()` plus `clearIndexedDb()`. **Für
+einen blinden Nutzer war das die einzige erreichbare Taste.** Jetzt steht
+darüber „Daten als Datei sichern", das direkt aus IndexedDB liest — ohne den
+React-Zustand, der an dieser Stelle ja gerade beschädigt ist.
+
+### Nachgemessen
+
+Das Rettungspaket hat bewusst dieselbe Form wie eine normale Datensicherung.
+Im Browser gegen `pruefeSyncPaket()` geprüft, mit gefülltem Archiv:
+
+| | |
+|---|---|
+| Schlüssel im Paket | `app, fmt, appFields, carryover, history, reportData, gerettetAm` |
+| Monate im Paket | die vorhandenen, vollständig |
+| `pruefeSyncPaket().ok` | **true** |
+
+Eine Rettungsdatei, die niemand wieder einlesen kann, wäre keine — deshalb ist
+das die entscheidende Prüfung und nicht die Dateigröße.
+
+### Ein Fehler, den ich selbst eingebaut und dann gefunden habe
+
+Die beiden Knöpfe im neuen Band standen nebeneinander mit `whitespace-nowrap`.
+Bei 360 px Breite und Schriftgröße „Extra groß" ergab das **411 px
+Scrollbreite gegen 360 px Fensterbreite** — 51 px Überlauf. Gegengeprobt durch
+Ausblenden des Bands: ohne es exakt 360 px. Behoben durch Stapeln auf schmalen
+Geräten.
+
+**Beim Nachmessen fiel derselbe Fehler an einer älteren Stelle auf:** Das Band
+„Live-Verbindung unterbrochen" braucht mit seinen zwei Knöpfen bei „Extra groß"
+**390 px in einem 356 px breiten Band** — 34 px Überlauf. Es fällt nur auf, wenn
+eine Live-Verbindung tatsächlich abreißt, und war deshalb nie jemandem
+aufgefallen. Gleich mitbehoben.
+
+| Schriftgröße | vorher | nachher |
+|---|---|---|
+| normal | 360 px | 360 px |
+| groß | 360 px | 360 px |
+| extra groß | **411 px** | **360 px** |
+
+Knopfhöhen nach der Änderung: 44 / 50 / 60 px — in allen drei Stufen über den
+43,5 px, die der Rendierungsfaktor dieser Umgebung erlaubt.
+
+Prüfungen **121 → 135**.
+
+### Was nicht geprüft werden konnte
+
+- **Die Sieben-Tage-Regel auf einem echten iPhone.** Das Browserverhalten ist
+  dokumentiert, die Wirkung im installierten Zustand ist es hier nicht. Der
+  kritische Zweig wurde nur über die reine Funktion geprüft, nicht am Gerät.
+- **Wie sich die Ansage mit NVDA oder VoiceOver anhört.** Der Text ist als
+  Vollsatz formuliert, mehr lässt sich von hier aus nicht sagen.
+
+---
+
 ## 2026-08-22 — v0.9.15: Schritt 6 — der Kern
 
 Letzter Schritt der Aufteilung. `useBerichtsdaten` übernimmt Monatsdaten,

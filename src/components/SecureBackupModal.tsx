@@ -1,18 +1,31 @@
 import React, { useState, useRef } from "react";
 import { ArrowLeft, Download, Upload, Share2, Lock, Unlock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { encryptData, decryptData } from "../utils/crypto";
+import { merkeSicherung } from "../utils/speicherSchutz";
 import { motion } from "framer-motion";
 
 interface SecureBackupModalProps {
   isOpen: boolean;
   onClose: () => void;
   onExport: () => string; // Returns stringified JSON of all data
-  onImport: (data: string) => void;
+  onImport: (data: string, strategie: "merge" | "replace") => void;
 }
 
 export default function SecureBackupModal({ isOpen, onClose, onExport, onImport }: SecureBackupModalProps) {
   const [password, setPassword] = useState("");
   const [useEncryption, setUseEncryption] = useState(false);
+  /**
+   * Standard ist ZUSAMMENFÜHREN (0.9.17).
+   *
+   * Bis dahin konnte das Einspielen einer Sicherung ausschließlich ersetzen —
+   * `App.tsx` rief direkt `ersetzeGesamtstand`, während der Geräte-Sync längst
+   * beide Wege anbot. Für die blinden Kolleginnen und Kollegen ist die Datei
+   * der zuverlässigste Übertragungsweg überhaupt (kein Kameravisier, keine
+   * Frist) — und ausgerechnet der löschte auf dem Zielgerät alles, was dort
+   * schon stand. Auf einem leeren Gerät liefert Zusammenführen dasselbe
+   * Ergebnis wie Ersetzen, ist also nie schlechter.
+   */
+  const [importErsetzen, setImportErsetzen] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error" | "info"; msg: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,6 +57,9 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
+      // Erst hier, nicht vor dem Klick: Die Erinnerung soll nur verstummen,
+      // wenn tatsächlich eine Datei entstanden ist.
+      merkeSicherung();
       setStatus({ type: "success", msg: "Backup erfolgreich heruntergeladen." });
     } catch (error: any) {
       setStatus({ type: "error", msg: `Export fehlgeschlagen: ${error.message}` });
@@ -74,6 +90,10 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
           text: "Hier ist mein verschlüsseltes Backup.",
           files: [file],
         });
+        // Ein abgebrochener Teilen-Dialog landet im catch (AbortError) und
+        // zaehlt damit nicht als Sicherung -- dieselbe Unterscheidung wie beim
+        // Excel-Export.
+        merkeSicherung();
         setStatus({ type: "success", msg: "Backup erfolgreich geteilt." });
       } else {
         setStatus({ type: "info", msg: "Teilen wird auf diesem Gerät nicht unterstützt. Bitte nutze den Download." });
@@ -110,8 +130,13 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
         // Validate JSON
         JSON.parse(finalDataStr);
         
-        onImport(finalDataStr);
-        setStatus({ type: "success", msg: "Backup erfolgreich wiederhergestellt!" });
+        onImport(finalDataStr, importErsetzen ? "replace" : "merge");
+        setStatus({
+          type: "success",
+          msg: importErsetzen
+            ? "Backup eingespielt – die vorhandenen Daten wurden ersetzt."
+            : "Backup eingespielt und mit den vorhandenen Daten zusammengeführt.",
+        });
       } catch (error: any) {
         setStatus({ type: "error", msg: error.message || "Fehler beim Einlesen der Datei." });
       }
@@ -242,6 +267,30 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
               aria-hidden="true"
             />
             
+            {/* Die Wahl faellt VOR der Dateiauswahl, wie beim
+                Verschluesselungs-Schalter oben -- nicht in einem Dialog danach,
+                den man mit Screenreader erst wieder suchen muesste. */}
+            <div className="sm:col-span-2 p-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)]">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={importErsetzen}
+                  onChange={(e) => setImportErsetzen(e.target.checked)}
+                  className="mt-0.5 w-5 h-5 flex-shrink-0 accent-[var(--danger-solid)] cursor-pointer"
+                />
+                <span className="text-sm">
+                  <span className="font-black text-[var(--text-color)]">
+                    Vorhandene Daten ersetzen statt zusammenführen
+                  </span>
+                  <span className="block text-xs text-[var(--text-muted)] mt-0.5 font-normal">
+                    Ohne Haken werden beide Stände vereinigt – jede Kategorie einzeln, bei
+                    Änderungen an derselben Kategorie gilt die jüngere. Das ist der
+                    empfohlene Weg. Mit Haken wird alles auf diesem Gerät überschrieben.
+                  </span>
+                </span>
+              </label>
+            </div>
+
             <button
               onClick={handleImportClick}
               className="sm:col-span-2 flex items-center justify-center gap-2 p-4 rounded-xl bg-[var(--card-bg)] border-2 border-dashed border-[var(--border-color)] hover:border-[var(--cat-4)] hover:bg-[var(--info-bg)] text-[var(--text-color)] transition-all focus:ring-4 focus:ring-[var(--border-focus)] outline-none group"

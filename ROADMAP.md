@@ -1,10 +1,10 @@
 # Roadmap — RV Monatsreport (RV Mobil)
 
-Stand: 2026-08-02, Version 0.9.4
+Stand: 2026-08-31, Version 0.9.15
 
 Diese Roadmap ist aus **gemessenen Befunden** entstanden, nicht aus Vermutungen.
-Wo eine Zahl steht, wurde sie im Browser nachgemessen. Punkte ohne Beleg sind
-als Einschätzung gekennzeichnet.
+Wo eine Zahl steht, wurde sie nachgemessen. Punkte ohne Beleg sind als
+Einschätzung gekennzeichnet, und wo etwas nicht prüfbar war, steht das da.
 
 Leitplanken, die für jeden Punkt gelten:
 - **Serverlos bleibt Pflicht** (DSGVO-Zusage der App). Kein Backend, keine
@@ -16,346 +16,404 @@ Leitplanken, die für jeden Punkt gelten:
 
 ---
 
-## Was 0.8.0 gebracht hat (erledigt)
+## Was erledigt ist
 
-| Bereich | Vorher (gemessen) | Nachher (gemessen) |
-|---|---|---|
-| Kopfbereich Höhe (390 px Gerät) | 330 px | **182 px** |
-| Kopfbereich Höhe (360 px Gerät) | 383 px | **182 px** |
-| Schnell-Tasten ohne Scrollen sichtbar | 0 von 6 | **6 von 6** |
-| Waagerechter Überlauf bei 360 px | ja (368 px Scrollbreite) | **nein** |
-| Inhaltsbreite bei 360 px | 328 px | 337 px |
+Die ausführlichen Messprotokolle stehen im [DEVLOG](DEVLOG.md). Hier nur das
+Ergebnis, damit diese Datei nach vorn zeigt statt nach hinten.
 
-Dazu: interaktiver Einstieg bei Erstnutzung (fünf Schritte, jederzeit
-überspringbar, stellt Name, Schriftgröße, Farbschema und Sprachansagen direkt
-ein).
-
----
-
-## Was 0.9.0 gebracht hat (erledigt)
-
-Umgesetzt wurden die Punkte 2, 3 und 5 der ursprünglichen 0.9.0-Liste. Bei der
-Vermessung kam ein schwererer, vorher unbekannter Fehler zum Vorschein:
-
-| Bereich | Vorher (gemessen, 360 px) | Nachher (gemessen) |
-|---|---|---|
-| Zähler-Tastenreihe bei „Groß" | ragt 76 px aus dem Bildschirm | **vollständig sichtbar** |
-| Zähler-Tastenreihe bei „Extra groß" | ragt 163 px aus dem Bildschirm | **vollständig sichtbar** |
-| Waagerechter Überlauf bei „Extra groß" | ja (436 px Inhalt) | **nein (360 px)** |
-| Bedienelemente unter 44 × 44 px | 56 (über alle Ansichten) | **0** |
-| Höhe einer Zählerkarte (normale Schrift) | 137 px | 133 px |
-
-Dazu: Rückfrage und **Rückgängig** beim Monatsabschluss, keine leeren Monate
-mehr im Archiv, Excel-Export aus Formular und Archiv erzeugen dieselbe Datei,
-Fokusfalle des Einrichtungs-Assistenten geschlossen. Einzelheiten und
-Messmethode im [DEVLOG](DEVLOG.md).
-
-**Korrektur einer Annahme dieser Roadmap:** Punkt 3 stand hier als
-„Monatsabschluss ist unumkehrbar". Das war falsch — der Monat wandert
-vollständig ins Archiv und ist über die Monatsauswahl erreichbar (nachgeprüft).
-Die vorgeschlagene 30-Tage-Aufbewahrung hätte ein Problem gelöst, das es nicht
-gibt. Das echte Problem war die fehlende Rückfrage und der fehlende sichtbare
-Rückweg; genau das ist jetzt umgesetzt.
-
----
-
-## Was 0.9.4 gebracht hat (erledigt)
-
-Die beiden 1.0-Punkte „Automatische Tests für die Rechenkerne" und
-„Automatische Prüfung bei jedem Push" sind umgesetzt — vorgezogen, weil jeder
-Push sofort veröffentlicht und es bis dahin **keinerlei** automatische
-Kontrolle gab.
-
-- `npm run check` prüft 37 Fälle ohne Test-Framework (`tsx` genügt):
-  Zusammenführen beim Geräte-Sync inklusive der feldweisen Zeitstempel,
-  Excel-Summenformeln, Arbeitszeit über Mitternacht, Backup-Ver- und
-  -Entschlüsselung, stabile Textform.
-- Dazu die Prüfung auf **doppelt kodierte Zeichen** in `src/` — der Fehler,
-  der 0.7.0 unbemerkt live ging. Gegengeprobt: Mit absichtlich zerstörtem Text
-  schlägt sie an und bricht mit Fehlercode ab.
-- Der Deploy-Workflow führt `lint`, `check` und `npm audit` **vor** dem Bauen
-  aus. Schlägt etwas fehl, wird nichts veröffentlicht und der bisherige Stand
-  bleibt online.
-- Nebenbei: Die Arbeitszeit-Berechnung lag als lokale Funktion in der über
-  1000 Zeilen langen `ClockInWidget.tsx` und war dadurch nicht prüfbar. Sie
-  liegt jetzt in `src/utils/timeUtils.ts` und liefert bei unbrauchbaren
-  Eingaben 0 statt `NaN`.
-
----
-
-## Was 0.9.5 gebracht hat (erledigt)
-
-Vollständige Prüfung des Sync-Bereichs am laufenden System (Konzept und
-Belege: [KONZEPT-0.9.5.md](KONZEPT-0.9.5.md)). Der Bereich lief in seinen
-normalen Abläufen, hatte aber drei Lücken — zwei davon reproduziert:
-
-- **Der Import prüfte die Struktur nicht.** Ein Paket mit gültigem JSON, aber
-  unsinnigem Inhalt führte beim Ersetzen in den Fehlerbildschirm. Jetzt prüft
-  `pruefeSyncPaket()` jedes eingehende Paket — im Sync-Fenster, im
-  Live-Kanal und beim Einspielen einer Datensicherung.
-- **„Alles ersetzen" löste mit einem Tipp aus.** Jetzt mit Rückfrage und
-  konkreten Zahlen (Monate hier, Monate im Paket).
-- **Der kopierte Textcode war unverschlüsselt**, während das Fenster zum
-  Mailversand riet und gleichzeitig „ohne Zwischenspeicherung auf fremden
-  Servern" versprach. Jetzt optionaler Passwortschutz (`RVC2:`, AES-GCM) und
-  ehrliche Hinweise pro Übertragungsweg.
-
-`npm run check` deckt jetzt 52 Fälle ab (vorher 37).
-
----
-
-## Version 0.9.x — was offen blieb
-
-### 1. Test auf echten Geräten (höchste Priorität, blockiert 1.0)
-Bisher wurde alles in einem Desktop-Browser mit verkleinertem Fenster geprüft.
-**Nicht verifizierbar war bisher:**
-- Die Touch-Zweige der CSS-Regeln (`@media (pointer: coarse)`) — ein
-  verkleinertes Desktop-Fenster meldet weiterhin `pointer: fine`.
-- Ob sich beim Tippen auf die Zähler versehentlich Text markiert.
-- Verhalten der Bildschirmtastatur: Verdeckt sie Eingabefelder? Scrollt die
-  Seite korrekt nach?
-- iOS-Safe-Areas (Notch, Home-Indikator) auf einem echten iPhone.
-- Kamera-Sync mit zwei physischen Geräten im selben WLAN.
-- Screenreader-Durchlauf mit NVDA (PC), VoiceOver (iOS), TalkBack (Android).
-
-Ohne diese Tests ist eine 1.0 nicht seriös vertretbar.
-
-### 2. Excel-Export im Firmenformat — ERLEDIGT in 0.9.11 (2026-08-19)
-Die Zulieferung kam (`2600_apa_pd.xls`, Stand 01.2026). Umgesetzt ist mehr als
-hier stand: Blatt 1 **ist** die Vorlage, kein Nachbau — die Originaldatei wird
-eingebettet und nur befüllt, samt gelber Eingabefelder, Rahmen, Verbünden und
-der Formel in D10. Alles, wofür die Vorlage keine Zeile hat, steht auf Blatt 2,
-die Schichten auf Blatt 3.
-
-Zwei Nebenwirkungen, die hier nicht vorhergesehen waren:
-- Der Abgleich hat ein **fehlendes Feld** zutage gefördert: „Vorführungen
-  Envision" (D22) gab es in der App nicht; die Zeile wäre in jedem bisherigen
-  Bericht leer geblieben.
-- Die Anforderung „gelbe Markierung" hat eine **neue Abhängigkeit** erzwungen
-  (ExcelJS). Gemessen: SheetJS in der Community-Fassung schreibt keine
-  Zellformatierung. Kosten offen dokumentiert im DEVLOG — u. a. eine bekannte
-  Sicherheitsmeldung in einer Unterabhängigkeit (`uuid`).
-
-**Nachgemessen am 2026-08-22 — die 9 Sekunden aus dem ersten Eindruck waren ein
-Messfehler.** Sie bestanden vollständig aus dem einmaligen Modulladen über den
-unkompilierten Dev-Server, nicht aus der Arbeit. Sauber getrennt gemessen, voller
-Monat mit 22 Schichten:
-
-| | |
+| Version | Ergebnis (gemessen) |
 |---|---|
-| Modul laden (gecacht) | 13 ms |
-| Erster Export | 495 ms |
-| Folgeexporte | 83–144 ms (Median 139) |
+| 0.8.0 | Kopfbereich 383 → **182 px** bei 360 px Gerätebreite. Schnell-Tasten ohne Scrollen sichtbar: 0 von 6 → **6 von 6**. Waagerechter Überlauf beseitigt. Einstieg bei Erstnutzung. |
+| 0.9.0 | Zähler-Tastenreihe ragte bei „Extra groß" 163 px aus dem Bildschirm → **vollständig sichtbar**. Bedienelemente unter 44 × 44 px: 56 → **0**. Rückfrage und Rückgängig beim Monatsabschluss. Excel-Export aus Formular und Archiv erzeugen dieselbe Datei. |
+| 0.9.4 | `npm run check` eingeführt (37 Fälle, ohne Test-Framework). Deploy-Gate prüft `lint`, `check`, `audit` **vor** dem Bauen. Prüfung auf doppelt kodierte Zeichen — der Fehler, der 0.7.0 unbemerkt live ging. |
+| 0.9.5 | Sync-Bereich vollständig geprüft. `pruefeSyncPaket()` prüft jetzt jedes eingehende Paket. „Alles ersetzen" mit Rückfrage. Textcode wahlweise verschlüsselt (`RVC2:`, AES-GCM). 52 Prüfungen. |
+| 0.9.11 | Excel-Export im Firmenformat. Die Originalvorlage wird eingebettet und befüllt, kein Nachbau. Dabei ein **fehlendes Feld** entdeckt („Vorführungen Envision", D22) — die Zeile wäre in jedem bisherigen Bericht leer geblieben. Export gemessen: 83–144 ms nach dem ersten Lauf. |
+| 0.9.12 | Status je Monat im Archiv („Gesendet TT.MM.JJJJ" / „Noch offen") in der Kopfzeile. Eigener Zeitstempel `sentUpdatedAt`, damit eine spätere Zahleneingabe auf dem zweiten Gerät die Markierung nicht löscht. |
+| 0.9.13 | `strict: true`. Die zunächst gemeldeten 3022 Fehler waren ein Messartefakt fehlender React-Typen — echt waren **57**. Zwei ungefundene Fehler kamen dabei ans Licht: ein nie funktionierender SVG-Tooltip und ein gelöschter Versandstatus beim Monatswechsel. |
+| 0.9.14 / 0.9.15 | `App.tsx` **3.932 → 2.844 Zeilen**. Sechs Hooks, zehn Hilfsmodule. In jedem herausgelösten Block steckte eine ungeprüfte reine Funktion; eine davon (`verrechneSchicht`) enthielt einen echten Rundungsfehler. Prüfungen 91 → **121**. |
 
-Ein Fortschrittshinweis ist damit nicht nötig. Was auf dem Handy hinzukommt, ist
-das einmalige Herunterladen des ExcelJS-Chunks (271 KB gzip) — danach liegt er
-im Cache des Service Workers.
-
-### 3. Status je Monat im Archiv — ERLEDIGT in 0.9.12 (2026-08-22)
-Jeder Monat trägt jetzt ein Abzeichen „Gesendet TT.MM.JJJJ" oder „Noch offen" —
-**in der Kopfzeile, nicht im ausklappbaren Teil**, weil der ganze Zweck ist,
-offene Monate zu sehen, ohne jeden einzeln aufzuklappen. Der Stand wird beim
-Export automatisch gesetzt (nur bei tatsächlich geteilter oder
-heruntergeladener Datei — ein abgebrochener Teilen-Dialog markiert nichts) und
-lässt sich von Hand korrigieren.
-
-Der nicht offensichtliche Teil war der Geräte-Abgleich: Die Markierung läuft
-über einen **eigenen** Zeitstempel (`sentUpdatedAt`), nicht über `savedAt`.
-Sonst hätte eine spätere Zahleneingabe auf dem zweiten Gerät die Markierung des
-ersten gelöscht — derselbe Fehler, der bis 0.9.0 die Zählerstände traf. Als
-Prüffall reproduziert.
+**Zwei Korrekturen an früheren Annahmen dieser Datei**, damit sie nicht
+weiterwandern:
+- „Monatsabschluss ist unumkehrbar" war falsch. Der Monat wandert vollständig
+  ins Archiv und ist über die Monatsauswahl erreichbar. Die vorgeschlagene
+  30-Tage-Aufbewahrung hätte ein Problem gelöst, das es nicht gibt.
+- Die beiden „Offenen Fragen an den Auftraggeber" sind beantwortet: Die
+  Excel-Vorlage kam mit 0.9.11, und der Deploy-Weg ist geklärt — der
+  GitHub-Actions-Workflow bestimmt, was live ist, `npm run deploy` ist
+  Ballast (siehe 0.9.20).
 
 ---
 
-## Version 0.9.13 – 0.9.16 — der Weg zur 1.0
+## 0.9.16 — Datenverlust verhindern — ERLEDIGT (2026-08-31)
 
-Aufgestellt am 2026-08-22, nachdem der 0.9.x-Block abgeschlossen war. Die
-Reihenfolge ist nicht beliebig: Jeder Schritt macht den nächsten sicherer.
-Alle Zahlen unten sind gemessen, nicht geschätzt.
+Umgesetzt: `persist()` wird angefordert und ausgewertet, die Lage wird abgestuft
+gemeldet und im kritischen Fall angesagt, es gibt eine eigene
+Sicherungs-Erinnerung, und der Absturz-Bildschirm bietet die Rettung als Datei
+an, **bevor** er das Löschen anbietet. Prüfungen **121 → 135**.
 
-### 0.9.13 — Das Typnetz aufspannen — ERLEDIGT (2026-08-22)
+Die entscheidende Messung war nicht die Dateigröße, sondern ob sich die
+Rettungsdatei überhaupt zurückholen lässt — eine, die niemand einlesen kann,
+wäre keine. Im Browser gegen `pruefeSyncPaket()` geprüft, mit gefülltem Archiv:
+Paket enthält `app, fmt, appFields, carryover, history, reportData` und wird
+angenommen (`ok: true`).
 
-`strict: true` steht, `npm run lint` läuft mit **0 Fehlern**, der Deploy-Gate
-sichert es ab (denn `lint` *ist* dieses `tsc --noEmit`).
+**Ein Fehler dabei selbst eingebaut und gefunden:** Die zwei Knöpfe des neuen
+Bands standen nebeneinander mit `whitespace-nowrap` und ergaben bei 360 px und
+Schriftgröße „Extra groß" **411 px Scrollbreite** — gegengeprobt durch
+Ausblenden des Bands: ohne es exakt 360 px. Behoben durch Stapeln.
 
-Der Weg: 3022 gemeldete Fehler waren ein Messartefakt der fehlenden
-React-Typen. Nach deren Installation waren es 57 — davon 4 unter
-`noImplicitAny` und 56 unter `strictNullChecks`, alle in `App.tsx`, überwiegend
-`setState`-Rückrufe ohne Null-Wächter.
+**Und dabei denselben Fehler an einer alten Stelle gefunden:** Das Band
+„Live-Verbindung unterbrochen" braucht bei „Extra groß" **390 px in einem
+356 px breiten Band** — 34 px Überlauf. Sichtbar nur, wenn eine Live-Verbindung
+tatsächlich abreißt, deshalb nie jemandem aufgefallen. Gleich mitbehoben.
 
-**Zwei echte Fehler kamen dabei ans Licht**, keiner davon vom Compiler
-allein:
-1. Der Tooltip am Ringdiagramm war ein `title`-*Attribut* an einem SVG-
-   `<circle>` und hat nie funktioniert (gefunden, sobald `@types/react` da war).
-2. Der **Monatswechsel löschte die Versand-Markierung** des abgeschlossenen
-   Monats — dieselbe Falle wie in 0.9.12, an einer zweiten Stelle. Gefunden
-   beim Durchspielen im Browser, *nicht* vom Typprüfer: Ein fehlendes optionales
-   Feld ist typkorrekt. Behoben, indem der Archiv-Datensatz jetzt an genau
-   einer Stelle gebaut wird (`utils/archivEintrag.ts`), mit einer Prüfung, die
-   die Vollständigkeit aller `HistoryRecord`-Felder erzwingt.
-
-Ursprüngliche Planung (zur Nachvollziehbarkeit):
-
-**Der Befund, der diese Planung ausgelöst hat: `@types/react` und
-`@types/react-dom` waren nie installiert.** Ohne sie ist jedes JSX-Element
-`any`, jeder Hook untypisiert — und weil `noImplicitAny` aus ist, fällt das
-nirgends auf. `npm run lint` lief grün über eine Codebasis, in der React
-praktisch ungeprüft war.
-
-Beim Nachinstallieren fand `tsc` **sofort einen echten Fehler**: Im
-Ringdiagramm der RV Analyse stand der Tooltip als `title`-*Attribut* an einem
-SVG-`<circle>`. In SVG braucht es dafür ein `<title>`-*Kindelement* — die
-Sprechblasen haben nie funktioniert, während `cursor-help` sie versprach.
-(Behoben, während dieser Plan entstand.)
-
-Was das für die Zahlen bedeutet:
-
-| | Fehler bei `strict: true` |
-|---|---|
-| ohne `@types/react` | 3022 — davon 2883 nur „JSX hat implizit any" |
-| mit `@types/react` | **57** |
-
-Die 3022 waren ein Messartefakt. Der echte Umfang sind **57 Fehler**, davon 56
-in `App.tsx`:
-
-| Code | Anzahl | Bedeutung |
+| Schriftgröße | vorher | nachher |
 |---|---|---|
-| TS18047 | 42 | „ist möglicherweise null" |
-| TS2345 | 11 | Argumenttyp passt nicht |
-| TS2322 | 3 | Zuweisungstyp passt nicht |
-| TS2769 | 1 | keine passende Überladung |
+| normal | 360 px | 360 px |
+| groß | 360 px | 360 px |
+| extra groß | **411 px** | **360 px** |
+
+**Nicht geprüft:** die Sieben-Tage-Regel auf einem echten iPhone und der
+kritische Zweig am Gerät — beides nur über die reine Funktion abgedeckt. Und
+wie sich die Ansage mit NVDA oder VoiceOver anhört.
+
+Der Befund, der dazu geführt hat:
+
+### Der Speicher ist nie dauerhaft angefordert worden
+
+`navigator.storage.persist()` kommt **im gesamten Projekt nicht vor** (geprüft,
+kein Treffer). Damit liegt das Archiv in „best effort"-Speicher:
+
+- **iOS Safari** löscht bei Seiten, die *nicht* zum Home-Bildschirm hinzugefügt
+  wurden, den gesamten skriptbeschreibbaren Speicher nach **sieben Tagen** ohne
+  Nutzung — IndexedDB, localStorage und Cache zusammen. Wer die App über ein
+  Lesezeichen benutzt und zwei Wochen keinen Termin hat, findet einen leeren
+  Monat vor.
+- **Android/Chrome** räumt bei Speicherdruck ebenfalls auf.
+
+Drei Lücken verstärken sich gegenseitig: kein `persist()`, **keine
+Sicherungs-Erinnerung** (die Erinnerung am 8. betrifft die Abgabe an die VL,
+nicht das Sichern — `App.tsx:1193`), und der Sync als Rettungsweg ist genau
+der, den die blinden Kollegen nicht bedienen können.
 
 Schritte:
-1. `@types/react` + `@types/react-dom` als Entwicklungsabhängigkeit (erledigt)
-2. Die Fehler beheben, die schon ohne Strict-Modus auftauchen
-3. `noImplicitAny` einschalten, beheben
-4. `strictNullChecks` einschalten, beheben — das sind die 42 Null-Prüfungen
-5. `strict: true` setzen und im Deploy-Gate absichern
+1. `navigator.storage.persist()` beim Start anfordern und das Ergebnis
+   auswerten.
+2. Wurde es nicht gewährt oder läuft die App nicht installiert: **das sagen**,
+   mit dem konkreten Hinweis, sie zum Home-Bildschirm hinzuzufügen. Angesagt,
+   nicht nur angezeigt.
+3. Eine echte **Sicherungs-Erinnerung**, getrennt von der Abgabe-Erinnerung,
+   mit dem Datum der letzten Sicherung.
+4. Auf einem echten iPhone nachmessen, was tatsächlich passiert. Die
+   Sieben-Tage-Regel ist dokumentiertes Browser-Verhalten, aber die Wirkung im
+   installierten Zustand gehört geprüft, nicht angenommen.
 
-**Warum das zuerst kommt:** Punkt 2 (`App.tsx` aufteilen) ist ein großes
-Verschieben von Code. Ohne Typnetz ist das Blindflug; mit Netz fängt der
-Compiler jeden verrutschten Aufruf.
+### Der Absturz-Bildschirm bietet nur einen Ausweg: alles löschen
 
-### 0.9.14 / 0.9.15 — `App.tsx` aufteilen — ERLEDIGT (2026-08-22)
+`ErrorBoundary.tsx` hat zwei Knöpfe — „App neu laden" und „Kompletten Reset
+durchführen", der `localStorage.clear()` und `clearIndexedDb()` ausführt. **Es
+gibt keine Möglichkeit, die Daten vorher zu retten.** Wer in einer
+Absturzschleife hängt, dem bleibt nur die Taste, die den Monat vernichtet — und
+für einen blinden Nutzer ist es die einzige erreichbare.
 
-`App.tsx`: **3.932 → 2.844 Zeilen** (−1.088). Davon sind 1.547 Zeilen JSX; die
-Logik ist von rund 2.400 auf 1.296 Zeilen geschrumpft. Sechs Hooks, zehn
-Hilfsmodule, ein Schritt pro Commit, jeder einzeln im Browser durchgespielt.
-Prüfungen 91 → 121.
+Schritt: Ein Knopf **„Daten als Datei sichern"** über dem Reset, der direkt aus
+IndexedDB liest, ohne den React-Zustand — der ist an dieser Stelle ja gerade
+beschädigt. Erst danach darf der Reset überhaupt angeboten werden.
 
-Die Aufteilung ergab **sechs** Blöcke, nicht die vier aus der ursprünglichen
-Planung — die Stempeluhr war mit ~340 Zeilen der größte und stand hier gar
-nicht.
+### Warum das vor dem Sync-Umbau kommt
 
-**Der Gewinn ist nicht die Zeilenzahl**, sondern was beim Herauslösen sichtbar
-wurde: In jedem Block steckte eine reine Funktion, die ungeprüft mitlief. Eine
-davon (`verrechneSchicht`) enthielt einen echten Rundungsfehler; zweimal hätte
-ich beim Abschreiben still das Verhalten geändert (Standard-Monatsziele,
-`monthHasContent`). Beides fiel nur durch den Abgleich mit dem Original auf,
-nicht durch den Typprüfer.
+Beides ist wenig Arbeit und verhindert den einen Fehler, von dem sich ein
+Projekt wie dieses nicht erholt: Ein Kollege verliert einen kompletten Monat
+und erzählt es weiter.
 
-**Bewusst in `App.tsx` geblieben:** der Monats-Lebenszyklus und die Verwaltung
-eigener Kategorien. Beide fassen Felder, Zählerwerte, Rückfragen und
-Bildschirmwechsel zugleich an — das ist Oberflächen-Steuerung, nicht
-Datenhaltung.
+---
 
-**Der Gewinn ist nicht die Zeilenzahl**, sondern was beim Herauslösen sichtbar
-wurde: In jedem Block steckte eine reine Funktion, die ungeprüft mitlief —
-darunter die Plausibilitätsregeln vor dem Senden, der vorgelesene Text und die
-Verrechnung von Schichten auf den Bericht. Letztere fand sofort einen echten
-Rundungsfehler (siehe DEVLOG).
+## 0.9.17 — Den Sync bedienbar machen — GRÖSSTENTEILS ERLEDIGT (2026-08-31)
 
-Ursprüngliche Planung (zur Nachvollziehbarkeit):
+**Die Messung aus Schritt 1 hat die Grundannahme widerlegt.** Im Text stand
+„am besten innerhalb von einer Minute"; im Code gab es dafür keinen Beleg.
+Nachgebaut wurde der echte Ablauf — A erzeugt ein Angebot, B die Antwort, und A
+bekommt sie erst nach einer Wartezeit:
 
-**3.889 Zeilen** (gemessen, nicht die „rund 3.500" von früher — die Datei ist
-seither weiter gewachsen). Sie enthält Zustand, Speicherlogik, Export,
-Sprachausgabe und die komplette Oberfläche. In der Sitzung vom 2026-08-22 ist
-zweimal aufgefallen, wie leicht man dort etwas übersieht: Der Auto-Save baute
-den Archiv-Datensatz neu auf und hätte beinahe still die neue
-Versand-Markierung gelöscht.
-
-Vorschlag für den Schnitt — als Hooks, nicht als Komponenten, damit die
-Oberfläche unangetastet bleibt:
-
-| Neu | Inhalt |
+| Antwort eingesetzt nach | Ausgang |
 |---|---|
-| `useBerichtsdaten` | `reportData`, `history`, Auto-Save, Notfall-Speicherung |
-| `useEinstellungen` | Barrierefreiheit, Felder, Ziele, Übertrag |
-| `useSprachausgabe` | `announceToAriaAndSpeech`, Diktat, TTS |
-| `useExport` | die drei Export-Wege plus Versand-Markierung |
+| 117 s | **beide Seiten verbunden** |
+| 180 s | **beide Seiten verbunden** |
+| 300 s | ICE verbunden, aber `B.connectionState = failed` (DTLS abgelaufen) |
 
-`App.tsx` bleibt die Oberfläche und das Zusammenstecken. Ziel: unter 1.200
-Zeilen.
+Das nutzbare Fenster liegt **zwischen drei und fünf Minuten**. Damit ist
+`navigator.share()` keine Voraussetzung mehr, sondern Komfort — Schritt 8 ist
+entwertet, nicht erledigt.
 
-**Risiko und Gegenmittel:** Ein Umbau dieser Größe kann still etwas kaputt
-machen. Deshalb erst nach 0.9.13, und die 75 Prüfungen laufen nach jedem
-Teilschritt.
+Nebenbei: Der Verbindungscode misst **670 Zeichen roh, 627 komprimiert**. Das
+bestätigt die weiter unten verworfene Idee, die Codes zu kürzen — deflate
+spart, base64 füllt es wieder auf.
 
-### 0.9.15 — Zweitgrößte Dateien entzerren
+**Vorbehalt:** gemessen mit zwei Gegenstellen im selben Browser auf demselben
+Rechner. Und auf dem Handy kommt ein Effekt hinzu, den diese Messung nicht
+erfassen kann: Wer die App verlässt, um den Code einzufügen, schickt sie in den
+Hintergrund, wo das Betriebssystem sie anhalten darf. Gut möglich, dass die
+erlebte „eine Minute" daher kam und nie eine ICE-Frist war.
 
-`DeviceSyncModal.tsx` (1.188 Zeilen) und `ClockInWidget.tsx` (1.106 Zeilen)
-sind die nächsten beiden. Beide enthalten mehrere Bildschirme in einer Datei.
-Kein Selbstzweck — aber `ClockInWidget` trägt das Ausstempel-Formular doppelt
-(einmal für die laufende Schicht, einmal für den Nachtrag), und diese
-Verdopplung ist genau die Bauart, aus der der Excel-Export-Fehler von 0.9.0
-entstand.
+**Umgesetzt:** Einfügefeld an erster Stelle (Lesereihenfolge nachgeprüft:
+Beschriftung → Feld → „Code übernehmen" → Kameravorschau), Einfügen genügt
+(`onPaste`), Beschriftungen nach dem Ziel statt nach der Technik, alle
+Fristtexte entfernt, Backup-Import mit „Zusammenführen" als Standard. Kein
+waagerechter Überlauf bei 360 px in allen drei Schriftgrößen.
 
-### 0.9.16 — Aufräumen vor der Abnahme
+**Bewusst nicht umgesetzt: Auto-Fokus im Einfügefeld.** Er würde auf dem Handy
+die Bildschirmtastatur hochklappen und ausgerechnet die Kameravorschau
+verdecken, die sehende Nutzer hier brauchen. Die erste Position in der
+Lesereihenfolge genügt.
 
-- **`npm run deploy` entfernen.** Der Befehl veröffentlicht auf einen
-  `gh-pages`-Branch, der nichts mehr bestimmt. Er steht seit 0.9.2 als
-  „Ballast" in CLAUDE.md und ist eine Falle für jeden, der ihn für echt hält.
-- **ExcelJS-Abhängigkeit prüfen.** Sie bringt eine bekannte Meldung in `uuid`
-  mit (moderat). Falls bis dahin eine Fassung ohne diese Unterabhängigkeit
-  vorliegt, wechseln.
-- **Die 44-px-Frage bei 360 px entscheiden** (siehe Nachtrag in CLAUDE.md).
-  Produktentscheidung, keine Umsetzungsfrage.
+**Offen geblieben:** Die Kamera startet weiterhin von selbst (Schritt 2, zweite
+Hälfte) — dafür fehlt eine Umgebung mit echter Kamera, in der sich Anhalten und
+Wiederanlaufen prüfen lässt. Ebenso Schritt 4 (Gerät A wartet automatisch),
+Schritt 6 (`regenerateAnswer` fokussieren) und Schritt 8.
+
+Die ursprüngliche Analyse:
+
+**Das ist der dringendste Punkt der ganzen Liste, und er ist neu.**
+Rückmeldung aus dem Außendienst (2026-08-31): *Die blinden Kollegen können den
+Geräte-Abgleich nicht nutzen, weil er zu komplex ist.* Gewünscht ist
+ausdrücklich auch die Live-Verbindung — „damit man auch mal was am PC machen
+kann und das Handy trotzdem aktuell ist".
+
+Bei der Prüfung des Codes hat sich gezeigt: **es fehlt keine Funktion.** Der
+kamerafreie Weg existiert in beide Richtungen — `startSend` erzeugt immer auch
+einen Textcode, und `renderScannerView` enthält unter der Kameravorschau ein
+Einfügefeld (`DeviceSyncModal.tsx:813`). Das Problem sind Reihenfolge und
+Benennung. Das macht die Sache billig statt teuer.
+
+### Was blockiert (jeweils am Code belegt)
+
+| Befund | Stelle |
+|---|---|
+| „Daten empfangen" startet **ungefragt die Kamera**. Ein blinder Nutzer bekommt eine Berechtigungsabfrage und ein Livebild, das ihm nichts nützt. | `DeviceSyncModal.tsx:367` |
+| Das Einfügefeld steht **unterhalb** von Kamerabild, Fortschrittsbalken und Hinweistext — in der Screenreader-Lesereihenfolge der vierte Block. | `DeviceSyncModal.tsx:813` |
+| Der Knopf heißt „Dieses Gerät scannt mit der Kamera", die Abschnittsüberschrift „Einmal-Übertragung per QR-Code". Der kamerafreie Weg liegt **innerhalb** von etwas, das sich ausdrücklich „per QR-Code" nennt. Wer linear liest, überspringt ihn zu Recht. | `DeviceSyncModal.tsx:957–1043` |
+| `navigator.share()` kommt in der Datei **nicht vor**. Jeder Code muss von Hand markiert, kopiert, in eine andere App gebracht und dort eingefügt werden. | geprüft, kein Treffer |
+| Die **Backup-Datei kann nur ersetzen, nie zusammenführen**. Der Geräte-Sync bietet beide Wege, das Backup nicht. Ein Kollege, der seine Handy-Daten per Datei auf den PC bringt, löscht damit den PC-Stand. | `App.tsx:2567` gegen `App.tsx:2587` |
+| Die „eine Minute" beim Antwort-Code ist **echt**, nicht bloß Text: Sobald Gerät B `setLocalDescription` gesetzt hat, läuft dessen ICE-Agent und die Verbindung scheitert nach einigen Zehnersekunden von selbst. | `DeviceSyncModal.tsx:622` |
+
+### Die Einsicht, die den Umbau trägt
+
+Es sind **zwei Produkte, und die Oberfläche zeigt eines.** Was die Kollegen
+beschreiben, ist meistens *eine Übertragung am Ende* — ein Code, eine Richtung,
+kein Zeitlimit, heute schon vollständig kamerafrei möglich. Die
+Live-Verbindung braucht zwei Codes, zwei Richtungen und hat den Zeitdruck. Sie
+ist der teure Sonderfall, den die Kollegen selbst mit „manchmal angenehmer"
+beschrieben haben. Heute stehen beide als gleichrangige Knöpfe untereinander.
+
+**Der häufige Fall muss trivial werden, der seltene bloß möglich.** Das kostet
+keine Zeile Protokoll.
+
+### Schritte
+
+1. **Das ICE-Zeitfenster messen.** Die „eine Minute" ist eine Annahme; im Code
+   gibt es keinen Beleg dafür. Sind es fünf Minuten, reicht die Umsortierung.
+   Sind es dreißig Sekunden, ist die geteilte Zwischenablage Voraussetzung.
+   **Dieser Schritt entscheidet den Rest und kommt zuerst.**
+2. **Einfügefeld über die Kamera**, beim Öffnen fokussiert. Kamera erst auf
+   ausdrückliche Anforderung starten.
+3. **Einfügen genügt.** Ein gültiger Code wird beim `onPaste` erkannt und
+   übernommen — kein Suchen nach „Code übernehmen". Genau dort verlieren
+   Screenreader-Nutzer die Sekunden, die auf der Antwort-Strecke fehlen.
+4. **Gerät A wartet automatisch**, während es seinen Code zeigt. Der
+   Zwischenschritt „Antwort-Code empfangen" entfällt ersatzlos.
+5. **Einstieg trennen:** „Auf anderes Gerät übertragen" (ohne Kamera, kein
+   Zeitlimit) als erster Eintrag, „Live-Verbindung" darunter als Zusatz.
+6. **`regenerateAnswer()` sichtbar machen.** Die Rettung bei abgelaufener
+   Minute existiert bereits (`DeviceSyncModal.tsx:642`), muss aber beim
+   Scheitern angesagt und fokussiert werden statt gesucht.
+7. **Backup-Import bekommt „Zusammenführen oder Ersetzen".** `handleSyncImport`,
+   `mergeSyncPayload` und `pruefeSyncPaket` existieren alle — es fehlt nur die
+   Verdrahtung. Damit wird „Datei speichern → Datei öffnen" zur Rückfallebene
+   ganz ohne Zeitdruck.
+8. **`navigator.share()`** für Codes und Datei — nur, falls Schritt 1 zeigt,
+   dass es nötig ist.
+
+### Ziel, messbar
+
+Der heutige Ablauf braucht **rund zwölf** einzelne Handlungen, davon zwei im
+Kampf mit einer Kamera, die sich ungefragt einschaltet. **Sechs** sind ohne
+jede Protokolländerung erreichbar. Das ist die Zahl, an der dieser Punkt
+gemessen wird — nicht daran, ob er sich besser anfühlt.
+
+### Ein Hebel, der uns nichts kostet
+
+**Die geteilte Zwischenablage.** Android + Windows über „Telefonverknüpfung",
+iPhone + Mac über die Universal-Zwischenablage. Damit schrumpft die kritische
+Rückstrecke von Minuten auf Sekunden — ohne dass wir irgendetwas
+programmieren. Das ist Geräteeinrichtung, einmal pro Kollege, und sollte vor
+Schritt 8 geklärt werden.
+
+### Geprüft und verworfen
+
+- **Die Codes drastisch kürzen.** Technisch möglich (das SDP ist größtenteils
+  Standardtext, den beide Seiten kennen — echte Nutzlast sind rund 70 Byte
+  statt ~1000 Zeichen). **Bringt nichts:** Ob man 400 oder 110 Zeichen kopiert,
+  ist dieselbe Geste. Kürzer würde erst zählen, wenn ein Code vorlesbar wäre,
+  und dafür müsste er unter etwa 30 Zeichen — mit einem DTLS-Fingerabdruck
+  darin nicht erreichbar.
+- **Automatisches Wiederverbinden.** Nicht möglich. ICE-Zugangsdaten und Ports
+  werden pro Verbindung neu erzeugt, und ein Browser gibt keine rohen Sockets
+  heraus. Die Kopplung muss pro Sitzung neu gemacht werden; erreichbar ist
+  nur, sie erträglich zu machen.
+- **Ein einziger Code.** Die frühere Einschätzung dieser Datei stimmt. Nichts
+  gefunden, was sie widerlegt.
+
+---
+
+## 0.9.18 — Ein Prüfnetz für die Barrierefreiheit — ERLEDIGT (2026-08-31)
+
+`npm run check:ui` (Playwright + `@axe-core/playwright`) läuft im Deploy-Tor vor
+dem Bauen: **48 Prüfungen, zwei Geräteprofile, rund 70 Sekunden.**
+
+**Die Annahme dieser Datei war falsch.** Hier stand, die Touch-Zweige (`@media
+(pointer: coarse)`) seien nicht prüfbar. Das gilt für ein verkleinertes
+Browserfenster, nicht für Playwrights Geräte-Nachbildung: Mit `hasTouch` und
+`isMobile` kippt die Medienabfrage wirklich. Nachgewiesen im Prüffall
+`pruefe-medienabfrage`, nicht behauptet.
+
+**Der erste Lauf fand sofort zwei echte Fehler** — beide dieselbe dekorative
+Deckkraft auf ohnehin gedämpftem Text:
+
+| Stelle | Kontrast | gefordert |
+|---|---|---|
+| Fußzeile (`opacity-80`) | 4,41:1 | 4,5:1 |
+| Seitenleiste (`opacity-70`) | **3,59:1** | 4,5:1 |
+
+In einer App für sehbehinderte Nutzer. Beide behoben.
+
+**Und ein Falschbefund, der fast durchging:** Der erste Lauf meldete 9 von 30
+Fehlschlägen, darunter Ansichten, die kurz zuvor von Hand auf exakt 360 px
+gemessen worden waren. Ursache war der geteilte Dev-Server unter parallelen
+Arbeitern, nicht das Layout — mit einem Arbeiter lief alles durch. Die
+Konfiguration steht deshalb dauerhaft auf seriell.
+
+**Nicht abgedeckt und bewusst so benannt:** axe findet einen Teil der
+WCAG-Verstöße, nie alle. Ein grüner Lauf ist keine Konformitätsaussage. Kamera-
+wege und Modaldialoge fehlen noch, weil beide Klickfolgen bräuchten.
+
+Ursprüngliche Planung:
+
+Das Deploy-Gate prüft heute `lint`, `check` und `audit`. Für ein Projekt,
+dessen erklärte Kernanforderung Barrierefreiheit ist, ist ausgerechnet die
+ungeprüft.
+
+- **Playwright mit echter Geräteemulation.** Diese Datei hat bisher
+  angenommen, die Touch-Zweige (`@media (pointer: coarse)`) seien nicht
+  verifizierbar, weil ein verkleinertes Desktop-Fenster weiterhin
+  `pointer: fine` meldet. Das gilt für das Browser-Fenster, aber nicht für
+  Playwright: Bei Geräteemulation werden `hasTouch` und `isMobile` echt
+  gesetzt, und damit kippt die Media Query. **Der Punkt, der hier als
+  blockierend geführt wurde, ist zumindest teilweise automatisierbar.** Im
+  ersten Lauf nachmessen, nicht behaupten.
+- **`@axe-core/playwright` im Deploy-Gate.** Ehrliche Erwartung: axe findet
+  einen Teil der WCAG-Verstöße, nicht alle. Es ersetzt keinen Screenreader-
+  Durchlauf. Es fängt aber die Klasse Fehler ab, die beim Ändern still
+  entsteht — fehlende Beschriftungen, Kontrast, kaputte Fokusreihenfolge.
+- **Die Matrix automatisieren:** 360 px × drei Schriftgrößen × alle Ansichten
+  und Dialoge, mit `scrollWidth`-Prüfung. Von Hand ist das kombinatorisch
+  aussichtslos; genau deshalb ist es zweimal live gegangen.
+- **WebKit-Lauf** als echte Engine — näher an iOS-Safari als alles, was
+  bisher geprüft wurde.
+- **Deploy-Bestätigung automatisieren** (GitHub-MCP-Server). Der Vorfall vom
+  2026-08-08 — Push gemeldet, kein Workflow-Lauf erzeugt — ist bisher nur
+  durch Handarbeit an der REST-API zu erkennen.
+
+**Kein neues Test-Framework.** Nachgezählt: Von den dokumentierten
+Produktionsfehlern — Doppelkodierung, verschlucktes `.catch`, zweimal
+verlorenes `sentAt`, die Zeitstempel-Falle im Merge, der Rundungsfehler in
+`verrechneSchicht` — wäre **kein einziger** von Unit-Tests gefunden worden. Die
+121 Prüfungen decken die reinen Funktionen ab; die Lücke liegt eine Ebene
+höher.
+
+---
+
+## 0.9.19 — WCAG 2.2 schließen
+
+**Terminlage:** Gültig ist heute EN 301 549 V3.2.1 (2021-03) mit WCAG 2.1 AA.
+Der Entwurf V4.1.0 (2025-11) nimmt die **neun zusätzlichen Erfolgskriterien aus
+WCAG 2.2 AA** auf; als Termin der Nennung im Amtsblatt der EU nennt ETSI den
+**23. Oktober 2026**. Ab dann ist das der Maßstab.
+
+| Kriterium | Stand hier |
+|---|---|
+| **2.2.1 Timing Adjustable** (A) | **Verstoß.** Die Ein-Minuten-Frist beim Antwort-Code ist ein Zeitlimit ohne Verlängerung. Wird durch 0.9.17 behoben. |
+| **2.4.11 Focus Not Obscured** (AA) | **Zu prüfen, Risiko real.** Die Fußleiste ist `fixed bottom-0` (`App.tsx:2724`). Tastaturfokus auf Elementen am unteren Seitenrand kann dahinter verschwinden — ein klassischer Fehler dieser Bauart. Messen, nicht raten. |
+| **2.5.7 Dragging Movements** (AA) | **Zu prüfen, vermutlich erfüllt.** `useSwipeable` wechselt Abschnitte (`App.tsx:442`); es gibt Abschnitts-Reiter als Alternative. Nachweisen, dass jede Wischgeste ohne Ziehen erreichbar ist. |
+| **2.5.8 Target Size (Minimum)** (AA) | **Erfüllt — und die 0.9.7-Entscheidung war richtig.** Die AA-Schwelle liegt bei 24 × 24 px, nicht bei 44. Die auf 40 px verkleinerten Fünferschritte liegen komfortabel darüber; 44 px ist Stufe AAA (2.5.5). Der Nachtrag in CLAUDE.md hat das bereits richtig eingeschätzt. |
+| **3.2.6 Consistent Help** (A) | Zu prüfen: Hilfe muss an gleichbleibender Stelle erreichbar sein. |
+| **3.3.7 Redundant Entry** (A) | **Erfüllt.** Der Mitarbeitername wird in jeden neuen Monat übernommen. |
+| **3.3.8 / 3.3.9 Accessible Authentication** | Nicht anwendbar — die App hat keine Anmeldung. |
+
+**Zum rechtlichen Rahmen, ehrlich:** Das BFSG richtet sich an das
+B2C-Geschäft; ein internes Werkzeug für die eigenen Außendienstmitarbeiter
+fällt nach heutigem Stand vermutlich **nicht** darunter. Das ist aber nicht der
+entscheidende Punkt — EN 301 549 ist der Maßstab, den jede Prüfung anlegt, und
+für Arbeitsmittel von Beschäftigten mit Behinderung bestehen eigene Pflichten
+des Arbeitgebers (SGB IX). **Ob und wie das hier greift, gehört zu Personal-
+oder Rechtsabteilung, nicht in eine technische Roadmap.** Was wir liefern
+können, ist der belegte Konformitätsstand.
+
+---
+
+## 0.9.20 — Aufräumen vor der Abnahme
+
+- **`npm run deploy` entfernen.** Veröffentlicht auf einen `gh-pages`-Branch,
+  der nichts mehr bestimmt. Steht seit 0.9.2 als Ballast in CLAUDE.md und ist
+  eine Falle für jeden, der ihn für echt hält.
+- **ExcelJS-Abhängigkeit prüfen.** Bringt eine bekannte Meldung in `uuid` mit
+  (moderat). Falls eine Fassung ohne diese Unterabhängigkeit vorliegt,
+  wechseln.
+- **Die 44-px-Frage bei 360 px abschließen.** Durch 2.5.8 ist sie faktisch
+  entschieden (AA verlangt 24 px) — nur noch dokumentieren.
 - **320 px** (iPhone SE 1./2. Gen.): tritt bei den großen Schriftgrößen über
   den Kartenrand. Betrifft kein aktuell verkauftes Gerät — entweder bewusst
   als Nicht-Ziel festschreiben oder beheben.
+- **`HelpModal.tsx` gegen das geänderte Sync-Verhalten prüfen.** Die Hilfe
+  macht konkrete Tatsachenbehauptungen; vier davon waren bis 0.9.3 veraltet.
+  Nach 0.9.17 stimmt dort mit Sicherheit etwas nicht mehr.
+- **Zeitumstellung entscheiden.** `berechneNettoStunden` rechnet ausschließlich
+  mit „HH:MM" ohne Datum (`timeUtils.ts:41`). An den zwei Umstellungstagen
+  stimmt eine Schicht über Mitternacht deshalb nicht: 22:00–06:00 sind am
+  25.10.2026 tatsächlich **9** Stunden und am 29.03. **7**, berechnet werden
+  beide Male 8. Entweder das Datum einbeziehen oder bewusst als Nicht-Ziel
+  festschreiben — **aber vor dem 25.10.2026 entscheiden**, nicht danach.
+- **Untergrenze für Service-Worker-Updates.** Updates sind
+  bestätigungspflichtig und laden nie von selbst neu — beim Tippen richtig. Wer
+  aber immer wegdrückt, bleibt beliebig lange auf einer alten Fassung, im
+  Zweifel mit einer veralteten Excel-Vorlage darin. Prüfen, ob es einen Boden
+  gibt, und sonst einen einziehen.
 
 ---
 
-## Version 1.0 — „Abnahmefähig"
+## 1.0 — Abnahmefähig
 
-Ab hier hängt alles an Zulieferungen, die nur der Auftraggeber leisten kann.
+Ab hier hängt alles an Menschen und Geräten. Kein Werkzeug ersetzt das.
 
-### 4. TypeScript-Strict-Modus — verschoben nach 0.9.13
-Siehe oben. Der Umfang ist mit 57 Fehlern deutlich kleiner als angenommen,
-sobald die React-Typen installiert sind.
-
-### 5. `App.tsx` aufteilen — verschoben nach 0.9.14
-Die Datei hat rund 3.500 Zeilen und enthält Zustand, Speicherlogik, Export,
-Sprachausgabe und die komplette Oberfläche. Jede Änderung daran ist riskanter
-als nötig. Aufteilen in Bereiche (Formular, Export, Speicher, Sprache).
-
-### 6. Screenreader-Abnahme
-Vollständiger Durchgang durch alle Bereiche mit NVDA und VoiceOver. Das kann
-nur der Nutzer selbst leisten; das Ergebnis entscheidet über die 1.0.
+- **Test auf echten Geräten.** Bildschirmtastatur (verdeckt sie Eingabefelder?
+  scrollt die Seite nach?), versehentliche Textmarkierung beim Tippen auf
+  Zähler, iOS-Safe-Areas auf einem echten iPhone, Kamera-Sync mit zwei
+  physischen Geräten im selben WLAN.
+- **Screenreader-Durchlauf mit NVDA (PC), VoiceOver (iOS), TalkBack
+  (Android)** — vollständig, durch alle Bereiche. **Der Sync-Umbau aus 0.9.17
+  muss ausdrücklich von einem der blinden Kollegen durchgespielt werden.** Ob
+  er trägt, lässt sich anders nicht feststellen, und raten will hier niemand.
+- **Barrierefreiheitserklärung und Konformitätsbericht** gegen EN 301 549:
+  welche Kriterien erfüllt sind, welche nicht, und warum. Ein belegter Bericht
+  mit ehrlichen Lücken ist mehr wert als die Behauptung, alles sei erfüllt —
+  und er ist das Dokument, das eine Abnahme trägt.
 
 ---
 
 ## Danach (1.x) — bewusst später
 
-- **Kopplung der Live-Verbindung vereinfachen** (zurückgestellt am 2026-08-02).
-  Marc: „so ist es zu komplex". Geprüft: Mit **einem einzigen** Code ist es
-  technisch nicht machbar — WebRTC handelt die Verbindung zwischen beiden
-  Geräten aus, der Code von A enthält A's Verbindungsdaten, die Antwort von B
-  enthält B's, und keines lässt sich aus dem anderen oder einem gemeinsamen
-  Kennwort berechnen. Ein Code ginge nur über einen Vermittlungsserver, den
-  die DSGVO-Zusage ausschliesst. **Machbar ist:** den Zwischenschritt
-  „Antwort-Code empfangen (Schritt 2)" abschaffen — Gerät A geht automatisch
-  in den Empfangsmodus, während es seinen Code zeigt. Dann bleibt: B scannt A,
-  B zeigt an, A scannt B, ohne Knopfdruck dazwischen. Zusätzlich sollte die
-  **Einmal-Übertragung** im Sync-Fenster nach vorn — sie braucht ohnehin nur
-  eine Richtung und damit einen Code (gemessen: ein Monat = 1015 Zeichen
-  Textcode bzw. 3 automatisch wechselnde QR-Codes, ein ganzes Jahr = 1328
-  Zeichen). Die Live-Verbindung ist nur nötig, wenn beide Geräte dauerhaft
-  gleichauf bleiben sollen.
 - **Termin-Logbuch (optional!).** Jeder Tipp erzeugt zusätzlich einen Eintrag
-  mit Datum und Notiz, sodass Zahlen belegbar werden und der Excel-Export ein
-  zweites Blatt mit der Terminliste enthalten kann. **Muss abschaltbar sein** —
-  reine Zähler bleiben der Standardweg.
+  mit Datum und Notiz, sodass Zahlen belegbar werden. **Muss abschaltbar
+  sein** — reine Zähler bleiben der Standardweg.
 - **Bündelung mehrerer Kategorien** („Vorführung + Schulung beim selben
   Kunden") als ein Vorgang.
 - **Jahresübersicht** über mehrere Monate hinweg.
@@ -367,22 +425,35 @@ nur der Nutzer selbst leisten; das Ergebnis entscheidet über die 1.0.
 - **Einklappbare Formularbereiche.** Eingeklappter Inhalt ist für
   Screenreader-Nutzer nicht erreichbar, und die Suchfunktion liefe ins Leere,
   wenn ein Treffer in einem geschlossenen Bereich liegt.
-- **Cloud-Synchronisation / Nutzerkonten.** Widerspricht der DSGVO-Zusage. Die
-  Geräte-Kopplung bleibt direkt von Gerät zu Gerät.
+- **Cloud-Synchronisation / Nutzerkonten.** Widerspricht der DSGVO-Zusage.
 - **Fremd-Schriften von externen Diensten** (Google Fonts o. Ä.) — gleicher
   Grund.
 - **Push-Benachrichtigungen über einen Server.** Die Monatserinnerung wird
   weiterhin lokal von der App selbst ausgelöst.
+- **Vermittlungsserver für die Gerätekopplung**, auch nicht „nur für den
+  Verbindungsaufbau". Das ist der Punkt, an dem die Zusage „ohne
+  Zwischenspeicherung auf fremden Servern" fallen würde.
 
 ---
 
-## Offene Fragen an den Auftraggeber
+## Offene Fragen
 
-1. **Excel-Originalvorlage** — wird für Punkt 2 gebraucht.
-2. **Welcher Deploy-Weg gilt?** Es existieren zwei parallele: `npm run deploy`
-   (Branch `gh-pages`) und ein GitHub-Actions-Workflow, der bei jedem Push auf
-   `main` automatisch veröffentlicht. Beide laufen tatsächlich. Welcher die
-   Live-Version bestimmt, hängt von den Repository-Einstellungen ab und ist
-   ungeklärt — solange das so ist, geht **jeder** Push potenziell sofort live.
-3. **Soll es mehrere Nutzer auf einem Gerät geben können?** Aktuell ist die App
-   auf eine Person ausgelegt.
+1. **Ist die geteilte Zwischenablage bei den Kollegen einrichtbar?**
+   (Telefonverknüpfung unter Windows, Universal-Zwischenablage bei Apple.)
+   Entscheidet, wie viel Aufwand in `navigator.share()` fließen muss.
+2. **Soll es mehrere Nutzer auf einem Gerät geben können?** Aktuell ist die
+   App auf eine Person ausgelegt.
+3. **Wer nimmt die Barrierefreiheit formal ab** — reicht der Durchlauf mit den
+   Kollegen, oder ist eine externe Prüfung gewünscht?
+4. **Ist der Betriebsrat eingebunden?** Die App erfasst mit der Stempeluhr
+   Arbeitszeiten. Wird sie zum verbindlichen Berichtswerkzeug, berührt das
+   typischerweise die Mitbestimmung nach § 87 BetrVG. Das ist keine
+   Rechtsauskunft und keine technische Frage — aber es ist die Sorte Punkt, die
+   einen Rollout kurz vor dem Start kippt, wenn ihn vorher niemand stellt.
+5. **Wer beobachtet die Excel-Vorlage?** Sie ist mit Stand 01.2026 in die App
+   eingebettet. Gibt die Firma eine neue Fassung heraus, produziert die App
+   weiter das alte Formular, und es fällt niemandem auf.
+6. **Was passiert, wenn der einzige Entwickler ausfällt?** Die Dokumentation
+   ist ungewöhnlich gut, aber niemand sonst hat diese App je gebaut und
+   veröffentlicht. „Was, wenn Marc in der Abgabewoche krank ist" ist eine faire
+   Frage — und sie kommt irgendwann.

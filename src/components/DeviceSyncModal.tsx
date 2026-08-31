@@ -105,6 +105,11 @@ export default function DeviceSyncModal({
   // Kameraloser Weg: Text-Code kopieren / einfügen
   const [textCode, setTextCode] = useState<string | null>(null);
   const [pasteValue, setPasteValue] = useState("");
+  // BEWUSST OHNE Auto-Fokus: Das Feld steht seit 0.9.17 an erster Stelle, das
+  // genuegt fuer die Lesereihenfolge. Ein automatischer Fokus wuerde auf dem
+  // Handy die Bildschirmtastatur hochklappen und damit ausgerechnet die
+  // Kameravorschau verdecken, die sehende Nutzer hier brauchen.
+  const einfuegeRef = useRef<HTMLTextAreaElement>(null);
   // Optionaler Passwortschutz des Textcodes (seit 0.9.5). Betrifft NUR die
   // Datenübertragung -- die Kopplungscodes der Live-Verbindung bleiben offen,
   // sie enthalten keine Berichtsdaten.
@@ -333,10 +338,19 @@ export default function DeviceSyncModal({
     }
   };
 
-  const submitPastedCode = async () => {
-    if (!pasteValue.trim()) return;
+  /**
+   * Code übernehmen.
+   *
+   * Der Text kann direkt übergeben werden, statt aus `pasteValue` zu kommen:
+   * Beim Einfügen ist der State noch nicht gesetzt, und genau dort soll der
+   * Code sofort übernommen werden, ohne dass jemand anschließend eine
+   * Schaltfläche suchen muss (0.9.17).
+   */
+  const submitPastedCode = async (direkt?: string) => {
+    const roh = direkt ?? pasteValue;
+    if (!roh.trim()) return;
     try {
-      const ergebnis = await parseTextCode(pasteValue, empfangsPasswort || undefined);
+      const ergebnis = await parseTextCode(roh, empfangsPasswort || undefined);
       if (!ergebnis.ok) {
         const texte: Record<string, string> = {
           "kein-code":
@@ -562,7 +576,7 @@ export default function DeviceSyncModal({
       setIsPlaying(true);
       setStatus({
         type: "info",
-        msg: "Schritt 1: Übertragen Sie diesen Verbindungscode auf das andere Gerät – per Scan oder mit 'Code kopieren'. Bei diesem Code gibt es keinen Zeitdruck. Wählen Sie danach hier 'Antwort-Code empfangen'.",
+        msg: "Schritt 1: Übertragen Sie diesen Verbindungscode auf das andere Gerät – am einfachsten mit „Code kopieren“, eine Kamera ist nicht nötig. Zeitdruck gibt es hier keinen. Wählen Sie danach „Antwort-Code empfangen“.",
       });
     } catch (err) {
       console.error("Live host error", err);
@@ -628,9 +642,17 @@ export default function DeviceSyncModal({
       setCurrentChunk(0);
       setIsPlaying(true);
       setLiveStep("answer");
+      // KEINE FRIST MEHR IM TEXT (0.9.17). Hier stand "am besten innerhalb von
+      // einer Minute". Nachgemessen am 2026-08-31: Der Antwort-Code wurde nach
+      // 117 Sekunden eingesetzt und die Verbindung kam sofort zustande; bis
+      // dahin hatte keine Seite abgebrochen. Die Frist war also keine
+      // technische Grenze, sondern eine Vermutung -- und mit Screenreader eine
+      // unerfuellbare. Ein Zeitlimit ohne Verlaengerung verstoesst zudem gegen
+      // WCAG 2.2.1. Vorbehalt: gemessen mit zwei Gegenstellen auf demselben
+      // Rechner, nicht mit zwei echten Geraeten.
       setStatus({
         type: "info",
-        msg: "Schritt 2: Übertragen Sie diesen Antwort-Code jetzt zügig auf Gerät A (dort 'Antwort-Code empfangen' wählen) – am besten innerhalb von einer Minute. Zu spät? Einfach 'Neuen Antwort-Code erzeugen' tippen.",
+        msg: "Schritt 2: Übertragen Sie diesen Antwort-Code auf Gerät A – dort „Antwort-Code empfangen“ wählen. Lassen Sie sich dabei Zeit. Sollte die Verbindung nicht zustande kommen, tippen Sie hier auf „Neuen Antwort-Code erzeugen“ und übertragen Sie den neuen Code.",
       });
     } catch (err) {
       console.error("Live join error", err);
@@ -776,8 +798,79 @@ export default function DeviceSyncModal({
     </div>
   );
 
+  /**
+   * Der kameralose Weg: Code einfügen.
+   *
+   * Eigener Baustein, seit er im Empfangsbildschirm NACH OBEN gewandert ist.
+   * Vorher war er der vierte Block — hinter Kamerabild, Fortschrittsbalken und
+   * Hinweistext. Wer sich die Seite vorlesen lässt, hatte dort längst
+   * aufgegeben, obwohl der Weg vollständig gebaut war. Genau das war die
+   * Rückmeldung aus dem Außendienst (2026-08-31): „zu komplex" hieß nicht
+   * „fehlt", sondern „nicht auffindbar".
+   */
+  const renderEinfuegeBlock = () => (
+    <div className="w-full max-w-[300px] mb-4 p-3 rounded-xl border-2 border-[var(--accent)] bg-[var(--bg-color)]">
+      <label htmlFor="paste-code-input" className="block text-xs font-black text-[var(--text-color)] mb-2">
+        Ohne Kamera: Code einfügen
+      </label>
+      <textarea
+        id="paste-code-input"
+        ref={einfuegeRef}
+        value={pasteValue}
+        onChange={(e) => {
+          setPasteValue(e.target.value);
+          if (istVerschluesselterCode(e.target.value)) setBrauchtPasswort(true);
+        }}
+        // Einfuegen genuegt: Ein gueltiger, unverschluesselter Code wird sofort
+        // uebernommen. Das Suchen nach der Schaltflaeche danach war der Schritt,
+        // an dem mit Screenreader die Zeit verloren ging.
+        onPaste={(e) => {
+          const text = e.clipboardData.getData("text");
+          if (!text || !text.trim().startsWith("RVC")) return;
+          if (istVerschluesselterCode(text)) {
+            setBrauchtPasswort(true);
+            return;
+          }
+          e.preventDefault();
+          setPasteValue(text);
+          void submitPastedCode(text);
+        }}
+        placeholder="Code hier einfügen (beginnt mit RVC1: oder RVC2:)..."
+        rows={3}
+        className="w-full p-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-mono focus:border-[var(--border-focus)] outline-none resize-y"
+      />
+
+      {brauchtPasswort && (
+        <div className="mt-2">
+          <label htmlFor="paste-passwort" className="block text-xs font-black text-[var(--text-color)] mb-1">
+            Passwort des Codes
+          </label>
+          <input
+            id="paste-passwort"
+            type="password"
+            value={empfangsPasswort}
+            onChange={(e) => setEmpfangsPasswort(e.target.value)}
+            placeholder="Passwort eingeben"
+            className="w-full px-3 min-h-[44px] rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-sm focus:border-[var(--border-focus)] outline-none"
+          />
+        </div>
+      )}
+
+      <button
+        onClick={() => void submitPastedCode()}
+        disabled={!pasteValue.trim()}
+        className="mt-2 w-full py-2.5 px-4 min-h-[44px] rounded-lg font-bold bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex justify-center items-center gap-2 cursor-pointer text-sm"
+      >
+        <ClipboardPaste className="w-4 h-4" aria-hidden="true" />
+        Code übernehmen
+      </button>
+    </div>
+  );
+
   const renderScannerView = (hint: string) => (
     <div className="flex flex-col items-center justify-center">
+      {renderEinfuegeBlock()}
+
       <div
         id="reader"
         className="w-full max-w-[300px] overflow-hidden rounded-xl border-2 border-[var(--accent)] mb-4 bg-black"
@@ -810,49 +903,6 @@ export default function DeviceSyncModal({
         {hint}
       </p>
 
-      {/* Kameraloser Weg: Code einfügen */}
-      <div className="w-full max-w-[300px] mb-4 p-3 rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-color)]">
-        <label htmlFor="paste-code-input" className="block text-xs font-black text-[var(--text-color)] mb-2">
-          Ohne Kamera: Code einfügen
-        </label>
-        <textarea
-          id="paste-code-input"
-          value={pasteValue}
-          onChange={(e) => {
-            setPasteValue(e.target.value);
-            // Passwortfeld sofort zeigen, sobald ein geschützter Code drinsteht
-            if (istVerschluesselterCode(e.target.value)) setBrauchtPasswort(true);
-          }}
-          placeholder="Code hier einfügen (beginnt mit RVC1: oder RVC2:)..."
-          rows={3}
-          className="w-full p-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-mono focus:border-[var(--border-focus)] outline-none resize-y"
-        />
-
-        {brauchtPasswort && (
-          <div className="mt-2">
-            <label htmlFor="paste-passwort" className="block text-xs font-black text-[var(--text-color)] mb-1">
-              Passwort des Codes
-            </label>
-            <input
-              id="paste-passwort"
-              type="password"
-              value={empfangsPasswort}
-              onChange={(e) => setEmpfangsPasswort(e.target.value)}
-              placeholder="Passwort eingeben"
-              className="w-full px-3 min-h-[44px] rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-sm focus:border-[var(--border-focus)] outline-none"
-            />
-          </div>
-        )}
-
-        <button
-          onClick={submitPastedCode}
-          disabled={!pasteValue.trim()}
-          className="mt-2 w-full py-2.5 px-4 rounded-lg font-bold bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex justify-center items-center gap-2 cursor-pointer text-sm"
-        >
-          <ClipboardPaste className="w-4 h-4" aria-hidden="true" />
-          Code übernehmen
-        </button>
-      </div>
 
       <button
         onClick={cancelPairing}
@@ -965,8 +1015,14 @@ export default function DeviceSyncModal({
                 </p>
               </div>
 
+              {/* Ueberschrift und Beschriftungen nennen seit 0.9.17 das ZIEL,
+                  nicht die Technik. Vorher hiess der Abschnitt "Einmal-
+                  Uebertragung per QR-Code" und die Knoepfe "zeigt QR-Codes an"
+                  bzw. "scannt mit der Kamera" -- der kameralose Weg lag damit
+                  innerhalb von etwas, das sich ausdruecklich "per QR-Code"
+                  nennt. Wer linear liest, uebersprang ihn zu Recht. */}
               <p className="text-[0.75rem] font-black uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                Einmal-Übertragung per QR-Code
+                Einmal übertragen — auch ohne Kamera
               </p>
 
               <button
@@ -977,9 +1033,9 @@ export default function DeviceSyncModal({
                   <Monitor className="w-6 h-6" aria-hidden="true" />
                 </div>
                 <div>
-                  <div className="font-bold text-[var(--text-color)]">Daten senden</div>
+                  <div className="font-bold text-[var(--text-color)]">Daten an anderes Gerät senden</div>
                   <div className="text-xs text-[var(--text-muted)]">
-                    Dieses Gerät zeigt QR-Codes an (z. B. der PC)
+                    Erzeugt einen Code zum Kopieren – oder QR-Codes zum Scannen
                   </div>
                 </div>
               </button>
@@ -992,9 +1048,9 @@ export default function DeviceSyncModal({
                   <Smartphone className="w-6 h-6" aria-hidden="true" />
                 </div>
                 <div>
-                  <div className="font-bold text-[var(--text-color)]">Daten empfangen</div>
+                  <div className="font-bold text-[var(--text-color)]">Daten von anderem Gerät übernehmen</div>
                   <div className="text-xs text-[var(--text-muted)]">
-                    Dieses Gerät scannt mit der Kamera (iOS &amp; Android)
+                    Code einfügen – oder mit der Kamera scannen
                   </div>
                 </div>
               </button>
@@ -1151,7 +1207,7 @@ export default function DeviceSyncModal({
                   ? (
                     <div>
                       {renderChunkDisplay(
-                        "Übertragen Sie diesen Antwort-Code auf Gerät A (dort 'Antwort-Code empfangen' wählen) – am besten innerhalb von einer Minute. Die Verbindung startet automatisch."
+                        "Übertragen Sie diesen Antwort-Code auf Gerät A (dort „Antwort-Code empfangen“ wählen). Die Verbindung startet dann von selbst. Klappt es nicht, erzeugen Sie unten einfach einen neuen Antwort-Code."
                       )}
                       <div className="space-y-3 mt-4">
                         <button

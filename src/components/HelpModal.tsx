@@ -126,12 +126,15 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   icon={<AlertTriangle className="text-[var(--danger)]" />}
                   title="Was muss ich tun, damit meine Daten nicht verloren gehen?"
                 >
-                  <p>Weil alles nur lokal gespeichert ist, gibt es zwei Dinge zu beachten:</p>
+                  <p>Weil alles nur lokal gespeichert ist, gibt es einige Dinge zu beachten:</p>
                   <ul className="list-disc pl-4 space-y-1 mt-1">
-                    <li><strong>Regelmäßig ein Backup erstellen</strong> (Optionen → Datensicherung). Beim Löschen der Browserdaten, bei einem neuen Gerät oder einem Geräteverlust sind die Daten sonst weg.</li>
+                    <li><strong>Auf dem iPhone: RV Mobil zum Home-Bildschirm hinzufügen</strong> (im Teilen-Menü von Safari). Wenn Sie die App nur über ein Lesezeichen benutzen, löscht Safari nach <strong>sieben Tagen ohne Nutzung</strong> alle gespeicherten Daten – Bericht und Archiv. Als App auf dem Home-Bildschirm bleiben sie erhalten. Zeigt die App oben einen roten Hinweis dazu, ist genau das der Grund.</li>
+                    <li><strong>Regelmäßig ein Backup erstellen</strong> (Optionen → Datensicherung). Beim Löschen der Browserdaten, bei einem neuen Gerät oder einem Geräteverlust sind die Daten sonst weg. Nach zwei Wochen ohne Sicherung erinnert die App Sie von selbst daran.</li>
                     <li><strong>Auf die Speicheranzeige achten:</strong> Oben im RV Report steht normalerweise „Automatisch lokal gesichert“. Erscheint stattdessen ein roter Hinweis <strong>„Speichern fehlgeschlagen“</strong>, konnte die App Ihre Eingaben nicht sichern – erstellen Sie dann bitte sofort ein Backup, bevor Sie weiterarbeiten.</li>
                   </ul>
                   <p className="mt-2">Vermeiden Sie außerdem den privaten Modus des Browsers: Dort werden die Daten beim Schließen gelöscht.</p>
+                  <p className="mt-2"><strong>Eine Sicherung einspielen überschreibt nichts mehr:</strong> Unter „Backup wiederherstellen“ werden die Daten aus der Datei standardmäßig mit dem vorhandenen Stand <strong>zusammengeführt</strong>. Nur wenn Sie den Haken „Vorhandene Daten ersetzen“ setzen, wird alles auf diesem Gerät überschrieben.</p>
+                  <p className="mt-2"><strong>Falls die App einmal abstürzt:</strong> Auf dem Fehlerbildschirm steht ganz oben „Daten als Datei sichern“. Nutzen Sie diese Schaltfläche <strong>bevor</strong> Sie etwas anderes versuchen – die Datei lässt sich später über Optionen → Datensicherung → Backup einspielen wieder laden. „Kompletten Reset durchführen“ löscht dagegen alles.</p>
                 </FAQItem>
 
                 <FAQItem
@@ -143,7 +146,8 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <p><strong>Live-Verbindung:</strong> Nach einer einmaligen Kopplung gleichen sich beide Geräte von selbst ab – immer dann, wenn sich etwas geändert hat. Sie können das Sync-Fenster danach schließen und ganz normal weiterarbeiten; oben erscheint der Hinweis <strong>„Live verbunden“</strong>. Voraussetzung: beide Geräte im gleichen WLAN, App auf beiden geöffnet.</p>
                   <p>Tippen Sie auf beiden Geräten kurz hintereinander etwas ein, bleiben <strong>beide Eingaben erhalten</strong> – jede Kategorie wird einzeln abgeglichen. Nur wenn Sie dieselbe Kategorie gleichzeitig auf beiden Geräten ändern, gilt die zuletzt getippte.</p>
                   <p>Die Verbindung endet, wenn Sie sie trennen oder die App schließen. Bricht sie von selbst ab – WLAN weg, anderes Gerät zugeklappt –, meldet die App das mit einem <strong>deutlichen Hinweis samt Ansage</strong> und bietet „Neu verbinden“ an. Solange Sie diesen Hinweis sehen, landen Ihre Eingaben nur noch auf diesem einen Gerät.</p>
-                  <p><strong>Keine Kamera nötig:</strong> Beide Wege funktionieren normalerweise per QR-Code-Scan, aber jeder Code lässt sich auch antippen, kopieren und am anderen Gerät einfügen – praktisch, wenn der PC keine Webcam hat.</p>
+                  <p><strong>Keine Kamera nötig:</strong> Auf dem empfangenden Gerät steht das Feld „Ohne Kamera: Code einfügen“ <strong>ganz oben</strong> – noch vor der Kameravorschau. Ein eingefügter Code wird sofort übernommen, Sie müssen danach keine Schaltfläche mehr suchen. Jeder Code lässt sich auf dem sendenden Gerät mit „Code kopieren“ übertragen; eine Webcam am PC braucht es dafür nicht.</p>
+                  <p><strong>Zum Antwort-Code der Live-Verbindung:</strong> Lassen Sie sich Zeit – nachgemessen funktioniert er noch nach mehreren Minuten. Sollte die Verbindung trotzdem nicht zustande kommen, erzeugen Sie auf dem zweiten Gerät einfach einen neuen Antwort-Code und übertragen ihn erneut.</p>
                   <p>Alternativ steht weiterhin die Funktion "Sicheres Backup" unter "Optionen" zur Verfügung. Alles funktioniert komplett offline – ganz ohne Server.</p>
                 </FAQItem>
 

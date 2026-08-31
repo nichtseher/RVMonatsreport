@@ -15,15 +15,20 @@ The UI is German and addresses the user formally ("Sie"). Spoken announcements a
 ```bash
 npm install
 npm run dev        # tsx server.ts — dev server on http://localhost:3000 (Express + Vite middleware, HMR)
-npm run lint       # tsc --noEmit (covers src/ and scripts/); no ESLint config
-npm run check      # tsx scripts/pruefen.ts — 37 checks, no test framework
+npm run lint       # tsc --noEmit (covers src/, scripts/, tests/); no ESLint config
+npm run check      # tsx scripts/pruefen.ts — 135 checks, no test framework
+npm run check:ui   # playwright test — 48 UI/a11y checks (starts the dev server itself)
 npm run build      # vite build (client) + esbuild bundles server.ts -> dist/server.cjs
 npm run start      # node dist/server.cjs — serve the production build
 ```
 
 `npm run check` covers the pure functions where a mistake does real damage: sync merge (including the per-field timestamps), Excel sum formulas, working-time math across midnight, backup encryption, and a scan of `src/` for double-encoded characters and BOMs. Add cases there rather than writing another throwaway script. `scripts/checks/kodierung.ts` carries an allowlist — `ChangelogModal.tsx` contains mojibake on purpose, as an example in the 0.7.0 entry.
 
-The deploy workflow runs `lint`, `check` and `npm audit` **before** building, so a failure leaves the previous version online. Anything not expressible as a pure-function check (UI geometry, screen-reader behavior, real devices) still has to be verified by hand — see below.
+`npm run check:ui` (added 0.9.18) covers what a pure-function check cannot: horizontal overflow at 360 px across all three font sizes, WCAG 2.5.8 target sizes, and an axe-core pass per view. It runs **serially on purpose** — with parallel workers, 9 of 30 checks failed erratically because concurrent page loads tore the execution context out from under Vite's on-demand transforms; the same checks passed with one worker. Two device profiles: `handy` (360×780, `hasTouch`, `isMobile`) and `schreibtisch`. Note that Playwright's device emulation really does flip `@media (pointer: coarse)` — the ROADMAP long assumed those branches were untestable, which was true only for a resized browser window. `tests/oberflaeche.spec.ts` proves it rather than asserting it.
+
+**axe-core finds a subset of WCAG failures, never all of them.** A green run is not a conformance claim; the NVDA/VoiceOver pass is still what decides 1.0.
+
+The deploy workflow runs `lint`, `check`, `check:ui` and `npm audit` **before** building, so a failure leaves the previous version online. Anything not expressible in those (screen-reader behavior, real devices, camera flows) still has to be verified by hand — see below.
 
 **Every push to `main` publishes to production immediately.** `.github/workflows/deploy.yml` runs `npm ci && npm run build` and publishes via `actions/deploy-pages` on every push — verified 2026-08-02: after a plain `git push origin main` (no `npm run deploy`), the workflow finished in ~33s and the live site served assets byte-identical to a local build. Never push work that isn't verified.
 

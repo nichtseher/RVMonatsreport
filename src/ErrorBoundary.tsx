@@ -1,24 +1,29 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
-import { AlertTriangle, RefreshCw, Trash2 } from "lucide-react";
+import { AlertTriangle, RefreshCw, Trash2, Download } from "lucide-react";
 import { clear as clearIndexedDb } from "idb-keyval";
+import { ladeRettungsPaketHerunter } from "./utils/speicherSchutz";
 
 interface Props {
   children?: ReactNode;
 }
 
+type Rettung = "bereit" | "laeuft" | "fertig" | "fehler";
+
 interface State {
   hasError: boolean;
   errorMsg: string;
+  rettung: Rettung;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
-    errorMsg: ""
+    errorMsg: "",
+    rettung: "bereit"
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, errorMsg: error.message };
+    return { hasError: true, errorMsg: error.message, rettung: "bereit" };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -30,8 +35,28 @@ export class ErrorBoundary extends Component<Props, State> {
   // Hier NICHT: Das ist der Absturz-Bildschirm. Wenn der React-Zustand bereits
   // beschaedigt ist, muss der Not-Reset ohne eigene Komponenten funktionieren.
   // Das eingebaute confirm() des Browsers ist hier die robustere Wahl.
+  /**
+   * Daten retten, bevor irgendetwas gelöscht wird (0.9.16).
+   *
+   * Bis dahin bot dieser Bildschirm als einzigen Ausweg das Löschen aller
+   * Daten an -- und für einen blinden Nutzer war das die einzige erreichbare
+   * Taste. Gelesen wird direkt aus IndexedDB: Der React-Zustand ist hier
+   * moeglicherweise beschaedigt, die gespeicherten Daten sind es meistens
+   * nicht.
+   */
+  private handleRettung = async () => {
+    this.setState({ rettung: "laeuft" });
+    try {
+      await ladeRettungsPaketHerunter();
+      this.setState({ rettung: "fertig" });
+    } catch (err) {
+      console.error("Rettung der Daten fehlgeschlagen", err);
+      this.setState({ rettung: "fehler" });
+    }
+  };
+
   private handleHardReset = async () => {
-    if (confirm("Möchten Sie die App wirklich komplett zurücksetzen? Alle gespeicherten Daten (inkl. RV Archiv) werden gelöscht!")) {
+    if (confirm("Möchten Sie die App wirklich komplett zurücksetzen? Alle gespeicherten Daten (inkl. RV Archiv) werden gelöscht! Sichern Sie vorher Ihre Daten über die Schaltfläche \"Daten als Datei sichern\".")) {
       // Der Bericht und das RV Archiv liegen in IndexedDB (idb-keyval), nicht
       // in localStorage -- ohne clearIndexedDb() waere diese Meldung falsch
       // UND ein Absturz durch beschaedigte Archivdaten wuerde nach dem Reset
@@ -74,7 +99,32 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
 
             <div className="space-y-3">
-              <button 
+              {/* STEHT BEWUSST GANZ OBEN. Wer hier landet, hat unter Umstaenden
+                  einen kompletten Monat im Speicher -- und darunter stand bis
+                  0.9.16 als einziger Ausweg die Taste, die alles loescht. */}
+              <button
+                onClick={this.handleRettung}
+                disabled={this.state.rettung === "laeuft"}
+                className="w-full flex items-center justify-center gap-2 bg-[var(--card-bg)] text-[var(--text-color)] font-bold py-3.5 px-4 rounded-xl border-2 border-[var(--primary)] hover:brightness-110 disabled:opacity-60 transition-all active:scale-95 text-sm"
+              >
+                <Download className="w-4 h-4" aria-hidden="true" />
+                <span>
+                  {this.state.rettung === "laeuft"
+                    ? "Daten werden gesichert…"
+                    : "Daten als Datei sichern"}
+                </span>
+              </button>
+
+              <p role="status" className="text-[0.8rem] leading-relaxed text-[var(--text-muted)]">
+                {this.state.rettung === "fertig" &&
+                  "Ihre Daten wurden als Datei gespeichert. Sie können sie später über Optionen, Backup, Backup einspielen wieder laden."}
+                {this.state.rettung === "fehler" &&
+                  "Die Daten konnten nicht gesichert werden. Bitte setzen Sie die App NICHT zurück, sondern laden Sie sie zuerst neu."}
+                {this.state.rettung === "bereit" &&
+                  "Sichern Sie Ihre Daten, bevor Sie etwas anderes versuchen."}
+              </p>
+
+              <button
                 onClick={this.handleSoftReset}
                 className="w-full flex items-center justify-center gap-2 bg-[var(--primary)] text-[var(--primary-text)] font-bold py-3.5 px-4 rounded-xl hover:opacity-90 transition-all active:scale-95 text-sm"
               >

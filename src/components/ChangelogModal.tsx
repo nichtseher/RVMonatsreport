@@ -31,6 +31,48 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="space-y-6">
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+            <Activity className="w-5 h-5 text-[var(--info-border)]" />
+            <span>Version 0.9.18: Zwei zu blasse Textstellen behoben</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Die Fußzeile und die Randleiste am PC waren zu blass.</strong> Beide Texte lagen unter dem Kontrast, den die Norm für lesbare Schrift verlangt – ausgerechnet in dieser App. Die künstliche Abschwächung ist raus, die Texte sind jetzt normal dunkel.</li>
+            <li><strong>Neu: Die App prüft sich vor jeder Veröffentlichung selbst auf Bedienbarkeit.</strong> 48 automatische Kontrollen gehen jede Ansicht in allen drei Schriftgrößen durch und melden zu blasse Schrift, zu kleine Schaltflächen oder Inhalte, die über den Bildschirmrand hinausragen. Genau so wurden die beiden Stellen oben gefunden.</li>
+            <li><strong>Was das nicht ersetzt:</strong> Eine automatische Prüfung findet längst nicht alles. Der Durchgang mit einem echten Screenreader bleibt nötig – die Kontrollen fangen nur ab, dass alte Fehler unbemerkt zurückkommen.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.17: Der Geräte-Abgleich ohne Kamera</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Das Feld zum Einfügen des Codes steht jetzt ganz oben.</strong> Bisher war es der vierte Abschnitt – unter Kamerabild, Fortschrittsbalken und Hinweistext. Wer sich die Seite vorlesen lässt, hatte dort längst aufgegeben, obwohl der Weg ohne Kamera vollständig vorhanden war.</li>
+            <li><strong>Einfügen genügt.</strong> Ein gültiger Code wird sofort übernommen – Sie müssen danach keine Schaltfläche mehr suchen.</li>
+            <li><strong>Die Schaltflächen heißen jetzt nach dem Ziel:</strong> „Daten an anderes Gerät senden" statt „Dieses Gerät zeigt QR-Codes an". Und der Abschnitt heißt „Einmal übertragen – auch ohne Kamera".</li>
+            <li><strong>Die Ein-Minuten-Frist ist weg.</strong> Nachgemessen: Der Antwort-Code funktionierte noch nach drei Minuten. Die Frist war eine Vermutung und mit Screenreader nicht einzuhalten. Falls es doch einmal nicht klappt, erzeugen Sie einfach einen neuen Antwort-Code.</li>
+            <li><strong>Eine Sicherung kann jetzt zusammengeführt werden.</strong> Bisher hat das Einspielen einer Backup-Datei alles auf dem Zielgerät überschrieben. Jetzt werden beide Stände standardmäßig vereinigt – Ersetzen bleibt möglich, ist aber eine bewusste Entscheidung mit Haken.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+            <ShieldCheck className="w-5 h-5 text-[var(--danger)]" />
+            <span>Version 0.9.16: Schutz vor Datenverlust</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Die App bittet den Browser jetzt darum, Ihre Daten dauerhaft zu behalten.</strong> Das hat sie vorher nie getan. Auf dem iPhone bedeutet das konkret: Wenn Sie RV Mobil nur über ein Lesezeichen benutzen, löscht Safari nach sieben Tagen ohne Nutzung alles – Bericht und Archiv. Die App sagt Ihnen das jetzt und bittet Sie, sie zum Home-Bildschirm hinzuzufügen. Danach bleiben die Daten erhalten.</li>
+            <li><strong>Eine Erinnerung an die Datensicherung.</strong> Bisher gab es nur die Erinnerung, den Bericht an die VL zu schicken – nichts erinnerte daran, die Daten selbst zu sichern. Nach zwei Wochen ohne Sicherung werden Sie jetzt darauf hingewiesen.</li>
+            <li><strong>Der Fehlerbildschirm löscht nicht mehr als Erstes.</strong> Wenn die App einmal abstürzt, stand dort bisher nur „alles zurücksetzen" – und das löscht sämtliche Daten. Jetzt steht darüber „Daten als Datei sichern". Die Datei lässt sich später ganz normal über Optionen → Backup wieder einspielen.</li>
+            <li><strong>Nebenbei behoben:</strong> Bei der Schriftgröße „Extra groß" ragte der Hinweis auf eine abgerissene Live-Verbindung 34 Pixel über den Bildschirmrand hinaus. Die Knöpfe stehen dort jetzt untereinander.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
             <ShieldCheck className="w-5 h-5 text-[var(--info-border)]" />
             <span>Version 0.9.15: Aufräumarbeiten abgeschlossen</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
