@@ -52,23 +52,77 @@ async function setzeSchriftgroesse(page: Page, groesse: string) {
   await page.waitForTimeout(120);
 }
 
+/**
+ * Wartet, bis die Breite steht.
+ *
+ * Nachgemessen auf dem Entwicklungsrechner: Nach dem Laden laufen bis zu 86
+ * Übergänge gleichzeitig, der letzte endet je nach Durchgang zwischen 149 und
+ * 305 ms. Die feste Wartezeit oben liegt mit rund 370 ms knapp darüber -- auf
+ * einem langsameren Rechner (der CI-Läufer) fällt die Messung damit mitten in
+ * eine Einblendung. Deshalb wird hier auf Ruhe gewartet statt auf eine Uhr.
+ *
+ * Bewusst mit `setTimeout` und nicht mit `requestAnimationFrame`, aus demselben
+ * Grund wie oben.
+ */
+async function warteAufRuhigesLayout(page: Page) {
+  await page.evaluate(async () => {
+    let letzte = -1;
+    let ruhig = 0;
+    const start = performance.now();
+    while (ruhig < 4 && performance.now() - start < 2000) {
+      await new Promise((r) => setTimeout(r, 16));
+      const jetzt = document.documentElement.scrollWidth;
+      const laufen = document.getAnimations().some((a) => a.playState === "running");
+      if (jetzt === letzte && !laufen) ruhig++;
+      else {
+        ruhig = 0;
+        letzte = jetzt;
+      }
+    }
+  });
+}
+
 test.describe("Kein waagerechter Überlauf", () => {
   for (const ansicht of ANSICHTEN) {
     for (const groesse of SCHRIFTGROESSEN) {
       test(`${ansicht.name} bei Schriftgröße ${groesse}`, async ({ page }) => {
         await oeffne(page, ansicht.tab);
         await setzeSchriftgroesse(page, groesse);
+        await warteAufRuhigesLayout(page);
 
-        const { scrollBreite, sichtBreite } = await page.evaluate(() => ({
-          scrollBreite: document.documentElement.scrollWidth,
-          sichtBreite: document.documentElement.clientWidth,
-        }));
+        // Die Meldung nennt die überstehenden Elemente, nicht nur die Zahl --
+        // aus demselben Grund wie bei axe-core weiter unten: Ein blosses
+        // "361 px" zwingt sonst zur Handsuche auf einem Rechner, auf dem der
+        // Fehler womöglich gar nicht auftritt.
+        const { scrollBreite, sichtBreite, ueberstehende } = await page.evaluate(() => {
+          const sicht = document.documentElement.clientWidth;
+          const treffer: string[] = [];
+          for (const el of Array.from(document.querySelectorAll("*"))) {
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0) continue;
+            if (r.right <= sicht + 0.05) continue;
+            const klassen =
+              typeof el.className === "string" && el.className
+                ? "." + el.className.trim().split(/\s+/).slice(0, 5).join(".")
+                : "";
+            treffer.push(
+              `${el.tagName.toLowerCase()}${klassen} rechts=${Math.round(r.right * 100) / 100} breite=${Math.round(r.width * 100) / 100} "${(el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 40)}"`,
+            );
+          }
+          return {
+            scrollBreite: document.documentElement.scrollWidth,
+            sichtBreite: sicht,
+            // Die innersten zuletzt: die Hüllen erben den Überlauf nur.
+            ueberstehende: treffer.slice(-4),
+          };
+        });
 
         // Gleichheit, nicht "kleiner gleich": Ein Ueberlauf von einem einzigen
         // Pixel ist bereits eine waagerechte Bildlaufleiste.
         expect(
           scrollBreite,
-          `${ansicht.name} / ${groesse}: ${scrollBreite} px Inhalt bei ${sichtBreite} px Fenster`,
+          `${ansicht.name} / ${groesse}: ${scrollBreite} px Inhalt bei ${sichtBreite} px Fenster` +
+            (ueberstehende.length ? `\nÜbersteht: ${ueberstehende.join("\n           ")}` : ""),
         ).toBeLessThanOrEqual(sichtBreite);
       });
     }
