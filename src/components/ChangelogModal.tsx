@@ -38,6 +38,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Die Fußzeile und die Randleiste am PC waren zu blass.</strong> Beide Texte lagen unter dem Kontrast, den die Norm für lesbare Schrift verlangt – ausgerechnet in dieser App. Die künstliche Abschwächung ist raus, die Texte sind jetzt normal dunkel.</li>
             <li><strong>Neu: Die App prüft sich vor jeder Veröffentlichung selbst auf Bedienbarkeit.</strong> 48 automatische Kontrollen gehen jede Ansicht in allen drei Schriftgrößen durch und melden zu blasse Schrift, zu kleine Schaltflächen oder Inhalte, die über den Bildschirmrand hinausragen. Genau so wurden die beiden Stellen oben gefunden.</li>
+            <li><strong>Die Überschrift „Zeiterfassung" ragte auf schmalen Geräten über den Rand.</strong> Bei großer Schrift passte das Wort nicht mehr neben das Symbol – die Seite ließ sich dann seitlich verschieben. Symbol und Überschrift stehen auf schmalen Geräten jetzt untereinander, das Wort bleibt ganz. Das war schon länger so und ist bei der ersten automatischen Prüfung aufgefallen.</li>
             <li><strong>Was das nicht ersetzt:</strong> Eine automatische Prüfung findet längst nicht alles. Der Durchgang mit einem echten Screenreader bleibt nötig – die Kontrollen fangen nur ab, dass alte Fehler unbemerkt zurückkommen.</li>
           </ul>
         </div>

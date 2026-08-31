@@ -10,6 +10,82 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-31 — Der erste Fund des neuen Tors war einer, den dieser Rechner nicht sehen kann
+
+Nachtrag zum Eintrag darunter. Beim Veröffentlichen von 0.9.16 bis 0.9.18 lief
+`check:ui` zum ersten Mal auf dem CI-Läufer — und scheiterte an genau einer
+Prüfung, die lokal grün war:
+
+```
+Zeit / extra-large: 361 px Inhalt bei 360 px Fenster
+```
+
+**Ein Pixel.** Lokal nicht nachstellbar, und zwar nicht aus Nachlässigkeit:
+
+| Versuch, es hier zu erzeugen | Ergebnis |
+|---|---|
+| Wurzelschrift bis Faktor 1,2 gestreckt | scrollWidth blieb 360 |
+| Verdana, Georgia, Tahoma erzwungen | scrollWidth blieb 360 |
+| Abstand aller Elemente zum rechten Rand | keins näher als 1,5 px |
+| 141 Proben je Durchgang, alle 16 ms | keine einzige über 360 |
+
+Damit waren die naheliegenden Erklärungen erledigt — breitere Linux-Schriften
+und eine zu knappe Spalte. Die Messung lieferte stattdessen einen anderen
+Verdacht: Nach dem Laden laufen bis zu **86 Übergänge gleichzeitig**, der
+letzte endet je nach Durchgang zwischen 149 und 305 ms. Die feste Wartezeit im
+Test lag mit rund 370 ms knapp darüber; auf einem langsameren Rechner fällt die
+Messung mitten in eine Einblendung.
+
+### Erst das Werkzeug, dann der Fehler
+
+Die Prüfung wartet jetzt auf Layout-Ruhe statt auf eine Uhr, und **die
+Fehlermeldung nennt das überstehende Element** — dieselbe Begründung wie bei
+der axe-Prüfung: Eine blosse Zahl zwingt zur Handsuche auf einem Rechner, auf
+dem der Fehler gar nicht auftritt. Der nächste Lauf lieferte:
+
+```
+div  rechts=361,39  breite=270,39  "ZeiterfassungHier erfassen Sie ..."
+h2.text-2xl.font-black.tracking-tight  breite=270,39  "Zeiterfassung"
+```
+
+Kein Messartefakt, sondern ein **echter Überlauf, der seit Langem live war**.
+Der Textblock in `TimeModal.tsx` ist ein Flex-Kind ohne `min-w-0`, hat damit
+`min-width: auto` und kann nicht unter seine Mindestbreite schrumpfen. Die gibt
+das unteilbare Wort „Zeiterfassung" vor: 270,4 px ab x = 91. Auf Windows misst
+dasselbe Wort knapp unter der Grenze — auf den Android-Geräten der Kollegen
+wäre es aufgetreten.
+
+### Der erste Fix trug nur halb
+
+`min-w-0` plus kleinere Überschrift plus `hyphens-auto`: kein Überlauf mehr.
+Der **Blick auf die Seite** zeigte dann den Bruch mitten im Wort —
+„Zeiterfass/ung", ohne Trennstrich. Chromium lädt die Trennwörterbücher nach,
+das deutsche fehlte. Gegengeprobt mit erzwungenem `hyphens: none`: **193 px
+Wort in einem 148 px breiten Kasten.**
+
+Die Ursache war die Enge selbst. Icon, Abstand und die mit der Schriftgröße
+mitwachsende Kartenpolsterung ließen dem Text 149 px. Die Kopfzeile stapelt
+jetzt auf schmalen Geräten, wie das Warnband in 0.9.16.
+
+| bei 360 px / extra-large | vorher | nachher |
+|---|---|---|
+| Überschrift | 270,4 px, überstehend | 214 px, eine Zeile, ganzes Wort |
+| scrollWidth | 361 | 360 |
+| Beschreibungstext | 5 Zeilen | 3 Zeilen |
+
+`break-words` bleibt als Boden darunter: Es greift nur, wenn ein Wort auch dann
+nicht passt, und hängt an keinem Wörterbuch.
+
+### Was das über das Tor sagt
+
+Der erste Lauf hat einen Fehler gefunden, den drei Anläufe auf diesem Rechner
+nicht reproduzieren konnten — und der auf den Zielgeräten aufgetreten wäre. Das
+ist der Zweck der Sache. Zugleich die Mahnung: **Der Wortbruch stand in keiner
+Zahl.** `scrollWidth` war 360, alle 48 Prüfungen grün, und die Überschrift sah
+trotzdem falsch aus. Gefunden hat ihn der Blick auf die Seite.
+
+---
+
 ## 2026-08-31 — v0.9.18: Barrierefreiheit kommt ins Deploy-Tor
 
 Bis hierher prüfte das Tor Typen, Rechenkerne und Sicherheitsmeldungen.
