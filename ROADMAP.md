@@ -317,8 +317,32 @@ ungeprüft.
 - **Die Matrix automatisieren:** 360 px × drei Schriftgrößen × alle Ansichten
   und Dialoge, mit `scrollWidth`-Prüfung. Von Hand ist das kombinatorisch
   aussichtslos; genau deshalb ist es zweimal live gegangen.
-- **WebKit-Lauf** als echte Engine — näher an iOS-Safari als alles, was
-  bisher geprüft wurde.
+- ~~**WebKit-Lauf** als echte Engine~~ **Erledigt am 2026-09-01.** Drittes
+  Profil `handy-webkit`, bewusst mit **derselben Fenstergröße** wie das
+  Chromium-Handy: Schlägt eine Prüfung nur dort fehl, liegt es nachweisbar am
+  Motor und nicht an der Breite. Prüfungen **41 → 62**, Laufzeit 1,2 → 1,8 min.
+
+  **WebKit hat nichts gefunden** — kein Überlauf, kein axe-Verstoß. Das ist
+  ein Ergebnis und keine Enttäuschung: Der Wert liegt darin, dass ein
+  künftiger Fehler auf der Engine der Kollegen auffällt, nicht darin, heute
+  einen zu liefern.
+
+  **Ein Unterschied kam dabei doch heraus**, und er betrifft das Werkzeug:
+
+  | im selben Profil, 360 × 780 | `pointer: coarse` | `hover` | `ontouchstart` | `maxTouchPoints` |
+  |---|---|---|---|---|
+  | Chromium | true | false | true | **1** |
+  | WebKit | true | false | true | **0** |
+
+  Die Medienabfrage, an der die Touch-Zweige im CSS hängen, stimmt in beiden.
+  Nur `maxTouchPoints` setzt Playwrights WebKit-Bau nicht — eine Grenze des
+  Prüfwerkzeugs, **keine** Aussage über iOS-Safari (ein echtes iPhone meldet
+  dort 5). Die Prüfzeile steht deshalb weiterhin scharf, aber nur im
+  Chromium-Profil, statt sie überall weich zu machen.
+
+  **Was das nicht ersetzt:** Playwrights WebKit ist nicht Safari auf einem
+  iPhone. Bildschirmtastatur, Safe-Areas und die Sieben-Tage-Speicherregel
+  bleiben Handarbeit für 1.0.
 - **Deploy-Bestätigung automatisieren** (GitHub-MCP-Server). Der Vorfall vom
   2026-08-08 — Push gemeldet, kein Workflow-Lauf erzeugt — ist bisher nur
   durch Handarbeit an der REST-API zu erkennen.

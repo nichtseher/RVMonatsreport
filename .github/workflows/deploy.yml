@@ -53,11 +53,16 @@ jobs:
       # Sicherheitsmeldungen -- ausgerechnet die Barrierefreiheit, also die
       # erklaerte Kernanforderung dieser App, war ungeprueft. Geprueft werden
       # waagerechter Ueberlauf bei 360 px in allen drei Schriftgroessen,
-      # Trefferflaechen nach WCAG 2.5.8 und ein axe-core-Durchlauf je Ansicht.
-      # Nur Chromium: Ein zweiter Motor verdoppelt die Laufzeit, ohne die
-      # Fehlerklasse zu erweitern.
+      # verstecktes Seitwaertsscrollen in Containern, Trefferflaechen nach
+      # WCAG 2.5.8 und ein axe-core-Durchlauf je Ansicht.
+      #
+      # Ab 0.9.19 zusaetzlich WebKit. Hier stand vorher, ein zweiter Motor
+      # lohne nicht -- das gilt fuer Firefox, aber nicht fuer WebKit: Das ist
+      # die Engine von iOS-Safari, auf der die Kollegen arbeiten, und die mit
+      # der Sieben-Tage-Speicherregel. Kosten: rund 35 Sekunden Laufzeit und
+      # ein zweiter Browser-Download.
       - name: Browser fuer die Oberflaechenpruefung
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Oberflaeche und Barrierefreiheit pruefen
         run: npm run check:ui

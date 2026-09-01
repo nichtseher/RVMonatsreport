@@ -10,6 +10,61 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-01 — WebKit im Deploy-Tor: nichts gefunden, und das ist der Punkt
+
+Die Konfiguration behauptete bis heute, ein zweiter Motor verdopple die
+Laufzeit, „ohne die Fehlerklasse zu erweitern". Für Firefox stimmt das. Für
+WebKit nicht: **Das ist die Engine von iOS-Safari** — die Engine, auf der die
+Kollegen arbeiten, und die mit der Sieben-Tage-Speicherregel, wegen der 0.9.16
+überhaupt entstanden ist. Ein Layoutfehler, den nur WebKit zeigt, trifft hier
+nicht irgendeinen Nutzer, sondern den typischen.
+
+Drittes Profil `handy-webkit`, bewusst mit **derselben Fenstergröße** wie das
+Chromium-Handy. Damit ist ein Fehlschlag eindeutig dem Motor zuzuordnen und
+nicht der Breite — sonst hätte man wieder zwei Erklärungen für einen Befund.
+
+| | vorher | nachher |
+|---|---|---|
+| Prüfungen | 41 | **62** |
+| Laufzeit | 1,2 min | 1,8 min |
+
+### Das Ergebnis: kein einziger Fund
+
+Kein Überlauf, kein verstecktes Seitwärtsscrollen, keine zu kleine
+Trefferfläche, kein axe-Verstoß. Das ist ein Ergebnis und keine Enttäuschung —
+der Wert liegt darin, dass ein *künftiger* Fehler auf der richtigen Engine
+auffällt, nicht darin, heute einen zu liefern. Es wäre unredlich, das als
+Erfolg zu verkaufen; es ist eine Versicherung.
+
+### Ein Unterschied kam doch heraus — im Werkzeug, nicht in der App
+
+Der Touch-Nachweis schlug in WebKit fehl. Nachgemessen, gleiches Profil,
+gleiche Fenstergröße:
+
+| | `pointer: coarse` | `hover` | `ontouchstart` | `maxTouchPoints` |
+|---|---|---|---|---|
+| Chromium | true | false | true | **1** |
+| WebKit | true | false | true | **0** |
+
+Die Medienabfrage, an der die Touch-Zweige im CSS hängen, stimmt in beiden
+Motoren — der für die App entscheidende Teil ist also gleich. Nur
+`maxTouchPoints` setzt Playwrights WebKit-Bau nicht. Das ist eine Grenze des
+Prüfwerkzeugs und **keine** Aussage über iOS-Safari; ein echtes iPhone meldet
+dort 5.
+
+Naheliegend wäre gewesen, die Zeile weich zu machen, damit sie überall
+durchläuft. Stattdessen prüft sie weiterhin scharf, aber nur dort, wo sie
+etwas misst — und die Medienabfragen werden jetzt in beiden Motoren geprüft,
+also mehr als vorher.
+
+### Was das nicht ist
+
+Playwrights WebKit ist nicht Safari auf einem iPhone. Bildschirmtastatur,
+Safe-Areas, die Sieben-Tage-Regel und das Anhalten der App im Hintergrund
+bleiben Handarbeit für 1.0.
+
+---
+
 ## 2026-09-01 — Zeitumstellung: kleiner als gedacht, an anderen Tagen als notiert
 
 Der Punkt stand mit Frist in der Roadmap („vor dem 25.10.2026 entscheiden").

@@ -18,10 +18,25 @@ import { defineConfig, devices } from "@playwright/test";
  *   Playwrights Geräte-Nachbildung nicht. `pruefe-medienabfrage` in
  *   `tests/oberflaeche.spec.ts` weist das nach, statt es zu behaupten.
  * - **schreibtisch**: das Breitbild-Layout mit der Seitenleiste.
+ * - **handy-webkit**: dieselben 360 × 780 wie „handy", aber in WebKit.
  *
- * Nur Chromium: Ein zweiter Motor verdoppelt die Laufzeit des Deploy-Tors,
- * ohne die Fehlerklasse zu erweitern, um die es hier geht (Geometrie und
- * ARIA). WebKit gehört zu den echten Geräten in 1.0, nicht hierher.
+ * ZU WEBKIT, WEIL HIER BIS 2026-09-01 DAS GEGENTEIL STAND
+ *
+ * Der frühere Kommentar sagte, ein zweiter Motor verdopple die Laufzeit, ohne
+ * die Fehlerklasse zu erweitern. Das stimmt für Chromium gegen Firefox; für
+ * WebKit stimmt es nicht: **WebKit ist die Engine von iOS-Safari, und dort
+ * arbeiten die Kollegen.** Es ist zugleich die Engine mit der Sieben-Tage-Regel,
+ * wegen der 0.9.16 überhaupt entstanden ist. Ein Layoutfehler, den nur WebKit
+ * zeigt, trifft in diesem Projekt also nicht irgendeinen Nutzer, sondern den
+ * typischen.
+ *
+ * Bewusst mit **derselben Fenstergröße** wie das Chromium-Handy: Schlägt eine
+ * Prüfung nur hier fehl, liegt es nachweisbar am Motor und nicht an der Breite.
+ *
+ * Was das trotzdem nicht ist: ein Ersatz für ein echtes iPhone. WebKit von
+ * Playwright ist nicht Safari — es fehlen die Eigenheiten des Geräts, die
+ * Bildschirmtastatur und die Speicherregeln des Systems. Das bleibt Handarbeit
+ * für 1.0.
  */
 export default defineConfig({
   testDir: "./tests",
@@ -60,6 +75,13 @@ export default defineConfig({
     {
       name: "schreibtisch",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 } },
+    },
+    {
+      name: "handy-webkit",
+      use: {
+        ...devices["iPhone 13"],
+        viewport: { width: 360, height: 780 },
+      },
     },
   ],
 

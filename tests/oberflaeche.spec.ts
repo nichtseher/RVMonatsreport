@@ -225,8 +225,10 @@ test.describe("Touch-Erkennung", () => {
     page,
   }, testInfo) => {
     // Der Nachweis fuer die Korrektur der ROADMAP-Annahme, die Touch-Zweige
-    // seien nicht pruefbar. Gilt nur fuer das Handy-Profil.
-    test.skip(testInfo.project.name !== "handy", "Nur im Handy-Profil sinnvoll");
+    // seien nicht pruefbar. Gilt fuer beide Handy-Profile -- seit 2026-09-01
+    // auch fuer WebKit, wo die Frage naeher an der Wirklichkeit der Kollegen
+    // liegt als in der Chromium-Nachbildung.
+    test.skip(!testInfo.project.name.startsWith("handy"), "Nur in den Handy-Profilen sinnvoll");
     await oeffne(page, "form");
 
     const lage = await page.evaluate(() => ({
@@ -234,9 +236,30 @@ test.describe("Touch-Erkennung", () => {
       fine: matchMedia("(pointer: fine)").matches,
       hover: matchMedia("(hover: hover)").matches,
       touchPunkte: navigator.maxTouchPoints,
+      ontouchstart: "ontouchstart" in window,
     }));
 
+    // Das ist der Teil, auf den es ankommt: An dieser Medienabfrage haengen die
+    // Touch-Zweige im CSS. Beide Motoren melden sie gleich.
     expect(lage.coarse, `matchMedia-Lage: ${JSON.stringify(lage)}`).toBe(true);
-    expect(lage.touchPunkte).toBeGreaterThan(0);
+    expect(lage.fine, `matchMedia-Lage: ${JSON.stringify(lage)}`).toBe(false);
+    expect(lage.hover, `matchMedia-Lage: ${JSON.stringify(lage)}`).toBe(false);
+    expect(lage.ontouchstart, `matchMedia-Lage: ${JSON.stringify(lage)}`).toBe(true);
+
+    /*
+      `maxTouchPoints` nur in Chromium pruefen. Nachgemessen am 2026-09-01 im
+      selben Profil und derselben Fenstergroesse:
+
+        Chromium   coarse true, hover false, ontouchstart true, maxTouchPoints 1
+        WebKit     coarse true, hover false, ontouchstart true, maxTouchPoints 0
+
+      Playwrights WebKit-Bau setzt den Wert schlicht nicht. Das ist eine Grenze
+      des Pruefwerkzeugs und **keine** Aussage ueber iOS-Safari -- ein echtes
+      iPhone meldet dort 5. Die Zeile hier weich zu machen waere falsch; sie
+      gehoert dorthin, wo sie etwas misst.
+    */
+    if (testInfo.project.name === "handy") {
+      expect(lage.touchPunkte, `matchMedia-Lage: ${JSON.stringify(lage)}`).toBeGreaterThan(0);
+    }
   });
 });
