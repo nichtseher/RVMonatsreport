@@ -192,10 +192,26 @@ export default function StatsModal({
           {/* TAB 1: CURRENT MONTH */}
           {activeTab === "current" && (
             <div className="space-y-6">
-              {/* Bento Grid Metrics */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-3-soft)] text-center">
-                  <span className="block text-[0.75rem] font-black uppercase text-[var(--cat-3-text)] tracking-wider mb-1">
+              {/*
+                Bento Grid Metrics.
+
+                Warum `auto-fit` statt fester zwei Spalten: Bei 360 px und
+                Schriftgröße „Extra groß" fressen die verschachtelten,
+                mitwachsenden Polsterungen (`p-6` außen = 36 px, `p-3` je
+                Kachel) so viel Breite, dass in zwei Spalten nur **49 px** für
+                die Beschriftung blieben. „Vorführungen" braucht dort 165 px
+                und ist unteilbar — die Kacheln schnitten ihre eigenen Titel
+                ab, und der umgebende Container bekam 56 px verstecktes
+                Seitwärtsscrollen. Gemessen am 2026-09-01.
+
+                Mit `minmax(7.5rem, 1fr)` entscheidet die Schriftgröße selbst:
+                solange zwei Spalten à 7,5 rem hineinpassen, bleiben es zwei;
+                sonst wird daraus eine. Das ist genau das, was WCAG 1.4.10
+                unter „Reflow" versteht.
+              */}
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(7.5rem,1fr))] md:grid-cols-4 gap-3">
+                <div className="p-3 sm:p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-3-soft)] text-center">
+                  <span className="block text-[0.75rem] font-black uppercase hyphens-auto break-words text-[var(--cat-3-text)] tracking-wider mb-1">
                     Aktivitäten
                   </span>
                   <span className="text-3xl font-black text-[var(--cat-3-text)]">
@@ -206,8 +222,8 @@ export default function StatsModal({
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-1-soft)] text-center">
-                  <span className="block text-[0.75rem] font-black uppercase text-[var(--cat-1-text)] tracking-wider mb-1">
+                <div className="p-3 sm:p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-1-soft)] text-center">
+                  <span className="block text-[0.75rem] font-black uppercase hyphens-auto break-words text-[var(--cat-1-text)] tracking-wider mb-1">
                     Vorführungen
                   </span>
                   <span className="text-3xl font-black text-[var(--cat-1-text)]">
@@ -218,8 +234,8 @@ export default function StatsModal({
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-2-soft)] text-center">
-                  <span className="block text-[0.75rem] font-black uppercase text-[var(--cat-2-text)] tracking-wider mb-1">
+                <div className="p-3 sm:p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-2-soft)] text-center">
+                  <span className="block text-[0.75rem] font-black uppercase hyphens-auto break-words text-[var(--cat-2-text)] tracking-wider mb-1">
                     Schulungen
                   </span>
                   <span className="text-3xl font-black text-[var(--cat-2-text)]">
@@ -230,8 +246,8 @@ export default function StatsModal({
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-4-soft)] text-center">
-                  <span className="block text-[0.75rem] font-black uppercase text-[var(--cat-4-text)] tracking-wider mb-1">
+                <div className="p-3 sm:p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-4-soft)] text-center">
+                  <span className="block text-[0.75rem] font-black uppercase hyphens-auto break-words text-[var(--cat-4-text)] tracking-wider mb-1">
                     Bürozeit
                   </span>
                   <span className="text-3xl font-black text-[var(--cat-4-text)]">

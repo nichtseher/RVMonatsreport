@@ -124,6 +124,44 @@ test.describe("Kein waagerechter Überlauf", () => {
           `${ansicht.name} / ${groesse}: ${scrollBreite} px Inhalt bei ${sichtBreite} px Fenster` +
             (ueberstehende.length ? `\nÜbersteht: ${ueberstehende.join("\n           ")}` : ""),
         ).toBeLessThanOrEqual(sichtBreite);
+
+        /*
+          Und derselbe Fehler eine Ebene tiefer.
+
+          Die Prüfung oben misst die Seite. Steckt der Überlauf aber in einem
+          Container mit `overflow-x: auto`, bleibt `documentElement.scrollWidth`
+          unauffällig -- der Inhalt wird still seitwärts scrollbar statt die
+          Seite zu verbreitern. Genau so blieben zwei echte Fehler unentdeckt
+          (2026-09-01): die Kacheln der Analyse schnitten bei „Extra groß" ihre
+          Beschriftung ab (56 px), und am Schreibtisch standen neun „+5"-Tasten
+          bei 1270..1318 in einem 1280 px breiten Fenster.
+
+          Warum die Regel genau auf `auto`/`scroll` zielt: Ein Container mit
+          `overflow-x: hidden` schneidet mit Absicht -- daran hängen `sr-only`
+          und `truncate`, die dadurch von selbst herausfallen. `auto` dagegen
+          entsteht hier fast immer versehentlich, weil Tailwinds
+          `overflow-y-auto` die x-Achse nach CSS-Spezifikation mitzieht.
+        */
+        const versteckte = await page.evaluate(() => {
+          const treffer: string[] = [];
+          for (const el of Array.from(document.querySelectorAll("*"))) {
+            if (el.clientWidth === 0) continue;
+            const zuViel = el.scrollWidth - el.clientWidth;
+            if (zuViel <= 1) continue;
+            const s = getComputedStyle(el);
+            if (s.overflowX !== "auto" && s.overflowX !== "scroll") continue;
+            const klassen =
+              typeof el.className === "string" && el.className
+                ? "." + el.className.trim().split(/\s+/).slice(0, 4).join(".")
+                : "";
+            treffer.push(
+              `${el.tagName.toLowerCase()}${klassen}: ${zuViel} px zu breit (${el.scrollWidth}/${el.clientWidth}) — "${(el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 32)}"`,
+            );
+          }
+          return treffer;
+        });
+
+        expect(versteckte, `${ansicht.name} / ${groesse}: verstecktes Seitwärtsscrollen`).toEqual([]);
       });
     }
   }

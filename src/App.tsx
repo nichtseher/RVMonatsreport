@@ -2319,7 +2319,37 @@ export default function App() {
             >
               1. Vorführungen & Auslieferungen
             </h2>
-            <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-2 lg:gap-5' : 'gap-3'}`}>
+            {/*
+              `auto-fit` statt fester zwei Spalten -- gemessen am 2026-09-01 bei
+              1280 px Fensterbreite:
+
+                Schriftgröße   Bedienzeile braucht   Karte bot
+                normal         336 px                418 px
+                large          364 px                364 px   <- genau null Reserve
+                extra-large    392 px                311 px   <- 81 px zu wenig
+
+              Bei „Extra groß" schnitt die Spalte die Zählertasten ab (neun
+              „+5"-Tasten standen bei 1270..1318 in einem 1280 px breiten
+              Fenster, 10 px blieben sichtbar). Die Seitenprüfung sah davon
+              nichts, weil der Überlauf in einem Container mit `overflow-x:
+              auto` steckt.
+
+              Der Grund ist strukturell: Die Zeile enthält Tasten in festen
+              Pixeln, aber Polsterung und Zahlenfeld wachsen mit der Schrift --
+              die Karte schrumpft also genau dann, wenn ihr Inhalt wächst. Mit
+              `minmax(20rem, 1fr)` entscheidet die verfügbare Breite selbst über
+              die Spaltenzahl. Nachgemessen bei 1280 px:
+
+                normal        Raster 855 px  ->  2 Spalten à 417 px
+                large         Raster 753 px  ->  1 Spalte
+                extra-large   Raster 651 px  ->  1 Spalte
+
+              Dass „Groß" auf eine Spalte fällt, ist Absicht und kein
+              Kollateralschaden: Zwei Spalten ergäben dort je 364 px — exakt
+              den Bedarf der Zeile, also wieder null Reserve. Auf einem
+              breiteren Bildschirm bleiben es dort zwei.
+            */}
+            <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-[repeat(auto-fit,minmax(20rem,1fr))] lg:gap-5' : 'gap-3'}`}>
               {filterFields(appFields.s1).map((field) => (
                 <CounterField
                   key={field.id}
@@ -2369,7 +2399,7 @@ export default function App() {
             >
               2. Schulung, Support & Akquise
             </h2>
-            <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-2 lg:gap-5' : 'gap-3'}`}>
+            <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-[repeat(auto-fit,minmax(20rem,1fr))] lg:gap-5' : 'gap-3'}`}>
               {filterFields(appFields.s2).map((field) => (
                 <CounterField
                   key={field.id}
@@ -2407,7 +2437,7 @@ export default function App() {
             >
               3. Spezialprodukte (Fokus)
             </h2>
-            <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-2 lg:gap-5' : 'gap-3'}`}>
+            <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-[repeat(auto-fit,minmax(20rem,1fr))] lg:gap-5' : 'gap-3'}`}>
               {filterFields(appFields.s3).map((field) => (
                 <CounterField
                   key={field.id}
@@ -2451,7 +2481,7 @@ export default function App() {
                 <p>Diese Werte werden automatisch aus Ihrer Stempeluhr (RV Zeit) berechnet und beim Ausstempeln hier eingetragen.</p>
               </div>
             )}
-            <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-2 lg:gap-5' : 'gap-3'}`}>
+            <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-[repeat(auto-fit,minmax(20rem,1fr))] lg:gap-5' : 'gap-3'}`}>
               {filterFields(appFields.s4).map((field) => (
                 <CounterField
                   key={field.id}

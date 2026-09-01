@@ -390,16 +390,29 @@ können, ist der belegte Konformitätsstand.
   Hinzufügen zum Home-Bildschirm, die Sicherungs-Erinnerung, die Rettung im
   Absturzbildschirm, das Einfügefeld an erster Stelle und das Zusammenführen
   beim Backup-Import. Die Fristbehauptung ist raus.
-- **NEU (gemessen 2026-08-31): 38 px waagerechter Überlauf im Inhaltsbereich
-  am Schreibtisch bei „Extra groß".** Der Hauptbereich meldet `scrollWidth 886`
-  bei `clientWidth 848`. Folge: **neun `+5`-Tasten stehen bei 1270..1318 in
-  einem 1280 px breiten Fenster** — sichtbar bleiben 10 px. Erreichbar sind sie
-  weiterhin (der Container scrollt), aber mit der Maus praktisch unauffindbar.
-  **`check:ui` sieht das nicht**, weil der Überlauf in einem Container mit
-  `overflow-x: auto` steckt und `documentElement.scrollWidth` deshalb bei 1280
-  bleibt. Zwei Dinge zu tun: das Layout richten und die Prüfung auf
-  Container-Überlauf erweitern — sonst ist die Lücke beim nächsten Mal wieder
-  da.
+- ~~**Waagerechter Überlauf im Inhaltsbereich am Schreibtisch.**~~ **Erledigt
+  am 2026-09-01, und es waren zwei Fälle statt einem.** Beide steckten in
+  Containern mit `overflow-x: auto` und blieben deshalb unsichtbar für die
+  Seitenprüfung — `documentElement.scrollWidth` blieb unauffällig, der Inhalt
+  wurde still seitwärts scrollbar:
+
+  | Stelle | Befund |
+  |---|---|
+  | Analyse-Kacheln, Handy, „Extra groß" | Beschriftung hatte 49 px Platz, „Vorführungen" braucht 165 px → 56 px versteckter Überlauf, Titel abgeschnitten |
+  | Formular-Spalten, Schreibtisch, „Extra groß" | Bedienzeile braucht 392 px, Karte bot 311 px → neun `+5`-Tasten bei 1270..1318 in einem 1280 px breiten Fenster |
+
+  Gemeinsame Ursache: Polsterung und Schrift wachsen mit `rem`, das Fenster
+  nicht — die Spalte schrumpft also genau dann, wenn ihr Inhalt wächst. Beide
+  Raster entscheiden die Spaltenzahl jetzt über `minmax(...)` statt über eine
+  feste Zahl, womit die Ansicht bei großer Schrift umbricht statt zu schneiden
+  (WCAG 1.4.10 „Reflow"). **Nebenbefund:** Bei „Groß" ging die Formular-Spalte
+  vorher mit *exakt null Reserve* auf (364 px Bedarf, 364 px Platz) — dieselbe
+  Kante, die bei „Zeiterfassung" der Linux-Läufer gerissen hat.
+
+  `check:ui` prüft diese Klasse jetzt mit: jeder Container mit
+  `overflow-x: auto|scroll` muss frei von Inhaltsüberlauf sein. Die Regel
+  zielt bewusst nicht auf `overflow-x: hidden` — das schneidet mit Absicht,
+  daran hängen `sr-only` und `truncate`.
 - **Zeitumstellung entscheiden.** `berechneNettoStunden` rechnet ausschließlich
   mit „HH:MM" ohne Datum (`timeUtils.ts:41`). An den zwei Umstellungstagen
   stimmt eine Schicht über Mitternacht deshalb nicht: 22:00–06:00 sind am

@@ -10,6 +10,80 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-01 — Der Überlauf, den die Überlaufprüfung nicht sehen konnte
+
+Aus dem 2.4.11-Eintrag darunter war ein Nebenbefund offen geblieben: 38 px
+waagerechter Überlauf am Schreibtisch, versteckt in einem Container mit
+`overflow-x: auto`. Nachgegangen — und es waren **zwei** Fälle.
+
+### Warum die vorhandene Prüfung blind dafür ist
+
+`check:ui` misst `documentElement.scrollWidth` gegen `clientWidth`. Steckt der
+Überlauf in einem Container mit `overflow-x: auto`, bleibt dieser Wert
+unauffällig: Der Inhalt wird still seitwärts scrollbar, statt die Seite zu
+verbreitern. Und dieses `auto` entsteht fast nie mit Absicht — Tailwinds
+`overflow-y-auto` zieht die x-Achse nach CSS-Spezifikation mit.
+
+### Die zwei Fälle, beide dieselbe Ursache
+
+| | Analyse-Kacheln (Handy) | Formular-Spalten (Schreibtisch) |
+|---|---|---|
+| Platz für den Inhalt | 49 px | 311 px |
+| Bedarf | 165 px („Vorführungen", unteilbar) | 392 px (Bedienzeile) |
+| versteckter Überlauf | 56 px | 38 px |
+| sichtbare Folge | Kachel schnitt ihren eigenen Titel ab | neun `+5`-Tasten bei 1270..1318 im 1280 px breiten Fenster, 10 px sichtbar |
+
+Die gemeinsame Ursache ist strukturell und lohnt das Aufschreiben:
+**Polsterung und Schrift wachsen mit `rem`, das Fenster nicht.** Die Spalte
+schrumpft also genau dann, wenn ihr Inhalt wächst. Im Formular gemessen:
+
+| Schriftgröße | Bedienzeile braucht | Karte bot |
+|---|---|---|
+| normal | 336 px | 418 px |
+| large | 364 px | **364 px** |
+| extra-large | 392 px | 311 px |
+
+**Bei „Groß" ging es mit exakt null Reserve auf.** Das ist dieselbe Kante, an
+der „Zeiterfassung" gerissen ist — dort hat der Linux-Läufer sie gefunden,
+hier hätte es irgendwann ein Kollege getan.
+
+### Behoben, indem die Schrift über die Spaltenzahl entscheidet
+
+Beide Raster stehen jetzt auf `minmax(...)` statt auf einer festen Spaltenzahl.
+Gemessen nachher, bei 1280 px:
+
+| Schriftgröße | Raster | Spalten |
+|---|---|---|
+| normal | 855 px | 2 × 417 px |
+| large | 753 px | 1 |
+| extra-large | 651 px | 1 |
+
+Dass „Groß" auf eine Spalte fällt, ist Absicht: Zwei ergäben dort wieder genau
+364 px. Auf einem breiteren Bildschirm bleiben es zwei. Das ist der Umbruch,
+den WCAG 1.4.10 unter „Reflow" meint.
+
+### Die Prüfung kann es jetzt sehen
+
+Neu in `check:ui`, in derselben Prüfung wie der Seitenüberlauf (kein
+zusätzlicher Seitenaufruf): **Jeder Container mit `overflow-x: auto|scroll`
+muss frei von Inhaltsüberlauf sein.** Die Regel zielt bewusst nicht auf
+`overflow-x: hidden` — das schneidet mit Absicht, und daran hängen `sr-only`
+und `truncate`. Ohne diese Trennung meldete ein erster Entwurf 668 Treffer,
+von denen fast alle Absicht waren.
+
+**Ein Irrweg, der dazugehört:** Die Schnell-Erfassung-Tasten standen zunächst
+mit 73 px Überlauf auf der Liste. Der Blick auf die Seite zeigte, dass sie über
+zwei Zeilen mit Auslassungszeichen kürzen — `line-clamp`, also Absicht, nur
+über eine Eigenschaft, die kein `text-overflow` meldet. Wieder eine Korrektur,
+die aus dem Hinsehen kam und aus keiner Zahl.
+
+**Nicht angefasst:** drei kleinere Stellen mit `overflow-x: hidden`
+(Analyse-Karte 5 px, Optionen-Abschnitt 22 px). Dort schneidet die App bewusst;
+ob das bei großer Schrift noch vertretbar ist, ist eine Gestaltungsfrage und
+kein Fehler.
+
+---
+
 ## 2026-08-31 — WCAG 2.4.11 nachgemessen: das Risiko war echt
 
 Die Roadmap führte „Focus Not Obscured (Minimum)" als **zu prüfen, Risiko
