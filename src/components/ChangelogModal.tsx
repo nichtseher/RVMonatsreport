@@ -31,6 +31,20 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="space-y-6">
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.19: Große Schrift, Zeitumstellung, Schieberegler</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Bei großer Schrift wird nichts mehr abgeschnitten.</strong> In der Analyse standen die Kachel-Titel („Vorführungen") nebeneinander, obwohl nur noch 49 Pixel Platz waren – der Titel war abgeschnitten. Am PC passte die Tastenreihe eines Zählers nicht mehr in die Spalte, die „+5"-Taste war nur noch als 10-Pixel-Streifen zu sehen. Beides ordnet sich jetzt automatisch untereinander an, sobald die Schrift zu groß für nebeneinander wird.</li>
+            <li><strong>Nachgetragene Nachtschichten stimmen jetzt auch in den beiden Umstellungsnächten.</strong> Wer eine Schicht von 22:00 bis 06:00 in der Nacht der Zeitumstellung nachträgt, bekam bisher immer 8 Stunden. Richtig sind 9 Stunden in der Nacht auf den letzten Oktober-Sonntag (die Nacht hat 25 Stunden) und 7 Stunden in der Nacht auf den letzten März-Sonntag. Die Stempeluhr in Echtzeit war davon nie betroffen – sie hat immer richtig gerechnet.</li>
+            <li><strong>Der Schieberegler für die Aufteilung der Stunden war 6 Pixel hoch – und ohne sichtbaren Griff.</strong> Beim Ausstempeln und beim Nachtragen einer Schicht war er dadurch kaum zu treffen. Er ist jetzt 44 Pixel hoch und hat einen deutlich sichtbaren runden Griff. Bedienen lässt er sich weiterhin auch mit einem einfachen Tippen auf die Linie oder mit den Pfeiltasten – ziehen müssen Sie nichts.</li>
+            <li><strong>Die Selbstprüfung vor der Veröffentlichung schaut jetzt genauer hin.</strong> Sie erkennt Inhalte, die innerhalb eines Bereichs seitlich verrutschen (vorher nur die Seite als Ganzes), und misst die Größe der Bedienelemente in allen Ansichten statt nur im Bericht. Genau so wurden die drei Punkte oben gefunden.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
             <Activity className="w-5 h-5 text-[var(--info-border)]" />
             <span>Version 0.9.18: Zwei zu blasse Textstellen behoben</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -38,9 +52,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Die Fußzeile und die Randleiste am PC waren zu blass.</strong> Beide Texte lagen unter dem Kontrast, den die Norm für lesbare Schrift verlangt – ausgerechnet in dieser App. Die künstliche Abschwächung ist raus, die Texte sind jetzt normal dunkel.</li>
             <li><strong>Neu: Die App prüft sich vor jeder Veröffentlichung selbst auf Bedienbarkeit.</strong> 48 automatische Kontrollen gehen jede Ansicht in allen drei Schriftgrößen durch und melden zu blasse Schrift, zu kleine Schaltflächen oder Inhalte, die über den Bildschirmrand hinausragen. Genau so wurden die beiden Stellen oben gefunden.</li>
-            <li><strong>Nachgetragene Nachtschichten stimmen jetzt auch in den beiden Umstellungsnächten.</strong> Wer eine Schicht von 22:00 bis 06:00 in der Nacht der Zeitumstellung nachträgt, bekam bisher immer 8 Stunden. Richtig sind 9 Stunden in der Nacht auf den letzten Oktober-Sonntag (die Nacht hat 25 Stunden) und 7 Stunden in der Nacht auf den letzten März-Sonntag. Die Stempeluhr in Echtzeit war davon nie betroffen – sie hat immer richtig gerechnet.</li>
-            <li><strong>Der Schieberegler für die Aufteilung der Stunden war 6 Pixel hoch – und ohne sichtbaren Griff.</strong> Beim Ausstempeln und beim Nachtragen einer Schicht war er dadurch kaum zu treffen. Er ist jetzt 44 Pixel hoch und hat einen deutlich sichtbaren runden Griff. Bedienen lässt er sich weiterhin auch mit einem einfachen Tippen auf die Linie oder mit den Pfeiltasten – ziehen müssen Sie nichts.</li>
-            <li><strong>Bei großer Schrift wurde nichts mehr abgeschnitten.</strong> In der Analyse standen die Kachel-Titel („Vorführungen") nebeneinander, obwohl nur noch 49 Pixel Platz waren – der Titel war abgeschnitten. Am PC passte die Tastenreihe eines Zählers nicht mehr in die Spalte, die „+5"-Taste war nur noch als 10-Pixel-Streifen zu sehen. Beides ordnet sich jetzt automatisch untereinander an, sobald die Schrift zu groß für nebeneinander wird.</li>
+            <li><strong>Der Tastatur-Fokus verschwand hinter der unteren Leiste.</strong> Wer sich mit der Tabulatortaste durch das Formular bewegte, landete an manchen Stellen auf einer Taste, die vollständig hinter der Navigationsleiste lag – man sah nicht mehr, wo man war. Die Seite schiebt jetzt weit genug hoch.</li>
             <li><strong>Die Überschrift „Zeiterfassung" ragte auf schmalen Geräten über den Rand.</strong> Bei großer Schrift passte das Wort nicht mehr neben das Symbol – die Seite ließ sich dann seitlich verschieben. Symbol und Überschrift stehen auf schmalen Geräten jetzt untereinander, das Wort bleibt ganz. Das war schon länger so und ist bei der ersten automatischen Prüfung aufgefallen.</li>
             <li><strong>Was das nicht ersetzt:</strong> Eine automatische Prüfung findet längst nicht alles. Der Durchgang mit einem echten Screenreader bleibt nötig – die Kontrollen fangen nur ab, dass alte Fehler unbemerkt zurückkommen.</li>
           </ul>
