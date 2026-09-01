@@ -532,7 +532,14 @@ export default React.memo(function ClockInWidget({
                     value={customRatio}
                     aria-valuetext={`${customRatio} Prozent Büro, ${100 - customRatio} Prozent Außendienst`}
                     onChange={(e) => setCustomRatio(parseInt(e.target.value))}
-                    className="w-full h-1.5 bg-[var(--input-bg)] border border-[var(--border-color)] rounded appearance-none cursor-pointer accent-[var(--accent)]"
+                    /* `rv-slider` statt `h-1.5 appearance-none`: Nachgemessen am
+                   2026-09-01 hatte dieser Regler eine Trefferfläche von
+                   168 × 6 px -- weit unter den 24 px aus WCAG 2.5.8 -- und
+                   `appearance: none` ohne eigenen Griff, womit Chrome gar
+                   keinen zeichnet. Genau diese Kombination beschreibt der
+                   Kommentar zu `.rv-slider` in index.css als behoben; die
+                   Klasse war aber nur im A11y-Fenster gesetzt, nicht hier. */
+                className="rv-slider w-full accent-[var(--accent)]"
                   />
                 </div>
               )}
@@ -873,7 +880,14 @@ export default React.memo(function ClockInWidget({
                 value={manualCustomRatio}
                 aria-valuetext={`${manualCustomRatio} Prozent Büro, ${100 - manualCustomRatio} Prozent Außendienst`}
                 onChange={(e) => setManualCustomRatio(parseInt(e.target.value))}
-                className="w-full h-1.5 bg-[var(--input-bg)] border border-[var(--border-color)] rounded appearance-none cursor-pointer accent-[var(--accent)]"
+                /* `rv-slider` statt `h-1.5 appearance-none`: Nachgemessen am
+                   2026-09-01 hatte dieser Regler eine Trefferfläche von
+                   168 × 6 px -- weit unter den 24 px aus WCAG 2.5.8 -- und
+                   `appearance: none` ohne eigenen Griff, womit Chrome gar
+                   keinen zeichnet. Genau diese Kombination beschreibt der
+                   Kommentar zu `.rv-slider` in index.css als behoben; die
+                   Klasse war aber nur im A11y-Fenster gesetzt, nicht hier. */
+                className="rv-slider w-full accent-[var(--accent)]"
               />
             </div>
           )}

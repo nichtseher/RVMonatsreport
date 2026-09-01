@@ -162,37 +162,37 @@ test.describe("Kein waagerechter Überlauf", () => {
         });
 
         expect(versteckte, `${ansicht.name} / ${groesse}: verstecktes Seitwärtsscrollen`).toEqual([]);
+
+        /*
+          Trefferflächen, WCAG 2.2, 2.5.8 Target Size (Minimum), Stufe AA:
+          24 × 24 CSS-Pixel. Die 44 px aus früheren Notizen sind Stufe AAA
+          (2.5.5) -- die Entscheidung aus 0.9.7, die Fünferschritte auf 40 px
+          zu verkleinern, ist damit normgerecht und keine Kröte.
+
+          Diese Prüfung sah bis 2026-09-01 nur das Formular an. Deshalb ist ihr
+          ein Schieberegler mit **168 × 6 px** entgangen (Aufteilung der Stunden
+          im Ausstempel-Formular): Die dafür gebaute Klasse `.rv-slider` mit
+          44 px Trefferfläche war nur im A11y-Fenster gesetzt, nicht dort.
+          Jetzt läuft sie in jeder Ansicht mit -- im selben Seitenaufruf wie die
+          beiden Prüfungen oben, kostet also keine zusätzliche Laufzeit.
+        */
+        const zuKlein = await page.evaluate(() => {
+          const treffer: string[] = [];
+          for (const el of Array.from(document.querySelectorAll("button, a[href], input, select"))) {
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0) continue; // unsichtbar
+            if (r.width < 24 || r.height < 24) {
+              treffer.push(
+                `${el.tagName}"${(el.textContent || (el as HTMLElement).ariaLabel || "").trim().slice(0, 28)}" ${Math.round(r.width)}x${Math.round(r.height)}`,
+              );
+            }
+          }
+          return treffer;
+        });
+
+        expect(zuKlein, `${ansicht.name} / ${groesse}: unter 24 px — ${zuKlein.join(" | ")}`).toEqual([]);
       });
     }
-  }
-});
-
-test.describe("Trefferflächen", () => {
-  for (const groesse of SCHRIFTGROESSEN) {
-    test(`Bedienelemente im Formular sind bei ${groesse} groß genug`, async ({ page }) => {
-      await oeffne(page, "form");
-      await setzeSchriftgroesse(page, groesse);
-
-      // WCAG 2.2, 2.5.8 Target Size (Minimum), Stufe AA: 24 x 24 CSS-Pixel.
-      // Die 44 px aus frueheren Notizen sind Stufe AAA (2.5.5) -- die
-      // Entscheidung aus 0.9.7, die Fuenferschritte auf 40 px zu verkleinern,
-      // ist damit normgerecht und keine Kroete.
-      const zuKlein = await page.evaluate(() => {
-        const treffer: string[] = [];
-        for (const el of Array.from(document.querySelectorAll("button, a[href], input, select"))) {
-          const r = el.getBoundingClientRect();
-          if (r.width === 0 || r.height === 0) continue; // unsichtbar
-          if (r.width < 24 || r.height < 24) {
-            treffer.push(
-              `${el.tagName}"${(el.textContent || (el as HTMLElement).ariaLabel || "").trim().slice(0, 28)}" ${Math.round(r.width)}x${Math.round(r.height)}`,
-            );
-          }
-        }
-        return treffer;
-      });
-
-      expect(zuKlein, `Unter 24 px: ${zuKlein.join(" | ")}`).toEqual([]);
-    });
   }
 });
 

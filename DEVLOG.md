@@ -10,6 +10,64 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-01 — WCAG 2.5.7 und 3.2.6 nachgewiesen, und dabei ein 6-px-Regler gefunden
+
+Die letzten beiden offenen 2.2-Kriterien standen in der Roadmap als „zu
+prüfen, vermutlich erfüllt". Vermutlich ist keine Aussage, also nachgemessen.
+
+### 2.5.7 Dragging Movements — erfüllt
+
+Zwei Stellen setzen aufs Ziehen. Beide haben eine Ein-Klick-Alternative, und
+zwar nachgewiesen, nicht behauptet:
+
+| Stelle | Nachweis |
+|---|---|
+| Wischen wechselt den Abschnitt | Einzelklick auf „Bereich 2" filtert von **6 sichtbaren Abschnitten auf 3**, ein zweiter Klick stellt 6 wieder her |
+| Schieberegler „Aufteilung der Stunden" | Einzelner Klick auf die Spur ändert den Wert **50 → 85**, Pfeiltaste ändert 85 → 80, daneben vier Vorwahl-Schaltflächen |
+
+### 3.2.6 Consistent Help — erfüllt
+
+Die Hilfe hängt an genau einem Einstieg (Optionen → Hilfe). Gemessen über alle
+fünf Ansichten **und beide Geräteprofile**: dieselbe Leiste, dieselbe
+Reihenfolge, „Optionen" immer Position 5 von 5.
+
+### Der Fund, der nebenbei herausfiel
+
+Beim Messen der Reglerbedienung stand da: **Trefferfläche 168 × 6 px.**
+
+In `index.css` gibt es eine Klasse `.rv-slider`, die genau dieses Problem löst
+— 44 px Trefferfläche, sichtbare Spur, deutlich sichtbarer Griff — samt
+Kommentar, der beschreibt, dass `appearance: none` ohne eigenen Griff dazu
+führt, dass Chrome gar keinen zeichnet. **Die Klasse war nur im A11y-Fenster
+gesetzt.** Die beiden Regler in der Zeiterfassung (Ausstempeln und Nachtragen)
+hatten weiterhin `h-1.5 appearance-none` — also 6 px hoch und ohne gezeichneten
+Griff.
+
+| | vorher | nachher |
+|---|---|---|
+| Trefferfläche | 168 × 6 px | 168 × 44 px |
+| Griff sichtbar | nein (Chrome zeichnet keinen) | ja, nachgesehen |
+| Klick auf die Spur | wirkt | wirkt |
+| Pfeiltasten | wirken | wirken |
+
+Ein behobenes Problem, dessen Behebung an zwei von drei Stellen nie ankam. Die
+Fassung mit dem Kommentar zu lesen half nicht — erst das Messen.
+
+### Warum die Prüfung das nicht gefunden hat
+
+Die Trefferflächen-Prüfung sah **nur das Formular** an. Ein Regler in der
+Zeiterfassung lag außerhalb ihres Blickfelds. Sie läuft jetzt in jeder Ansicht
+mit, und zwar im selben Seitenaufruf wie die beiden Überlaufprüfungen — die
+Prüfungszahl sinkt dadurch von 47 auf 41, die Abdeckung steigt von einer auf
+fünf Ansichten, die Laufzeit von 1,4 auf 1,2 Minuten. **Eine kleinere Zahl ist
+hier mehr Abdeckung**, was beim Lesen des Protokolls sonst verwirrt.
+
+Nicht abgedeckt bleibt, was hinter Klickfolgen liegt: Der Regler selbst wird
+weiterhin nur von Hand erreicht, weil er erst nach Einstempeln → Ausstempeln →
+„Eigene %" erscheint.
+
+---
+
 ## 2026-09-01 — Der Überlauf, den die Überlaufprüfung nicht sehen konnte
 
 Aus dem 2.4.11-Eintrag darunter war ein Nebenbefund offen geblieben: 38 px

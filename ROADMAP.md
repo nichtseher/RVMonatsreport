@@ -332,7 +332,18 @@ höher.
 
 ---
 
-## 0.9.19 — WCAG 2.2 schließen
+## 0.9.19 — WCAG 2.2 schließen — INHALTLICH ERLEDIGT (2026-09-01)
+
+**Alle neun zusätzlichen Erfolgskriterien aus WCAG 2.2 sind abgearbeitet**:
+sechs erfüllt und je einzeln nachgemessen, zwei nicht anwendbar (keine
+Anmeldung), eines bewusst offen (2.4.12, Stufe AAA — war nie das Ziel). Zwei
+davon waren echte Verstöße und sind behoben: 2.4.11 (neun verdeckte
+Fokusstationen) und 2.5.8 (ein Schieberegler mit 6 px Trefferfläche).
+
+**Was das ausdrücklich nicht heißt:** Erfüllt ist, was *geprüft* wurde. Die
+Kriterien, die ein Mensch beurteilen muss — verständliche Sprache, sinnvolle
+Reihenfolge beim Vorlesen, ob die Ansagen im Ernstfall tragen — entscheidet
+weiterhin der Durchlauf mit NVDA und VoiceOver unter 1.0.
 
 **Terminlage:** Gültig ist heute EN 301 549 V3.2.1 (2021-03) mit WCAG 2.1 AA.
 Der Entwurf V4.1.0 (2025-11) nimmt die **neun zusätzlichen Erfolgskriterien aus
@@ -344,9 +355,9 @@ WCAG 2.2 AA** auf; als Termin der Nennung im Amtsblatt der EU nennt ETSI den
 | **2.2.1 Timing Adjustable** (A) | **Erfüllt seit 0.9.17 (live).** Die Ein-Minuten-Frist war ein Zeitlimit ohne Verlängerung — sie ist aus allen Texten entfernt, nachdem die Messung sie widerlegt hat. |
 | **2.4.11 Focus Not Obscured** (AA) | **War verletzt, behoben am 2026-08-31 — gemessen, nicht geraten.** Das Risiko war real: **9 von 126** Fokusstationen im Formular waren auf dem Handy vollständig hinter der festen unteren Leiste verschwunden (bei „Extra groß" 7). Der Browser scrollt ein Element zwar ins Fenster, kennt die Leiste aber nicht. Behoben mit `scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom))` auf `html` — die Leiste misst in jeder Schriftgröße rund 6,1 rem. Gegenprobe über alle Ansichten und beide Geräteprofile: **0 von 668**. |
 | **2.4.12 Focus Not Obscured (Enhanced)** (AAA) | **Nicht erfüllt, bewusst.** Teilweise Verdeckungen bestehen weiter (Abschnitts-Kopfzeile `sticky`, schwebende Leiste). AAA war nie das Ziel. |
-| **2.5.7 Dragging Movements** (AA) | **Zu prüfen, vermutlich erfüllt.** `useSwipeable` wechselt Abschnitte; es gibt Abschnitts-Reiter als Alternative. Nachweisen, dass jede Wischgeste ohne Ziehen erreichbar ist. |
-| **2.5.8 Target Size (Minimum)** (AA) | **Erfüllt — und seit 0.9.18 automatisch geprüft.** Die AA-Schwelle liegt bei 24 × 24 px, nicht bei 44. Die auf 40 px verkleinerten Fünferschritte liegen komfortabel darüber; 44 px ist Stufe AAA (2.5.5). `check:ui` prüft das jetzt bei jedem Deploy in allen drei Schriftgrößen. |
-| **3.2.6 Consistent Help** (A) | Zu prüfen: Hilfe muss an gleichbleibender Stelle erreichbar sein. |
+| **2.5.7 Dragging Movements** (AA) | **Erfüllt — nachgewiesen am 2026-09-01.** Zwei Stellen setzen aufs Ziehen, beide haben eine Ein-Klick-Alternative: (1) Wischen wechselt `activeSectionTab`; ein Einzelklick auf „Bereich 2" filtert nachweislich von 6 sichtbaren Abschnitten auf 3, ein zweiter stellt 6 wieder her. (2) Die beiden Schieberegler ändern ihren Wert schon auf einen **einzelnen Klick auf die Spur** (50 → 85), zusätzlich per Pfeiltaste, und daneben stehen vier Vorwahl-Schaltflächen. |
+| **2.5.8 Target Size (Minimum)** (AA) | **Erfüllt — aber erst seit dem 2026-09-01 wirklich.** Die AA-Schwelle liegt bei 24 × 24 px, nicht bei 44 (das ist AAA, 2.5.5). Beim 2.5.7-Nachweis fiel auf: Der Schieberegler „Aufteilung der Stunden" hatte **168 × 6 px** — die dafür gebaute Klasse `.rv-slider` (44 px, sichtbarer Griff) war nur im A11y-Fenster gesetzt, nicht im Ausstempel- und im Nachtrage-Formular. Behoben; nachgemessen 168 × 44 px. **Die Prüfung sah es nicht, weil sie nur das Formular ansah** — sie läuft jetzt in jeder Ansicht mit. |
+| **3.2.6 Consistent Help** (A) | **Erfüllt — nachgewiesen am 2026-09-01.** Die Hilfe hängt an genau einem Einstieg (Optionen → Hilfe). Die Hauptnavigation ist in allen fünf Ansichten und beiden Geräteprofilen identisch: `[RV Report \| RV Zeit \| RV Analyse \| RV Archiv \| Optionen]`, „Optionen" immer Position 5 von 5. |
 | **3.3.7 Redundant Entry** (A) | **Erfüllt.** Der Mitarbeitername wird in jeden neuen Monat übernommen. |
 | **3.3.8 / 3.3.9 Accessible Authentication** | Nicht anwendbar — die App hat keine Anmeldung. |
 
