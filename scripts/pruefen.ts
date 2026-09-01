@@ -4,6 +4,10 @@
  * Läuft ohne Test-Framework über `tsx`. Der Deploy-Workflow ruft ihn vor dem
  * Bauen auf; schlägt er fehl, wird nichts veröffentlicht.
  */
+
+// MUSS der erste Import bleiben: setzt die Zeitzone, bevor irgendetwas
+// anderes geladen wird. Begründung steht in der Datei.
+import "./zeitzone";
 import "./checks/zeit";
 import "./checks/zusammenfuehren";
 import "./checks/versand";

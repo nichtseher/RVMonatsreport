@@ -276,10 +276,14 @@ export default React.memo(function ClockInWidget({
 
   const getCalculatedManualShiftValues = () => {
     // Rechnung liegt in utils/timeUtils.ts, damit sie prüfbar ist
+    // `manualDate` mitgeben: Ohne das Datum kann die Rechnung die
+    // Zeitumstellung nicht kennen, und eine nachgetragene Nachtschicht in die
+    // Umstellungsnacht wäre um eine Stunde falsch.
     const netHours = berechneNettoStunden(
       manualClockIn,
       manualClockOut,
       manualBreakMinutes,
+      manualDate,
     );
 
     let ratio = manualOfficeRatio;

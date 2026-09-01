@@ -10,6 +10,74 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-01 — Zeitumstellung: kleiner als gedacht, an anderen Tagen als notiert
+
+Der Punkt stand mit Frist in der Roadmap („vor dem 25.10.2026 entscheiden").
+Beim Nachmessen war der Eintrag in **zwei** Punkten falsch — beides Korrekturen,
+die den Aufwand verkleinert haben.
+
+### Erstens: die Tage stimmten nicht
+
+Notiert war „22:00–06:00 sind am 25.10.2026 tatsächlich 9 Stunden". Die
+Umstellung liegt aber in der Nacht **von Samstag 24.10. auf Sonntag 25.10.**
+Betroffen ist also die Schicht, die am Abend *vor* dem Umstellungssonntag
+beginnt:
+
+| Schicht | tatsächlich |
+|---|---|
+| **24.10.2026** 22:00 → 06:00 | **9,00 h** |
+| 25.10.2026 22:00 → 06:00 | 8,00 h |
+| **28.03.2026** 22:00 → 06:00 | **7,00 h** |
+| 29.03.2026 22:00 → 06:00 | 8,00 h |
+
+Wer nach dem alten Eintrag geprüft hätte, hätte am 25.10. eine korrekte 8 sehen
+und den Fehler für behoben halten können.
+
+### Zweitens: die Stempeluhr war nie betroffen
+
+`getCalculatedActiveShiftValues` rechnet mit echten Zeitstempeln
+(`ClockInWidget.tsx:177`) — dort kommt die Umstellung von selbst heraus. Falsch
+war ausschließlich die **manuelle Nachtragung**, die über
+`berechneNettoStunden` mit „HH:MM" ohne Datum lief. Das Datum lag die ganze
+Zeit daneben: `TimeLog.date` gibt es seit jeher, es wurde nur nicht
+durchgereicht.
+
+### Die Korrektur
+
+`berechneNettoStunden(kommen, gehen, pause, datum?)` — mit Datum wird über
+echte Zeitpunkte gerechnet, ohne Datum bleibt alles wie bisher. Bewusst in der
+Zeitzone des Geräts: Die App notiert Uhrzeiten so, wie sie auf der Uhr des
+Nutzers standen.
+
+Zwei Randfälle stehen als Kommentar in der Funktion, weil sie nicht auflösbar
+sind: In der Frühjahrsnacht existiert die Stunde von 02:00 bis 03:00 nicht, in
+der Herbstnacht gibt es 02:30 zweimal.
+
+### Eine Prüfung, die nur zu Hause etwas gemessen hätte
+
+Der Entwicklungsrechner steht auf Europe/Berlin, der CI-Läufer auf **UTC** —
+und in UTC gibt es keine Sommerzeit. Die neuen Prüffälle wären dort grün
+gewesen, ohne irgendetwas zu prüfen. Deshalb setzt `scripts/zeitzone.ts` die
+Zeitzone als **erster Import** des Prüflaufs, und ein eigener Prüffall weist
+nach, dass sie greift (Januar-Offset minus Juli-Offset = 60 Minuten).
+
+Das eigene Modul statt einer Zeile in `pruefen.ts` hat einen Grund: ES-Module
+werten ihre Importe vor dem eigenen Rumpf aus. Eine Zuweisung oben in
+`pruefen.ts` liefe erst *nach* dem Laden aller Prüfmodule — hier zwar folgenlos,
+aber aus dem falschen Grund.
+
+### Nachgemessen, im Formular und nicht nur in der Funktion
+
+| Nachgetragene Schicht 22:00 → 06:00 | angezeigt (30 Min Pause) |
+|---|---|
+| 24.10.2026 (Umstellungsnacht) | **8,50 h** |
+| 15.06.2026 (gewöhnlich) | 7,50 h |
+| 28.03.2026 (Umstellungsnacht) | **6,50 h** |
+
+Prüfungen **135 → 142**.
+
+---
+
 ## 2026-09-01 — WCAG 2.5.7 und 3.2.6 nachgewiesen, und dabei ein 6-px-Regler gefunden
 
 Die letzten beiden offenen 2.2-Kriterien standen in der Roadmap als „zu

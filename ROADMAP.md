@@ -424,12 +424,33 @@ können, ist der belegte Konformitätsstand.
   `overflow-x: auto|scroll` muss frei von Inhaltsüberlauf sein. Die Regel
   zielt bewusst nicht auf `overflow-x: hidden` — das schneidet mit Absicht,
   daran hängen `sr-only` und `truncate`.
-- **Zeitumstellung entscheiden.** `berechneNettoStunden` rechnet ausschließlich
-  mit „HH:MM" ohne Datum (`timeUtils.ts:41`). An den zwei Umstellungstagen
-  stimmt eine Schicht über Mitternacht deshalb nicht: 22:00–06:00 sind am
-  25.10.2026 tatsächlich **9** Stunden und am 29.03. **7**, berechnet werden
-  beide Male 8. Entweder das Datum einbeziehen oder bewusst als Nicht-Ziel
-  festschreiben — **aber vor dem 25.10.2026 entscheiden**, nicht danach.
+- ~~**Zeitumstellung entscheiden.**~~ **Behoben am 2026-09-01 — und der Eintrag
+  hier war in zwei Punkten falsch.**
+
+  **Erstens die Tage.** Hier stand „22:00–06:00 sind am 25.10.2026 tatsächlich
+  9 Stunden". Nachgemessen stimmt das nicht: Betroffen ist die Nacht, die *in*
+  die Umstellung läuft, also die Schicht, die am Abend **vor** dem
+  Umstellungssonntag beginnt.
+
+  | Schicht | tatsächlich |
+  |---|---|
+  | **24.10.2026** 22:00 → 06:00 | **9,00 h** |
+  | 25.10.2026 22:00 → 06:00 | 8,00 h |
+  | **28.03.2026** 22:00 → 06:00 | **7,00 h** |
+  | 29.03.2026 22:00 → 06:00 | 8,00 h |
+
+  **Zweitens der Umfang.** Die Echtzeit-Stempeluhr war nie betroffen — sie
+  rechnet mit echten Zeitstempeln (`ClockInWidget.tsx:177`), die Umstellung
+  kommt dort von selbst heraus. Falsch war ausschließlich die **manuelle
+  Nachtragung**, die mit „HH:MM" ohne Datum rechnete.
+
+  `berechneNettoStunden` nimmt jetzt optional das Datum des Schichtbeginns;
+  ohne Datum bleibt das alte Verhalten. Im Formular nachgeprüft: Die
+  Herbstnacht zeigt 8,50 h gegenüber 7,50 h in einer gewöhnlichen Nacht
+  (30 Min Standardpause), die Frühjahrsnacht 6,50 h. Prüfungen **135 → 142**,
+  darunter eine, die nachweist, dass der Prüflauf wirklich auf Europe/Berlin
+  läuft — auf dem UTC-Läufer der CI gäbe es sonst gar keine Sommerzeit, und
+  die Fälle wären grün, ohne etwas zu messen.
 - **Untergrenze für Service-Worker-Updates.** Updates sind
   bestätigungspflichtig und laden nie von selbst neu — beim Tippen richtig. Wer
   aber immer wegdrückt, bleibt beliebig lange auf einer alten Fassung, im
