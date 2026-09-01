@@ -345,6 +345,23 @@
 html {
   font-size: calc(100% * var(--font-scale));
   overscroll-behavior-y: none;
+
+  /*
+    WCAG 2.2, 2.4.11 "Focus Not Obscured (Minimum)", Stufe AA.
+
+    Ohne das hier scrollt der Browser ein Bedienelement zwar ins Fenster, aber
+    hinter die feste Leiste am unteren Rand -- er kennt sie nicht. Gemessen am
+    2026-08-31 über alle Ansichten und Schriftgrößen: **9 von 126**
+    Fokusstationen im Formular waren dadurch VOLLSTÄNDIG verdeckt (bei „Extra
+    groß" 7), betroffen waren Zähler-Tasten und Zahlenfelder. Das ist genau
+    der Verstoß, den 2.4.11 meint.
+
+    Die Leiste misst in jeder Schriftgröße rund 6,1 rem (98 px bei normal,
+    146 px bei extra-large -- sie wächst mit der Schrift, deshalb rem und
+    nicht px). 6 rem genügte in der Messung bereits, 7 rem lässt knapp eine
+    Zeile Luft. Mit dem Wert: 0 von 126.
+  */
+  scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
 }
 
 html, body, #root {

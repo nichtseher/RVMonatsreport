@@ -1,6 +1,6 @@
 # Roadmap — RV Monatsreport (RV Mobil)
 
-Stand: 2026-08-31, Version 0.9.15
+Stand: 2026-08-31, Version 0.9.18 (0.9.16 bis 0.9.18 sind veröffentlicht)
 
 Diese Roadmap ist aus **gemessenen Befunden** entstanden, nicht aus Vermutungen.
 Wo eine Zahl steht, wurde sie nachgemessen. Punkte ohne Beleg sind als
@@ -341,13 +341,25 @@ WCAG 2.2 AA** auf; als Termin der Nennung im Amtsblatt der EU nennt ETSI den
 
 | Kriterium | Stand hier |
 |---|---|
-| **2.2.1 Timing Adjustable** (A) | **Verstoß.** Die Ein-Minuten-Frist beim Antwort-Code ist ein Zeitlimit ohne Verlängerung. Wird durch 0.9.17 behoben. |
-| **2.4.11 Focus Not Obscured** (AA) | **Zu prüfen, Risiko real.** Die Fußleiste ist `fixed bottom-0` (`App.tsx:2724`). Tastaturfokus auf Elementen am unteren Seitenrand kann dahinter verschwinden — ein klassischer Fehler dieser Bauart. Messen, nicht raten. |
-| **2.5.7 Dragging Movements** (AA) | **Zu prüfen, vermutlich erfüllt.** `useSwipeable` wechselt Abschnitte (`App.tsx:442`); es gibt Abschnitts-Reiter als Alternative. Nachweisen, dass jede Wischgeste ohne Ziehen erreichbar ist. |
-| **2.5.8 Target Size (Minimum)** (AA) | **Erfüllt — und die 0.9.7-Entscheidung war richtig.** Die AA-Schwelle liegt bei 24 × 24 px, nicht bei 44. Die auf 40 px verkleinerten Fünferschritte liegen komfortabel darüber; 44 px ist Stufe AAA (2.5.5). Der Nachtrag in CLAUDE.md hat das bereits richtig eingeschätzt. |
+| **2.2.1 Timing Adjustable** (A) | **Erfüllt seit 0.9.17 (live).** Die Ein-Minuten-Frist war ein Zeitlimit ohne Verlängerung — sie ist aus allen Texten entfernt, nachdem die Messung sie widerlegt hat. |
+| **2.4.11 Focus Not Obscured** (AA) | **War verletzt, behoben am 2026-08-31 — gemessen, nicht geraten.** Das Risiko war real: **9 von 126** Fokusstationen im Formular waren auf dem Handy vollständig hinter der festen unteren Leiste verschwunden (bei „Extra groß" 7). Der Browser scrollt ein Element zwar ins Fenster, kennt die Leiste aber nicht. Behoben mit `scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom))` auf `html` — die Leiste misst in jeder Schriftgröße rund 6,1 rem. Gegenprobe über alle Ansichten und beide Geräteprofile: **0 von 668**. |
+| **2.4.12 Focus Not Obscured (Enhanced)** (AAA) | **Nicht erfüllt, bewusst.** Teilweise Verdeckungen bestehen weiter (Abschnitts-Kopfzeile `sticky`, schwebende Leiste). AAA war nie das Ziel. |
+| **2.5.7 Dragging Movements** (AA) | **Zu prüfen, vermutlich erfüllt.** `useSwipeable` wechselt Abschnitte; es gibt Abschnitts-Reiter als Alternative. Nachweisen, dass jede Wischgeste ohne Ziehen erreichbar ist. |
+| **2.5.8 Target Size (Minimum)** (AA) | **Erfüllt — und seit 0.9.18 automatisch geprüft.** Die AA-Schwelle liegt bei 24 × 24 px, nicht bei 44. Die auf 40 px verkleinerten Fünferschritte liegen komfortabel darüber; 44 px ist Stufe AAA (2.5.5). `check:ui` prüft das jetzt bei jedem Deploy in allen drei Schriftgrößen. |
 | **3.2.6 Consistent Help** (A) | Zu prüfen: Hilfe muss an gleichbleibender Stelle erreichbar sein. |
 | **3.3.7 Redundant Entry** (A) | **Erfüllt.** Der Mitarbeitername wird in jeden neuen Monat übernommen. |
 | **3.3.8 / 3.3.9 Accessible Authentication** | Nicht anwendbar — die App hat keine Anmeldung. |
+
+**Wie 2.4.11 gemessen wurde, mit Vorbehalt:** Jedes fokussierbare Element wurde
+der Reihe nach fokussiert (der Browser scrollt dabei wie bei Tab), danach ein
+Raster von 25 Punkten in seinem Kasten gegen `elementFromPoint` geprüft —
+trifft kein Punkt das Element selbst, ist es vollständig verdeckt. **Nicht mit
+der echten Tabulatortaste gemessen**, sondern mit `element.focus()`; beide
+lösen dieselbe Bildlauflogik aus, aber die Tabulatorreihenfolge selbst ist
+damit nicht geprüft. Und: Die zunächst gemeldeten 629 „teilweise verdeckt"
+waren ein Artefakt — an abgerundeten Ecken meldet `elementFromPoint` das
+Elternelement. Für die AA-Stufe ist das ohne Belang, sie verlangt nur, dass
+nichts *vollständig* verdeckt ist.
 
 **Zum rechtlichen Rahmen, ehrlich:** Das BFSG richtet sich an das
 B2C-Geschäft; ein internes Werkzeug für die eigenen Außendienstmitarbeiter
@@ -373,9 +385,21 @@ können, ist der belegte Konformitätsstand.
 - **320 px** (iPhone SE 1./2. Gen.): tritt bei den großen Schriftgrößen über
   den Kartenrand. Betrifft kein aktuell verkauftes Gerät — entweder bewusst
   als Nicht-Ziel festschreiben oder beheben.
-- **`HelpModal.tsx` gegen das geänderte Sync-Verhalten prüfen.** Die Hilfe
-  macht konkrete Tatsachenbehauptungen; vier davon waren bis 0.9.3 veraltet.
-  Nach 0.9.17 stimmt dort mit Sicherheit etwas nicht mehr.
+- ~~**`HelpModal.tsx` gegen das geänderte Sync-Verhalten prüfen.**~~ **Erledigt
+  mit 0.9.16/0.9.17:** Die Hilfe nennt jetzt die Sieben-Tage-Regel und das
+  Hinzufügen zum Home-Bildschirm, die Sicherungs-Erinnerung, die Rettung im
+  Absturzbildschirm, das Einfügefeld an erster Stelle und das Zusammenführen
+  beim Backup-Import. Die Fristbehauptung ist raus.
+- **NEU (gemessen 2026-08-31): 38 px waagerechter Überlauf im Inhaltsbereich
+  am Schreibtisch bei „Extra groß".** Der Hauptbereich meldet `scrollWidth 886`
+  bei `clientWidth 848`. Folge: **neun `+5`-Tasten stehen bei 1270..1318 in
+  einem 1280 px breiten Fenster** — sichtbar bleiben 10 px. Erreichbar sind sie
+  weiterhin (der Container scrollt), aber mit der Maus praktisch unauffindbar.
+  **`check:ui` sieht das nicht**, weil der Überlauf in einem Container mit
+  `overflow-x: auto` steckt und `documentElement.scrollWidth` deshalb bei 1280
+  bleibt. Zwei Dinge zu tun: das Layout richten und die Prüfung auf
+  Container-Überlauf erweitern — sonst ist die Lücke beim nächsten Mal wieder
+  da.
 - **Zeitumstellung entscheiden.** `berechneNettoStunden` rechnet ausschließlich
   mit „HH:MM" ohne Datum (`timeUtils.ts:41`). An den zwei Umstellungstagen
   stimmt eine Schicht über Mitternacht deshalb nicht: 22:00–06:00 sind am

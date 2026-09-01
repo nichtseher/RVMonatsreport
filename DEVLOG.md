@@ -10,6 +10,61 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-08-31 — WCAG 2.4.11 nachgemessen: das Risiko war echt
+
+Die Roadmap führte „Focus Not Obscured (Minimum)" als **zu prüfen, Risiko
+real** — wegen der festen Leiste am unteren Rand. Jetzt gemessen statt geraten.
+
+Messweg: Jedes fokussierbare Element wird der Reihe nach fokussiert (der
+Browser scrollt dabei wie bei Tab), danach ein Raster von 25 Punkten in seinem
+Kasten gegen `elementFromPoint`. Trifft kein einziger Punkt das Element selbst,
+ist es vollständig verdeckt — genau das verbietet 2.4.11.
+
+| | |
+|---|---|
+| Fokusstationen, fünf Ansichten × zwei Geräteprofile | 668 |
+| davon **vollständig verdeckt** (Formular, Handy) | **9 von 126**, bei „Extra groß" 7 |
+| Verdecker | die feste untere Leiste |
+
+Betroffen waren Zähler-Tasten und Zahlenfelder — also die Bedienelemente, um
+die es in dieser App überhaupt geht. Der Browser scrollt das Element brav ins
+Fenster; dass davor eine `fixed` Leiste klebt, weiß er nicht. **Weder
+`scroll-margin` noch `scroll-padding` kamen im ganzen Projekt vor.**
+
+Behoben mit einer Zeile: `scroll-padding-bottom: calc(7rem + env(safe-area-
+inset-bottom, 0px))` auf `html`. Die Leiste misst in jeder Schriftgröße rund
+6,1 rem (98 px bei normal, 146 px bei extra groß — sie wächst mit der Schrift,
+deshalb rem). 6 rem genügten in der Messung schon; 7 rem lässt eine Zeile Luft.
+
+**Gegenprobe: 0 von 668.**
+
+### Zwei Falschbefunde auf dem Weg, beide benannt
+
+- Der erste Lauf meldete zusätzlich **629 „teilweise verdeckt"**. Artefakt: An
+  abgerundeten Ecken meldet `elementFromPoint` das Elternelement. Für AA ohne
+  Belang — verboten ist nur *vollständig* verdeckt.
+- Neun `+5`-Tasten am Schreibtisch schienen von einer `-5`-Taste überdeckt.
+  Geometrisch gegengeprüft: **keine einzige Überlappung** in 190 Paaren. Der
+  Messpunkt lag schlicht außerhalb des Fensters.
+
+### Was dabei zufällig auffiel — und offen bleibt
+
+Der Inhaltsbereich am Schreibtisch meldet bei „Extra groß" **`scrollWidth 886`
+bei `clientWidth 848`**: 38 px waagerechter Überlauf *innerhalb* eines
+Containers mit `overflow-x: auto`. Neun `+5`-Tasten stehen dadurch bei
+1270..1318 in einem 1280 px breiten Fenster — 10 px bleiben sichtbar.
+
+**Und `check:ui` sieht das nicht**, weil `documentElement.scrollWidth` bei 1280
+bleibt. Die Prüfung misst nur die Seite, nicht ihre scrollbaren Container. Das
+steht als Punkt in der Roadmap: Layout richten **und** die Prüfung erweitern,
+sonst ist die Lücke beim nächsten Mal wieder da.
+
+**Vorbehalt zur Messung:** mit `element.focus()` gemessen, nicht mit der echten
+Tabulatortaste. Beide lösen dieselbe Bildlauflogik aus, aber die
+Tabulatorreihenfolge selbst ist damit nicht geprüft.
+
+---
+
 ## 2026-08-31 — Der erste Fund des neuen Tors war einer, den dieser Rechner nicht sehen kann
 
 Nachtrag zum Eintrag darunter. Beim Veröffentlichen von 0.9.16 bis 0.9.18 lief
