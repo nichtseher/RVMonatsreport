@@ -631,6 +631,181 @@ test.describe("Ansichten hinter den Einstiegen", () => {
   }
 });
 
+/**
+ * Der Tabulator-Durchlauf.
+ *
+ * Warum es das gibt: **2.4.3 Fokus-Reihenfolge und 2.1.1 Tastatur waren bis
+ * zum 2026-09-02 nie geprüft** — in einer App, deren Nutzer ausschließlich per
+ * Tastatur und Screenreader arbeiten. Der Konformitätsbericht führte das als
+ * schwerste offene Stelle. Die Messung zu 2.4.11 hat es sogar ausdrücklich
+ * offengelassen: Sie arbeitete mit `element.focus()`, nicht mit der echten
+ * Tabulatortaste, und prüfte damit die Reihenfolge gerade nicht.
+ *
+ * Geprüft wird dreierlei, alles mit echten Tastendrücken:
+ *
+ * 1. **Erreichbarkeit** — jedes sichtbare, nicht ausgenommene Bedienelement
+ *    wird vom Tabulator getroffen. Was hier fehlt, ist per Tastatur schlicht
+ *    nicht bedienbar (2.1.1).
+ * 2. **Reihenfolge** — der Fokus läuft in Dokumentreihenfolge vorwärts. Ein
+ *    Rückwärtssprung bedeutet in der Praxis ein positives `tabindex`, das die
+ *    Reihenfolge umsortiert; das ist die klassische Ursache für eine
+ *    Bedienung, die vorgelesen keinen Sinn mehr ergibt (2.4.3).
+ * 3. **Keine Falle** — der Durchlauf kommt innerhalb einer Runde wieder am
+ *    Anfang an, statt an einer Stelle hängen zu bleiben (2.1.2).
+ *
+ * Was hier NICHT geprüft wird, damit der Bericht ehrlich bleibt: ob die
+ * Reihenfolge *sinnvoll* ist. Dass sie der Dokumentreihenfolge folgt, ist eine
+ * notwendige Bedingung, keine hinreichende — ob das Vorgelesene trägt,
+ * entscheidet weiterhin der Durchlauf mit NVDA und VoiceOver.
+ */
+async function tabulatorDurchlauf(page: Page, maxSchritte = 400) {
+  await page.evaluate(() => {
+    (document.activeElement as HTMLElement | null)?.blur();
+    window.scrollTo(0, 0);
+  });
+
+  const folge: { idx: number; tag: string; name: string }[] = [];
+  for (let i = 0; i < maxSchritte; i++) {
+    await page.keyboard.press("Tab");
+    const stelle = await page.evaluate(() => {
+      const el = document.activeElement as HTMLElement | null;
+      if (!el || el === document.body || el === document.documentElement) return null;
+      const kandidaten = Array.from(
+        document.querySelectorAll("button, a[href], input, select, textarea, [tabindex]"),
+      );
+      return {
+        idx: kandidaten.indexOf(el),
+        tag: el.tagName,
+        name: (el.getAttribute("aria-label") || el.textContent || "").trim().slice(0, 32),
+      };
+    });
+
+    /*
+      NICHT abbrechen, wenn der Fokus das Dokument verlaesst.
+
+      Beim Umlauf wandert er kurz in die Browserleiste; `activeElement` ist
+      dann `body` und diese Auswertung liefert null. Die erste Fassung dieser
+      Schleife brach dort ab -- mit der Folge, dass der Durchlauf genau vor dem
+      Seitenanfang endete. Sie meldete daraufhin den Sprunglink als "per
+      Tabulator nicht erreichbar", obwohl er das erste erreichbare Element
+      ueberhaupt ist, und deutete den Umlauf als Rueckwaertssprung. Vier
+      angebliche Befunde, alle aus einer Zeile.
+    */
+    if (!stelle) continue;
+
+    // Runde geschlossen, sobald das erste Element wieder auftaucht. Wo der
+    // Durchlauf begonnen hat, ist gleichgueltig -- die Runde ist dieselbe,
+    // nur gedreht.
+    if (folge.length > 0 && stelle.idx === folge[0].idx && stelle.idx !== -1) break;
+    folge.push(stelle);
+  }
+  return folge;
+}
+
+test.describe("Tastatur: Erreichbarkeit und Reihenfolge", () => {
+  const alleAnsichten = [
+    ...ANSICHTEN.map((a) => ({ name: a.name, oeffne: (p: Page) => oeffne(p, a.tab) })),
+    ...EINSTIEGE.map((e) => ({ name: e.name, oeffne: (p: Page) => oeffneUeberEinstieg(p, e) })),
+  ];
+
+  for (const ansicht of alleAnsichten) {
+    test(`${ansicht.name}: jedes Bedienelement per Tabulator erreichbar`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(
+        testInfo.project.name !== "handy",
+        "Die Tabulatorreihenfolge folgt dem DOM, nicht dem Geraeteprofil",
+      );
+      await ansicht.oeffne(page);
+      await warteAufRuhigesLayout(page);
+
+      const folge = await tabulatorDurchlauf(page);
+
+      // 1. Keine Falle: Der Durchlauf muss enden, nicht ins Limit rennen.
+      expect(
+        folge.length,
+        `${ansicht.name}: Der Tabulator kam in 220 Schritten nicht zum Anfang zurueck — Verdacht auf Tastaturfalle`,
+      ).toBeLessThan(220);
+
+      /*
+        2. Reihenfolge: vorwaerts in Dokumentreihenfolge.
+
+        Genau EIN Rueckschritt ist erlaubt und erwartet -- der Umlauf vom
+        letzten zum ersten Element. Weil der Durchlauf irgendwo beginnen kann
+        (nach einem Klick steht der Fokus mitten in der Seite), liegt dieser
+        Rueckschritt nicht zwangslaeufig am Ende der aufgezeichneten Folge.
+        Zwei oder mehr Rueckschritte bedeuten dagegen eine echte Umsortierung,
+        in der Praxis fast immer ein positives `tabindex`.
+
+        Gleicher Index zweimal hintereinander ist KEIN Rueckschritt, sondern
+        Navigation innerhalb eines Bedienelements: `<input type="month">` in
+        der Formular-Kopfzeile besteht in Chromium aus zwei inneren Feldern
+        (Monat und Jahr), zwischen denen der Tabulator laeuft, ohne das
+        Element zu verlassen. Dasselbe gilt fuer die `date`- und `time`-Felder
+        der Stempeluhr. Die erste Fassung dieser Pruefung meldete das als
+        doppelten Rueckwaertssprung im Formular.
+      */
+      const rueckwaerts: string[] = [];
+      for (let i = 1; i < folge.length; i++) {
+        if (folge[i].idx < folge[i - 1].idx && folge[i].idx !== -1) {
+          rueckwaerts.push(
+            `Schritt ${i}: ${folge[i - 1].tag}"${folge[i - 1].name}" (${folge[i - 1].idx}) -> ${folge[i].tag}"${folge[i].name}" (${folge[i].idx})`,
+          );
+        }
+      }
+      expect(
+        rueckwaerts.length,
+        `${ansicht.name}: Fokus springt mehrfach entgegen der Dokumentreihenfolge — ${rueckwaerts.join(" | ")}`,
+      ).toBeLessThanOrEqual(1);
+
+      /*
+        3. Erreichbarkeit: alles Sichtbare, das nicht ausgenommen ist.
+
+        Ausnahme fuer echte modale Dialoge: Liegt ein sichtbares Element mit
+        `aria-modal="true"` vor, ist der Rest der Seite mit Absicht nicht
+        erreichbar -- so arbeitet eine Fokusfalle, und sie gehoert dorthin.
+        Geprueft wird dann, dass alles IM Dialog erreichbar ist.
+
+        Der Unterschied ist nicht theoretisch: `DeviceSyncModal` ist ein echtes
+        Overlay mit abgedunkeltem Hintergrund und faellt hierunter. Das
+        Jahreskonto sah fuer diese Pruefung genauso aus, war aber eine
+        gewoehnliche Karte im Seitenfluss -- dort war die Falle ein Fehler und
+        ist entfernt.
+      */
+      const nichtErreicht = await page.evaluate((erreichteIdx) => {
+        const dialog = Array.from(document.querySelectorAll('[aria-modal="true"]')).find(
+          (d) => (d as HTMLElement).offsetWidth > 0,
+        );
+        // ACHTUNG: exakt derselbe Selektor wie im Durchlauf. Steht hier eine
+        // andere Liste, zeigen die Indizes in einen anderen Raum und die
+        // Pruefung meldet Unsinn -- beim Schreiben genau einmal passiert.
+        const kandidaten = Array.from(
+          document.querySelectorAll("button, a[href], input, select, textarea, [tabindex]"),
+        );
+        const fehlt: string[] = [];
+        kandidaten.forEach((el, i) => {
+          const h = el as HTMLElement;
+          if (h.offsetWidth === 0 || h.offsetHeight === 0) return; // unsichtbar
+          if ((el as HTMLButtonElement).disabled) return;
+          if (el.getAttribute("tabindex") === "-1") return;
+          if (el.closest('[aria-hidden="true"]')) return;
+          if (dialog && !dialog.contains(el)) return; // hinter einem modalen Dialog
+          if (erreichteIdx.includes(i)) return;
+          fehlt.push(
+            `${el.tagName}"${(el.getAttribute("aria-label") || el.textContent || "").trim().slice(0, 28)}"`,
+          );
+        });
+        return fehlt;
+      }, folge.map((f) => f.idx));
+
+      expect(
+        nichtErreicht,
+        `${ansicht.name}: per Tabulator nicht erreichbar — ${nichtErreicht.join(" | ")}`,
+      ).toEqual([]);
+    });
+  }
+});
+
 test.describe("Touch-Erkennung", () => {
   test("pruefe-medienabfrage: das Handy-Profil meldet wirklich pointer: coarse", async ({
     page,

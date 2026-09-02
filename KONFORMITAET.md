@@ -68,6 +68,8 @@ Geräteprofile: 360 × 780 Chromium, 360 × 780 WebKit, 1280 × 900 Chromium):
 | axe-core | fünf Ansichten, Regelsätze `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa` |
 | Kontrast je Farbschema | fünf Ansichten × drei weitere Schemata (dunkel, Kontrast dunkel, Kontrast gelb) × zwei Profile, Regel `color-contrast`. Jede Prüfung weist zuvor nach, dass das Schema wirklich anliegt (`data-theme` **und** `data-dark`) und dass axe die Regel überhaupt ausgeführt hat |
 | Ansichten hinter den Einstiegen | die sechs Ansichten, die nicht über `?tab=` erreichbar sind (Formular anpassen, Geräte-Sync, Datensicherung, Hilfe, Jahreskonto, Was gibt's Neues): Überlauf und Trefferflächen bei „normal" und „Extra groß" in drei Profilen, axe in zwei |
+| Tabulator-Durchlauf | alle elf Ansichten, mit **echten Tastendrücken**: Erreichbarkeit jedes sichtbaren Bedienelements, Reihenfolge in Dokumentordnung, geschlossene Runde. Modale Dialoge werden erkannt und ihre Fokusfalle als richtig gewertet |
+| Breitere Schrift als hier installiert | alle elf Ansichten bei „Extra groß" mit erzwungener Verdana bzw. DejaVu Sans — stellt nach, dass der Schriftstapel je nach Gerät ein anderes Glied greift |
 | Medienabfrage `pointer: coarse` | Nachweis, dass die Touch-Zweige im Prüflauf wirklich greifen |
 
 ### 3.2 Die Grenzen dieser Automatisierung — vollständig benannt
@@ -195,15 +197,15 @@ anwendbar
 
 | Kriterium | Stufe | Stand | Anmerkung |
 |---|---|---|---|
-| 2.1.1 Tastatur | A | **teilweise** | Fokusfallen in Dialogen umgesetzt; die `±5`-Tasten sind bewusst außerhalb des Tab-Laufs, ihre Funktion ist gleichwertig erreichbar. **Ein echter Verstoß am 2026-09-02 gefunden und behoben:** Der Inhaltsbereich der Hilfe war scrollbar, aber weder fokussierbar noch mit fokussierbarem Inhalt — per Tastatur kam niemand an den Teil unterhalb der Kante (axe `scrollable-region-focusable`). **Weiterhin nicht systematisch mit der Tastatur durchlaufen** |
-| 2.1.2 Keine Tastaturfalle | A | plausibel | Dialoge sind mit Escape verlassbar; `ConfirmDialog` ist die Referenz |
+| 2.1.1 Tastatur | A | **erfüllt** | seit 2026-09-02 mit **echten Tastendrücken** über alle elf Ansichten geprüft: Jedes sichtbare, nicht ausgenommene Bedienelement wird vom Tabulator erreicht. **Zwei echte Verstöße dabei gefunden und behoben:** der Inhaltsbereich der Hilfe war scrollbar, aber weder fokussierbar noch mit fokussierbarem Inhalt (axe `scrollable-region-focusable`); und das Jahreskonto hatte eine Fokusfalle, obwohl es kein modaler Dialog ist — die sichtbare Navigationsleiste war dort per Tastatur unerreichbar. Die `±5`-Tasten bleiben bewusst außerhalb des Tab-Laufs, gleichwertig erreichbar |
+| 2.1.2 Keine Tastaturfalle | A | **erfüllt** | der Durchlauf schließt in jeder Ansicht die Runde, statt hängen zu bleiben; Dialoge sind zusätzlich mit Escape verlassbar. Die Fokusfalle des Geräteabgleichs bleibt — dort ist sie richtig, weil es ein echtes Overlay mit abgedunkeltem Hintergrund und `aria-modal="true"` ist |
 | 2.1.4 Zeichentasten-Kurzbefehle | A | **nicht geprüft** | die Anwendung kennt Tastenkürzel; ob es Einzelzeichen ohne Zusatztaste sind, ist nicht erhoben |
 | 2.2.1 Zeitliche Einstellbarkeit | A | **erfüllt** | die Ein-Minuten-Frist war ein Zeitlimit ohne Verlängerung und ist entfernt |
 | 2.2.2 Pausieren, Stoppen, Ausblenden | A | plausibel | `prefers-reduced-motion` schaltet Animationen global ab |
 | 2.3.1 Blitzen | A | erfüllt | keine blinkenden Inhalte |
 | 2.4.1 Blöcke umgehen | A | **erfüllt** | Sprunglink „Zum Hauptinhalt springen" vorhanden, Ziel existiert. Siehe Einschränkung zu 1.3.1 |
 | 2.4.2 Seite mit Titel | A | erfüllt | „RV Monatsreport – Barrierefrei" |
-| 2.4.3 Fokus-Reihenfolge | A | **nicht geprüft** | ausdrücklich: die Reihenfolge selbst wurde nie gemessen |
+| 2.4.3 Fokus-Reihenfolge | A | **erfüllt** | seit 2026-09-02 geprüft: Der Tabulator läuft in allen elf Ansichten in Dokumentreihenfolge vorwärts, mit genau einem Rückschritt je Runde — dem Umlauf. Mehrere Rückschritte wären eine Umsortierung, in der Praxis ein positives `tabindex`. **Was das nicht sagt:** ob die Reihenfolge *sinnvoll* ist. Dokumentreihenfolge ist notwendig, nicht hinreichend; ob das Vorgelesene trägt, entscheidet der Screenreader-Durchlauf |
 | 2.4.4 Linkzweck | A | plausibel | die Anwendung arbeitet fast ausschließlich mit Schaltflächen |
 | 2.4.5 Mehrere Wege | AA | n. a. | Einzelseiten-Anwendung ohne Seitensammlung; Navigation und Suche vorhanden |
 | 2.4.6 Überschriften und Beschriftungen | AA | plausibel | |
@@ -244,33 +246,40 @@ Ausgezählt über Abschnitt 4 und 5:
 
 | | Anzahl | davon |
 |---|---|---|
-| **erfüllt, mit Beleg** | **20** | 15 aus WCAG 2.1 A/AA, 5 aus WCAG 2.2 |
-| teilweise erfüllt | 5 | 1.3.1, 1.4.11, 2.1.1, 3.1.2, 4.1.2 |
-| plausibel, ohne Einzelnachweis | 13 | |
+| **erfüllt, mit Beleg** | **23** | 18 aus WCAG 2.1 A/AA, 5 aus WCAG 2.2 |
+| teilweise erfüllt | 4 | 1.3.1, 1.4.11, 3.1.2, 4.1.2 |
+| plausibel, ohne Einzelnachweis | 12 | |
 | **nicht erfüllt** | **0** | 2.4.12 ist bewusst offen, aber Stufe AAA und damit außerhalb des Maßstabs |
-| **nicht geprüft** | **9** | 1.3.2, 1.3.3, 1.4.12, 1.4.13, 2.1.4, 2.4.3, 2.5.2, 3.3.1, 3.3.3 |
+| **nicht geprüft** | **8** | 1.3.2, 1.3.3, 1.4.12, 1.4.13, 2.1.4, 2.5.2, 3.3.1, 3.3.3 |
 | nicht anwendbar | 9 | 1.2.1–1.2.5, 2.4.5, 2.5.4, 3.3.8, 3.3.9 |
 | entfällt | 1 | 4.1.1 (in WCAG 2.2 gestrichen) |
 
-**Die aussagekräftigste Zahl steht in der Mitte:** 19 von 50 Kriterien des
+**Die aussagekräftigste Zahl steht in der Mitte:** 16 von 50 Kriterien des
 geltenden Sockels sind zwar nicht beanstandet, aber auch nicht einzeln
-nachgewiesen. Sie sind kein Mangel — aber sie sind auch kein Nachweis.
+nachgewiesen. Sie sind kein Mangel — aber sie sind auch kein Nachweis. (Am
+Morgen des 2026-09-02 waren es noch 19; die drei Tastatur-Kriterien sind
+seither belegt statt plausibel.)
 
 ### Die Lücken, nach Gewicht
 
 **Dieser Bericht belegt keinen Verstoß auf AA-Ebene.** Was er belegt, ist
 etwas anderes: wie viel nicht geprüft ist.
 
-1. **Fokus-Reihenfolge und Tastaturdurchlauf** (2.4.3, 2.1.1) sind nie
-   systematisch geprüft worden. Für eine Anwendung, deren Zielgruppe
-   ausschließlich per Tastatur und Screenreader arbeitet, ist das die
-   schwerste offene Stelle des ganzen Berichts.
-2. **Dialoge sind automatisiert nicht abgedeckt** — ein erheblicher Teil der
-   Anwendung liegt dort, einschließlich des zuletzt umgebauten Geräteabgleichs.
-   Nach der Schließung der Theme-Lücke ist das die größte verbliebene Fläche
-   ohne fortlaufende Prüfung.
+1. **Ob die Fokus-Reihenfolge *sinnvoll* ist**, weiß weiterhin niemand. Dass
+   sie der Dokumentreihenfolge folgt, ist seit dem 2026-09-02 belegt — das ist
+   die notwendige Bedingung. Die hinreichende beurteilt ein Mensch mit
+   Screenreader.
+2. **Der Einrichtungsassistent, die Bestätigungsdialoge und die Kamerawege**
+   sind automatisiert nicht abgedeckt; sie setzen einen Zustand oder ein Gerät
+   voraus, das der Prüflauf nicht herstellt.
 3. **TalkBack ungeprüft**, mit sachlichem Grund (siehe 3.3).
 4. **1.4.12, 1.4.13, 2.1.4, 2.5.2, 3.3.1, 3.3.3** sind nicht erhoben.
+
+~~**Fokus-Reihenfolge und Tastaturdurchlauf nie systematisch geprüft**~~ —
+**geschlossen am 2026-09-02.** Der Tabulator-Durchlauf prüft jetzt alle elf
+Ansichten mit echten Tastendrücken. Er hat dabei zwei echte Verstöße gefunden:
+den nicht fokussierbaren Inhaltsbereich der Hilfe und eine Fokusfalle im
+Jahreskonto, das gar kein modaler Dialog ist. Beide behoben.
 
 ~~**Kontrast in den drei weiteren Themes**~~ — **geschlossen am 2026-09-02.**
 Die Prüfung ist um die Theme-Achse erweitert (30 zusätzliche Prüfungen,

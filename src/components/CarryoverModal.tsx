@@ -44,25 +44,25 @@ export default function CarryoverModal({
         return;
       }
 
-      if (e.key === "Tab" && modalRef.current) {
-        const focusableElements = modalRef.current.querySelectorAll(
-          'button, [href], input, select, textarea, [tabindex="0"]'
-        );
-        const firstElement = focusableElements[0] as HTMLElement;
-        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+      /*
+        Hier stand bis zum 2026-09-02 eine Fokusfalle: Der Tabulator wurde am
+        letzten Bedienelement wieder auf das erste gesetzt.
 
-        if (e.shiftKey) {
-          if (document.activeElement === firstElement) {
-            lastElement.focus();
-            e.preventDefault();
-          }
-        } else {
-          if (document.activeElement === lastElement) {
-            firstElement.focus();
-            e.preventDefault();
-          }
-        }
-      }
+        Sie war falsch, weil diese Ansicht **kein modaler Dialog ist.** Ihre
+        Wurzel ist eine gewoehnliche Karte im Seitenfluss -- kein `fixed
+        inset-0`, keine abdunkelnde Flaeche, kein `aria-modal`. Die untere
+        Navigationsleiste bleibt sichtbar und ist mit der Maus anklickbar; mit
+        der Tastatur war sie es nicht mehr. Genau das ist WCAG 2.1.1: eine
+        sichtbare, bedienbare Funktion, die per Tastatur nicht erreichbar ist.
+
+        Gefunden vom Tabulator-Durchlauf, der am selben Tag entstanden ist.
+        Zum Vergleich: `DeviceSyncModal` ist ein echtes Overlay (`fixed
+        inset-0`, abgedunkelt, `aria-modal="true"`) -- dort ist die Falle
+        richtig und bleibt.
+
+        Escape schliesst weiterhin, und der Fokus startet weiterhin auf der
+        Zurueck-Taste.
+      */
     };
 
     window.addEventListener("keydown", handleKeyDown);
