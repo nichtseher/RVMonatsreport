@@ -207,12 +207,21 @@ export default function A11yModal({
   /* ----- Hauptmenü: DSGVO-Hinweis + 2 gruppierte Karten statt 7 großer Buttons ----- */
   const renderMainMenu = () => (
     <div className="space-y-4 animate-fade-in">
-      {/* flex-wrap: Bei 320 px (iPhone SE) und "Extra gross" braucht die Taste
-          "Was gibt's Neues?" allein 230 px und traegt `flex-shrink-0` -- die
-          Zeile wurde dadurch 334 px breit in einem 320-px-Fenster. Umbrechen
-          statt schrumpfen: Die Aufschrift bleibt lesbar, die Taste rutscht
-          unter die Ueberschrift. WCAG 1.4.10 Reflow. */}
-      <div className="flex flex-wrap items-center gap-3 px-1">
+      {/*
+        Gestapelt auf schmalen Geraeten -- dasselbe Muster wie in der Kopfzeile
+        von TimeModal, und aus demselben Grund.
+
+        Die Taste "Was gibt's Neues?" traegt `flex-shrink-0` und braucht bei
+        "Extra gross" 230 px, mit einer breiteren Schrift als "Segoe UI" sogar
+        256 px. In einem 320-px-Fenster sprengte sie die Zeile.
+
+        `flex-wrap` allein genuegte NICHT: Die Ueberschrift daneben hat
+        `flex-1` und damit die Basisbreite 0, wodurch alle drei Elemente
+        rechnerisch in eine Zeile passen -- die Taste bleibt stehen und ragt
+        heraus. Erst das Stapeln gibt ihr die volle Kartenbreite. Gemessen:
+        324 px mit flex-wrap, 320 px gestapelt.
+      */}
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3 px-1">
         <Settings2 className="w-7 h-7 text-[var(--accent)]" aria-hidden="true" />
         <div className="flex-1 min-w-0">
           <h2 id="a11y-modal-title" className="text-xl md:text-2xl font-black">

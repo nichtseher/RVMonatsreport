@@ -799,6 +799,18 @@ test.describe("320 px (iPhone SE)", () => {
   for (const ansicht of alle) {
     test(`${ansicht.name} bei 320 px`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== "handy", "Eine Breite genuegt, sie haengt nicht am Motor");
+      /*
+        Mit erzwungener Breitschrift, und das ist keine Verschaerfung um ihrer
+        selbst willen: Auf dem Linux-Laeufer laeuft diese Zeile ohnehin mit
+        einer breiteren Schrift, weil dort weder "Segoe UI" noch "Segoe UI
+        Variable Text" vorliegt. Ohne die Erzwingung pruefte der lokale Lauf
+        eine andere Kombination als das Deploy-Tor -- und genau daran ist der
+        Push von f8ae712 gescheitert: lokal gruen, auf dem Laeufer rot.
+
+        Schmal UND breite Schrift ist der eigentliche Grenzfall. Ihn nur
+        halbiert zu pruefen, war die Luecke.
+      */
+      await erzwingeBreiteSchrift(page);
       await page.setViewportSize({ width: 320, height: 780 });
       await ansicht.oeffne(page);
       await setzeSchriftgroesse(page, "extra-large");

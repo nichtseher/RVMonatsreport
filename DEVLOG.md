@@ -143,6 +143,37 @@ Nach dem Beenden des Vorschau-Servers war der Fehlschlag weg. Festgehalten in
 `CLAUDE.md`, weil er sich als etwas ausgibt, das er nicht ist: Wer diese
 Meldung für einen axe-Verstoß hält, sucht den Fehler in der Ansicht.
 
+### Die Prüfmatrix hatte ein Loch an der Kreuzung
+
+Der Push mit der 320-px-Zeile war lokal grün und auf dem Läufer rot. Die
+Ursache lag nicht im Code, sondern in der Matrix: Es gab eine **320-px-Zeile**
+und eine **Breitschrift-Zeile**, aber die **Kreuzung** von beiden nirgends.
+
+Auf dem Läufer ist jede Zeile breitschriftig — er kennt „Segoe UI" nicht.
+Lokal war das nur bei 360 px nachgestellt. Schmal *und* breite Schrift ist
+aber der eigentliche Grenzfall; ihn nur halbiert zu prüfen war die Lücke. Die
+320-px-Zeile läuft jetzt grundsätzlich mit erzwungener Breitschrift.
+
+**Und die Korrektur davor war falsch, obwohl sie richtig aussah.** Gegen den
+Überstand in der Optionen-Kopfzeile hatte ich `flex-wrap` gesetzt. Das half
+nicht:
+
+> `flex-wrap` wirkt nicht, wenn ein Geschwisterelement `flex-1` trägt.
+
+`flex-1` bedeutet Basisbreite 0. Damit passen rechnerisch alle Elemente in
+eine Zeile, es bricht nichts um — und die Taste daneben mit `flex-shrink-0`
+ragt heraus. Mit breiter Schrift braucht sie 256 statt 230 px.
+
+| | Breite bei 320 px |
+|---|---|
+| mit `flex-wrap` | **324 px** |
+| gestapelt | **320 px** |
+
+Gelöst mit dem Muster, das die `TimeModal`-Kopfzeile schon verwendet: auf
+schmalen Geräten stapeln, ab `sm:` nebeneinander. Achter Fall derselben Klasse
+an einem Tag — und der erste, bei dem weder `min-w-0` noch `flex-wrap`
+genügten. Beides steht jetzt in `CLAUDE.md`.
+
 ### 320 px und zwei Sicherheitsmeldungen — beide Fragen waren beantwortbar
 
 Zwei Punkte standen in der 0.9.20-Liste als offene Fragen. Beide ließen sich
