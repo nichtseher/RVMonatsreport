@@ -143,6 +143,52 @@ Nach dem Beenden des Vorschau-Servers war der Fehlschlag weg. Festgehalten in
 `CLAUDE.md`, weil er sich als etwas ausgibt, das er nicht ist: Wer diese
 Meldung für einen axe-Verstoß hält, sucht den Fehler in der Ansicht.
 
+### Die Theme-Lücke — vom Bericht gefunden, am selben Tag geschlossen
+
+Das Schreiben des Konformitätsberichts hat eine Lücke im eigenen Prüfnetz
+sichtbar gemacht, die im Betrieb nie aufgefallen wäre: **Der axe-Durchlauf
+läuft ohne gesetztes `data-theme`** — also ausschließlich im Standardschema.
+Die beiden Hochkontrast-Schemata, die für die Zielgruppe dieser App gebaut
+wurden, waren als einzige nicht fortlaufend abgesichert.
+
+Die Vorgeschichte macht das ernst: Vor 0.9.9/0.9.10 lagen im Schema „Gelb auf
+Schwarz" **51 von 141** Textelementen unter dem Mindestkontrast, das
+schlechteste bei 1,05:1.
+
+**Erweiterung:** fünf Ansichten × drei weitere Schemata × zwei Chromium-Profile
+= 30 Prüfungen, beschränkt auf die Regel `color-contrast`.
+
+| | vorher | nachher |
+|---|---|---|
+| Prüfungen | 63 | **108** (davon 16 übersprungen) |
+| Laufzeit | 1,8 min | 2,8 min |
+| **Befunde** | — | **keine** |
+
+Drei Entscheidungen, die den Unterschied zwischen Messung und Artefakt
+ausmachen:
+
+- **Das Schema kommt aus `localStorage`, nicht aus einem gesetzten Attribut.**
+  Die App setzt `data-theme` **und** `data-dark`; letzteres steuert Tailwinds
+  `dark:`-Varianten. Wer nur `data-theme` von Hand setzt, misst eine
+  Kombination, die im Betrieb nie vorkommt — dunkle Flächen mit hellen
+  Tailwind-Farben darauf.
+- **Jede Prüfung weist zuerst nach, dass das Schema wirklich anliegt.** Sonst
+  wäre der Lauf auch dann grün, wenn die Einstellung gar nicht ankommt.
+- **Und dass axe die Regel überhaupt ausgeführt hat.** Ein falsch
+  geschriebener Regelname lässt axe null Regeln laufen und meldet null
+  Verstöße — grün aus demselben Grund, aus dem eine nicht ausgeführte Prüfung
+  grün ist.
+
+Die letzten beiden Punkte stammen direkt aus dem Fehler, den der Bericht
+wenige Stunden vorher produziert hat: eine Suche in Kleinschreibung, die
+`autoComplete` nicht finden konnte und daraus einen Verstoß ableitete. **Eine
+Prüfung, die nichts findet, ist erst dann ein Nachweis, wenn feststeht, dass
+sie etwas hätte finden können.** Der Satz steht jetzt dreimal im Projekt: im
+Bericht, im Prüfcode und hier.
+
+Das Ergebnis ist damit belastbar: Die Umstellung auf Theme-Variablen aus
+0.9.9/0.9.10 hält — nachgewiesen statt plausibel.
+
 ### Nachtrag: NVDA und VoiceOver sind durchgelaufen
 
 Rückmeldung des Projektinhabers am selben Tag: Beide Durchläufe sind erfolgt,

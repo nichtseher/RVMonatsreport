@@ -66,6 +66,7 @@ Geräteprofile: 360 × 780 Chromium, 360 × 780 WebKit, 1280 × 900 Chromium):
 | Waagerechter Überlauf | fünf Ansichten × drei Schriftgrößen × drei Profile, inkl. Containern mit `overflow-x: auto`, die für die Seitenprüfung unsichtbar bleiben |
 | Trefferflächen | dieselbe Matrix; 43,5 px für alles im Tab-Lauf, 24 px für ausdrücklich ausgenommene Elemente |
 | axe-core | fünf Ansichten, Regelsätze `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa` |
+| Kontrast je Farbschema | fünf Ansichten × drei weitere Schemata (dunkel, Kontrast dunkel, Kontrast gelb) × zwei Profile, Regel `color-contrast`. Jede Prüfung weist zuvor nach, dass das Schema wirklich anliegt (`data-theme` **und** `data-dark`) und dass axe die Regel überhaupt ausgeführt hat |
 | Medienabfrage `pointer: coarse` | Nachweis, dass die Touch-Zweige im Prüflauf wirklich greifen |
 
 ### 3.2 Die Grenzen dieser Automatisierung — vollständig benannt
@@ -77,11 +78,16 @@ liest, liest ihn falsch:
    keine Konformitätsaussage. Das gilt unabhängig von der Konfiguration.
 2. **Nur `critical` und `serious` lassen die Prüfung scheitern.** Befunde der
    Stufen `moderate` und `minor` werden herausgefiltert und fallen nicht auf.
-3. **axe läuft nur im Standardtheme und nur bei Schriftgröße „normal".** Die
-   drei weiteren Farbschemata — dunkel, Kontrast dunkel, Kontrast gelb — sind
-   **nicht automatisiert auf Kontrast geprüft**. Ihre Werte sind in
-   `src/index.css` einzeln dokumentiert und teils nachgemessen, aber nicht
-   fortlaufend abgesichert.
+3. **Der vollständige axe-Durchlauf läuft nur im Standardtheme.** Seit dem
+   2026-09-02 tritt daneben eine eigene Kontrastprüfung für die drei weiteren
+   Farbschemata (30 Prüfungen). Alle anderen axe-Regeln — Beschriftungen,
+   Rollen, Struktur — werden weiterhin nur im Standardschema geprüft; das ist
+   vertretbar, weil sie nicht am Farbschema hängen, aber es ist eine Annahme
+   und keine Messung.
+   **Alle Kontrastprüfungen laufen bei Schriftgröße „normal".** Das ist der
+   strengere Fall: axe wendet die WCAG-Ausnahme für großen Text an (3:1 statt
+   4,5:1), sobald die berechnete Schriftgröße es hergibt — die größeren
+   Stufen sind also die leichteren.
 4. **Regeln der Kategorie „best practice" laufen nicht mit**, weil nur
    WCAG-Regelsätze aktiviert sind. Landmarkenstruktur fällt darunter.
 5. **Modaldialoge und Kamerawege sind nicht abgedeckt.** Beide bräuchten
@@ -154,7 +160,7 @@ anwendbar
 | 1.3.5 Eingabezweck bestimmen | AA | **erfüllt** | beide Felder, die eine Angabe über den Nutzer selbst erfassen, tragen `autoComplete="name"` (`App.tsx`, `OnboardingModal.tsx`). Weitere Felder der Anwendung — Zählwerte, Zeiten, Notizen — fallen nicht unter die Liste der Eingabezwecke |
 | 1.4.1 Benutzung von Farbe | A | plausibel | die vier Kategoriefarben sind bedeutungstragend; in den Kontrastschemata fallen sie bewusst zusammen, dort tragen Beschriftung und Symbol die Unterscheidung |
 | 1.4.2 Audio-Steuerung | A | erfüllt | Sprachansagen sind abschaltbar, Geschwindigkeit einstellbar; kein selbsttätig startender Ton über 3 s |
-| 1.4.3 Kontrast (Minimum) | AA | **teilweise** | axe prüft fortlaufend — **aber nur im Standardtheme und nur bei „normal"**. Zwei echte Verstöße wurden so gefunden und behoben (Fußzeile 4,41:1, Seitenleiste **3,59:1**). Die drei weiteren Themes sind dokumentiert, aber nicht fortlaufend geprüft |
+| 1.4.3 Kontrast (Minimum) | AA | **erfüllt** | fortlaufend geprüft in **allen vier Farbschemata** über fünf Ansichten und zwei Geräteprofile (seit 2026-09-02, 30 zusätzliche Prüfungen; zuvor nur im Standardschema). Zwei echte Verstöße wurden so gefunden und behoben (Fußzeile 4,41:1, Seitenleiste **3,59:1**). Offen bleibt die allgemeine Einschränkung: Dialoge sind nicht automatisiert erfasst |
 | 1.4.4 Textgröße ändern | AA | **erfüllt** | drei Schriftstufen (100 / 125 / 150 %) über alle Ansichten und Profile automatisiert; Browser-Zoom auf 200 % ist **nicht** gesondert geprüft |
 | 1.4.5 Bilder eines Textes | AA | erfüllt | keine Texte als Bild |
 | 1.4.10 Reflow | AA | **erfüllt** | 360 px × drei Schriftgrößen × fünf Ansichten × drei Profile, einschließlich verdeckten Überlaufs in scrollbaren Containern. Zwei Fälle gefunden und behoben |
@@ -215,8 +221,8 @@ Ausgezählt über Abschnitt 4 und 5:
 
 | | Anzahl | davon |
 |---|---|---|
-| **erfüllt, mit Beleg** | **19** | 14 aus WCAG 2.1 A/AA, 5 aus WCAG 2.2 |
-| teilweise erfüllt | 6 | 1.3.1, 1.4.3, 1.4.11, 2.1.1, 3.1.2, 4.1.2 |
+| **erfüllt, mit Beleg** | **20** | 15 aus WCAG 2.1 A/AA, 5 aus WCAG 2.2 |
+| teilweise erfüllt | 5 | 1.3.1, 1.4.11, 2.1.1, 3.1.2, 4.1.2 |
 | plausibel, ohne Einzelnachweis | 13 | |
 | **nicht erfüllt** | **0** | 2.4.12 ist bewusst offen, aber Stufe AAA und damit außerhalb des Maßstabs |
 | **nicht geprüft** | **9** | 1.3.2, 1.3.3, 1.4.12, 1.4.13, 2.1.4, 2.4.3, 2.5.2, 3.3.1, 3.3.3 |
@@ -236,14 +242,19 @@ etwas anderes: wie viel nicht geprüft ist.
    systematisch geprüft worden. Für eine Anwendung, deren Zielgruppe
    ausschließlich per Tastatur und Screenreader arbeitet, ist das die
    schwerste offene Stelle des ganzen Berichts.
-2. **Kontrast in den drei weiteren Themes** ist nicht fortlaufend geprüft —
-   ausgerechnet in den beiden Kontrastschemata, die für diese Zielgruppe
-   gebaut wurden. Die Prüfung ließe sich um die Theme-Achse erweitern; das ist
-   die wirksamste einzelne Verbesserung am Prüftor.
-3. **Dialoge sind automatisiert nicht abgedeckt** — ein erheblicher Teil der
+2. **Dialoge sind automatisiert nicht abgedeckt** — ein erheblicher Teil der
    Anwendung liegt dort, einschließlich des zuletzt umgebauten Geräteabgleichs.
-4. **TalkBack ungeprüft**, mit sachlichem Grund (siehe 3.3).
-5. **1.4.12, 1.4.13, 2.1.4, 2.5.2, 3.3.1, 3.3.3** sind nicht erhoben.
+   Nach der Schließung der Theme-Lücke ist das die größte verbliebene Fläche
+   ohne fortlaufende Prüfung.
+3. **TalkBack ungeprüft**, mit sachlichem Grund (siehe 3.3).
+4. **1.4.12, 1.4.13, 2.1.4, 2.5.2, 3.3.1, 3.3.3** sind nicht erhoben.
+
+~~**Kontrast in den drei weiteren Themes**~~ — **geschlossen am 2026-09-02.**
+Die Prüfung ist um die Theme-Achse erweitert (30 zusätzliche Prüfungen,
+Laufzeit 1,8 → 2,8 min). **Ergebnis: kein einziger Kontrastverstoß** in den
+drei Schemata über alle fünf Ansichten und beide Geräteprofile. Damit ist
+belegt, was zuvor nur plausibel war — die Umstellung auf Theme-Variablen in
+0.9.9/0.9.10 hält.
 
 ### Ein Hinweis zur Entstehung dieses Berichts
 

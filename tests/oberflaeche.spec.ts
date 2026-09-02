@@ -244,6 +244,108 @@ test.describe("Barrierefreiheit (axe-core)", () => {
   }
 });
 
+/**
+ * Kontrast in den drei weiteren Farbschemata.
+ *
+ * Warum es das gibt: Der axe-Durchlauf oben läuft ohne gesetztes `data-theme`,
+ * also ausschließlich im Standardschema. Ausgerechnet die beiden
+ * Hochkontrast-Schemata — die für die Zielgruppe dieser App gebaut wurden —
+ * waren damit als einzige nicht fortlaufend abgesichert. Aufgefallen ist das
+ * beim Schreiben des Konformitätsberichts am 2026-09-02, nicht im Betrieb.
+ *
+ * Die Vorgeschichte macht die Lücke ernst: Vor 0.9.9/0.9.10 lagen im Schema
+ * „Gelb auf Schwarz" **51 von 141** Textelementen unter dem Mindestkontrast,
+ * das schlechteste bei 1,05:1 — weil über 500 Stellen feste Tailwind-Farben
+ * nutzten, die jede Theme-Wahl ignorieren. Behoben ist das; ungeprüft war es
+ * bis hier.
+ *
+ * Drei bewusste Einschränkungen, damit die Laufzeit vertretbar bleibt:
+ *
+ * - **Nur die Regel `color-contrast`.** Alles andere hängt nicht am Farbschema
+ *   und wird oben bereits vollständig geprüft.
+ * - **Nur Schriftgröße „normal".** axe wendet die WCAG-Ausnahme für großen
+ *   Text an (3:1 statt 4,5:1), sobald die berechnete Schriftgröße es hergibt —
+ *   die größeren Stufen sind also die *leichteren* Fälle, nicht die schärferen.
+ * - **Nicht in WebKit.** Kontrast berechnet axe aus CSS-Werten, nicht aus
+ *   gezeichneten Pixeln; die Engine ändert daran nichts. Beide Chromium-Profile
+ *   laufen mit, weil die Seitenleiste nur im Schreibtisch-Layout existiert —
+ *   und genau dort saß 0.9.18 einer der beiden echten Kontrastfehler (3,59:1).
+ */
+const FARBSCHEMATA = [
+  { id: "dark", name: "Dunkel" },
+  { id: "high-contrast-dark", name: "Kontrast dunkel" },
+  { id: "high-contrast-yellow", name: "Kontrast gelb" },
+] as const;
+
+/**
+ * Das Schema wird über `localStorage` gesetzt, nicht über die Attribute.
+ *
+ * Das ist der Unterschied zwischen einer Messung und einem Artefakt: Die App
+ * setzt `data-theme` UND `data-dark`, letzteres steuert Tailwinds
+ * `dark:`-Varianten (siehe `@custom-variant` in `index.css`). Wer hier nur
+ * `data-theme` von Hand setzt, misst eine Kombination, die im Betrieb nie
+ * vorkommt — dunkle Flächen mit hellen Tailwind-Farben darauf.
+ */
+async function oeffneMitSchema(page: Page, tab: string, schema: string) {
+  await page.addInitScript((s) => {
+    localStorage.setItem("aussendienst_pwa_onboarding_v1", "1");
+    localStorage.setItem("aussendienst_pwa_a11y", JSON.stringify({ theme: s }));
+  }, schema);
+  await page.goto(`/?tab=${tab}`, { waitUntil: "domcontentloaded" });
+  await page.locator("button").first().waitFor({ state: "attached", timeout: 15_000 });
+  await page.waitForTimeout(250);
+}
+
+test.describe("Kontrast in allen Farbschemata", () => {
+  for (const ansicht of ANSICHTEN) {
+    for (const schema of FARBSCHEMATA) {
+      test(`${ansicht.name} im Schema „${schema.name}"`, async ({ page }, testInfo) => {
+        test.skip(
+          testInfo.project.name === "handy-webkit",
+          "Kontrast folgt den CSS-Werten, nicht der Engine",
+        );
+
+        await oeffneMitSchema(page, ansicht.tab, schema.id);
+
+        // Erst nachweisen, dass das Schema wirklich anliegt. Ohne diese Zeilen
+        // wäre ein gruener Lauf auch dann gruen, wenn die Einstellung gar nicht
+        // ankommt -- eine Pruefung, die nichts prueft, ist schlimmer als keine.
+        const lage = await page.evaluate(() => ({
+          theme: document.documentElement.getAttribute("data-theme"),
+          dark: document.documentElement.getAttribute("data-dark"),
+        }));
+        expect(lage.theme, `Schema ${schema.id} wurde nicht angewandt`).toBe(schema.id);
+        expect(lage.dark, `data-dark passt nicht zu ${schema.id}`).toBe("true");
+
+        await warteAufRuhigesLayout(page);
+
+        const ergebnis = await new AxeBuilder({ page }).withRules(["color-contrast"]).analyze();
+
+        // Zweiter Nachweis, dass hier nicht ins Leere geprueft wird: Ein
+        // falsch geschriebener Regelname laesst axe null Regeln ausfuehren und
+        // meldet null Verstoesse -- gruen aus demselben Grund, aus dem eine
+        // nicht ausgefuehrte Pruefung gruen ist. Geprueft wird deshalb, dass
+        // die Regel ueberhaupt Elemente betrachtet hat.
+        const betrachtet =
+          ergebnis.passes.length + ergebnis.violations.length + ergebnis.incomplete.length;
+        expect(
+          betrachtet,
+          `axe hat die Regel color-contrast in "${schema.name}" nicht ausgefuehrt`,
+        ).toBeGreaterThan(0);
+
+        const befunde = ergebnis.violations.flatMap((v) =>
+          v.nodes.map(
+            (n) =>
+              `${n.target.join(" ")} — ${n.failureSummary?.replace(/\s+/g, " ").trim()}`,
+          ),
+        );
+
+        expect(befunde, `${ansicht.name} / ${schema.name}`).toEqual([]);
+      });
+    }
+  }
+});
+
 test.describe("Touch-Erkennung", () => {
   test("pruefe-medienabfrage: das Handy-Profil meldet wirklich pointer: coarse", async ({
     page,
