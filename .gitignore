@@ -11,3 +11,6 @@ blob-report/
 *.log
 .env*
 !.env.example
+# Lokale Berechtigungsliste von Claude Code -- rechnergebunden, gehoert
+# niemandem sonst. launch.json daneben ist generisch und bleibt versioniert.
+.claude/settings.local.json

@@ -415,11 +415,60 @@ können, ist der belegte Konformitätsstand.
 - **ExcelJS-Abhängigkeit prüfen.** Bringt eine bekannte Meldung in `uuid` mit
   (moderat). Falls eine Fassung ohne diese Unterabhängigkeit vorliegt,
   wechseln.
-- **Die 44-px-Frage bei 360 px abschließen.** Durch 2.5.8 ist sie faktisch
-  entschieden (AA verlangt 24 px) — nur noch dokumentieren.
+- ~~**Die 44-px-Frage bei 360 px abschließen.**~~ **Entschieden am 2026-09-02 —
+  und zwar andersherum als hier stand.** Der Eintrag sagte, durch 2.5.8 sei die
+  Frage faktisch erledigt, weil AA nur 24 px verlangt. Das war eine Auslegung,
+  keine Entscheidung: Verbindlich ist jetzt **Stufe AAA (2.5.5), 44 px**,
+  geprüft gegen 43,5 px wegen des Renderfaktors 0,99993.
+
+  Der eigentliche Befund war ein anderer: **Regel und Prüfung standen
+  auseinander.** `CLAUDE.md` forderte 44 px, `oberflaeche.spec.ts` prüfte
+  24 px — beide Seiten für sich begründet, deshalb fiel es nie auf. Ein
+  Prüfnetz, das etwas anderes durchsetzt als das Dokument verlangt, erzeugt
+  das Gefühl von Deckung ohne die Deckung.
+
+  Gemessen bei 360 px: kein fokussierbares Element unter 43,5 px (allein das
+  Formular hat 93). Die Bedienzeile stand bei „Extra groß" allerdings 2,1 px
+  über, alle fünf Elemente auf ihrer `min-width` — unsichtbar, aber ohne
+  Reserve. Innenabstand der Zählerkarte 10 → 6 px, die 8 px kamen aus dem
+  Weißraum und sind in die Tasten geflossen (`±1` 52,0 → 53,6 px).
+
+  Die `±5`-Tasten bleiben unter 44 px und laufen unter der
+  Gleichwertigkeitsausnahme in 2.5.5, begründet im Quelltext. Das Prüfnetz
+  trennt jetzt zwei Klassen (43,5 px im Tab-Lauf, 24 px außerhalb) und fand im
+  ersten Lauf drei Verstöße, die der Handmessung entgangen waren — alle im
+  Schreibtisch-Profil, weil nur bei 360 px gemessen worden war.
 - **320 px** (iPhone SE 1./2. Gen.): tritt bei den großen Schriftgrößen über
   den Kartenrand. Betrifft kein aktuell verkauftes Gerät — entweder bewusst
   als Nicht-Ziel festschreiben oder beheben.
+- **Typografie: Bestandsaufnahme liegt vor, Entscheidung steht aus.** Gemessen
+  am 2026-09-02 über alle fünf Ansichten im Handy-Profil, 202 Elemente mit
+  eigenem sichtbaren Text (`sr-only` ausgenommen). Drei Achsen, drei sehr
+  unterschiedliche Ergebnisse:
+
+  | Achse | Befund | Bewertung |
+  |---|---|---|
+  | Schriftgewichte | **3** — 400 (45 %), 700 (30 %), 900 (25 %) | sauber; die Reduktion von 5 auf 3 aus 0.9.6 hat 13 Versionen gehalten |
+  | Schriftgrößen | **7** — 16 px (87×), 12 px (71×), 14 px (15×), 18 px (12×), 11 px (9×), 20 px (4×), 30 px (4×) | im Rahmen; zwei Werte tragen 78 % |
+  | Sperrung (`letter-spacing`) | **7 Werte auf 55 Elementen** — −0,3 px (25×), 0,6 px (13×), −0,45 px (7×), 0,55 px (5×), −0,5 px (3×), 2,4 px, −0,4 px | die einzige nie normalisierte Achse |
+  | Versalien | 18 Elemente (9 %) — 15 `<span>`, 3 `<h3>` | offen |
+
+  **Die Sperrung ist der Fund.** Sieben Werte, davon vier negativ, ohne
+  erkennbare Systematik — das ist keine Skala, das ist Rauschen aus 
+  Einzelentscheidungen. Negative Sperrung zieht die Buchstaben zusammen und
+  verengt das Wortbild; bei einer App, deren Zielgruppe sehbehindert ist, ist
+  das die fragwürdigste der drei Achsen. Dasselbe gilt abgeschwächt für die
+  18 Versalien-Elemente: Großbuchstaben nehmen dem Wort seine Umrissform, an
+  der geübte Leser es erkennen.
+
+  Bei den Größen fällt nur das Paar **11 px / 12 px** auf — ein Pixel
+  Unterschied ist keine Stufe, sondern eine Verwechslung. Alles skaliert
+  weiterhin über `--font-scale` mit, 11 px sind also bei „Extra groß" 16,5 px.
+
+  **Bewusst kein Vorhaben daraus abgeleitet.** Die Zahlen sind der Befund, die
+  Entscheidung gehört Ihnen — und sie wiegt weniger als der NVDA-Durchlauf.
+  Das Messskript ist nach dem Lauf gelöscht (Wegwerf-Skript nach
+  Projektregel); die Zahlen hier sind reproduzierbar.
 - ~~**`HelpModal.tsx` gegen das geänderte Sync-Verhalten prüfen.**~~ **Erledigt
   mit 0.9.16/0.9.17:** Die Hilfe nennt jetzt die Sieben-Tage-Regel und das
   Hinzufügen zum Home-Bildschirm, die Sicherungs-Erinnerung, die Rettung im
