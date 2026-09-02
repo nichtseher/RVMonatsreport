@@ -500,6 +500,82 @@ async function oeffneUeberEinstieg(page: Page, eintrag: (typeof EINSTIEGE)[numbe
   await page.waitForTimeout(250);
 }
 
+/**
+ * Eine breitere Schrift erzwingen, als auf diesem Rechner installiert ist.
+ *
+ * Warum es das gibt: Am 2026-09-02 ist der Deploy an drei Reflow-Fehlern
+ * gescheitert, die hier **nicht reproduzierbar** waren. `ubuntu-latest` kennt
+ * weder „Segoe UI" noch „Segoe UI Variable Text" und fällt auf eine breitere
+ * Schrift zurück; textgetriebener Überlauf zeigt sich deshalb dort und nur
+ * dort. Der Changelog schob 412 px Inhalt in ein 360-px-Fenster, ohne dass
+ * eine einzige lokale Prüfung etwas gemerkt hätte.
+ *
+ * Der Schriftstapel der App ist eine Fallkette. Welches Glied greift,
+ * entscheidet das Gerät — bei den Kollegen ein iPhone, auf dem Läufer ein
+ * Linux ohne Microsoft-Schriften, im Zweifel ein Android mit Roboto. Diese
+ * Prüfung stellt sicher, dass die Oberfläche das **breiteste** plausible Glied
+ * verträgt, statt nur das schmalste zu kennen.
+ *
+ * Verdana ist absichtlich gewählt: deutlich breiter als Segoe UI, auf Windows
+ * vorhanden, und wo sie fehlt (auf dem Läufer selbst) greift DejaVu Sans, die
+ * ebenfalls breiter ist. In beiden Umgebungen wird also etwas anderes und
+ * Breiteres geprüft als der Normalfall.
+ *
+ * Nur „Extra groß", nur ein Profil, nur Geometrie: Der Fehler tritt bei der
+ * größten Schrift zuerst auf, hängt nicht am Motor und nicht am axe-Regelsatz.
+ * Elf Ansichten, rund 40 Sekunden.
+ */
+async function erzwingeBreiteSchrift(page: Page) {
+  await page.addInitScript(() => {
+    const setze = () => {
+      const st = document.createElement("style");
+      st.textContent = '*{font-family:Verdana,"DejaVu Sans",sans-serif !important}';
+      document.head.appendChild(st);
+    };
+    if (document.head) setze();
+    else document.addEventListener("DOMContentLoaded", setze);
+  });
+}
+
+async function pruefeGeometrie(page: Page, name: string) {
+  const { scrollBreite, sichtBreite, ueberstehende } = await findeUeberlauf(page);
+  expect(
+    scrollBreite,
+    `${name}: ${scrollBreite} px Inhalt bei ${sichtBreite} px Fenster` +
+      (ueberstehende.length ? `\nÜbersteht: ${ueberstehende.join("\n           ")}` : ""),
+  ).toBeLessThanOrEqual(sichtBreite);
+
+  const versteckte = await findeVerstecktenUeberlauf(page);
+  expect(versteckte, `${name}: verstecktes Seitwärtsscrollen`).toEqual([]);
+
+  const zuKlein = await findeZuKleineZiele(page);
+  expect(zuKlein, `${name}: Trefferfläche unterschritten — ${zuKlein.join(" | ")}`).toEqual([]);
+}
+
+test.describe("Breitere Schrift als hier installiert", () => {
+  for (const ansicht of ANSICHTEN) {
+    test(`${ansicht.name} mit breiter Schrift`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "Schriftbreite haengt nicht am Geraeteprofil");
+      await erzwingeBreiteSchrift(page);
+      await oeffne(page, ansicht.tab);
+      await setzeSchriftgroesse(page, "extra-large");
+      await warteAufRuhigesLayout(page);
+      await pruefeGeometrie(page, `${ansicht.name} / breit`);
+    });
+  }
+
+  for (const eintrag of EINSTIEGE) {
+    test(`${eintrag.name} mit breiter Schrift`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "Schriftbreite haengt nicht am Geraeteprofil");
+      await erzwingeBreiteSchrift(page);
+      await oeffneUeberEinstieg(page, eintrag);
+      await setzeSchriftgroesse(page, "extra-large");
+      await warteAufRuhigesLayout(page);
+      await pruefeGeometrie(page, `${eintrag.name} / breit`);
+    });
+  }
+});
+
 test.describe("Ansichten hinter den Einstiegen", () => {
   for (const eintrag of EINSTIEGE) {
     for (const groesse of ["normal", "extra-large"] as const) {

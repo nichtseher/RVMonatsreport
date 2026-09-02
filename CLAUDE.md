@@ -52,10 +52,13 @@ There is no test runner. The project owner's standing rule is that nothing is re
 - **Anything touching defaults** (`DEFAULT_FIELDS_CONFIG`, initial settings, first-run): verify with `localStorage.clear()` **and** a deleted `keyval-store` IndexedDB, not just a reload — stored state masks the regression.
 - **Sync changes:** two browser tabs can be paired for real via the text code (`RVC1:`) path; instrument `RTCDataChannel.prototype.send` to count traffic. Idle should produce **zero** messages.
 
-Two measurement traps in this preview environment, both of which have produced false findings:
+Measurement traps, all of which have produced false findings:
 
 - The page renders at a scale factor of ~0.99993, so a 44 px element measures 43.997. Compare touch targets against 43.5, not 44.
 - Modals animated with framer-motion stay at their entry state `scale(0.95)`, `opacity: 0` while the browser pane isn't compositing. Everything inside them measures 5 % too small — that is an artifact, not a defect.
+- **`getBoundingClientRect()` multiplies both of the above in; `offsetWidth`/`offsetHeight` do not**, because they report the layout box and ignore transforms. On 2026-09-02 the first trap listed above was written down here and *still* broke the deploy: `check:ui` measured a `w-11 h-11 min-w-[44px] min-h-[44px]` button as 41.8 px — exactly 44 × 0.95 — because the headless CI runner never composites the modal out of its entry state, so waiting does not help. `findeZuKleineZiele` therefore measures the layout box against a clean 44, and the scale factor stops mattering. The cost is one blind spot: a control shrunk by a *permanent* transform would go unnoticed. Nothing here does that.
+- **The CI runner does not have your fonts.** `ubuntu-latest` has neither "Segoe UI" nor "Segoe UI Variable Text" and falls back to something wider, so text-driven overflow shows up there and nowhere else — three reflow failures reached production-gate this way on 2026-09-02, all invisible locally. Reproduce it before pushing by forcing a wide face in the page: `*{font-family:Verdana,DejaVu Sans,sans-serif !important}`. Measured 408 px against the runner's 412 — close enough to work with instead of guessing.
+- **`break-words` is not enough against long German compounds.** `overflow-wrap: break-word` wraps an over-long word but leaves the element's *intrinsic minimum width* at the longest word, so a flex or grid parent still sizes to it. The changelog went 408 → 381 px with `break-words` and only reached 360 with `[overflow-wrap:anywhere]`.
 
 ## Editing hazards (learned the hard way)
 

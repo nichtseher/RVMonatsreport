@@ -143,6 +143,54 @@ Nach dem Beenden des Vorschau-Servers war der Fehlschlag weg. Festgehalten in
 `CLAUDE.md`, weil er sich als etwas ausgibt, das er nicht ist: Wer diese
 Meldung für einen axe-Verstoß hält, sucht den Fehler in der Ansicht.
 
+### Der Läufer sah vier Fehler, die dieser Rechner nicht sehen konnte
+
+Der Push von `39b3e7d` scheiterte im Tor, obwohl derselbe Stand lokal grün war:
+142 Funktionsprüfungen, 140 Oberflächenprüfungen, null Fehlschläge. Vier
+Fehlschläge auf dem Läufer, zwei verschiedene Ursachen — und die zweite ist
+die unangenehmere.
+
+**Drei Mal die Schrift.** `ubuntu-latest` kennt weder „Segoe UI" noch „Segoe UI
+Variable Text" und fällt auf eine breitere Schrift zurück. Damit wurde
+sichtbar, was hier nie auffiel: Der Changelog schob bei „Extra groß" 412 px
+Inhalt in ein 360-px-Fenster, die Datensicherung wurde 22 px seitwärts
+scrollbar.
+
+Nachgestellt habe ich das lokal mit erzwungener Verdana
+(`*{font-family:Verdana,DejaVu Sans,sans-serif !important}`): **408 px gegen
+die 412 des Läufers.** Nah genug, um damit zu arbeiten statt zu raten — und
+der Unterschied zwischen zwei Blindversuchen und einer Messung.
+
+Dabei kam ein Detail heraus, das ich vorher falsch hatte: **`break-words`
+genügt nicht.** `overflow-wrap: break-word` bricht ein zu langes Wort zwar um,
+lässt aber die *intrinsische Mindestbreite* des Elements beim längsten Wort —
+ein Flex-Elternteil bemisst sich weiter danach. Der Changelog ging damit von
+408 auf 381 px und erreichte die 360 erst mit `[overflow-wrap:anywhere]`.
+
+**Ein Mal das Messverfahren, nicht die App.** Der Geräte-Sync meldete eine
+Taste mit 41,8 × 41,8 px als Verstoß gegen die 44 px — ausgerechnet eine mit
+`w-11 h-11 min-w-[44px] min-h-[44px]`. 41,8 ist exakt 44 × 0,95: der
+Eintrittszustand `scale(0.95)` der framer-motion-Animation. Wo nicht
+kompositiert wird — im kopflosen CI-Lauf, in der Vorschau bei ausgeblendetem
+Bereich — bleibt das Fenster darin stecken, und Warten hilft nicht, weil die
+Animation nie weiterläuft.
+
+Das Bittere daran: **Diese Messfalle stand seit Monaten in `CLAUDE.md`.** Sie
+hat trotzdem zugeschlagen, weil sie dort als Warnung an den Menschen
+formuliert war und nie in den Prüfcode eingezogen ist. `getBoundingClientRect`
+rechnet Transformationen mit, `offsetWidth` nicht. Gemessen wird jetzt der
+Layout-Kasten; damit ist die Schwelle wieder saubere 44 statt 43,5, weil auch
+der Renderfaktor 0,99993 keine Rolle mehr spielt.
+
+Erkauft ist das mit einer blinden Stelle: Ein dauerhaft per Transformation
+verkleinertes Bedienelement fällt nicht mehr auf. In dieser App gibt es das
+nicht — Transformationen sind hier ausschließlich Eintritts- und
+Druck-Animationen. Das ist eine Annahme, und sie steht deshalb hier.
+
+**Was ich daraus mitnehme:** Eine dokumentierte Falle ist erst entschärft,
+wenn die Prüfung sie kennt. Alles andere ist eine Notiz, die man liest,
+nachdem sie zugeschlagen hat.
+
 ### Sechs von elf Ansichten waren nie geprüft — und es waren keine Dialoge
 
 Der Konformitätsbericht führte „Modaldialoge nicht abgedeckt" als größte

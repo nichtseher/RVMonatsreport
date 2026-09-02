@@ -540,6 +540,13 @@ Ab hier hängt alles an Menschen und Geräten. Kein Werkzeug ersetzt das.
   scrollt die Seite nach?), versehentliche Textmarkierung beim Tippen auf
   Zähler, iOS-Safe-Areas auf einem echten iPhone, Kamera-Sync mit zwei
   physischen Geräten im selben WLAN.
+
+  **Stand 2026-09-02: laut Rückmeldung des Projektinhabers durchgeführt.** Wie
+  bei den Screenreader-Durchläufen ist das eine Fremdauskunft — nicht
+  nachvollzogen, kein eingesehenes Protokoll. Ob die vier oben einzeln
+  genannten Punkte dabei jeweils geprüft wurden, ist damit **nicht** bestätigt;
+  die Liste ist bewusst so kleinteilig, weil genau diese vier Dinge sich auf
+  keinem Emulator zeigen. Wer die Abnahme trägt, sollte sie einzeln abhaken.
 - **Screenreader-Durchlauf mit NVDA (PC), VoiceOver (iOS), TalkBack
   (Android)** — vollständig, durch alle Bereiche. **Der Sync-Umbau aus 0.9.17
   muss ausdrücklich von einem der blinden Kollegen durchgespielt werden.** Ob

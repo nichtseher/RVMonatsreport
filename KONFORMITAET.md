@@ -123,6 +123,19 @@ selbst gesetzten Maßstab nicht. **Ungeprüft, nicht erfüllt.**
 Zusammenführen) Teil dieser Durchläufe war. Das ist der Teil der Anwendung,
 der zuletzt umgebaut wurde.
 
+### 3.4 Test auf echten Geräten
+
+**Ebenfalls am 2026-09-02 laut Rückmeldung des Projektinhabers durchgeführt** —
+und ebenfalls eine Fremdauskunft, nicht nachvollzogen. Sie deckt eine Klasse
+ab, die kein Prüflauf erreicht: Bildschirmtastatur, Safe-Areas auf echtem
+Gerät, versehentliche Textmarkierung beim Tippen, Kamerakopplung zwischen zwei
+physischen Geräten.
+
+Für diesen Bericht heißt das: Die Kriterien, die von echter Hardware abhängen,
+sind **nicht mehr ungeprüft, aber auch nicht einzeln belegt.** Wo unten
+„plausibel" steht, bleibt es dabei — eine Durchführungsmeldung ohne Protokoll
+hebt kein Kriterium auf „erfüllt".
+
 ---
 
 ## 4. WCAG 2.2 — die neun zusätzlichen Erfolgskriterien
