@@ -215,14 +215,41 @@ async function findeZuKleineZiele(page: Page) {
         misst das Falsche.
       */
       const label = el.tagName === "INPUT" ? el.closest("label") : null;
-      const r = (label ?? el).getBoundingClientRect();
-      if (r.width === 0 || r.height === 0) continue; // unsichtbar
+      const ziel = (label ?? el) as HTMLElement;
+      /*
+        Gemessen wird der LAYOUT-Kasten (offsetWidth/offsetHeight), nicht
+        getBoundingClientRect.
+
+        Der Unterschied: getBoundingClientRect rechnet CSS-Transformationen
+        mit. Modale Fenster starten in diesem Projekt mit `scale(0.95)`, und
+        wo nicht kompositiert wird -- in der Vorschau bei ausgeblendetem
+        Bereich, im kopflosen CI-Lauf -- bleiben sie darin stecken. Eine
+        44-px-Taste misst dann 41,8 px, also exakt 44 x 0,95. Genau das hat am
+        2026-09-02 den Lauf auf dem CI-Laeufer zerrissen, waehrend er lokal
+        gruen war: `w-11 h-11 min-w-[44px] min-h-[44px]` als angeblicher
+        Verstoss. Warten hilft dort nicht, weil die Animation nie weiterlaeuft.
+        `CLAUDE.md` fuehrt diesen Messfehler seit laengerem unter den
+        Messfallen -- er hat hier trotzdem zugeschlagen.
+
+        Der Layout-Kasten ist gegen diese Klasse immun und ist zugleich das,
+        was WCAG meint: die Groesse, die das Bedienelement im Layout einnimmt.
+        Erkauft wird das mit einer blinden Stelle -- ein dauerhaft per
+        Transformation verkleinertes Bedienelement faellt nicht auf. In dieser
+        App gibt es das nicht; Transformationen sind hier ausschliesslich
+        Eintritts- und Druck-Animationen.
+
+        Die Schwelle ist deshalb wieder 44 statt 43,5: offsetWidth ist ganzzahlig,
+        der Renderfaktor 0,99993 spielt hier keine Rolle mehr.
+      */
+      const breite = ziel.offsetWidth;
+      const hoehe = ziel.offsetHeight;
+      if (breite === 0 || hoehe === 0) continue; // unsichtbar
       const ausserhalbTabLauf =
         el.getAttribute("tabindex") === "-1" || el.getAttribute("aria-hidden") === "true";
-      const schwelle = ausserhalbTabLauf ? 24 : 43.5;
-      if (r.width < schwelle || r.height < schwelle) {
+      const schwelle = ausserhalbTabLauf ? 24 : 44;
+      if (breite < schwelle || hoehe < schwelle) {
         treffer.push(
-          `${el.tagName}"${(el.textContent || (el as HTMLElement).ariaLabel || "").trim().slice(0, 28)}" ${Math.round(r.width)}×${Math.round(r.height)} (Schwelle ${schwelle})`,
+          `${el.tagName}"${(el.textContent || (el as HTMLElement).ariaLabel || "").trim().slice(0, 28)}" ${breite}×${hoehe} (Schwelle ${schwelle})`,
         );
       }
     }

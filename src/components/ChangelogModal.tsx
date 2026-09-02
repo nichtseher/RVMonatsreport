@@ -8,7 +8,15 @@ interface ChangelogModalProps {
 
 export function ChangelogModal({ onClose }: ChangelogModalProps) {
   return (
-    <div className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-3xl w-full border border-[var(--border-color)] p-5 md:p-8 relative shadow-lg flex flex-col gap-6 animate-fade-in pb-24">
+    /* break-words am Wurzelelement, weil `overflow-wrap` sich vererbt: Die
+       langen Woerter stehen in den Listeneintraegen, nicht nur in den
+       Ueberschriften. Gemessen mit erzwungener Verdana (Nachstellung des
+       Linux-Laeufers, der "Segoe UI" nicht kennt): Einzelne <li> brauchten
+       249 px in einer 164 px breiten Spalte -- "Veroeffentlichung" passt bei
+       "Extra gross" nicht mehr in eine Zeile. Die Seite wuchs dadurch auf
+       408 px in einem 360-px-Fenster, auf dem CI-Laeufer auf 412.
+       WCAG 1.4.10 Reflow. */
+    <div className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-3xl w-full border border-[var(--border-color)] p-5 md:p-8 relative shadow-lg flex flex-col gap-6 animate-fade-in pb-24 [overflow-wrap:anywhere]">
       <div className="flex items-center gap-3 border-b border-[var(--border-color)] pb-4">
         <button
           onClick={onClose}
@@ -34,7 +42,15 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
       <div className="space-y-6">
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          {/* [&>span]:min-w-0 — an allen 31 Versionsueberschriften gleich.
+              Ein Flex-Element gibt seine Breite standardmaessig nicht unter
+              den Inhalt preis (`min-width: auto`), die Ueberschrift konnte
+              deshalb nicht umbrechen. Auf diesem Rechner fiel das nie auf:
+              Mit einer breiteren Schrift -- wie sie der Linux-Laeufer statt
+              "Segoe UI" waehlt -- schob sie die Seite bei "Extra gross" auf
+              412 px in einem 360-px-Fenster. Nachgestellt mit erzwungener
+              Verdana: 408 px. WCAG 1.4.10 Reflow. */}
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.19: Große Schrift, Zeitumstellung, Schieberegler</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -48,7 +64,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--info-border)]" />
             <span>Version 0.9.18: Zwei zu blasse Textstellen behoben</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -63,7 +79,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.17: Der Geräte-Abgleich ohne Kamera</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -78,7 +94,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--danger)]" />
             <span>Version 0.9.16: Schutz vor Datenverlust</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -92,7 +108,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--info-border)]" />
             <span>Version 0.9.15: Aufräumarbeiten abgeschlossen</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -104,7 +120,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--danger)]" />
             <span>Version 0.9.14: Stundenzettel rechnet jetzt exakt zurück</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -116,7 +132,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--danger)]" />
             <span>Version 0.9.13: Zwei Fehler behoben, die niemand sehen konnte</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -129,7 +145,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.12: Sie sehen jetzt, welcher Monat noch offen ist</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -143,7 +159,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.11: Der Export ist jetzt das Formular der Vertriebsleitung</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -158,7 +174,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.10: Jede Farbe folgt jetzt Ihrer Schema-Wahl</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -172,7 +188,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.9: Farben folgen jetzt überall Ihrer Theme-Wahl</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -187,7 +203,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--danger)]" />
             <span>Version 0.9.8: Zähler-Tasten sehen jetzt zusammengehörig aus</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -200,7 +216,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--danger)]" />
             <span>Version 0.9.7: Zähler-Tasten auf dem Handy in richtiger Reihenfolge</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -212,7 +228,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.6: Ruhigeres, einheitlicheres Erscheinungsbild</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -225,7 +241,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--info-border)]" />
             <span>Version 0.9.5: Geräte-Sync abgesichert</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -239,7 +255,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--info-border)]" />
             <span>Version 0.9.4: Automatische Kontrolle vor jeder Veröffentlichung</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -252,7 +268,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--warning-border)]" />
             <span>Version 0.9.3: Schnellerer Start, ehrlichere Meldungen, korrigierte Hilfe</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -266,7 +282,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--warning-border)]" />
             <span>Version 0.9.2: Abbruch der Live-Verbindung wird gemeldet</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -279,7 +295,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--danger)]" />
             <span>Version 0.9.1: Live-Verbindung verliert keine Eingaben mehr</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -292,7 +308,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--info-border)]" />
             <span>Version 0.9.0: Zähler bleiben erreichbar & Monatsabschluss mit Rückfrage</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -308,7 +324,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--info-border)]" />
             <span>Version 0.8.1: Farbschemata repariert & einheitliche Navigation</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -321,7 +337,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.8.0: Mehr Platz auf dem Handy & geführter Einstieg</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -335,7 +351,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.7.0: Besser lesbar, besser am PC</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -351,7 +367,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.6.0: Verlässlicheres Zählen & Sync im Hintergrund</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -365,7 +381,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.5.0: Sync ohne Kamera & Abschluss-Check</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -378,7 +394,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.4.0: Schnell-Erfassung</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -391,7 +407,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.3.0: Live-Sync & Zusammenführen</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -404,7 +420,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.2.0: Geräte-Synchronisation</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -417,7 +433,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--info-border)]" />
             <span>Version 0.1.0: DevSecOps & Sicherheit</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
@@ -430,7 +446,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--warning-border)]" />
             Neue Funktionen
           </h3>
@@ -443,7 +459,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--danger)]" />
             Fehlerbehebungen
           </h3>
