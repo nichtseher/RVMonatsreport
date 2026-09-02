@@ -412,9 +412,26 @@ können, ist der belegte Konformitätsstand.
 - ~~**`npm run deploy` entfernen.**~~ **Erledigt mit 0.9.20.** Skript,
   `predeploy` und die `gh-pages`-Abhängigkeit sind raus. Was veröffentlicht,
   ist ausschließlich ein Push auf `main`.
-- **ExcelJS-Abhängigkeit prüfen.** Bringt eine bekannte Meldung in `uuid` mit
-  (moderat). Falls eine Fassung ohne diese Unterabhängigkeit vorliegt,
-  wechseln.
+- ~~**ExcelJS-Abhängigkeit prüfen.**~~ **Geprüft am 2026-09-02 — die Antwort
+  ist: kein Wechsel, und zwar begründet.**
+
+  **Es gibt keine Fassung ohne diese Unterabhängigkeit.** 4.4.0 ist die
+  neueste; `npm audit fix --force` würde auf **3.4.0** zurückgehen, also einen
+  Bruch gegen eine Lücke eintauschen.
+
+  **Und die Lücke greift hier nicht.** Die Meldung (GHSA-w5hq-g745-h8pq)
+  betrifft eine fehlende Bereichsprüfung in `uuid` **v3/v5/v6, wenn ein Puffer
+  übergeben wird**. ExcelJS ruft an genau einer Stelle
+  (`cf-rule-ext-xform.js`, bedingte Formatierung) `uuidv4()` auf — Version 4,
+  ohne Argumente. Der verwundbare Pfad ist nicht erreichbar.
+
+  Das ist ein bewusst getragenes Restrisiko, kein übersehener Punkt.
+
+  **Nebenbefund, der wichtiger war:** Derselbe Durchlauf meldete `nanoid`
+  unter 3.3.18 mit **hohem** Schweregrad — über `vite → postcss`, also aus dem
+  Bau und nicht im Browser-Bündel. Ohne Bruch behebbar und behoben; im
+  Lockfile steht jetzt 3.3.18. Damit bleibt genau eine moderate Meldung übrig,
+  die oben begründete.
 - ~~**Die 44-px-Frage bei 360 px abschließen.**~~ **Entschieden am 2026-09-02 —
   und zwar andersherum als hier stand.** Der Eintrag sagte, durch 2.5.8 sei die
   Frage faktisch erledigt, weil AA nur 24 px verlangt. Das war eine Auslegung,
@@ -438,9 +455,28 @@ können, ist der belegte Konformitätsstand.
   trennt jetzt zwei Klassen (43,5 px im Tab-Lauf, 24 px außerhalb) und fand im
   ersten Lauf drei Verstöße, die der Handmessung entgangen waren — alle im
   Schreibtisch-Profil, weil nur bei 360 px gemessen worden war.
-- **320 px** (iPhone SE 1./2. Gen.): tritt bei den großen Schriftgrößen über
-  den Kartenrand. Betrifft kein aktuell verkauftes Gerät — entweder bewusst
-  als Nicht-Ziel festschreiben oder beheben.
+- ~~**320 px** (iPhone SE 1./2. Gen.)~~ **Behoben am 2026-09-02, nicht als
+  Nicht-Ziel festgeschrieben.**
+
+  Die Entscheidung fiel gegen das Festschreiben, und zwar aus einem einzigen
+  Grund: **Die Fehler traten ausschließlich bei „Extra groß" auf** — also
+  genau in der Einstellung, die sehbehinderte Nutzer verwenden. „Betrifft kein
+  aktuell verkauftes Gerät" ist ein schwaches Argument, solange niemand weiß,
+  welche Geräte die Kollegen tatsächlich in der Hand haben. Beim TalkBack-Punkt
+  ist die Auskunft da und die Lücke deshalb begründbar; hier ist sie es nicht.
+
+  Drei Fundstellen, alle dieselbe Ursache wie schon bei 360 px — Flex-Elemente,
+  die ihre Breite nicht unter den Inhalt preisgeben:
+
+  | Ansicht | Überstand | Ursache |
+  |---|---|---|
+  | Optionen | 14 px | Taste „Was gibt's Neues?" mit `flex-shrink-0` |
+  | Analyse | 8 px | Umschalter Grafik/Tabelle bricht nicht um |
+  | Zeit | 2 px | die beiden Reiter ohne `min-w-0` |
+
+  Bei „Normal" und „Groß" war 320 px durchgehend sauber. Die Breite läuft
+  jetzt als eigene Zeile im Prüfnetz mit (elf Ansichten, „Extra groß", rund
+  22 Sekunden).
 - **Typografie: Bestandsaufnahme liegt vor, Entscheidung steht aus.** Gemessen
   am 2026-09-02 über alle fünf Ansichten im Handy-Profil, 202 Elemente mit
   eigenem sichtbaren Text (`sr-only` ausgenommen). Drei Achsen, drei sehr

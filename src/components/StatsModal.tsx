@@ -156,7 +156,10 @@ export default function StatsModal({
             </button>
           </div>
 
-          <div className="flex bg-[var(--bg-color)] p-1 rounded-xl self-start sm:self-auto">
+          {/* flex-wrap wie beim Umschalter darueber: Bei 320 px und
+              "Extra gross" braucht das Paar Grafik/Tabelle 255 px und stand
+              8 px ueber dem Rand. Die Zeile daneben gibt nicht nach. */}
+          <div className="flex flex-wrap gap-0.5 bg-[var(--bg-color)] p-1 rounded-xl self-start sm:self-auto">
             <button
               type="button"
               onClick={() => setViewType("visual")}

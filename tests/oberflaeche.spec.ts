@@ -764,6 +764,50 @@ async function erzwingeTextabstand(page: Page) {
   });
 }
 
+/**
+ * 320 px — die schmalste Breite, die noch im Einsatz ist.
+ *
+ * Das entspricht dem iPhone SE der 1. und 2. Generation. Die ROADMAP führte
+ * die Breite als offene Frage: „tritt bei den großen Schriftgrößen über den
+ * Kartenrand -- entweder bewusst als Nicht-Ziel festschreiben oder beheben."
+ *
+ * Am 2026-09-02 gemessen und behoben statt festgeschrieben. Der Grund ist
+ * nicht Vollständigkeit, sondern die Zielgruppe: Die Fehler traten
+ * ausschließlich bei „Extra groß" auf — also genau in der Einstellung, die
+ * sehbehinderte Nutzer verwenden. „Das Gerät ist alt" ist dagegen ein
+ * schwaches Argument, solange niemand weiß, welche Geräte die Kollegen
+ * tatsächlich benutzen.
+ *
+ * Drei Fundstellen, alle dieselbe Ursache wie schon bei 360 px: Flex-Elemente,
+ * die ihre Breite nicht unter den Inhalt preisgeben.
+ *
+ * | Ansicht | Überstand | Ursache |
+ * |---|---|---|
+ * | Optionen | 14 px | Taste „Was gibt's Neues?" mit `flex-shrink-0` |
+ * | Analyse | 8 px | Umschalter Grafik/Tabelle bricht nicht um |
+ * | Zeit | 2 px | die beiden Reiter ohne `min-w-0` |
+ *
+ * Geprüft wird nur bei „Extra groß": Bei den kleineren Schriftgrößen war 320
+ * px durchgehend sauber, und die Laufzeit ist nicht gratis.
+ */
+test.describe("320 px (iPhone SE)", () => {
+  const alle = [
+    ...ANSICHTEN.map((a) => ({ name: a.name, oeffne: (p: Page) => oeffne(p, a.tab) })),
+    ...EINSTIEGE.map((e) => ({ name: e.name, oeffne: (p: Page) => oeffneUeberEinstieg(p, e) })),
+  ];
+
+  for (const ansicht of alle) {
+    test(`${ansicht.name} bei 320 px`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "Eine Breite genuegt, sie haengt nicht am Motor");
+      await page.setViewportSize({ width: 320, height: 780 });
+      await ansicht.oeffne(page);
+      await setzeSchriftgroesse(page, "extra-large");
+      await warteAufRuhigesLayout(page);
+      await pruefeGeometrie(page, `${ansicht.name} / 320 px`);
+    });
+  }
+});
+
 test.describe("Textabstand nach WCAG 1.4.12", () => {
   const alle = [
     ...ANSICHTEN.map((a) => ({ name: a.name, oeffne: (p: Page) => oeffne(p, a.tab) })),

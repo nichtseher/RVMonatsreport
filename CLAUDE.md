@@ -178,7 +178,12 @@ Two things worth knowing about how it got there:
 
 ### 3. Responsive Layout & Skalierung (Cross-Platform)
 - **Touch-Ziele — Stufe AAA (Entscheidung vom 2026-09-02):** Bindend ist **WCAG 2.5.5 „Target Size (Enhanced)", also 44 × 44 px**, nicht die 24 px der AA-Stufe 2.5.8. Gemessen wird gegen **43,5 px**, weil die Vorschau mit Faktor 0,99993 rendert und 44 px dort als 43,997 px ankommen. Zähler-Buttons nutzen feste Pixelgrößen (sie enthalten Symbole, keinen Text — WCAG 1.4.4 verlangt für sie keine Skalierung, und `rem` schob sie bei „Extra groß" bis zu 163 px aus dem Bildschirm). Das Zahlenfeld bleibt `rem`-basiert, weil es Text **ist**. Die Ausnahme in 2.5.5 für gleichwertig erreichbare Bedienelemente darf genutzt werden, muss aber im Code begründet stehen. **Status (2026-09-02): für alles im Tab-Lauf erfüllt und im Prüfgate abgesichert; die `±5`-Tasten laufen unter der Ausnahme** — siehe Nachtrag unten.
-- **Überprüfung & Breakpoints:** Teste Layouts immer bei 360 px Breite und über alle drei Schriftgrößen (`normal`, `large`, `extra-large`). Es darf NIEMALS ein horizontaler Scrollbar entstehen.
+- **Überprüfung & Breakpoints:** Teste Layouts immer bei 360 px Breite und über alle drei Schriftgrößen (`normal`, `large`, `extra-large`). Es darf NIEMALS ein horizontaler Scrollbar entstehen. Seit 0.9.20 läuft zusätzlich **320 px** (iPhone SE) bei „Extra groß" im Prüfnetz mit.
+- **Der häufigste Layoutfehler dieses Projekts, mit Abstand: `min-width: auto` an Flex-Elementen.** Ein Flex-Kind gibt seine Breite standardmäßig **nicht** unter seinen Inhalt preis. Bei großer Schrift oder einer breiteren Schriftart sprengt es dann die Zeile, statt umzubrechen — die Seite wird waagerecht scrollbar (WCAG 1.4.10). Am 2026-09-02 war das **siebenmal** die Ursache: Überschrift im Jahreskonto, dessen Tastenzeile, die Versionsüberschriften im Changelog, die Zurück-Taste dort, die Reiter der Zeit-Ansicht, der Umschalter der Analyse und die Taste „Was gibt's Neues?" in den Optionen.
+
+  Drei Gegenmittel, je nach Fall: `min-w-0` am Kind, wenn der Text umbrechen darf; `flex-wrap` am Container, wenn ganze Elemente untereinander sollen; `[overflow-wrap:anywhere]`, wenn ein einzelnes langes deutsches Wort nicht passt — `break-words` genügt dafür **nicht**, es ändert die intrinsische Mindestbreite nicht.
+
+  Wer eine Zeile aus Icon, Text und Taste baut, prüft sie bei 320 px und „Extra groß", bevor er sie für fertig hält.
 - **Mobile Anpassung:** Nutze CSS Safe-Area-Insets (Padding für Notches/Home-Bars auf iOS/Android). Verwende CSS-Grid/Flexbox für eine saubere Darstellung vom Smartphone bis zum Mac-Desktop.
 
 ### 4. Datenarchitektur, Offline-First & Datensicherheit

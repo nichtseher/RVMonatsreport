@@ -215,7 +215,7 @@ export default function TimeModal({
               setActiveTab("stempeln");
               announceToAriaAndSpeech("Stempeluhr und Schichten ausgewählt");
             }}
-            className={`flex-1 min-h-[44px] flex items-end justify-center pb-3 text-sm font-black border-b-2 transition-all cursor-pointer ${
+            className={`flex-1 min-w-0 min-h-[44px] flex items-end justify-center text-center pb-3 text-sm font-black border-b-2 transition-all cursor-pointer ${
               activeTab === "stempeln"
                 ? "border-[var(--accent)] text-[var(--text-color)]"
                 : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-color)]"
@@ -229,7 +229,7 @@ export default function TimeModal({
               setActiveTab("konto");
               announceToAriaAndSpeech("Jahreskonto und Abwesenheiten ausgewählt");
             }}
-            className={`flex-1 min-h-[44px] flex items-end justify-center pb-3 text-sm font-black border-b-2 transition-all cursor-pointer ${
+            className={`flex-1 min-w-0 min-h-[44px] flex items-end justify-center text-center pb-3 text-sm font-black border-b-2 transition-all cursor-pointer ${
               activeTab === "konto"
                 ? "border-[var(--accent)] text-[var(--text-color)]"
                 : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-color)]"

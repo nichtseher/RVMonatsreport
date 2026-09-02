@@ -207,7 +207,12 @@ export default function A11yModal({
   /* ----- Hauptmenü: DSGVO-Hinweis + 2 gruppierte Karten statt 7 großer Buttons ----- */
   const renderMainMenu = () => (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex items-center gap-3 px-1">
+      {/* flex-wrap: Bei 320 px (iPhone SE) und "Extra gross" braucht die Taste
+          "Was gibt's Neues?" allein 230 px und traegt `flex-shrink-0` -- die
+          Zeile wurde dadurch 334 px breit in einem 320-px-Fenster. Umbrechen
+          statt schrumpfen: Die Aufschrift bleibt lesbar, die Taste rutscht
+          unter die Ueberschrift. WCAG 1.4.10 Reflow. */}
+      <div className="flex flex-wrap items-center gap-3 px-1">
         <Settings2 className="w-7 h-7 text-[var(--accent)]" aria-hidden="true" />
         <div className="flex-1 min-w-0">
           <h2 id="a11y-modal-title" className="text-xl md:text-2xl font-black">

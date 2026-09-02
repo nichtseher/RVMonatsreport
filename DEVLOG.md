@@ -143,6 +143,49 @@ Nach dem Beenden des Vorschau-Servers war der Fehlschlag weg. Festgehalten in
 `CLAUDE.md`, weil er sich als etwas ausgibt, das er nicht ist: Wer diese
 Meldung für einen axe-Verstoß hält, sucht den Fehler in der Ansicht.
 
+### 320 px und zwei Sicherheitsmeldungen — beide Fragen waren beantwortbar
+
+Zwei Punkte standen in der 0.9.20-Liste als offene Fragen. Beide ließen sich
+beantworten statt einschätzen.
+
+**ExcelJS: kein Wechsel, und zwar begründet.** Die Frage lautete, ob eine
+Fassung ohne die verwundbare `uuid`-Unterabhängigkeit vorliegt. Antwort: nein
+— 4.4.0 ist die neueste, und `npm audit fix --force` würde auf **3.4.0**
+zurückgehen, also einen Bruch gegen eine Lücke eintauschen.
+
+Wichtiger ist die zweite Hälfte: **Die Lücke greift hier nicht.** Die Meldung
+betrifft eine fehlende Bereichsprüfung in `uuid` v3/v5/v6, *wenn ein Puffer
+übergeben wird*. ExcelJS ruft an genau einer Stelle `uuidv4()` auf — Version 4,
+ohne Argumente. Nachgesehen, nicht vermutet.
+
+**Nebenbefund, der wichtiger war als der gesuchte:** Derselbe Durchlauf meldete
+`nanoid` unter 3.3.18 mit **hohem** Schweregrad, über `vite → postcss`. Ohne
+Bruch behebbar und behoben. Übrig bleibt genau eine moderate Meldung, die
+begründete.
+
+**320 px: behoben statt festgeschrieben.** Die ROADMAP stellte es zur Wahl —
+„entweder bewusst als Nicht-Ziel festschreiben oder beheben". Die Messung hat
+die Entscheidung abgenommen:
+
+| Ansicht | Überstand bei „Extra groß" | Ursache |
+|---|---|---|
+| Optionen | 14 px | Taste „Was gibt's Neues?" mit `flex-shrink-0` |
+| Analyse | 8 px | Umschalter Grafik/Tabelle bricht nicht um |
+| Zeit | 2 px | die beiden Reiter ohne `min-w-0` |
+
+Bei „Normal" und „Groß" war 320 px durchgehend sauber. **Die Fehler traten
+also ausschließlich in der Schriftgröße auf, die sehbehinderte Nutzer
+verwenden** — und damit trägt „betrifft kein aktuell verkauftes Gerät" nicht
+mehr. Beim TalkBack-Punkt gibt es die Auskunft, dass die Kollegen
+ausschließlich iPhones nutzen; welches Modell, weiß niemand. Eine Lücke ist
+begründbar, wenn man den Grund kennt, nicht wenn man ihn vermutet.
+
+Alle drei Ursachen sind dieselbe Klasse wie schon bei 360 px: Flex-Elemente,
+die ihre Breite nicht unter den Inhalt preisgeben. Das ist inzwischen der mit
+Abstand häufigste Layoutfehler dieses Projekts — siebenmal an einem Tag.
+
+320 px läuft jetzt als eigene Zeile im Prüfnetz mit.
+
 ### Acht Tooltips, von denen fünf niemand gesucht hat
 
 Die letzten vier automatisierbaren Kriterien. Drei davon waren schnell:
