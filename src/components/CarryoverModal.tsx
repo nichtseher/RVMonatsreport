@@ -113,7 +113,15 @@ export default function CarryoverModal({
           <ArrowLeft className="w-6 h-6" aria-hidden="true" />
         </button>
         <Calendar className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
-        <h2 id="carryover-modal-title" className="text-2xl md:text-3xl font-black tracking-tight">
+        {/* min-w-0: Ein Flex-Element gibt seine Mindestbreite standardmaessig
+            nicht unter den Inhalt preis (`min-width: auto`). Die Ueberschrift
+            konnte deshalb bei "Extra gross" nicht umbrechen und schob die
+            Seite auf 456 px in einem 360-px-Fenster -- eine echte waagerechte
+            Bildlaufleiste, WCAG 1.4.10. Mit min-w-0 bricht sie um. */}
+        <h2
+          id="carryover-modal-title"
+          className="text-2xl md:text-3xl font-black tracking-tight min-w-0 break-words"
+        >
           Jahreskonto & Einstellungen
         </h2>
       </div>
@@ -238,7 +246,12 @@ export default function CarryoverModal({
           </div>
 
           {/* Action buttons */}
-          <div className="pt-4 border-t border-[var(--border-color)] flex gap-3">
+          {/* flex-wrap + min-w-0: Zwei `flex-1`-Tasten geben ihre Breite nicht
+              unter den Inhalt preis (`min-width: auto`). Bei "Extra gross"
+              schob "Speichern" die Seite dadurch auf 442 px in einem
+              360-px-Fenster. Jetzt brechen die Tasten untereinander um, statt
+              die Seite zu verbreitern -- WCAG 1.4.10 Reflow. */}
+          <div className="pt-4 border-t border-[var(--border-color)] flex flex-wrap gap-3 [&>button]:min-w-0">
             <button
               type="button"
               onClick={onClose}

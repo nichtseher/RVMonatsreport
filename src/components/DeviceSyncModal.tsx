@@ -974,7 +974,12 @@ export default function DeviceSyncModal({
           </h2>
         </div>
 
-        <div className="p-6 overflow-y-auto">
+        {/* overflow-x-hidden: `overflow-y-auto` zieht die x-Achse nach
+            CSS-Spezifikation mit, wodurch der Bereich 6 px waagerecht
+            scrollbar wurde, ohne dass ein Kind ueberstand -- Ursache ist die
+            nachlaufende Sperrung der gesperrten Grossbuchstaben-Zeilen.
+            Gescrollt werden soll hier nur senkrecht. */}
+        <div className="p-6 overflow-y-auto overflow-x-hidden">
           {(mode === "select" || mode === "send" || mode === "receive" || mode === "confirm") &&
             renderSyncSteps()}
 

@@ -12,7 +12,11 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="flex items-center gap-3 border-b border-[var(--border-color)] pb-4">
         <button
           onClick={onClose}
-          className="w-12 h-12 flex items-center justify-center rounded-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--border-color)] transition-colors active:scale-95 cursor-pointer"
+          /* flex-shrink-0: Ohne das schrumpfte die Taste als Flex-Element auf
+             43 x 48 px und unterschritt damit die 44 px aus WCAG 2.5.5 -- bei
+             "Extra gross" sogar auf 38 px Breite bei 72 px Hoehe. Die Breite
+             war nie gewollt, sie war das Nachgeben im Flex-Container. */
+          className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--border-color)] transition-colors active:scale-95 cursor-pointer"
           aria-label="Zurück"
         >
           <ArrowLeft className="w-6 h-6" />

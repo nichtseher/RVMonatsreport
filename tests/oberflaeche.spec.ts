@@ -82,6 +82,154 @@ async function warteAufRuhigesLayout(page: Page) {
   });
 }
 
+/*
+  Die drei Messungen als gemeinsame Funktionen.
+
+  Sie standen bis zum 2026-09-02 eingerückt in der Prüfschleife. Das ging, so
+  lange es genau eine Schleife gab. Seit die sechs Ansichten hinter den
+  Einstiegen mitgeprüft werden, gäbe es zwei -- und damit zwei Stellen, an
+  denen die 43,5-px-Schwelle steht. Genau diese Sorte Doppelung hat in diesem
+  Projekt schon einmal dazu geführt, dass Formular und Archiv für denselben
+  Monat verschiedene Excel-Dateien erzeugten.
+*/
+
+/** Waagerechter Überlauf der Seite selbst. */
+async function findeUeberlauf(page: Page) {
+  return page.evaluate(() => {
+    const sicht = document.documentElement.clientWidth;
+    const treffer: string[] = [];
+    for (const el of Array.from(document.querySelectorAll("*"))) {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue;
+      if (r.right <= sicht + 0.05) continue;
+      const klassen =
+        typeof el.className === "string" && el.className
+          ? "." + el.className.trim().split(/\s+/).slice(0, 5).join(".")
+          : "";
+      treffer.push(
+        `${el.tagName.toLowerCase()}${klassen} rechts=${Math.round(r.right * 100) / 100} breite=${Math.round(r.width * 100) / 100} "${(el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 40)}"`,
+      );
+    }
+    return {
+      scrollBreite: document.documentElement.scrollWidth,
+      sichtBreite: sicht,
+      // Die innersten zuletzt: die Hüllen erben den Überlauf nur.
+      ueberstehende: treffer.slice(-4),
+    };
+  });
+}
+
+/**
+ * Derselbe Fehler eine Ebene tiefer.
+ *
+ * Steckt der Überlauf in einem Container mit `overflow-x: auto`, bleibt
+ * `documentElement.scrollWidth` unauffällig -- der Inhalt wird still seitwärts
+ * scrollbar, statt die Seite zu verbreitern. Genau so blieben zwei echte Fehler
+ * unentdeckt (2026-09-01): Die Kacheln der Analyse schnitten bei „Extra groß"
+ * ihre Beschriftung ab (56 px), und am Schreibtisch standen neun „+5"-Tasten
+ * bei 1270..1318 in einem 1280 px breiten Fenster.
+ *
+ * Warum die Regel genau auf `auto`/`scroll` zielt: Ein Container mit
+ * `overflow-x: hidden` schneidet mit Absicht -- daran hängen `sr-only` und
+ * `truncate`, die dadurch von selbst herausfallen. `auto` dagegen entsteht hier
+ * fast immer versehentlich, weil Tailwinds `overflow-y-auto` die x-Achse nach
+ * CSS-Spezifikation mitzieht.
+ */
+async function findeVerstecktenUeberlauf(page: Page) {
+  return page.evaluate(() => {
+    const treffer: string[] = [];
+    for (const el of Array.from(document.querySelectorAll("*"))) {
+      if (el.clientWidth === 0) continue;
+      const zuViel = el.scrollWidth - el.clientWidth;
+      if (zuViel <= 1) continue;
+      const s = getComputedStyle(el);
+      if (s.overflowX !== "auto" && s.overflowX !== "scroll") continue;
+      /*
+        Ausdrücklich erklärtes waagerechtes Scrollen wird übersprungen.
+
+        Die Regel nahm bis hier an, `overflow-x: auto` entstehe immer aus
+        Versehen. Das stimmt fast immer -- aber nicht bei der Reiterleiste der
+        Hilfe, die auf schmalen Geräten bewusst seitwärts läuft, statt vier
+        Reiter unlesbar zu quetschen. Sie meldete 176 px.
+
+        Der Ausweg ist ein Marker am Element, kein Sonderfall hier: Wer
+        waagerecht scrollen will, schreibt es hin. Damit bleibt die Regel
+        streng, und jede Ausnahme steht dort, wo sie gilt -- nachlesbar für
+        den Nächsten, statt in einer Liste im Prüfcode zu verstauben.
+      */
+      if (el.getAttribute("data-scroll-x") === "absicht") continue;
+      const klassen =
+        typeof el.className === "string" && el.className
+          ? "." + el.className.trim().split(/\s+/).slice(0, 4).join(".")
+          : "";
+      treffer.push(
+        `${el.tagName.toLowerCase()}${klassen}: ${zuViel} px zu breit (${el.scrollWidth}/${el.clientWidth}) — "${(el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 32)}"`,
+      );
+    }
+    return treffer;
+  });
+}
+
+/**
+ * Trefferflächen. Seit dem 2026-09-02 gilt für dieses Projekt **Stufe AAA**,
+ * WCAG 2.5.5 Target Size (Enhanced): 44 × 44 CSS-Pixel. Bis dahin stand hier
+ * die AA-Stufe (2.5.8, 24 px) -- die Regel im Dokument und der Wert im Test
+ * gingen auseinander, und genau dieser Widerspruch hat die Entscheidung
+ * ausgelöst.
+ *
+ * Geprüft wird gegen **43,5 px**, nicht gegen 44: Die Vorschau rendert mit
+ * Faktor 0,99993, ein 44-px-Element misst dort 43,997 px.
+ *
+ * Zwei Klassen, zwei Schwellen:
+ *
+ * - **Im Tab-Lauf → 43,5 px.** Die Schwelle sichert einen erreichten Stand
+ *   gegen den Rückschritt; im ersten Lauf fand sie zugleich drei Verstöße im
+ *   Schreibtisch-Profil, die einer Handmessung bei 360 px entgangen waren.
+ * - **Außerhalb des Tab-Laufs → 24 px.** Das sind die ±5-Tasten in
+ *   `CounterField.tsx` (`aria-hidden`, `tabIndex={-1}`), gemessen 44,6 / 41,7 /
+ *   40,0 px über die drei Schriftgrößen. Sie fallen unter die Ausnahme
+ *   "Equivalent" in 2.5.5: Dieselbe Funktion ist über ±1 und das Zahlenfeld
+ *   erreichbar, beide über 44 px. Die Begründung steht im Quelltext an der
+ *   Stelle selbst, nicht nur hier.
+ *
+ * Diese Prüfung sah bis 2026-09-01 nur das Formular an. Deshalb ist ihr ein
+ * Schieberegler mit **168 × 6 px** entgangen (Aufteilung der Stunden im
+ * Ausstempel-Formular).
+ */
+async function findeZuKleineZiele(page: Page) {
+  return page.evaluate(() => {
+    const treffer: string[] = [];
+    for (const el of Array.from(document.querySelectorAll("button, a[href], input, select"))) {
+      /*
+        Bei einem Bedienelement in einem umschliessenden <label> ist die
+        Trefferflaeche das Label, nicht das Kaestchen: Ein Klick irgendwo im
+        Label schaltet die Auswahl. WCAG misst die Flaeche, die der Zeiger
+        treffen muss -- 2.5.5 spricht von der Flaeche, die die Eingabe
+        entgegennimmt, nicht vom gezeichneten Kaestchen.
+
+        Ohne diese Zeilen meldete die Pruefung die beiden Kaestchen der
+        Datensicherung mit 24 x 24 und 20 x 20 px als Verstoss. Der Klickbereich
+        ist dort in Wahrheit die ganze Beschriftungszeile. Die Kaestchen auf
+        44 px aufzublasen haette die Pruefung beruhigt und die Oberflaeche
+        verschlechtert -- eine Messung, die zu einer schlechteren App fuehrt,
+        misst das Falsche.
+      */
+      const label = el.tagName === "INPUT" ? el.closest("label") : null;
+      const r = (label ?? el).getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue; // unsichtbar
+      const ausserhalbTabLauf =
+        el.getAttribute("tabindex") === "-1" || el.getAttribute("aria-hidden") === "true";
+      const schwelle = ausserhalbTabLauf ? 24 : 43.5;
+      if (r.width < schwelle || r.height < schwelle) {
+        treffer.push(
+          `${el.tagName}"${(el.textContent || (el as HTMLElement).ariaLabel || "").trim().slice(0, 28)}" ${Math.round(r.width)}×${Math.round(r.height)} (Schwelle ${schwelle})`,
+        );
+      }
+    }
+    return treffer;
+  });
+}
+
 test.describe("Kein waagerechter Überlauf", () => {
   for (const ansicht of ANSICHTEN) {
     for (const groesse of SCHRIFTGROESSEN) {
@@ -94,28 +242,7 @@ test.describe("Kein waagerechter Überlauf", () => {
         // aus demselben Grund wie bei axe-core weiter unten: Ein blosses
         // "361 px" zwingt sonst zur Handsuche auf einem Rechner, auf dem der
         // Fehler womöglich gar nicht auftritt.
-        const { scrollBreite, sichtBreite, ueberstehende } = await page.evaluate(() => {
-          const sicht = document.documentElement.clientWidth;
-          const treffer: string[] = [];
-          for (const el of Array.from(document.querySelectorAll("*"))) {
-            const r = el.getBoundingClientRect();
-            if (r.width === 0 || r.height === 0) continue;
-            if (r.right <= sicht + 0.05) continue;
-            const klassen =
-              typeof el.className === "string" && el.className
-                ? "." + el.className.trim().split(/\s+/).slice(0, 5).join(".")
-                : "";
-            treffer.push(
-              `${el.tagName.toLowerCase()}${klassen} rechts=${Math.round(r.right * 100) / 100} breite=${Math.round(r.width * 100) / 100} "${(el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 40)}"`,
-            );
-          }
-          return {
-            scrollBreite: document.documentElement.scrollWidth,
-            sichtBreite: sicht,
-            // Die innersten zuletzt: die Hüllen erben den Überlauf nur.
-            ueberstehende: treffer.slice(-4),
-          };
-        });
+        const { scrollBreite, sichtBreite, ueberstehende } = await findeUeberlauf(page);
 
         // Gleichheit, nicht "kleiner gleich": Ein Ueberlauf von einem einzigen
         // Pixel ist bereits eine waagerechte Bildlaufleiste.
@@ -125,91 +252,11 @@ test.describe("Kein waagerechter Überlauf", () => {
             (ueberstehende.length ? `\nÜbersteht: ${ueberstehende.join("\n           ")}` : ""),
         ).toBeLessThanOrEqual(sichtBreite);
 
-        /*
-          Und derselbe Fehler eine Ebene tiefer.
-
-          Die Prüfung oben misst die Seite. Steckt der Überlauf aber in einem
-          Container mit `overflow-x: auto`, bleibt `documentElement.scrollWidth`
-          unauffällig -- der Inhalt wird still seitwärts scrollbar statt die
-          Seite zu verbreitern. Genau so blieben zwei echte Fehler unentdeckt
-          (2026-09-01): die Kacheln der Analyse schnitten bei „Extra groß" ihre
-          Beschriftung ab (56 px), und am Schreibtisch standen neun „+5"-Tasten
-          bei 1270..1318 in einem 1280 px breiten Fenster.
-
-          Warum die Regel genau auf `auto`/`scroll` zielt: Ein Container mit
-          `overflow-x: hidden` schneidet mit Absicht -- daran hängen `sr-only`
-          und `truncate`, die dadurch von selbst herausfallen. `auto` dagegen
-          entsteht hier fast immer versehentlich, weil Tailwinds
-          `overflow-y-auto` die x-Achse nach CSS-Spezifikation mitzieht.
-        */
-        const versteckte = await page.evaluate(() => {
-          const treffer: string[] = [];
-          for (const el of Array.from(document.querySelectorAll("*"))) {
-            if (el.clientWidth === 0) continue;
-            const zuViel = el.scrollWidth - el.clientWidth;
-            if (zuViel <= 1) continue;
-            const s = getComputedStyle(el);
-            if (s.overflowX !== "auto" && s.overflowX !== "scroll") continue;
-            const klassen =
-              typeof el.className === "string" && el.className
-                ? "." + el.className.trim().split(/\s+/).slice(0, 4).join(".")
-                : "";
-            treffer.push(
-              `${el.tagName.toLowerCase()}${klassen}: ${zuViel} px zu breit (${el.scrollWidth}/${el.clientWidth}) — "${(el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 32)}"`,
-            );
-          }
-          return treffer;
-        });
+        const versteckte = await findeVerstecktenUeberlauf(page);
 
         expect(versteckte, `${ansicht.name} / ${groesse}: verstecktes Seitwärtsscrollen`).toEqual([]);
 
-        /*
-          Trefferflächen. Seit dem 2026-09-02 gilt für dieses Projekt **Stufe
-          AAA**, WCAG 2.5.5 Target Size (Enhanced): 44 × 44 CSS-Pixel. Bis
-          dahin stand hier die AA-Stufe (2.5.8, 24 px) -- die Regel im Dokument
-          und der Wert im Test gingen auseinander, und genau dieser Widerspruch
-          hat die Entscheidung ausgelöst.
-
-          Geprüft wird gegen **43,5 px**, nicht gegen 44: Die Vorschau rendert
-          mit Faktor 0,99993, ein 44-px-Element misst dort 43,997 px.
-
-          Zwei Klassen, zwei Schwellen:
-
-          - **Im Tab-Lauf → 43,5 px.** Gemessen am 2026-09-02 über alle fünf
-            Ansichten und drei Schriftgrößen bei 360 px: kein einziges Element
-            darunter (allein das Formular hat 93). Die Schwelle sichert damit
-            einen erreichten Stand ab, sie fordert nichts Neues -- sie ist
-            gegen den Rückschritt gerichtet.
-          - **Außerhalb des Tab-Laufs → 24 px.** Das sind die ±5-Tasten in
-            `CounterField.tsx` (`aria-hidden`, `tabIndex={-1}`), gemessen
-            44,6 / 41,7 / 40,0 px über die drei Schriftgrößen. Sie fallen unter
-            die Ausnahme "Equivalent" in 2.5.5: Dieselbe Funktion ist über
-            ±1 und das Zahlenfeld erreichbar, beide über 44 px. Die Begründung
-            steht im Quelltext an der Stelle selbst, nicht nur hier.
-
-          Diese Prüfung sah bis 2026-09-01 nur das Formular an. Deshalb ist ihr
-          ein Schieberegler mit **168 × 6 px** entgangen (Aufteilung der Stunden
-          im Ausstempel-Formular): Die dafür gebaute Klasse `.rv-slider` mit
-          44 px Trefferfläche war nur im A11y-Fenster gesetzt, nicht dort.
-          Jetzt läuft sie in jeder Ansicht mit -- im selben Seitenaufruf wie die
-          beiden Prüfungen oben, kostet also keine zusätzliche Laufzeit.
-        */
-        const zuKlein = await page.evaluate(() => {
-          const treffer: string[] = [];
-          for (const el of Array.from(document.querySelectorAll("button, a[href], input, select"))) {
-            const r = el.getBoundingClientRect();
-            if (r.width === 0 || r.height === 0) continue; // unsichtbar
-            const ausserhalbTabLauf =
-              el.getAttribute("tabindex") === "-1" || el.getAttribute("aria-hidden") === "true";
-            const schwelle = ausserhalbTabLauf ? 24 : 43.5;
-            if (r.width < schwelle || r.height < schwelle) {
-              treffer.push(
-                `${el.tagName}"${(el.textContent || (el as HTMLElement).ariaLabel || "").trim().slice(0, 28)}" ${Math.round(r.width)}×${Math.round(r.height)} (Schwelle ${schwelle})`,
-              );
-            }
-          }
-          return treffer;
-        });
+        const zuKlein = await findeZuKleineZiele(page);
 
         expect(
           zuKlein,
@@ -343,6 +390,141 @@ test.describe("Kontrast in allen Farbschemata", () => {
         expect(befunde, `${ansicht.name} / ${schema.name}`).toEqual([]);
       });
     }
+  }
+});
+
+/**
+ * Die sechs Ansichten hinter den Einstiegen.
+ *
+ * Warum es das gibt: Die Anwendung kennt **elf** Ansichten, geprüft wurden bis
+ * zum 2026-09-02 **fünf**. Die anderen sechs sind nicht über `?tab=`
+ * erreichbar — die Weiche in `App.tsx` nimmt nur die fünf entgegen. Sie
+ * mussten also angeklickt werden, und genau daran ist die Abdeckung hängen
+ * geblieben: Der Konformitätsbericht führte „Dialoge nicht abgedeckt" als
+ * größte Lücke; beim Nachsehen waren es gar keine Dialoge, sondern vollwertige
+ * Ansichten mit historischen Namen (`ManageModal`, `HistoryModal` und so fort).
+ *
+ * Geräte-Sync und Datensicherung werden zusätzlich per `React.lazy`
+ * nachgeladen — das Warten auf die Überschrift deckt das mit ab.
+ *
+ * Zwei bewusste Beschränkungen, damit die Laufzeit tragbar bleibt:
+ *
+ * - **Zwei Schriftgrößen statt drei.** „Normal" und „Extra groß" sind die
+ *   beiden Enden, und jedes ist aus eigenem Grund der strengere Fall: Bei
+ *   „Normal" sind fest bemessene Elemente am kleinsten — so wurden die
+ *   38-px-Reiter der Zeit-Ansicht gefunden. Bei „Extra groß" ist die Zeile am
+ *   engsten — so wurde der Überlauf gefunden. „Groß" liegt dazwischen.
+ * - **axe nur in den beiden Chromium-Profilen**, aus demselben Grund wie bei
+ *   der Kontrastprüfung. Die Geometrie läuft dagegen auch in WebKit, weil
+ *   Layout sehr wohl von der Engine abhängt.
+ */
+const EINSTIEGE = [
+  {
+    name: "Formular anpassen",
+    start: "options",
+    einstieg: /Formular anpassen/,
+    ueberschrift: /Formular anpassen/,
+  },
+  {
+    name: "Geräte-Sync",
+    start: "options",
+    einstieg: /Geräte-Sync/,
+    ueberschrift: /Geräte-Synchronisation/,
+  },
+  {
+    name: "Datensicherung",
+    start: "options",
+    einstieg: /Datensicherung/,
+    ueberschrift: /Datensicherung/,
+  },
+  {
+    name: "Hilfe",
+    start: "options",
+    einstieg: /Hilfe & Anleitung/,
+    ueberschrift: /Hilfe & Handbuch/,
+  },
+  {
+    name: "Jahreskonto",
+    start: "time",
+    einstieg: /Jahreskonto-Einstellungen/,
+    ueberschrift: /Jahreskonto & Einstellungen/,
+  },
+  {
+    // Punkt statt Apostroph: Die Quelle kann ' oder ’ enthalten, und daran
+    // soll keine Pruefung haengen.
+    name: "Was gibt's Neues",
+    start: "options",
+    einstieg: /Was gibt.s Neues/,
+    ueberschrift: /Was gibt.s Neues/,
+  },
+] as const;
+
+async function oeffneUeberEinstieg(page: Page, eintrag: (typeof EINSTIEGE)[number]) {
+  await oeffne(page, eintrag.start);
+  await page.getByRole("button", { name: eintrag.einstieg }).first().click();
+  // Das Warten auf die Ueberschrift ist zugleich der Nachweis, dass die
+  // Ansicht wirklich offen ist. Ohne ihn wuerde die Pruefung im Zweifel die
+  // Optionen-Liste messen und gruen melden -- derselbe Fehler, gegen den
+  // dieses Projekt inzwischen an drei Stellen anschreibt.
+  await page
+    .getByRole("heading", { name: eintrag.ueberschrift })
+    .first()
+    .waitFor({ state: "visible", timeout: 15_000 });
+  await page.waitForTimeout(250);
+}
+
+test.describe("Ansichten hinter den Einstiegen", () => {
+  for (const eintrag of EINSTIEGE) {
+    for (const groesse of ["normal", "extra-large"] as const) {
+      test(`${eintrag.name} bei Schriftgröße ${groesse}`, async ({ page }) => {
+        await oeffneUeberEinstieg(page, eintrag);
+        await setzeSchriftgroesse(page, groesse);
+        await warteAufRuhigesLayout(page);
+
+        const { scrollBreite, sichtBreite, ueberstehende } = await findeUeberlauf(page);
+        expect(
+          scrollBreite,
+          `${eintrag.name} / ${groesse}: ${scrollBreite} px Inhalt bei ${sichtBreite} px Fenster` +
+            (ueberstehende.length ? `\nÜbersteht: ${ueberstehende.join("\n           ")}` : ""),
+        ).toBeLessThanOrEqual(sichtBreite);
+
+        const versteckte = await findeVerstecktenUeberlauf(page);
+        expect(
+          versteckte,
+          `${eintrag.name} / ${groesse}: verstecktes Seitwärtsscrollen`,
+        ).toEqual([]);
+
+        const zuKlein = await findeZuKleineZiele(page);
+        expect(
+          zuKlein,
+          `${eintrag.name} / ${groesse}: Trefferfläche unterschritten — ${zuKlein.join(" | ")}`,
+        ).toEqual([]);
+      });
+    }
+
+    test(`${eintrag.name} ohne schwere Verstöße`, async ({ page }, testInfo) => {
+      test.skip(
+        testInfo.project.name === "handy-webkit",
+        "axe wertet DOM und CSS aus, nicht die Engine",
+      );
+      await oeffneUeberEinstieg(page, eintrag);
+
+      const ergebnis = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+        .analyze();
+
+      const schwer = ergebnis.violations.filter(
+        (v) => v.impact === "critical" || v.impact === "serious",
+      );
+      const befunde = schwer.flatMap((v) =>
+        v.nodes.map(
+          (n) =>
+            `${v.id} @ ${n.target.join(" ")} — ${n.failureSummary?.replace(/\s+/g, " ").trim()}`,
+        ),
+      );
+
+      expect(befunde, `${eintrag.name}`).toEqual([]);
+    });
   }
 });
 

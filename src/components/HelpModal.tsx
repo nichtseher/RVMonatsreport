@@ -73,7 +73,15 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex flex-shrink-0 border-b border-[var(--border-color)] overflow-x-auto">
+        {/* data-scroll-x: Die Leiste laeuft auf schmalen Geraeten bewusst
+            seitwaerts, statt vier Reiter unlesbar zu quetschen. Der Marker
+            sagt das der Ueberlaufpruefung in check:ui -- ohne ihn meldet sie
+            hier 176 px versteckten Ueberlauf, und sie hat damit recht: Von
+            aussen ist das von einem Fehler nicht zu unterscheiden. */}
+        <div
+          data-scroll-x="absicht"
+          className="flex flex-shrink-0 border-b border-[var(--border-color)] overflow-x-auto"
+        >
           {[
             { id: "general", label: "Allgemein", icon: BookOpen },
             { id: "report", label: "RV Report", icon: LayoutGrid },
@@ -99,7 +107,22 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
         </div>
 
         {/* Content Area */}
-        <div className="p-6 overflow-y-auto space-y-6">
+        {/* tabIndex + role + Beschriftung: Der Bereich scrollt, enthaelt aber
+            ueberwiegend Fliesstext ohne Bedienelemente. Ohne Fokussierbarkeit
+            kommt niemand per Tastatur an den Teil, der unterhalb der Kante
+            liegt -- man sieht ihn, erreicht ihn aber nicht (axe-Regel
+            `scrollable-region-focusable`, WCAG 2.1.1). Mit tabIndex 0 laesst
+            er sich anspringen und mit den Pfeiltasten lesen. */}
+        {/* break-words: Bei "Extra gross" passten lange deutsche Komposita
+            ("Home-Bildschirm", "Speicheranzeige") nicht mehr in die schmale
+            Spalte und machten den Bereich 17 px waagerecht scrollbar. Ein
+            unteilbares Wort bricht sonst nicht um -- WCAG 1.4.10 Reflow. */}
+        <div
+          className="p-6 overflow-y-auto space-y-6 break-words"
+          tabIndex={0}
+          role="region"
+          aria-label="Inhalt der Hilfe"
+        >
           
           {activeTab === "general" && (
             <div className="space-y-6 animate-fade-in">

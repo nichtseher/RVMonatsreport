@@ -67,6 +67,7 @@ Geräteprofile: 360 × 780 Chromium, 360 × 780 WebKit, 1280 × 900 Chromium):
 | Trefferflächen | dieselbe Matrix; 43,5 px für alles im Tab-Lauf, 24 px für ausdrücklich ausgenommene Elemente |
 | axe-core | fünf Ansichten, Regelsätze `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa` |
 | Kontrast je Farbschema | fünf Ansichten × drei weitere Schemata (dunkel, Kontrast dunkel, Kontrast gelb) × zwei Profile, Regel `color-contrast`. Jede Prüfung weist zuvor nach, dass das Schema wirklich anliegt (`data-theme` **und** `data-dark`) und dass axe die Regel überhaupt ausgeführt hat |
+| Ansichten hinter den Einstiegen | die sechs Ansichten, die nicht über `?tab=` erreichbar sind (Formular anpassen, Geräte-Sync, Datensicherung, Hilfe, Jahreskonto, Was gibt's Neues): Überlauf und Trefferflächen bei „normal" und „Extra groß" in drei Profilen, axe in zwei |
 | Medienabfrage `pointer: coarse` | Nachweis, dass die Touch-Zweige im Prüflauf wirklich greifen |
 
 ### 3.2 Die Grenzen dieser Automatisierung — vollständig benannt
@@ -90,8 +91,17 @@ liest, liest ihn falsch:
    Stufen sind also die leichteren.
 4. **Regeln der Kategorie „best practice" laufen nicht mit**, weil nur
    WCAG-Regelsätze aktiviert sind. Landmarkenstruktur fällt darunter.
-5. **Modaldialoge und Kamerawege sind nicht abgedeckt.** Beide bräuchten
-   Klickfolgen. Ein erheblicher Teil der Anwendung liegt in Dialogen.
+5. **Was an Klickfolgen hängt, ist nur teilweise abgedeckt.** Die sechs
+   Ansichten hinter den Einstiegen laufen seit dem 2026-09-02 mit. **Nicht**
+   abgedeckt bleiben der Einrichtungsassistent, die Bestätigungsdialoge
+   (`ConfirmDialog`) und die Kamerawege des Geräteabgleichs — sie setzen einen
+   Zustand oder ein Gerät voraus, das der Prüflauf nicht herstellt.
+
+   Der Punkt stand hier zuvor als „Modaldialoge nicht abgedeckt". Das war
+   ungenau: `ManageModal`, `HistoryModal`, `StatsModal` und `TimeModal` sind
+   trotz ihrer Namen **keine Dialoge**, sondern vollwertige Ansichten. Der
+   blinde Fleck war größer als beschrieben — sechs von elf Ansichten — und ist
+   jetzt kleiner als beschrieben.
 6. **Die Tabulatorreihenfolge selbst ist nicht geprüft.** Die Messung zu
    2.4.11 hat mit `element.focus()` gearbeitet, nicht mit der echten
    Tabulatortaste; beide lösen dieselbe Bildlauflogik aus, die Reihenfolge
@@ -163,7 +173,7 @@ anwendbar
 | 1.4.3 Kontrast (Minimum) | AA | **erfüllt** | fortlaufend geprüft in **allen vier Farbschemata** über fünf Ansichten und zwei Geräteprofile (seit 2026-09-02, 30 zusätzliche Prüfungen; zuvor nur im Standardschema). Zwei echte Verstöße wurden so gefunden und behoben (Fußzeile 4,41:1, Seitenleiste **3,59:1**). Offen bleibt die allgemeine Einschränkung: Dialoge sind nicht automatisiert erfasst |
 | 1.4.4 Textgröße ändern | AA | **erfüllt** | drei Schriftstufen (100 / 125 / 150 %) über alle Ansichten und Profile automatisiert; Browser-Zoom auf 200 % ist **nicht** gesondert geprüft |
 | 1.4.5 Bilder eines Textes | AA | erfüllt | keine Texte als Bild |
-| 1.4.10 Reflow | AA | **erfüllt** | 360 px × drei Schriftgrößen × fünf Ansichten × drei Profile, einschließlich verdeckten Überlaufs in scrollbaren Containern. Zwei Fälle gefunden und behoben |
+| 1.4.10 Reflow | AA | **erfüllt** | 360 px × drei Schriftgrößen × fünf Ansichten × drei Profile, einschließlich verdeckten Überlaufs in scrollbaren Containern; seit 2026-09-02 zusätzlich die sechs Ansichten hinter den Einstiegen. **Vier Fälle gefunden und behoben**, zwei davon erst durch die Erweiterung: das Jahreskonto schob bei „Extra groß" 456 px Inhalt in ein 360-px-Fenster, und in der Hilfe brachen lange Komposita nicht um |
 | 1.4.11 Kontrast von Nicht-Text | AA | **teilweise** | Rahmenfarben gezielt gemessen: 3,24:1 gegen die Karte, 3,10:1 gegen den Grund, im dunklen Schema 3,09:1. Nicht für alle Bedienelemente einzeln nachgewiesen |
 | 1.4.12 Textabstand | AA | **nicht geprüft** | nicht getestet, ob erzwungene Abstände den Inhalt beschädigen. Die Bestandsaufnahme fand 7 verschiedene `letter-spacing`-Werte auf 55 Elementen, vier davon negativ |
 | 1.4.13 Inhalt bei Hover oder Fokus | AA | **nicht geprüft** | Vorgeschichte: Tooltips waren als `title`-Attribut auf SVG-Elementen umgesetzt und haben nie funktioniert (gefunden 0.9.13) |
@@ -172,7 +182,7 @@ anwendbar
 
 | Kriterium | Stufe | Stand | Anmerkung |
 |---|---|---|---|
-| 2.1.1 Tastatur | A | **teilweise** | Fokusfallen in Dialogen umgesetzt; die `±5`-Tasten sind bewusst außerhalb des Tab-Laufs, ihre Funktion ist gleichwertig erreichbar. **Nicht systematisch mit der Tastatur durchlaufen** |
+| 2.1.1 Tastatur | A | **teilweise** | Fokusfallen in Dialogen umgesetzt; die `±5`-Tasten sind bewusst außerhalb des Tab-Laufs, ihre Funktion ist gleichwertig erreichbar. **Ein echter Verstoß am 2026-09-02 gefunden und behoben:** Der Inhaltsbereich der Hilfe war scrollbar, aber weder fokussierbar noch mit fokussierbarem Inhalt — per Tastatur kam niemand an den Teil unterhalb der Kante (axe `scrollable-region-focusable`). **Weiterhin nicht systematisch mit der Tastatur durchlaufen** |
 | 2.1.2 Keine Tastaturfalle | A | plausibel | Dialoge sind mit Escape verlassbar; `ConfirmDialog` ist die Referenz |
 | 2.1.4 Zeichentasten-Kurzbefehle | A | **nicht geprüft** | die Anwendung kennt Tastenkürzel; ob es Einzelzeichen ohne Zusatztaste sind, ist nicht erhoben |
 | 2.2.1 Zeitliche Einstellbarkeit | A | **erfüllt** | die Ein-Minuten-Frist war ein Zeitlimit ohne Verlängerung und ist entfernt |

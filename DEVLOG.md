@@ -143,6 +143,63 @@ Nach dem Beenden des Vorschau-Servers war der Fehlschlag weg. Festgehalten in
 `CLAUDE.md`, weil er sich als etwas ausgibt, das er nicht ist: Wer diese
 Meldung für einen axe-Verstoß hält, sucht den Fehler in der Ansicht.
 
+### Sechs von elf Ansichten waren nie geprüft — und es waren keine Dialoge
+
+Der Konformitätsbericht führte „Modaldialoge nicht abgedeckt" als größte
+verbliebene Lücke. Beim Nachsehen stimmte daran nur das Wort „nicht
+abgedeckt": **`ManageModal`, `HistoryModal`, `StatsModal` und `TimeModal` sind
+gar keine Dialoge**, sondern vollwertige Ansichten am `activeTab`. Die Namen
+sind historisch.
+
+Die Anwendung kennt **elf Ansichten. Geprüft wurden fünf.** Die anderen sechs
+sind nicht über `?tab=` erreichbar — die Weiche in `App.tsx` nimmt genau die
+fünf entgegen — und mussten deshalb angeklickt werden. Genau daran ist die
+Abdeckung hängen geblieben.
+
+| | vorher | nachher |
+|---|---|---|
+| Prüfungen | 108 | **162** (22 übersprungen) |
+| Laufzeit | 2,8 min | 4,4 min |
+| geprüfte Ansichten | 5 von 11 | **11 von 11** |
+
+**Der erste Lauf fand 21 Fehlschläge in 5 der 6 Ansichten.** Nach Abzug der
+zwei Fälle, in denen die Prüfung falsch lag, bleiben sechs echte Defekte:
+
+| Ansicht | Befund | Ursache |
+|---|---|---|
+| Hilfe | Inhaltsbereich **per Tastatur nicht erreichbar** (WCAG 2.1.1) | scrollbar, aber weder fokussierbar noch mit fokussierbarem Inhalt |
+| Jahreskonto | **456 px Inhalt in einem 360-px-Fenster** bei „Extra groß" (1.4.10) | zwei `flex-1`-Tasten mit `min-width: auto`, dazu eine Überschrift, die nicht umbrechen konnte |
+| Hilfe | 17 px seitwärts bei „Extra groß" | lange deutsche Komposita ohne `break-words` |
+| Was gibt's Neues | Zurück-Taste 43 × 48 px, bei „Extra groß" 38 × 72 (2.5.5) | schrumpfte als Flex-Element; die Breite war nie gewollt |
+| Geräte-Sync | 6 px verstecktes Seitwärtsscrollen | `overflow-y-auto` zieht die x-Achse mit |
+| Hilfe | 176 px verstecktes Seitwärtsscrollen | Reiterleiste scrollt **absichtlich** — Befund gegen die Prüfung, nicht gegen die App |
+
+Vier davon treffen genau die Zielgruppe: Tastaturbedienung und die
+Schriftgröße „Extra groß".
+
+### Zweimal lag die Prüfung falsch, nicht die App
+
+Das ist der lehrreichere Teil.
+
+**Die Kästchen der Datensicherung** meldete sie mit 24 × 24 und 20 × 20 px als
+Verstoß gegen die 44 px. Beide liegen in einem `<label>` — der Klickbereich ist
+die ganze Beschriftungszeile, und genau die misst WCAG. Hätte ich der Prüfung
+geglaubt, wären zwei Kästchen auf 44 px aufgeblasen worden: Die Prüfung wäre
+grün geworden und die Oberfläche schlechter. **Eine Messung, die zu einer
+schlechteren App führt, misst das Falsche.** Sie nimmt jetzt das Label.
+
+**Die Reiterleiste der Hilfe** scrollt auf schmalen Geräten bewusst seitwärts,
+statt vier Reiter unlesbar zu quetschen. Die Regel nahm an, `overflow-x: auto`
+entstehe immer aus Versehen — was fast immer stimmt. Statt einer Ausnahmeliste
+im Prüfcode muss das Element es jetzt selbst erklären: `data-scroll-x="absicht"`.
+Damit bleibt die Regel streng, und die Ausnahme steht dort, wo sie gilt.
+
+Nebenbei sind die drei Messungen aus der Prüfschleife in gemeinsame Funktionen
+gewandert. Mit zwei Schleifen hätte die 43,5-px-Schwelle an zwei Stellen
+gestanden — dieselbe Doppelung, die in diesem Projekt schon einmal dazu
+geführt hat, dass Formular und Archiv für denselben Monat verschiedene
+Excel-Dateien erzeugten.
+
 ### Die Theme-Lücke — vom Bericht gefunden, am selben Tag geschlossen
 
 Das Schreiben des Konformitätsberichts hat eine Lücke im eigenen Prüfnetz
