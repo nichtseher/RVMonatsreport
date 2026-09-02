@@ -120,7 +120,7 @@ export default function CarryoverModal({
             Bildlaufleiste, WCAG 1.4.10. Mit min-w-0 bricht sie um. */}
         <h2
           id="carryover-modal-title"
-          className="text-2xl md:text-3xl font-black tracking-tight min-w-0 break-words"
+          className="text-2xl md:text-3xl font-black min-w-0 break-words"
         >
           Jahreskonto & Einstellungen
         </h2>

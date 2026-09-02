@@ -101,7 +101,7 @@ export default function ManageModal({
           <ArrowLeft className="w-6 h-6" aria-hidden="true" />
         </button>
         <Settings className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
-        <h2 id="manage-modal-title" className="text-2xl md:text-3xl font-black tracking-tight">
+        <h2 id="manage-modal-title" className="text-2xl md:text-3xl font-black">
           Formularfelder verwalten
         </h2>
       </div>

@@ -212,7 +212,7 @@ export default function HistoryModal({
       <div className="p-5 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-color)]">
         <div className="flex items-center gap-2.5">
           <History className="w-5 h-5 text-[var(--accent)]" aria-hidden="true" />
-          <h2 id="history-modal-title" className="text-lg md:text-xl font-black tracking-tight text-[var(--text-color)]">
+          <h2 id="history-modal-title" className="text-lg md:text-xl font-black text-[var(--text-color)]">
             RV Archiv - Gespeicherte Monate
           </h2>
         </div>

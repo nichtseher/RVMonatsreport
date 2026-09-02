@@ -39,14 +39,28 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
 
   if (!isOpen) return null;
 
+  /*
+    Hier stand bis zum 2026-09-02 `role="dialog"` mit `aria-modal="true"`.
+      Beides war falsch: Diese Ansicht ist kein Dialog, sondern eine Seite im
+      Fluss -- kein `fixed inset-0`, keine abdunkelnde Flaeche, keine
+      Fokusfalle. `aria-modal="true"` sagt der Hilfstechnik aber, alles
+      ausserhalb sei stillgelegt. Fuer einen Screenreader-Nutzer verschwand
+      damit die untere Navigationsleiste, die sehend sichtbar und mit der
+      Tabulatortaste erreichbar blieb -- eine Ansage, die dem widerspricht,
+      was die Seite tut.
+
+      Zum Vergleich: OnboardingModal, ConfirmDialog und DeviceSyncModal sind
+      echte Overlays mit `fixed inset-0` und abgedunkeltem Hintergrund. Dort
+      ist `aria-modal` richtig und bleibt.
+
+      Nebenwirkung, die das Ausmass zeigt: Der Tabulator-Durchlauf in
+      `check:ui` erkennt sichtbare `aria-modal`-Bereiche und prueft dann nur
+      deren Innenraum. Fuer die Hilfe hat er deshalb genau das nicht geprueft,
+      worum es hier geht. Eine falsche Angabe im Markup hatte die Pruefung
+    entschaerft, die sie haette finden sollen.
+  */
   return (
-    <div 
-      className="animate-fade-in"
-      role="dialog"
-      aria-labelledby="help-modal-title"
-      aria-modal="true"
-      ref={modalRef}
-    >
+    <div className="animate-fade-in" ref={modalRef}>
       <div className="bg-[var(--card-bg)] rounded-3xl overflow-hidden shadow-2xl border-4 border-[var(--border-color)] flex flex-col max-h-[85vh]">
         
         {/* Header */}
@@ -64,7 +78,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
               <HelpCircle className="w-6 h-6" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <h2 id="help-modal-title" className="text-xl md:text-2xl font-black text-[var(--text-color)] tracking-tight">
+              <h2 id="help-modal-title" className="text-xl md:text-2xl font-black text-[var(--text-color)]">
                 Hilfe & Handbuch
               </h2>
               <p className="text-sm font-bold text-[var(--text-muted)] mt-1">Ausführliche Erklärungen zur RV Mobil App</p>

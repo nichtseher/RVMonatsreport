@@ -84,7 +84,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <AlertTriangle className="w-8 h-8 text-[var(--danger-text)]" />
             </div>
             
-            <h1 className="text-xl font-black text-[var(--text-color)] mb-2 tracking-tight">
+            <h1 className="text-xl font-black text-[var(--text-color)] mb-2">
               Ein unerwarteter Fehler ist aufgetreten
             </h1>
             

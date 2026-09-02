@@ -190,7 +190,7 @@ anwendbar
 | 1.4.5 Bilder eines Textes | AA | erfüllt | keine Texte als Bild |
 | 1.4.10 Reflow | AA | **erfüllt** | 360 px × drei Schriftgrößen × fünf Ansichten × drei Profile, einschließlich verdeckten Überlaufs in scrollbaren Containern; seit 2026-09-02 zusätzlich die sechs Ansichten hinter den Einstiegen. **Vier Fälle gefunden und behoben**, zwei davon erst durch die Erweiterung: das Jahreskonto schob bei „Extra groß" 456 px Inhalt in ein 360-px-Fenster, und in der Hilfe brachen lange Komposita nicht um |
 | 1.4.11 Kontrast von Nicht-Text | AA | **teilweise** | Rahmenfarben gezielt gemessen: 3,24:1 gegen die Karte, 3,10:1 gegen den Grund, im dunklen Schema 3,09:1. Nicht für alle Bedienelemente einzeln nachgewiesen |
-| 1.4.12 Textabstand | AA | **nicht geprüft** | nicht getestet, ob erzwungene Abstände den Inhalt beschädigen. Die Bestandsaufnahme fand 7 verschiedene `letter-spacing`-Werte auf 55 Elementen, vier davon negativ |
+| 1.4.12 Textabstand | AA | **erfüllt** | seit 2026-09-02 geprüft: Die vier von der Norm genannten Werte werden erzwungen (Zeilenhöhe 1,5×, Absatzabstand 2×, Sperrung 0,12×, Wortabstand 0,16×) und danach über alle elf Ansichten auf Überlauf und Trefferflächen gemessen. Bestanden ohne Befund. **Was das nicht abdeckt:** Text, der innerhalb eines Kastens abgeschnitten wird, ohne den Kasten zu sprengen — das braucht ein Auge. Zusätzlich wurde die eigene Sperrung bereinigt: 21 negative Werte entfernt, die Ausreißer vereinheitlicht, von sieben Werten auf zwei |
 | 1.4.13 Inhalt bei Hover oder Fokus | AA | **nicht geprüft** | Vorgeschichte: Tooltips waren als `title`-Attribut auf SVG-Elementen umgesetzt und haben nie funktioniert (gefunden 0.9.13) |
 
 ### 5.2 Bedienbarkeit
@@ -199,7 +199,7 @@ anwendbar
 |---|---|---|---|
 | 2.1.1 Tastatur | A | **erfüllt** | seit 2026-09-02 mit **echten Tastendrücken** über alle elf Ansichten geprüft: Jedes sichtbare, nicht ausgenommene Bedienelement wird vom Tabulator erreicht. **Zwei echte Verstöße dabei gefunden und behoben:** der Inhaltsbereich der Hilfe war scrollbar, aber weder fokussierbar noch mit fokussierbarem Inhalt (axe `scrollable-region-focusable`); und das Jahreskonto hatte eine Fokusfalle, obwohl es kein modaler Dialog ist — die sichtbare Navigationsleiste war dort per Tastatur unerreichbar. Die `±5`-Tasten bleiben bewusst außerhalb des Tab-Laufs, gleichwertig erreichbar |
 | 2.1.2 Keine Tastaturfalle | A | **erfüllt** | der Durchlauf schließt in jeder Ansicht die Runde, statt hängen zu bleiben; Dialoge sind zusätzlich mit Escape verlassbar. Die Fokusfalle des Geräteabgleichs bleibt — dort ist sie richtig, weil es ein echtes Overlay mit abgedunkeltem Hintergrund und `aria-modal="true"` ist |
-| 2.1.4 Zeichentasten-Kurzbefehle | A | **nicht geprüft** | die Anwendung kennt Tastenkürzel; ob es Einzelzeichen ohne Zusatztaste sind, ist nicht erhoben |
+| 2.1.4 Zeichentasten-Kurzbefehle | A | **erfüllt** | am 2026-09-02 am Quelltext geprüft (`App.tsx`, Tastaturbehandlung): Alle sieben Kürzel verlangen **Alt + Umschalt** und brechen ohne beide Zusatztasten sofort ab. Das Kriterium betrifft ausschließlich Kürzel aus einem einzelnen Zeichen ohne Zusatztaste — solche gibt es hier nicht |
 | 2.2.1 Zeitliche Einstellbarkeit | A | **erfüllt** | die Ein-Minuten-Frist war ein Zeitlimit ohne Verlängerung und ist entfernt |
 | 2.2.2 Pausieren, Stoppen, Ausblenden | A | plausibel | `prefers-reduced-motion` schaltet Animationen global ab |
 | 2.3.1 Blitzen | A | erfüllt | keine blinkenden Inhalte |
@@ -246,11 +246,11 @@ Ausgezählt über Abschnitt 4 und 5:
 
 | | Anzahl | davon |
 |---|---|---|
-| **erfüllt, mit Beleg** | **23** | 18 aus WCAG 2.1 A/AA, 5 aus WCAG 2.2 |
+| **erfüllt, mit Beleg** | **25** | 20 aus WCAG 2.1 A/AA, 5 aus WCAG 2.2 |
 | teilweise erfüllt | 4 | 1.3.1, 1.4.11, 3.1.2, 4.1.2 |
 | plausibel, ohne Einzelnachweis | 12 | |
 | **nicht erfüllt** | **0** | 2.4.12 ist bewusst offen, aber Stufe AAA und damit außerhalb des Maßstabs |
-| **nicht geprüft** | **8** | 1.3.2, 1.3.3, 1.4.12, 1.4.13, 2.1.4, 2.5.2, 3.3.1, 3.3.3 |
+| **nicht geprüft** | **6** | 1.3.2, 1.3.3, 1.4.13, 2.5.2, 3.3.1, 3.3.3 |
 | nicht anwendbar | 9 | 1.2.1–1.2.5, 2.4.5, 2.5.4, 3.3.8, 3.3.9 |
 | entfällt | 1 | 4.1.1 (in WCAG 2.2 gestrichen) |
 
@@ -273,7 +273,10 @@ etwas anderes: wie viel nicht geprüft ist.
    sind automatisiert nicht abgedeckt; sie setzen einen Zustand oder ein Gerät
    voraus, das der Prüflauf nicht herstellt.
 3. **TalkBack ungeprüft**, mit sachlichem Grund (siehe 3.3).
-4. **1.4.12, 1.4.13, 2.1.4, 2.5.2, 3.3.1, 3.3.3** sind nicht erhoben.
+4. **1.3.2, 1.3.3, 1.4.13, 2.5.2, 3.3.1, 3.3.3** sind nicht erhoben. Die
+   ersten beiden — bedeutungstragende Reihenfolge und sensorische
+   Eigenschaften — entscheidet ohnehin ein Mensch; die übrigen vier wären
+   automatisierbar.
 
 ~~**Fokus-Reihenfolge und Tastaturdurchlauf nie systematisch geprüft**~~ —
 **geschlossen am 2026-09-02.** Der Tabulator-Durchlauf prüft jetzt alle elf

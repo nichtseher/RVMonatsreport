@@ -168,7 +168,7 @@ export default function OnboardingModal({
             id="onboarding-title"
             ref={headingRef}
             tabIndex={-1}
-            className="text-xl font-black tracking-tight text-[var(--text-color)] mb-3 outline-none"
+            className="text-xl font-black text-[var(--text-color)] mb-3 outline-none"
           >
             {titles[step]}
           </h2>

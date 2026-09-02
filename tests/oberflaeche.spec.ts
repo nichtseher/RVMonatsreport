@@ -702,6 +702,63 @@ async function tabulatorDurchlauf(page: Page, maxSchritte = 400) {
   return folge;
 }
 
+/**
+ * WCAG 1.4.12 Textabstand (AA).
+ *
+ * Das Kriterium nennt vier Werte, die ein Nutzer per eigenem Stylesheet
+ * erzwingen koennen muss, ohne dass Inhalt oder Funktion verlorengeht:
+ * Zeilenhoehe mindestens das 1,5-Fache der Schriftgroesse, Abstand nach
+ * Absaetzen das 2-Fache, Sperrung das 0,12-Fache, Wortabstand das 0,16-Fache.
+ *
+ * Das ist kein theoretischer Fall: Wer schlecht sieht, stellt genau diese
+ * Werte im Browser oder per Erweiterung ein -- es ist eine der wirksamsten
+ * Lesehilfen ueberhaupt. Bis zum 2026-09-02 stand das Kriterium im
+ * Konformitaetsbericht als "nicht geprueft".
+ *
+ * Geprueft wird mit denselben Messungen wie sonst: Kein Ueberlauf der Seite,
+ * kein verstecktes Seitwaertsscrollen, keine unterschrittene Trefferflaeche.
+ * Was hier NICHT geprueft wird: ob Text innerhalb eines Kastens abgeschnitten
+ * wird, ohne den Kasten zu sprengen -- das braucht ein Auge.
+ */
+async function erzwingeTextabstand(page: Page) {
+  await page.addInitScript(() => {
+    const setze = () => {
+      const st = document.createElement("style");
+      st.textContent = `
+        * {
+          line-height: 1.5 !important;
+          letter-spacing: 0.12em !important;
+          word-spacing: 0.16em !important;
+        }
+        p, li { margin-bottom: 2em !important; }
+      `;
+      document.head.appendChild(st);
+    };
+    if (document.head) setze();
+    else document.addEventListener("DOMContentLoaded", setze);
+  });
+}
+
+test.describe("Textabstand nach WCAG 1.4.12", () => {
+  const alle = [
+    ...ANSICHTEN.map((a) => ({ name: a.name, oeffne: (p: Page) => oeffne(p, a.tab) })),
+    ...EINSTIEGE.map((e) => ({ name: e.name, oeffne: (p: Page) => oeffneUeberEinstieg(p, e) })),
+  ];
+
+  for (const ansicht of alle) {
+    test(`${ansicht.name} mit erzwungenem Textabstand`, async ({ page }, testInfo) => {
+      test.skip(
+        testInfo.project.name !== "handy",
+        "Textabstand haengt nicht am Geraeteprofil",
+      );
+      await erzwingeTextabstand(page);
+      await ansicht.oeffne(page);
+      await warteAufRuhigesLayout(page);
+      await pruefeGeometrie(page, `${ansicht.name} / Textabstand`);
+    });
+  }
+});
+
 test.describe("Tastatur: Erreichbarkeit und Reihenfolge", () => {
   const alleAnsichten = [
     ...ANSICHTEN.map((a) => ({ name: a.name, oeffne: (p: Page) => oeffne(p, a.tab) })),

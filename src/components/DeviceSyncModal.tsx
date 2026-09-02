@@ -675,7 +675,7 @@ export default function DeviceSyncModal({
   const renderSyncSteps = () => {
     const currentStep = mode === "select" ? 1 : mode === "confirm" ? 3 : 2;
     return (
-      <ol className="mb-5 grid grid-cols-3 gap-2 text-[0.75rem] uppercase font-black tracking-[0.18em] text-[var(--text-muted)] list-none p-0">
+      <ol className="mb-5 grid grid-cols-3 gap-2 text-[0.75rem] uppercase font-black tracking-wider text-[var(--text-muted)] list-none p-0">
         {[
           { label: "1. Wahl", help: "Senden oder Empfangen" },
           { label: "2. QR-Code", help: "Zeigen & Scannen" },
@@ -1026,7 +1026,7 @@ export default function DeviceSyncModal({
                   bzw. "scannt mit der Kamera" -- der kameralose Weg lag damit
                   innerhalb von etwas, das sich ausdruecklich "per QR-Code"
                   nennt. Wer linear liest, uebersprang ihn zu Recht. */}
-              <p className="text-[0.75rem] font-black uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              <p className="text-[0.75rem] font-black uppercase tracking-wider text-[var(--text-muted)]">
                 Einmal übertragen — auch ohne Kamera
               </p>
 
@@ -1060,7 +1060,7 @@ export default function DeviceSyncModal({
                 </div>
               </button>
 
-              <p className="text-[0.75rem] font-black uppercase tracking-[0.18em] text-[var(--text-muted)] pt-2">
+              <p className="text-[0.75rem] font-black uppercase tracking-wider text-[var(--text-muted)] pt-2">
                 Live-Verbindung (beide Geräte gleichzeitig)
               </p>
 

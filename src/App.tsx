@@ -1436,7 +1436,7 @@ export default function App() {
           >
         <div className="space-y-1.5 flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl md:text-2xl font-black tracking-tight text-[var(--text-color)]">
+            <h1 className="text-xl md:text-2xl font-black text-[var(--text-color)]">
               RV Mobil
             </h1>
             <span className="rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2.5 py-1 text-[0.75rem] font-black uppercase tracking-[0.2em] text-[var(--success-text)]">
@@ -2315,7 +2315,7 @@ export default function App() {
           >
             <h2
               id="section1-heading"
-              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] tracking-tight text-[var(--text-color)]"
+              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] text-[var(--text-color)]"
             >
               1. Vorführungen & Auslieferungen
             </h2>
@@ -2395,7 +2395,7 @@ export default function App() {
           >
             <h2
               id="section2-heading"
-              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] tracking-tight text-[var(--text-color)]"
+              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] text-[var(--text-color)]"
             >
               2. Schulung, Support & Akquise
             </h2>
@@ -2433,7 +2433,7 @@ export default function App() {
           >
             <h2
               id="section3-heading"
-              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] tracking-tight text-[var(--text-color)]"
+              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] text-[var(--text-color)]"
             >
               3. Spezialprodukte (Fokus)
             </h2>
@@ -2471,7 +2471,7 @@ export default function App() {
           >
             <h2
               id="section4-heading"
-              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] tracking-tight text-[var(--text-color)]"
+              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] text-[var(--text-color)]"
             >
               4. Arbeitszeit & Büro
             </h2>
@@ -2535,7 +2535,7 @@ export default function App() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b-2 border-[var(--border-color)]">
           <h2
             id="notes-heading"
-            className="text-lg md:text-xl font-black tracking-tight text-[var(--text-color)]"
+            className="text-lg md:text-xl font-black text-[var(--text-color)]"
           >
             Anmerkungen & Kommentare
           </h2>
@@ -3027,7 +3027,7 @@ export default function App() {
                       className={`w-5 h-5 transition-transform ${isSelected ? "scale-110 stroke-[2.5]" : "stroke-[1.8]"}`}
                     />
                   </div>
-                  <span className="text-[0.75rem] mt-0.5 tracking-tight truncate max-w-full">
+                  <span className="text-[0.75rem] mt-0.5 truncate max-w-full">
                     {tab.label}
                   </span>
                   {isSelected && (

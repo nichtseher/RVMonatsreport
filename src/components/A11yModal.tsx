@@ -210,7 +210,7 @@ export default function A11yModal({
       <div className="flex items-center gap-3 px-1">
         <Settings2 className="w-7 h-7 text-[var(--accent)]" aria-hidden="true" />
         <div className="flex-1 min-w-0">
-          <h2 id="a11y-modal-title" className="text-xl md:text-2xl font-black tracking-tight">
+          <h2 id="a11y-modal-title" className="text-xl md:text-2xl font-black">
             Optionen
           </h2>
         </div>
@@ -293,7 +293,7 @@ export default function A11yModal({
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h2 className="text-lg md:text-xl font-black tracking-tight">Anzeige & Bedienung</h2>
+        <h2 className="text-lg md:text-xl font-black">Anzeige & Bedienung</h2>
       </div>
 
       {/* Schriftgröße: eine kompakte Segment-Reihe */}
@@ -438,7 +438,7 @@ export default function A11yModal({
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h2 className="text-lg md:text-xl font-black tracking-tight">Formular anpassen</h2>
+        <h2 className="text-lg md:text-xl font-black">Formular anpassen</h2>
       </div>
 
       <SectionCard title="Neues Feld hinzufügen">

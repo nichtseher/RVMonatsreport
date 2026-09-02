@@ -30,7 +30,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div>
-          <h2 className="text-2xl md:text-3xl font-black tracking-tight flex items-center gap-2">
+          <h2 className="text-2xl md:text-3xl font-black flex items-center gap-2">
             <Sparkles className="w-7 h-7 text-[var(--accent)]" />
             Was gibt's Neues?
           </h2>
@@ -41,6 +41,22 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       </div>
 
       <div className="space-y-6">
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.20: Tastaturbedienung, große Schrift, Lesbarkeit</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Die Hilfe ließ sich mit der Tastatur nicht bis zum Ende lesen.</strong> Der Textbereich war zwar scrollbar, ließ sich aber nicht anspringen – wer keine Maus benutzt, kam an alles unterhalb der sichtbaren Kante nicht heran. Jetzt springt die Tabulatortaste den Bereich an, und die Pfeiltasten blättern darin.</li>
+            <li><strong>Im Jahreskonto kam man mit der Tastatur nicht mehr aus der Ansicht heraus.</strong> Die Tabulatortaste drehte sich dort im Kreis, die untere Navigationsleiste war unerreichbar – mit der Maus dagegen anklickbar. Das ist behoben. Beim Geräte-Sync bleibt dieses Verhalten mit Absicht: Der liegt als echtes Fenster über der App.</li>
+            <li><strong>Bei „Extra groß" lief die Seite an vier Stellen seitlich aus dem Bild.</strong> Betroffen waren diese Versionsliste, das Jahreskonto, die Hilfe und die Datensicherung – lange Wörter brachen nicht um und schoben den Inhalt über den Rand. Alle vier brechen jetzt sauber um.</li>
+            <li><strong>Die Zurück-Taste in dieser Versionsliste war zu schmal.</strong> Sie war auf 43 Pixel zusammengedrückt, bei „Extra groß" sogar auf 38. Jetzt behält sie ihre volle Größe.</li>
+            <li><strong>Die Schrift ist an rund 20 Stellen wieder etwas luftiger.</strong> Überschriften waren dort künstlich zusammengezogen. Das spart ein paar Pixel und kostet Lesbarkeit – für diese App das falsche Geschäft. Die Sperrung von Beschriftungen in Großbuchstaben bleibt, dort hilft sie.</li>
+            <li><strong>Die Selbstprüfung vor der Veröffentlichung deckt jetzt die ganze App ab.</strong> Bisher sah sie fünf von elf Ansichten – Formular anpassen, Geräte-Sync, Datensicherung, Hilfe, Jahreskonto und diese Versionsliste waren ungeprüft. Neu geprüft werden außerdem: alle vier Farbschemata auf Kontrast, die Bedienung mit echten Tastendrücken, das Verhalten mit größeren Textabständen und die Darstellung mit einer breiteren Schrift, als auf dem Entwicklungsrechner installiert ist. Die Punkte oben wurden alle dadurch gefunden.</li>
+          </ul>
+        </div>
+
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           {/* [&>span]:min-w-0 — an allen 31 Versionsueberschriften gleich.
               Ein Flex-Element gibt seine Breite standardmaessig nicht unter

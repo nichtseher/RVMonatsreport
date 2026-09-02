@@ -119,7 +119,7 @@ export default function StatsModal({
             <BarChart3 className="w-5 h-5" />
           </div>
           <div>
-            <h2 id="stats-title" className="text-lg font-black tracking-tight text-[var(--text-color)]">
+            <h2 id="stats-title" className="text-lg font-black text-[var(--text-color)]">
               RV Analyse & Trends
             </h2>
             <p className="text-xs text-[var(--text-muted)] font-bold">
@@ -324,7 +324,7 @@ export default function StatsModal({
                         </svg>
                         <div className="absolute text-center">
                           <span className="block text-2xl font-black text-[var(--text-color)]">{totalActions}</span>
-                          <span className="block text-[0.6875rem] font-black text-[var(--text-muted)] uppercase tracking-widest">Aktionen</span>
+                          <span className="block text-[0.6875rem] font-black text-[var(--text-muted)] uppercase tracking-wider">Aktionen</span>
                         </div>
                       </div>
 

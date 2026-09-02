@@ -143,6 +143,73 @@ Nach dem Beenden des Vorschau-Servers war der Fehlschlag weg. Festgehalten in
 `CLAUDE.md`, weil er sich als etwas ausgibt, das er nicht ist: Wer diese
 Meldung für einen axe-Verstoß hält, sucht den Fehler in der Ansicht.
 
+### 0.9.20 — die Hilfe log, und zwar dem Screenreader
+
+Auf die Bitte, „die Hilfe nochmal anzusehen", habe ich zuerst den Faktencheck
+gemacht, den `CLAUDE.md` für dieses Dokument verlangt: sieben Tastenkürzel,
+die Tastenbelegung der Zählerfelder, der Sprunglink, die drei Excel-Blattnamen.
+**Alle korrekt** — die Kürzel decken sich mit der Tastaturbehandlung in
+`App.tsx`, „Monatsinfo" kommt aus der Firmenvorlage, die beiden anderen
+Blätter aus `vorlageExport.ts`, und `.json` wird bei Verschlüsselung zu
+`.json.enc`.
+
+Das Problem lag eine Ebene tiefer: **`HelpModal` trug `role="dialog"` mit
+`aria-modal="true"`, ist aber kein Dialog.** Keine feste Position, keine
+abdunkelnde Fläche, keine Fokusfalle — eine Seite im Fluss, genau wie das
+Jahreskonto. `aria-modal="true"` sagt der Hilfstechnik jedoch, alles außerhalb
+sei stillgelegt: Für Screenreader-Nutzer verschwand damit die untere
+Navigationsleiste, die sehend sichtbar und mit der Tabulatortaste erreichbar
+blieb.
+
+**Und die Falschangabe hatte die eigene Prüfung entschärft.** Der
+Tabulator-Durchlauf erkennt sichtbare `aria-modal`-Bereiche und prüft dann nur
+deren Innenraum — für die Hilfe also ausgerechnet nicht das, worum es ging.
+Ein falsches Attribut im Markup hatte den Test stillgelegt, der es hätte
+finden sollen. Gegengeprüft: `OnboardingModal`, `ConfirmDialog` und
+`DeviceSyncModal` sind echte Overlays mit `fixed inset-0` und abgedunkeltem
+Hintergrund; dort bleibt `aria-modal` stehen.
+
+### Sperrung: von sieben Werten auf zwei
+
+Die Bestandsaufnahme vom Vormittag hatte sieben `letter-spacing`-Werte
+gefunden, vier davon negativ. Entschieden und umgesetzt:
+
+| | vorher | nachher |
+|---|---|---|
+| negative Sperrung | 21 Stellen | **0** |
+| positive Werte | 0,05 em, 0,1 em, 0,18 em | **nur 0,05 em** |
+
+Negative Sperrung zieht Buchstaben zusammen. Das Erkennen einzelner Zeichen
+hängt bei Sehbehinderung genau an dem Zwischenraum, den man damit wegnimmt —
+sie spart ein paar Pixel und kostet Lesbarkeit. Für diese App das falsche
+Geschäft. Positive Sperrung auf Versalien bleibt: Großbuchstaben stehen ohne
+zusätzlichen Raum zu eng, das ist Handwerk und kein Fehler.
+
+Umgesetzt mit einem Wegwerf-Skript, das seine Anker vor dem Schreiben prüft
+und danach gegenprobt, dass nichts übrig blieb. Die Reihenfolge der
+Ersetzungen ist dabei Pflicht: `tracking-tighter` enthält `tracking-tight`.
+
+### 1.4.12 Textabstand — bestanden, und das war nicht abzusehen
+
+Die Norm nennt vier Werte, die ein Nutzer erzwingen können muss: Zeilenhöhe
+1,5×, Absatzabstand 2×, Sperrung 0,12×, Wortabstand 0,16×. Genau diese
+Einstellungen nimmt vor, wer schlecht sieht — es ist eine der wirksamsten
+Lesehilfen überhaupt.
+
+Die neue Prüfung erzwingt sie auf **jedes** Element, auch auf Tasten mit fester
+Höhe, und misst dann wie sonst. **Kein Befund über alle elf Ansichten.** Das
+war der unsicherste Punkt des Tages; 0,12 em Sperrung auf allem ist ein harter
+Test.
+
+### Aufgeräumt
+
+`npm run deploy`, `predeploy` und die `gh-pages`-Abhängigkeit sind entfernt —
+die ROADMAP führte sie als „Falle für jeden, der sie für echt hält". Was
+veröffentlicht, ist ausschließlich ein Push auf `main`.
+
+Version auf **0.9.20**, mit einem Changelog-Eintrag in Alltagssprache. Das
+Prüfnetz steht damit bei **261 Prüfungen** (5,4 min) gegenüber 63 am Morgen.
+
 ### Der Läufer sah vier Fehler, die dieser Rechner nicht sehen konnte
 
 Der Push von `39b3e7d` scheiterte im Tor, obwohl derselbe Stand lokal grün war:

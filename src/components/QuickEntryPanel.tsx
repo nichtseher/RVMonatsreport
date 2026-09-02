@@ -124,7 +124,7 @@ export default function QuickEntryPanel({
       <div className="flex items-center justify-between gap-2 mb-3">
         <h2
           id="quick-entry-heading"
-          className="text-base font-black tracking-tight text-[var(--text-color)] flex items-center gap-2 flex-wrap min-w-0"
+          className="text-base font-black text-[var(--text-color)] flex items-center gap-2 flex-wrap min-w-0"
         >
           <Zap className="w-5 h-5 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
           Schnell-Erfassung

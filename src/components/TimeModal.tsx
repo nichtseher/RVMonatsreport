@@ -197,7 +197,7 @@ export default function TimeModal({
             */}
             <h2
               id="time-modal-title"
-              className="text-xl sm:text-2xl font-black tracking-tight hyphens-auto break-words"
+              className="text-xl sm:text-2xl font-black hyphens-auto break-words"
             >
               Zeiterfassung
             </h2>

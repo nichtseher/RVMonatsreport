@@ -409,9 +409,9 @@ können, ist der belegte Konformitätsstand.
 
 ## 0.9.20 — Aufräumen vor der Abnahme
 
-- **`npm run deploy` entfernen.** Veröffentlicht auf einen `gh-pages`-Branch,
-  der nichts mehr bestimmt. Steht seit 0.9.2 als Ballast in CLAUDE.md und ist
-  eine Falle für jeden, der ihn für echt hält.
+- ~~**`npm run deploy` entfernen.**~~ **Erledigt mit 0.9.20.** Skript,
+  `predeploy` und die `gh-pages`-Abhängigkeit sind raus. Was veröffentlicht,
+  ist ausschließlich ein Push auf `main`.
 - **ExcelJS-Abhängigkeit prüfen.** Bringt eine bekannte Meldung in `uuid` mit
   (moderat). Falls eine Fassung ohne diese Unterabhängigkeit vorliegt,
   wechseln.

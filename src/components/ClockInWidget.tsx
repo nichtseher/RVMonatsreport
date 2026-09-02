@@ -391,7 +391,7 @@ export default React.memo(function ClockInWidget({
                 <span className="text-[0.75rem] font-black uppercase text-[var(--text-muted)] tracking-wider">
                   Laufende Arbeitszeit
                 </span>
-                <div className="text-3xl font-black font-mono tracking-tight text-[var(--text-color)]">
+                <div className="text-3xl font-black font-mono text-[var(--text-color)]">
                   {elapsed || "00:00:00"}
                 </div>
                 <span className="block text-[0.75rem] text-[var(--text-muted)] font-bold">
