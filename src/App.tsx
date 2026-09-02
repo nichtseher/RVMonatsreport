@@ -1466,7 +1466,6 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab("sync")}
-                title="Live-Verbindung aktiv – zum Verwalten antippen"
                 aria-label={`Live-Verbindung mit dem anderen Gerät ist aktiv.${liveSync.lastSyncTime ? ` Letzter Abgleich um ${liveSync.lastSyncTime} Uhr.` : ""} Antippen zum Verwalten.`}
                 className="ml-2 flex items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[var(--success-text)] cursor-pointer hover:brightness-110 transition-colors"
               >
@@ -2089,12 +2088,17 @@ export default function App() {
             </button>
 
             {/* Baseline Template Copy Button (Vormonats-Direktkopie) */}
+            {/* Ohne title-Attribut: Der native Tooltip erfuellt WCAG 1.4.13
+                nicht -- er laesst sich weder mit Escape schliessen noch mit
+                dem Zeiger ueberfahren, und auf dem Handy erscheint er gar
+                nicht. Der aria-label traegt dieselbe Auskunft und erreicht
+                auch die Hilfstechnik. Galt genauso fuer die beiden anderen
+                Stellen (Live-Verbindung, Monatsziele). */}
             {getPreviousSavedMonthRecord() && (
               <button
                 type="button"
                 onClick={handleCopyPreviousMonth}
                 aria-label="Vormonats-Werte als Vorlage laden"
-                title="Werte des letzten gesicherten Monats als Vorlage laden"
                 className="px-2.5 min-h-[44px] rounded-lg text-xs font-bold border bg-[var(--success-bg)] text-[var(--success-text)] border-[var(--success-border)] hover:brightness-110 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
               >
                 <Copy className="w-3.5 h-3.5" aria-hidden="true" />
@@ -2109,11 +2113,6 @@ export default function App() {
               aria-label={
                 isReadingSummary
                   ? "Zusammenfassung vorlesen stoppen"
-                  : "Zusammenfassung vorlesen"
-              }
-              title={
-                isReadingSummary
-                  ? "Vorlesen stoppen"
                   : "Zusammenfassung vorlesen"
               }
               className={`px-2.5 min-h-[44px] rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
@@ -2147,7 +2146,6 @@ export default function App() {
               }}
               aria-expanded={isGoalsEditorOpen}
               aria-label={`Monatsziele einrichten. Ziele sind zurzeit ${goalsConfig.enabled ? "eingeschaltet" : "ausgeschaltet"}.`}
-              title="Monatsziele einrichten"
               className={`px-2.5 min-h-[44px] rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
                 isGoalsEditorOpen
                   ? "bg-[var(--accent)] text-[var(--accent-text)] border-[var(--accent)] shadow-xs"
@@ -2619,7 +2617,18 @@ export default function App() {
               type="button"
               onClick={() => handleApplyNoteTemplate(tpl.text)}
               className="inline-flex items-center px-2.5 min-h-[44px] rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:border-[var(--border-focus)] hover:bg-[var(--bg-color)] text-[0.75rem] font-black text-[var(--text-color)] transition-all cursor-pointer active:scale-95 focus-visible:ring-2"
-              title={`Text einfügen: "${tpl.text}"`}
+              /* Aus title wurde aria-label, und das ist mehr als ein Tausch:
+                 Der Tooltip zeigte den vollen Text nur sehenden Maus-Nutzern
+                 -- auf dem Handy erscheint er nie, und der Screenreader las
+                 bloss die Kurzform ("Messewoche"), ohne zu verraten, was
+                 eingefuegt wird. Jetzt hoert man es.
+
+                 Die sichtbare Beschriftung steht bewusst VORNE: WCAG 2.5.3
+                 verlangt, dass der zugaengliche Name die sichtbare Aufschrift
+                 enthaelt. Bei "Messewoche" kommt das Wort im eingefuegten Text
+                 gar nicht vor -- ohne das Voranstellen waere die
+                 Sprachsteuerung unbedienbar geworden. */
+              aria-label={`${tpl.label}. Text einfügen: "${tpl.text}"`}
             >
               {tpl.label}
             </button>

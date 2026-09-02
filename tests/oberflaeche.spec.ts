@@ -658,6 +658,31 @@ test.describe("Ansichten hinter den Einstiegen", () => {
  * notwendige Bedingung, keine hinreichende — ob das Vorgelesene trägt,
  * entscheidet weiterhin der Durchlauf mit NVDA und VoiceOver.
  */
+/**
+ * Zaehlt die Elemente, die der Tabulator treffen muss. Der Durchlauf wird
+ * daran gebunden statt an eine feste Obergrenze -- siehe dort.
+ */
+async function zaehleErreichbare(page: Page) {
+  return page.evaluate(() => {
+    const dialog = Array.from(document.querySelectorAll('[aria-modal="true"]')).find(
+      (d) => (d as HTMLElement).offsetWidth > 0,
+    );
+    let n = 0;
+    for (const el of Array.from(
+      document.querySelectorAll("button, a[href], input, select, textarea, [tabindex]"),
+    )) {
+      const h = el as HTMLElement;
+      if (h.offsetWidth === 0 || h.offsetHeight === 0) continue;
+      if ((el as HTMLButtonElement).disabled) continue;
+      if (el.getAttribute("tabindex") === "-1") continue;
+      if (el.closest('[aria-hidden="true"]')) continue;
+      if (dialog && !dialog.contains(el)) continue;
+      n++;
+    }
+    return n;
+  });
+}
+
 async function tabulatorDurchlauf(page: Page, maxSchritte = 400) {
   await page.evaluate(() => {
     (document.activeElement as HTMLElement | null)?.blur();
@@ -759,6 +784,77 @@ test.describe("Textabstand nach WCAG 1.4.12", () => {
   }
 });
 
+/**
+ * WCAG 1.4.13 Inhalt bei Hover oder Fokus (AA) und 3.3.1 / 3.3.3
+ * Fehlererkennung und Fehlerempfehlung.
+ *
+ * **1.4.13** verlangt von Zusatzinhalt, der bei Hover oder Fokus erscheint,
+ * dreierlei: Er muss schliessbar sein, ohne den Zeiger zu bewegen; er muss mit
+ * dem Zeiger ueberfahrbar bleiben; und er muss stehen bleiben, bis der Nutzer
+ * ihn wegnimmt.
+ *
+ * Der native Tooltip aus dem `title`-Attribut erfuellt **keine** dieser drei
+ * Bedingungen -- Escape schliesst ihn nicht, ueberfahren laesst er sich nicht,
+ * und er verschwindet von selbst. Auf einem Handy erscheint er ohnehin nie.
+ * Am 2026-09-02 trugen drei Schaltflaechen in `App.tsx` ein solches Attribut,
+ * alle drei zusaetzlich zu einem `aria-label` mit derselben Auskunft. Sie sind
+ * entfernt; diese Pruefung haelt sie draussen.
+ *
+ * Die Vorgeschichte macht die Regel plausibel: In 0.9.13 stellte sich heraus,
+ * dass Tooltips als `title`-*Attribut* auf SVG-Elementen nie funktioniert
+ * hatten -- SVG braucht ein `<title>`-*Kindelement*. Niemand hatte es bemerkt,
+ * weil ein Tooltip, den man nicht sieht, wie einer aussieht, den es nicht
+ * gibt.
+ */
+test.describe("Tooltips und Fehlermeldungen", () => {
+  for (const ansicht of ANSICHTEN) {
+    test(`${ansicht.name}: keine nativen Tooltips`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "Haengt nicht am Geraeteprofil");
+      await oeffne(page, ansicht.tab);
+
+      const tooltips = await page.evaluate(() =>
+        Array.from(document.querySelectorAll("[title]")).map(
+          (el) =>
+            `${el.tagName}[title="${el.getAttribute("title")}"] "${(el.textContent || "").trim().slice(0, 24)}"`,
+        ),
+      );
+
+      expect(
+        tooltips,
+        `${ansicht.name}: title-Attribut gefunden — nativer Tooltip, erfüllt WCAG 1.4.13 nicht: ${tooltips.join(" | ")}`,
+      ).toEqual([]);
+    });
+  }
+
+  test("Fehlermeldung benennt das Feld und schlägt die Korrektur vor", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Haengt nicht am Geraeteprofil");
+
+    await oeffneUeberEinstieg(page, EINSTIEGE.find((e) => e.name === "Datensicherung")!);
+
+    // Verschluesselung einschalten und ein zu kurzes Passwort eingeben.
+    await page.getByRole("checkbox", { name: /Verschlüsselung aktivieren/ }).check();
+    await page.getByLabel(/Passwort/i).first().fill("ab");
+    await page.getByRole("button", { name: /Auf Gerät speichern/ }).click();
+
+    /*
+      Der Befund muss dreierlei leisten:
+      - sichtbar sein (3.3.1: der Fehler wird in Text beschrieben),
+      - das betroffene Feld benennen,
+      - die Korrektur nennen (3.3.3),
+      und er muss ohne Fokuswechsel bei der Hilfstechnik ankommen -- deshalb
+      wird auf `role="alert"` geprueft und nicht nur auf sichtbaren Text.
+    */
+    const meldung = page.getByRole("alert");
+    await expect(meldung).toBeVisible({ timeout: 5_000 });
+    const text = (await meldung.innerText()).trim();
+
+    expect(text, "Die Meldung benennt das betroffene Feld nicht").toMatch(/Passwort/i);
+    expect(text, "Die Meldung nennt die Korrektur nicht").toMatch(/\d|mindestens/i);
+  });
+});
+
 test.describe("Tastatur: Erreichbarkeit und Reihenfolge", () => {
   const alleAnsichten = [
     ...ANSICHTEN.map((a) => ({ name: a.name, oeffne: (p: Page) => oeffne(p, a.tab) })),
@@ -776,13 +872,39 @@ test.describe("Tastatur: Erreichbarkeit und Reihenfolge", () => {
       await ansicht.oeffne(page);
       await warteAufRuhigesLayout(page);
 
-      const folge = await tabulatorDurchlauf(page);
+      /*
+        Die Schrittzahl haengt an der Zahl der erreichbaren Elemente, nicht an
+        einer festen Obergrenze.
 
-      // 1. Keine Falle: Der Durchlauf muss enden, nicht ins Limit rennen.
+        Die erste Fassung lief bis 400 Schritte und verlangte, dass die
+        Zyklus-Erkennung vorher greift. Die haengt aber an einem Index in der
+        Kandidatenliste -- und der verschiebt sich, sobald React waehrend des
+        Durchlaufs neu rendert (das Zahlenfeld ruft beim Fokussieren
+        `select()` und loest damit Zustandsaenderungen aus). Traf das den
+        ersten Eintrag, schloss sich die Runde nie und der Lauf rannte ins
+        Limit. Ergebnis: ein Test, der einzeln bestand und im Gesamtlauf
+        durchfiel -- die unangenehmste aller Fehlerarten, weil sie wie ein
+        echter Befund aussieht.
+
+        Mit `anzahl + 30` ist die Schleife von der Zyklus-Erkennung
+        unabhaengig: Die Reichweite genuegt fuer eine volle Runde samt der
+        Mehrfachstops in Datums- und Zeitfeldern, und was danach fehlt, faellt
+        in der Erreichbarkeitspruefung auf.
+      */
+      const anzahl = await zaehleErreichbare(page);
+      const folge = await tabulatorDurchlauf(page, anzahl + 30);
+
+      // 1. Keine Falle: Der Fokus darf nicht an einer Stelle kleben bleiben.
+      let laengsteWiederholung = 1;
+      let lauf = 1;
+      for (let i = 1; i < folge.length; i++) {
+        lauf = folge[i].idx === folge[i - 1].idx ? lauf + 1 : 1;
+        laengsteWiederholung = Math.max(laengsteWiederholung, lauf);
+      }
       expect(
-        folge.length,
-        `${ansicht.name}: Der Tabulator kam in 220 Schritten nicht zum Anfang zurueck — Verdacht auf Tastaturfalle`,
-      ).toBeLessThan(220);
+        laengsteWiederholung,
+        `${ansicht.name}: Der Fokus blieb ${laengsteWiederholung} Schritte lang auf demselben Element — Verdacht auf Tastaturfalle`,
+      ).toBeLessThanOrEqual(8);
 
       /*
         2. Reihenfolge: vorwaerts in Dokumentreihenfolge.

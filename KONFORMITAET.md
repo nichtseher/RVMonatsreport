@@ -191,7 +191,7 @@ anwendbar
 | 1.4.10 Reflow | AA | **erfüllt** | 360 px × drei Schriftgrößen × fünf Ansichten × drei Profile, einschließlich verdeckten Überlaufs in scrollbaren Containern; seit 2026-09-02 zusätzlich die sechs Ansichten hinter den Einstiegen. **Vier Fälle gefunden und behoben**, zwei davon erst durch die Erweiterung: das Jahreskonto schob bei „Extra groß" 456 px Inhalt in ein 360-px-Fenster, und in der Hilfe brachen lange Komposita nicht um |
 | 1.4.11 Kontrast von Nicht-Text | AA | **teilweise** | Rahmenfarben gezielt gemessen: 3,24:1 gegen die Karte, 3,10:1 gegen den Grund, im dunklen Schema 3,09:1. Nicht für alle Bedienelemente einzeln nachgewiesen |
 | 1.4.12 Textabstand | AA | **erfüllt** | seit 2026-09-02 geprüft: Die vier von der Norm genannten Werte werden erzwungen (Zeilenhöhe 1,5×, Absatzabstand 2×, Sperrung 0,12×, Wortabstand 0,16×) und danach über alle elf Ansichten auf Überlauf und Trefferflächen gemessen. Bestanden ohne Befund. **Was das nicht abdeckt:** Text, der innerhalb eines Kastens abgeschnitten wird, ohne den Kasten zu sprengen — das braucht ein Auge. Zusätzlich wurde die eigene Sperrung bereinigt: 21 negative Werte entfernt, die Ausreißer vereinheitlicht, von sieben Werten auf zwei |
-| 1.4.13 Inhalt bei Hover oder Fokus | AA | **nicht geprüft** | Vorgeschichte: Tooltips waren als `title`-Attribut auf SVG-Elementen umgesetzt und haben nie funktioniert (gefunden 0.9.13) |
+| 1.4.13 Inhalt bei Hover oder Fokus | AA | **erfüllt** | **acht Verstöße am 2026-09-02 gefunden und behoben.** Native Tooltips aus dem `title`-Attribut erfüllen keine der drei Bedingungen des Kriteriums: nicht schließbar ohne Zeigerbewegung, nicht überfahrbar, nicht dauerhaft — auf dem Handy erscheinen sie ohnehin nie. Drei Stellen dublierten nur einen vorhandenen `aria-label` und sind entfernt; **fünf weitere fand erst die Prüfung**, darunter vier Schnelltext-Tasten, die den einzufügenden Text ausschließlich im Tooltip trugen. Deren Inhalt ist jetzt im `aria-label` — mit der sichtbaren Aufschrift voran, damit 2.5.3 gewahrt bleibt. Eine Prüfung hält `title`-Attribute künftig draußen |
 
 ### 5.2 Bedienbarkeit
 
@@ -211,7 +211,7 @@ anwendbar
 | 2.4.6 Überschriften und Beschriftungen | AA | plausibel | |
 | 2.4.7 Fokus sichtbar | AA | **erfüllt** | globaler Fokusring: 3 px Umriss plus 7 px Hof, in allen vier Themes definiert, in den Kontrastschemata deckend statt transparent |
 | 2.5.1 Zeigergesten | A | **erfüllt** | mit dem Nachweis zu 2.5.7 abgedeckt |
-| 2.5.2 Zeigerabbruch | A | nicht geprüft | |
+| 2.5.2 Zeigerabbruch | A | **erfüllt** | seit 2026-09-02 im Prüflauf: Der gesamte `src`-Baum enthält **keinen einzigen** `onMouseDown`, `onPointerDown` oder `onTouchStart`. Jede Aktion läuft über `onClick`, also beim Loslassen. Geprüft am Quelltext, weil es eine Eigenschaft des Codes ist — ein Browsertest müsste jede Taste einzeln antippen. Für diese Zielgruppe zählt das Kriterium besonders: Wer die Bedienelemente nicht genau sieht, tippt daneben und zieht den Finger weg, statt loszulassen |
 | 2.5.3 Beschriftung im Namen | A | plausibel | als Regel verankert, nicht systematisch geprüft |
 | 2.5.4 Bewegungsaktivierung | A | n. a. | keine Bewegungssteuerung |
 
@@ -225,9 +225,9 @@ anwendbar
 | 3.2.2 Bei Eingabe | A | plausibel | |
 | 3.2.3 Konsistente Navigation | AA | **erfüllt** | mit dem Nachweis zu 3.2.6 belegt |
 | 3.2.4 Konsistente Bezeichnung | AA | plausibel | |
-| 3.3.1 Fehlererkennung | A | **nicht geprüft** | |
+| 3.3.1 Fehlererkennung | A | **erfüllt** | seit 2026-09-02 geprüft, indem der Fehler ausgelöst wird: Verschlüsselung einschalten, zu kurzes Passwort eingeben, sichern. Die Meldung erscheint in einem `role="alert"` mit `aria-live="assertive"`, benennt das betroffene Feld und beschreibt den Fehler in Text — ohne dass der Fokus wechseln muss |
 | 3.3.2 Beschriftungen oder Anweisungen | A | plausibel | Zählerfelder tragen `aria-label` und eine `sr-only`-Bedienanleitung |
-| 3.3.3 Fehlerempfehlung | AA | **nicht geprüft** | |
+| 3.3.3 Fehlerempfehlung | AA | **erfüllt** | dieselbe Prüfung: Die Meldung nennt nicht nur den Fehler, sondern die Korrektur („mindestens 4 Zeichen"). Auch beim Einspielen eines verschlüsselten Backups ohne Passwort steht die Handlungsanweisung im Text, nicht nur die Feststellung |
 | 3.3.4 Fehlervermeidung | AA | plausibel | Bestätigungsdialoge vor Löschvorgängen; Archivschreibungen laufen über einen Pfad mit sichtbarer Fehlermeldung statt stillem Verlust |
 
 ### 5.4 Robustheit
@@ -246,11 +246,11 @@ Ausgezählt über Abschnitt 4 und 5:
 
 | | Anzahl | davon |
 |---|---|---|
-| **erfüllt, mit Beleg** | **25** | 20 aus WCAG 2.1 A/AA, 5 aus WCAG 2.2 |
+| **erfüllt, mit Beleg** | **29** | 24 aus WCAG 2.1 A/AA, 5 aus WCAG 2.2 |
 | teilweise erfüllt | 4 | 1.3.1, 1.4.11, 3.1.2, 4.1.2 |
 | plausibel, ohne Einzelnachweis | 12 | |
 | **nicht erfüllt** | **0** | 2.4.12 ist bewusst offen, aber Stufe AAA und damit außerhalb des Maßstabs |
-| **nicht geprüft** | **6** | 1.3.2, 1.3.3, 1.4.13, 2.5.2, 3.3.1, 3.3.3 |
+| **nicht geprüft** | **2** | 1.3.2 und 1.3.3 — bedeutungstragende Reihenfolge und sensorische Eigenschaften. Beide entscheidet ein Mensch, kein Prüflauf |
 | nicht anwendbar | 9 | 1.2.1–1.2.5, 2.4.5, 2.5.4, 3.3.8, 3.3.9 |
 | entfällt | 1 | 4.1.1 (in WCAG 2.2 gestrichen) |
 
@@ -273,10 +273,11 @@ etwas anderes: wie viel nicht geprüft ist.
    sind automatisiert nicht abgedeckt; sie setzen einen Zustand oder ein Gerät
    voraus, das der Prüflauf nicht herstellt.
 3. **TalkBack ungeprüft**, mit sachlichem Grund (siehe 3.3).
-4. **1.3.2, 1.3.3, 1.4.13, 2.5.2, 3.3.1, 3.3.3** sind nicht erhoben. Die
-   ersten beiden — bedeutungstragende Reihenfolge und sensorische
-   Eigenschaften — entscheidet ohnehin ein Mensch; die übrigen vier wären
-   automatisierbar.
+4. **1.3.2 und 1.3.3** sind nicht erhoben — bedeutungstragende Reihenfolge und
+   sensorische Eigenschaften. Beides ist keine Messfrage: Ob die
+   Vorlesereihenfolge Sinn ergibt und ob Anweisungen ohne Farbe, Form oder
+   Position verständlich bleiben, beurteilt ein Mensch. Sie sind damit
+   dieselbe Klasse wie Punkt 1.
 
 ~~**Fokus-Reihenfolge und Tastaturdurchlauf nie systematisch geprüft**~~ —
 **geschlossen am 2026-09-02.** Der Tabulator-Durchlauf prüft jetzt alle elf

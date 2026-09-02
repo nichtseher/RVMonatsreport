@@ -23,6 +23,7 @@ import "./checks/backup";
 import "./checks/kodierung";
 import "./checks/symbole";
 import "./checks/speicher-schutz";
+import "./checks/zeigerabbruch";
 import { alleLaufen } from "./helfer";
 
 alleLaufen()

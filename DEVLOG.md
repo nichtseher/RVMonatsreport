@@ -143,6 +143,57 @@ Nach dem Beenden des Vorschau-Servers war der Fehlschlag weg. Festgehalten in
 `CLAUDE.md`, weil er sich als etwas ausgibt, das er nicht ist: Wer diese
 Meldung für einen axe-Verstoß hält, sucht den Fehler in der Ansicht.
 
+### Acht Tooltips, von denen fünf niemand gesucht hat
+
+Die letzten vier automatisierbaren Kriterien. Drei davon waren schnell:
+**2.5.2 Zeigerabbruch** ist erfüllt — der gesamte `src`-Baum enthält keinen
+einzigen `onMouseDown`, `onPointerDown` oder `onTouchStart`, jede Aktion läuft
+beim Loslassen. **3.3.1 und 3.3.3** ebenfalls: Die Fehlermeldung im
+Backup-Fenster benennt das Feld und nennt die Korrektur, in einem
+`role="alert"`, das ohne Fokuswechsel ankommt.
+
+**1.4.13 war der Fund.** Native Tooltips aus dem `title`-Attribut erfüllen
+keine der drei Bedingungen des Kriteriums: nicht schließbar ohne
+Zeigerbewegung, nicht überfahrbar, nicht dauerhaft. Auf dem Handy — dem
+Hauptgerät dieser App — erscheinen sie ohnehin nie.
+
+Ein Grep fand drei. Sie dublierten nur einen vorhandenen `aria-label` und sind
+ersatzlos weg. **Fünf weitere fand erst die Prüfung**, weil der Grep auf die
+ersten zehn Treffer begrenzt war und die allesamt `SectionCard title=`-Props
+waren — gleicher Name, anderes Ding.
+
+Darunter der eigentliche Befund: **Vier Schnelltext-Tasten trugen den
+einzufügenden Text ausschließlich im Tooltip und hatten kein `aria-label`.**
+Ein Screenreader las nur „Messewoche"; was tatsächlich ins Notizfeld wandert,
+blieb ungesagt. Das war keine Tooltip-Frage, sondern eine fehlende
+Beschriftung, die sich hinter einem Tooltip versteckt hatte.
+
+Beim Umbau musste die sichtbare Aufschrift **vorangestellt** werden: Bei
+„Messewoche" kommt das Wort im eingefügten Text nicht vor. Ohne das
+Voranstellen hätte der zugängliche Name die sichtbare Aufschrift nicht mehr
+enthalten — WCAG 2.5.3, und die Sprachsteuerung wäre unbedienbar geworden.
+Eine Korrektur, die ohne die zweite Regel eine neue Lücke gerissen hätte.
+
+### Ein flatternder Test ist schlimmer als keiner
+
+Der Gesamtlauf danach meldete einen Fehlschlag im Tabulator-Durchlauf des
+Formulars — der einzeln bestand. Genau die Sorte Befund, die wie ein echter
+aussieht.
+
+Ursache war meine Zyklus-Erkennung: Sie merkt sich den Index des ersten
+Elements und bricht ab, wenn er wiederkehrt. Der Index zeigt aber in eine
+Kandidatenliste, die sich verschiebt, sobald React während des Durchlaufs neu
+rendert — und das Zahlenfeld ruft beim Fokussieren `select()` auf. Traf die
+Verschiebung den ersten Eintrag, schloss sich die Runde nie und der Lauf rannte
+ins Schrittlimit.
+
+Behoben, indem die Schrittzahl an der Zahl der erreichbaren Elemente hängt
+(`anzahl + 30`) statt an einer festen Obergrenze. Damit ist die Schleife von
+der Zyklus-Erkennung unabhängig. Die Fallenprüfung misst jetzt etwas
+Direkteres: wie viele Schritte der Fokus am selben Element klebt.
+
+Dreimal hintereinander laufen gelassen: 11 von 11, jedes Mal.
+
 ### 0.9.20 — die Hilfe log, und zwar dem Screenreader
 
 Auf die Bitte, „die Hilfe nochmal anzusehen", habe ich zuerst den Faktencheck
