@@ -164,10 +164,28 @@ test.describe("Kein waagerechter Überlauf", () => {
         expect(versteckte, `${ansicht.name} / ${groesse}: verstecktes Seitwärtsscrollen`).toEqual([]);
 
         /*
-          Trefferflächen, WCAG 2.2, 2.5.8 Target Size (Minimum), Stufe AA:
-          24 × 24 CSS-Pixel. Die 44 px aus früheren Notizen sind Stufe AAA
-          (2.5.5) -- die Entscheidung aus 0.9.7, die Fünferschritte auf 40 px
-          zu verkleinern, ist damit normgerecht und keine Kröte.
+          Trefferflächen. Seit dem 2026-09-02 gilt für dieses Projekt **Stufe
+          AAA**, WCAG 2.5.5 Target Size (Enhanced): 44 × 44 CSS-Pixel. Bis
+          dahin stand hier die AA-Stufe (2.5.8, 24 px) -- die Regel im Dokument
+          und der Wert im Test gingen auseinander, und genau dieser Widerspruch
+          hat die Entscheidung ausgelöst.
+
+          Geprüft wird gegen **43,5 px**, nicht gegen 44: Die Vorschau rendert
+          mit Faktor 0,99993, ein 44-px-Element misst dort 43,997 px.
+
+          Zwei Klassen, zwei Schwellen:
+
+          - **Im Tab-Lauf → 43,5 px.** Gemessen am 2026-09-02 über alle fünf
+            Ansichten und drei Schriftgrößen bei 360 px: kein einziges Element
+            darunter (allein das Formular hat 93). Die Schwelle sichert damit
+            einen erreichten Stand ab, sie fordert nichts Neues -- sie ist
+            gegen den Rückschritt gerichtet.
+          - **Außerhalb des Tab-Laufs → 24 px.** Das sind die ±5-Tasten in
+            `CounterField.tsx` (`aria-hidden`, `tabIndex={-1}`), gemessen
+            44,6 / 41,7 / 40,0 px über die drei Schriftgrößen. Sie fallen unter
+            die Ausnahme "Equivalent" in 2.5.5: Dieselbe Funktion ist über
+            ±1 und das Zahlenfeld erreichbar, beide über 44 px. Die Begründung
+            steht im Quelltext an der Stelle selbst, nicht nur hier.
 
           Diese Prüfung sah bis 2026-09-01 nur das Formular an. Deshalb ist ihr
           ein Schieberegler mit **168 × 6 px** entgangen (Aufteilung der Stunden
@@ -181,16 +199,22 @@ test.describe("Kein waagerechter Überlauf", () => {
           for (const el of Array.from(document.querySelectorAll("button, a[href], input, select"))) {
             const r = el.getBoundingClientRect();
             if (r.width === 0 || r.height === 0) continue; // unsichtbar
-            if (r.width < 24 || r.height < 24) {
+            const ausserhalbTabLauf =
+              el.getAttribute("tabindex") === "-1" || el.getAttribute("aria-hidden") === "true";
+            const schwelle = ausserhalbTabLauf ? 24 : 43.5;
+            if (r.width < schwelle || r.height < schwelle) {
               treffer.push(
-                `${el.tagName}"${(el.textContent || (el as HTMLElement).ariaLabel || "").trim().slice(0, 28)}" ${Math.round(r.width)}x${Math.round(r.height)}`,
+                `${el.tagName}"${(el.textContent || (el as HTMLElement).ariaLabel || "").trim().slice(0, 28)}" ${Math.round(r.width)}×${Math.round(r.height)} (Schwelle ${schwelle})`,
               );
             }
           }
           return treffer;
         });
 
-        expect(zuKlein, `${ansicht.name} / ${groesse}: unter 24 px — ${zuKlein.join(" | ")}`).toEqual([]);
+        expect(
+          zuKlein,
+          `${ansicht.name} / ${groesse}: Trefferfläche unterschritten — ${zuKlein.join(" | ")}`,
+        ).toEqual([]);
       });
     }
   }

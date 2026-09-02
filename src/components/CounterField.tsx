@@ -143,6 +143,25 @@ export default React.memo(function CounterField({
     (aria-hidden, nicht im Tab-Lauf) -- ein Umbruch dort ist schlimmer als
     36 px, und die verbindliche WCAG-Grenze von 24 px bleibt weit uebertroffen.
     Wo Platz ist, sind es unveraendert 44 px.
+
+    AUSNAHME NACH WCAG 2.5.5 (Stufe AAA), begruendet, nicht uebersehen:
+    Seit dem 2026-09-02 gilt fuer dieses Projekt AAA, also 44 x 44 px. Diese
+    beiden Tasten erfuellen das bei "Gross" und "Extra gross" nicht -- gemessen
+    am 2026-09-02 bei 360 px Breite im Standardlayout: 44,6 / 41,7 / 40,0 px
+    ueber die drei Schriftgroessen.
+
+    Sie fallen unter die Ausnahme "Equivalent": Dieselbe Funktion ist ueber ein
+    anderes Bedienelement derselben Seite erreichbar, das die Groesse erfuellt
+    -- fuenfmal +1/-1 (52 bis 60 px) oder direkte Eingabe im Zahlenfeld
+    (56 x 56 px). Fuer Screenreader-Nutzer existieren sie ohnehin nicht.
+
+    Warum sie nicht einfach vergroessert werden: Die Bedienzeile hat bei
+    "Extra gross" 253,9 px, die fuenf Elemente belegen zusammen 256,0 px --
+    negativer Spielraum. 44 px hier waeren nur zu haben, indem +1/-1 von 52 auf
+    rund 45 px schrumpfen. Das verkleinert die wichtigste Taste zugunsten der
+    unwichtigsten, ausgerechnet in der Schriftgroesse fuer sehbehinderte
+    Nutzer. Wer das aendern will, aendert eine Produktentscheidung, keinen
+    Zahlenwert -- siehe CLAUDE.md, Nachtrag zu den Trefferflaechen.
   */
   const quickButtonSize = isCompact
     ? "w-[36px] h-[36px] min-w-[32px] text-[0.75rem]"
@@ -159,12 +178,21 @@ export default React.memo(function CounterField({
   return (
     <div 
       /* Innenabstand in Pixeln: Er muss nicht mit der Schriftgroesse wachsen
-         und nahm der Bedienzeile sonst genau den Platz weg, den sie braucht. */
+         und nahm der Bedienzeile sonst genau den Platz weg, den sie braucht.
+
+         10 -> 6 px am 2026-09-02: Bei "Extra gross" war die Bedienzeile
+         253,9 px breit, ihre fuenf Elemente brauchten zusammen 256,0 px --
+         sie stand also 2,1 px ueber. Sichtbar war das nicht (die Seite
+         scrollte nicht seitwaerts, scrollWidth = innerWidth = 360), aber alle
+         Elemente lagen bereits auf ihrer min-width und konnten nicht weiter
+         nachgeben: Der naechste Zusatz in dieser Zeile haette sichtbar
+         abgeschnitten. Die 8 px kommen aus dem Weissraum, nicht aus einer
+         Trefferflaeche -- das ist der einzige Posten hier, der keine kostet. */
       /* Flaeche und Rahmen aus dem Theme statt aus fester Palette: Die
          Rahmenfarbe der Bedienelemente ist gegen --bg-color auf 3:1 abgestimmt
          (WCAG 1.4.11). Auf dem alten slate-Hintergrund kam sie nur auf
          2,55-2,98:1 -- die Tastenumrisse waren zu schwach. */
-      className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl bg-[var(--bg-color)] p-[10px] sm:p-4 border border-[var(--border-color)]/40 transition-all focus-within:ring-2 focus-within:ring-[var(--border-focus)] hover:border-[var(--border-focus)] gap-3`}
+      className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl bg-[var(--bg-color)] p-[6px] sm:p-4 border border-[var(--border-color)]/40 transition-all focus-within:ring-2 focus-within:ring-[var(--border-focus)] hover:border-[var(--border-focus)] gap-3`}
     >
       <div className="flex-1 pr-2 min-w-0">
         <label 

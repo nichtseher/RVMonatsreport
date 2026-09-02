@@ -10,6 +10,141 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-02 — Zwei Regelwerke abgeglichen, und die eigene Rechnung widerlegt
+
+Auftrag war ein Abgleich: vier neue Grundregeln gegen den Bestand aus
+`CLAUDE.md`, `ROADMAP.md` und dem Code. Drei davon waren im Projekt längst
+schärfer umgesetzt, als sie formuliert waren — Offline-First, ARIA, Fokus. Der
+Rest war es wert.
+
+### Vier Widersprüche, vier Entscheidungen
+
+| Widerspruch | Entscheidung |
+|---|---|
+| „Strenger WCAG-Fokus" gegen die 43,5-px-Regel, die der eigene Nachtrag für unerfüllbar erklärte — und gegen den Test, der 24 px prüfte | **Stufe AAA** (2.5.5), gemessen gegen 43,5 px |
+| „Etablierte UI-Patterns" gegen das Akkordeon-Verbot | Verbot bleibt und schlägt die Regel |
+| „Framework-Standard nutzen" gegen 278 entfernte Tailwind-Farbklassen | Geteilt: Tailwind für Layout, Variablen für Farbe, Radius, Schatten |
+| Sequential Thinking gegen die Token-Sparsamkeit aus Abschnitt 1 | Vor jeder Code-Ausgabe; die Sparsamkeit betrifft Dateien und Antwortlänge, nicht die Gründlichkeit davor |
+
+Der erste Punkt ist der eigentliche Befund. **Die Regel im Dokument und der
+Wert im Test standen seit 0.9.18 auseinander** — 44 px in `CLAUDE.md`, 24 px in
+`oberflaeche.spec.ts`. Beide Seiten für sich plausibel begründet, deshalb fiel
+es niemandem auf. Ein Prüfgate, das etwas anderes durchsetzt als das Dokument
+verlangt, ist schlimmer als eines, das fehlt: Es erzeugt das Gefühl von
+Deckung.
+
+### Die eigene Überschlagsrechnung war falsch — an beiden Enden
+
+Vor der Messung habe ich am Quelltext gerechnet und daraus zwei Aussagen
+abgeleitet. Die Messung (360 px, Standardlayout, fünf Ansichten, drei
+Schriftgrößen) hat beide kassiert:
+
+- **„Der Code erfüllt AAA nicht."** Falsch — aber nur zur Hälfte, und die
+  zweite Hälfte ist die interessantere. Bei 360 px lag kein einziges
+  fokussierbares Element unter 43,5 px; allein das Formular hat 93 davon, das
+  kleinste misst 44 px. Für das Handy war AAA längst erfüllt, nur wusste es
+  niemand, weil nichts es prüfte.
+- **„Die Fünferschritte sind 36 px, nicht 40."** Irreführend. Es gibt zwei
+  Zweige; Standard ist der Komfortzweig, und dort sind es exakt die 40,0 px,
+  die der alte Nachtrag nannte. Die 36 px gehören zum kompakten Layout, das
+  per Default aus ist.
+
+Beides sind Fehler derselben Art: aus dem Quelltext geschlossen statt am
+laufenden Gerät nachgesehen. Die Projektregel dazu steht seit Monaten in
+`CLAUDE.md`, und ich bin trotzdem hineingelaufen.
+
+### Ein echter Fund, den keine Rechnung hergegeben hätte
+
+Bei „Extra groß" war die Bedienzeile **253,9 px breit und mit 256,0 px
+belegt** — 2,1 px Überstand, und alle fünf Elemente lagen bereits auf ihrer
+`min-width`. Unsichtbar, weil die Seite nicht seitwärts scrollte
+(`scrollWidth` = `innerWidth` = 360). Aber ohne jede Reserve: Der nächste
+Zusatz in dieser Zeile hätte sichtbar abgeschnitten.
+
+Die Behebung kostete keine einzige Trefferfläche — der Innenabstand der
+Zählerkarte von 10 auf 6 px, also aus dem Weißraum. Die 8 px sind vollständig
+in die Tasten geflossen:
+
+| bei 360 px | vorher | nachher |
+|---|---|---|
+| Zeilenbreite („Extra groß") | 253,9 px | **260,0 px** |
+| Überstand | +2,1 px | **0** |
+| `±1` („Extra groß") | 52,0 px | **53,6 px** |
+| `±5` („Extra groß") | 40,0 px | 40,4 px |
+| `±5` („Groß") | 41,7 px | **43,3 px** |
+| `±5` („Normal") | 44,6 px | **46,3 px** |
+
+### Die Ausnahme, die begründet werden musste
+
+Die `±5`-Tasten bleiben bei „Groß" und „Extra groß" unter 44 px. Sie laufen
+unter der Gleichwertigkeitsausnahme in 2.5.5: `tabIndex={-1}`, `aria-hidden`,
+und ihre Funktion ist über `±1` und das Zahlenfeld vollständig erreichbar —
+beide deutlich über 44 px. Für Screenreader-Nutzer existieren sie ohnehin
+nicht.
+
+Sie zu vergrößern wäre machbar und trotzdem falsch: 44 px sind dort bei „Extra
+groß" nur zu haben, indem `±1` von 53,6 auf rund 45 px schrumpft. Das
+verkleinert die wichtigste Taste zugunsten der unwichtigsten, ausgerechnet in
+der Schriftgröße für sehbehinderte Nutzer. Die Begründung steht jetzt im
+Quelltext an der Stelle selbst — eine Ausnahme, die man nur im Konzept findet,
+wird beim nächsten Umbau übersehen.
+
+### Was bewusst unterblieb
+
+Geplant war zusätzlich ein **größerer Abstand zwischen `±5` und `±1`** gegen
+den Fehlgriff. Die Messung hat den Plan widerlegt, bevor er Code wurde: Bei
+„Normal" sind die `±5`-Tasten mit 46,3 px heute AAA-konform, und weil die
+Zeile in jeder Schriftgröße randvoll ist, wird jeder zusätzliche Abstand aus
+den Tastenbreiten bezahlt. Vier Pixel Abstand hätten dort rund drei Pixel
+Trefferfläche gekostet und die Tasten unter 44 px gedrückt — der Fehlgriff
+wäre gegen einen Normverstoß getauscht worden. Das ist kein guter Tausch, und
+es ist eine Produktentscheidung, keine Umsetzungsfrage.
+
+### Das Prüfgate hat die eigene Messung widerlegt — im ersten Lauf
+
+`oberflaeche.spec.ts` prüft jetzt zwei Klassen statt einer Pauschale: **43,5 px
+für alles im Tab-Lauf, 24 px für das, was per `aria-hidden` / `tabIndex={-1}`
+außerhalb liegt.** Ich hatte dazugeschrieben, die Schwelle fordere nichts
+Neues und sichere nur einen erreichten Stand. Der erste Lauf hat das widerlegt:
+
+| gefunden | Maß | Ansicht / Profil |
+|---|---|---|
+| Reiter „Stempeluhr & Schichten" | 287 × **38** px | Zeit / Schreibtisch |
+| Reiter „Jahreskonto (2026)" | 287 × **38** px | Zeit / Schreibtisch |
+| „Jahreskonto-Einstellungen bearbeiten" | 540 × **42** px | Zeit / Schreibtisch |
+
+Meine Handmessung hatte bei 360 px stattgefunden — und **nur** dort. Die drei
+Verstöße liegen im Schreibtisch-Profil, wo die Reiter nicht umbrechen und
+deshalb flacher bleiben. Eine Breite geprüft zu haben heißt nicht, die App
+geprüft zu haben; genau dafür gibt es das Tor. Behoben mit `min-h-[44px]` an
+allen dreien, dazu an einer vierten Taste im Reiter „Jahreskonto", die das
+Gate gar nicht sieht — es prüft nur den beim Öffnen aktiven Reiter.
+
+Das ist derselbe Mechanismus, durch den die 168 × 6 px des Schiebereglers
+monatelang durchkamen: Nicht die Prüfung war zu lasch, sie sah nur an der
+falschen Stelle hin.
+
+Nach der Behebung: `lint` sauber, **142** Funktionsprüfungen bestanden,
+**62 bestanden / 1 übersprungen / 0 fehlgeschlagen** in 1,8 min.
+
+### Ein zweiter Fehlschlag, der keiner war
+
+Derselbe Lauf meldete zusätzlich einen axe-Verstoß in der Optionen-Ansicht.
+Die Fehlermeldung lautete `Execution context was destroyed, most likely
+because of a navigation` — das ist kein Barrierefreiheitsbefund, sondern exakt
+die Störung, die im Kopf von `playwright.config.ts` als Grund für den
+seriellen Lauf steht. Ursache diesmal nicht Parallelität, sondern ich selbst:
+`reuseExistingServer` griff auf den bereits laufenden Vorschau-Server zu, an
+dem noch ein Browser-Client hing, und ich habe während des Laufs Dateien
+gespeichert. Vite hat daraufhin neu geladen und Playwright die Seite unter den
+Füßen weggezogen.
+
+Nach dem Beenden des Vorschau-Servers war der Fehlschlag weg. Festgehalten in
+`CLAUDE.md`, weil er sich als etwas ausgibt, das er nicht ist: Wer diese
+Meldung für einen axe-Verstoß hält, sucht den Fehler in der Ansicht.
+
+---
+
 ## 2026-09-01 — WebKit im Deploy-Tor: nichts gefunden, und das ist der Punkt
 
 Die Konfiguration behauptete bis heute, ein zweiter Motor verdopple die

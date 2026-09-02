@@ -16,15 +16,15 @@ The UI is German and addresses the user formally ("Sie"). Spoken announcements a
 npm install
 npm run dev        # tsx server.ts — dev server on http://localhost:3000 (Express + Vite middleware, HMR)
 npm run lint       # tsc --noEmit (covers src/, scripts/, tests/); no ESLint config
-npm run check      # tsx scripts/pruefen.ts — 135 checks, no test framework
-npm run check:ui   # playwright test — 48 UI/a11y checks (starts the dev server itself)
+npm run check      # tsx scripts/pruefen.ts — 142 checks, no test framework
+npm run check:ui   # playwright test — 63 UI/a11y checks (starts the dev server itself)
 npm run build      # vite build (client) + esbuild bundles server.ts -> dist/server.cjs
 npm run start      # node dist/server.cjs — serve the production build
 ```
 
 `npm run check` covers the pure functions where a mistake does real damage: sync merge (including the per-field timestamps), Excel sum formulas, working-time math across midnight, backup encryption, and a scan of `src/` for double-encoded characters and BOMs. Add cases there rather than writing another throwaway script. `scripts/checks/kodierung.ts` carries an allowlist — `ChangelogModal.tsx` contains mojibake on purpose, as an example in the 0.7.0 entry.
 
-`npm run check:ui` (added 0.9.18) covers what a pure-function check cannot: horizontal overflow at 360 px across all three font sizes, WCAG 2.5.8 target sizes, and an axe-core pass per view. It runs **serially on purpose** — with parallel workers, 9 of 30 checks failed erratically because concurrent page loads tore the execution context out from under Vite's on-demand transforms; the same checks passed with one worker. Two device profiles: `handy` (360×780, `hasTouch`, `isMobile`) and `schreibtisch`. Note that Playwright's device emulation really does flip `@media (pointer: coarse)` — the ROADMAP long assumed those branches were untestable, which was true only for a resized browser window. `tests/oberflaeche.spec.ts` proves it rather than asserting it.
+`npm run check:ui` (added 0.9.18) covers what a pure-function check cannot: horizontal overflow at 360 px across all three font sizes, WCAG 2.5.8 target sizes, and an axe-core pass per view. It runs **serially on purpose** — with parallel workers, 9 of 30 checks failed erratically because concurrent page loads tore the execution context out from under Vite's on-demand transforms; the same checks passed with one worker. Three device profiles: `handy` (360×780, `hasTouch`, `isMobile`), `schreibtisch` (1280×900) and `handy-webkit` (same 360×780, but WebKit — the engine the colleagues' iPhones actually run). **Measuring by hand at 360 px is not the same as checking the app**: on 2026-09-02 a hand sweep across all five views and three font sizes found nothing, and the gate then found three targets under 44 px in the `schreibtisch` profile on its first run. Do not run `check:ui` while editing files — Playwright reuses a dev server that is already running (`reuseExistingServer`), and a save during the run tears the execution context out of the page. That failure reads as an axe violation and is not one. Note that Playwright's device emulation really does flip `@media (pointer: coarse)` — the ROADMAP long assumed those branches were untestable, which was true only for a resized browser window. `tests/oberflaeche.spec.ts` proves it rather than asserting it.
 
 **axe-core finds a subset of WCAG failures, never all of them.** A green run is not a conformance claim; the NVDA/VoiceOver pass is still what decides 1.0.
 
@@ -161,27 +161,77 @@ Two things worth knowing about how it got there:
 
 ### 2. Barrierefreiheit (A11y) & Modernes Design
 - **Interaktives Feedback:** Jede Statusänderung muss zwingend über `announceToAriaAndSpeech` zurückgemeldet werden. Ton-Rückmeldungen für Zähler laufen strikt über `src/utils/audioFeedback.ts`.
-- **Aria & Semantik:** Verwende `aria-pressed` oder `aria-expanded` anstelle visueller Ein/Aus-Text-Badges. Buttons benötigen immer eindeutige `aria-label`-Attribute.
+- **Aria & Semantik:** Verwende `aria-pressed` oder `aria-expanded` anstelle visueller Ein/Aus-Text-Badges. Jedes Bedienelement braucht einen eindeutigen zugänglichen Namen — aber **nicht zwangsläufig ein `aria-label`**. Wo eine sichtbare Beschriftung existiert, ist sie der Name (`<label for>`, Button-Text). Ein `aria-label`, das die sichtbare Beschriftung ersetzt statt sie zu enthalten, verletzt WCAG 2.5.3 (Label in Name) und macht Sprachsteuerung unbedienbar: Der Nutzer sagt, was er liest, und trifft nichts. `aria-label` gehört dorthin, wo nur ein Symbol steht.
 - **Tastatur-Fokus:** Modale Dialoge brauchen einen strikten Focus-Trap. Überschriften mit `tabindex="-1"` dürfen den Fokuszyklus nicht unterbrechen. Nutze für die Tastaturbedienung moderne, leuchtende `:focus-visible`-Effekte statt Standard-Outline.
-- **Inhalts-Struktur:** Verstecke absolut keine Inhalte hinter einklappbaren Akkordeons, da dies Screenreader und die Suche bricht.
-- **UI-Ästhetik:** Nutze klare Kontraste, großzügigen Weißraum, sanfte `border-radius`-Werte, dezente Schatten und serifenlose Schriften. Das UI muss professionell, clean und hochwertig wirken.
+- **Tastatur-Vollständigkeit:** Jede Funktion muss ohne Zeigegerät erreichbar sein. Ein `tabIndex={-1}` ist nur zulässig, wenn dieselbe Funktion über ein anderes, fokussierbares Element erreichbar bleibt — so wie die `±5`-Tasten in `CounterField.tsx`, deren Wirkung über `±1` und das Zahlenfeld vollständig abgedeckt ist. Ohne diese Gleichwertigkeit ist das Ausschließen aus dem Tab-Lauf ein Verstoß gegen 2.1.1, kein Aufräumen.
+- **Inhalts-Struktur:** Verstecke absolut keine Inhalte hinter einklappbaren Akkordeons, da dies Screenreader und die Suche bricht. **Diese Regel gewinnt gegen „etablierte UI-Patterns".** Das Akkordeon ist das gängigste Muster für lange Formulare auf dem Handy und hier trotzdem verboten — eingeklappter Inhalt ist für Screenreader-Nutzer nicht erreichbar, und die Suche liefe ins Leere, wenn ein Treffer in einem geschlossenen Bereich liegt (`ROADMAP.md`, „Bewusst NICHT geplant"). Wer Länge reduzieren will, kürzt Inhalt oder trennt Ansichten, er versteckt nicht.
+- **UI-Ästhetik:** Nutze klare Kontraste, großzügigen Weißraum, sanfte `border-radius`-Werte, dezente Schatten und serifenlose Schriften. Das UI muss professionell, clean und hochwertig wirken. Die konkreten Mittel dafür stehen in Abschnitt 5 — Ästhetik ist hier keine freie Wahl pro Komponente, sondern die vorhandene Variablenskala.
 
 ### 3. Responsive Layout & Skalierung (Cross-Platform)
-- **Touch-Ziele:** Müssen aufgrund des 0.99993 Rendierungsfaktors stets mindestens 43.5 px groß sein. Zähler-Buttons nutzen feste Pixelgrößen, Zahleneingaben bleiben zwingend auf `rem`-Basis für die Skalierung.
+- **Touch-Ziele — Stufe AAA (Entscheidung vom 2026-09-02):** Bindend ist **WCAG 2.5.5 „Target Size (Enhanced)", also 44 × 44 px**, nicht die 24 px der AA-Stufe 2.5.8. Gemessen wird gegen **43,5 px**, weil die Vorschau mit Faktor 0,99993 rendert und 44 px dort als 43,997 px ankommen. Zähler-Buttons nutzen feste Pixelgrößen (sie enthalten Symbole, keinen Text — WCAG 1.4.4 verlangt für sie keine Skalierung, und `rem` schob sie bei „Extra groß" bis zu 163 px aus dem Bildschirm). Das Zahlenfeld bleibt `rem`-basiert, weil es Text **ist**. Die Ausnahme in 2.5.5 für gleichwertig erreichbare Bedienelemente darf genutzt werden, muss aber im Code begründet stehen. **Status (2026-09-02): für alles im Tab-Lauf erfüllt und im Prüfgate abgesichert; die `±5`-Tasten laufen unter der Ausnahme** — siehe Nachtrag unten.
 - **Überprüfung & Breakpoints:** Teste Layouts immer bei 360 px Breite und über alle drei Schriftgrößen (`normal`, `large`, `extra-large`). Es darf NIEMALS ein horizontaler Scrollbar entstehen.
 - **Mobile Anpassung:** Nutze CSS Safe-Area-Insets (Padding für Notches/Home-Bars auf iOS/Android). Verwende CSS-Grid/Flexbox für eine saubere Darstellung vom Smartphone bis zum Mac-Desktop.
 
 ### 4. Datenarchitektur, Offline-First & Datensicherheit
 - **Kein Backend:** Es gibt keine Server-Datenbank und darf keine geben. Alles bleibt im Browser (IndexedDB/localStorage).
+- **Offline-First ist Pflicht, nicht Ausstattung:** Service Worker und lokale Speicherung sind zwingend. Der SW ist handgeschrieben (`public/sw.js`, network-first, ausschließlich same-origin) und wird **nicht** von einem Plugin generiert — kein `vite-plugin-pwa`, kein Precaching fremder Herkunft. Updates werden vom Nutzer bestätigt (Toast in `index.html`), niemals mitten in der Dateneingabe erzwungen. Berichtsdaten liegen in IndexedDB (`idb-keyval`), Einstellungen in `localStorage`; die synchrone Notrettung `aussendienst_pwa_emergency_data` bleibt bestehen, inklusive der Wächterbedingung, die einen fast leeren Stand nicht über echte Daten schreibt.
 - **Archiv-Schreibschutz:** Schreibzugriffe aufs Archiv laufen ausnahmslos über `persistHistory(data, handleHistoryPersistFailure, context)`. Keine verschluckten `.catch(() => {})` Fehler.
 - **Sync-Validierung:** Alle extern eingehenden Daten (QR, Backup, Sync) passieren zwingend `pruefeSyncPaket()`, bevor sie den State berühren.
 - **Merge-Logik:** Zusammenführungen (`merge.ts`) müssen pro Feld zwingend den Zeitstempel `valuesUpdatedAt` berücksichtigen, um Datenverlust zu vermeiden.
 - **Deploy-Gefahr:** Jeder Push auf `main` geht sofort auf GitHub Pages live. Vorher MÜSSEN `npm run check` und `npm run lint` lokal fehlerfrei durchlaufen.
 
-### Nachtrag aus der Messung (2026-08-08)
+### 5. Styling-Architektur: Tailwind UND Theme-Variablen (Entscheidung vom 2026-09-02)
 
-Die 43,5-px-Regel oben ist bei **360 px Breite in den Schriftgrößen „Groß" und
-„Extra groß" nicht erfüllbar** — nachgemessen, nicht geschätzt:
+Der gefundene Framework-Standard ist **Tailwind v4** (`@tailwindcss/vite`,
+`@import "tailwindcss"` in `src/index.css`). Er gilt aber nicht überall. Die
+Aufteilung ist verbindlich, weil die Alternative gemessene Kontrastfehler
+erzeugt hat:
+
+- **Tailwind-Utilities für Layout, Abstände, Flex/Grid, Typo-Größen.** Das ist
+  der Standard, der zu nutzen ist. Kein eigenes Layout-CSS daneben.
+- **Farben ausschließlich über Theme-Variablen** (`var(--accent)`,
+  `var(--danger-text)` …), **niemals** über die Tailwind-Palette
+  (`bg-slate-800`, `text-amber-800`). Palettenklassen ignorieren die
+  Theme-Wahl der App: Im Theme „Gelb auf Schwarz" lagen dadurch 51 von 141
+  Textelementen unter dem Mindestkontrast, der schlechteste bei 1,05:1.
+  0.9.9/0.9.10 haben alle 278 verbliebenen Stellen ersetzt. Übrig sind genau
+  drei, alle in der Theme-Vorschau von `A11yModal` — sie sollen zeigen, wie
+  ein Design aussieht, und dürfen den Variablen deshalb nicht folgen.
+- **Radien und Schatten über `--rv-radius-*` / `--rv-shadow-*`.** Das Präfix
+  ist Pflicht, kein Stilmittel: In Tailwind 4 **sind** `--radius-*` und
+  `--shadow-*` die Theme-Variablen hinter `rounded-*` und `shadow-*`. Ohne
+  Präfix definiert man nicht daneben, sondern überschreibt die komplette
+  Skala — gemessen sprang `rounded-xl` damit app-weit von 12 px auf 24 px.
+- **`dark:` folgt `[data-dark="true"]`, nicht `prefers-color-scheme`**
+  (`@custom-variant` in `src/index.css`). Sonst richtet sich die Variante nach
+  dem Betriebssystem statt nach der Wahl in der App; gemessene Folge: fast
+  schwarze Schrift auf dunkler Karte, 1,18:1.
+- **Die Neutralisierungsschicht aus `!important` bleibt entfernt.** Sie stand
+  bis 0.9.10 in `index.css` (rund 90 Selektoren), wirkte nur in den
+  Hochkontrast-Themes und erfasste `bg-white` nicht — beides Lücken, durch die
+  reale Fehler geschlüpft sind. Farbprobleme gehören an die Wurzel, nicht in
+  eine Deckschicht.
+- **Keine externen Schriften.** Systemschriftstapel in `@theme`; Google Fonts
+  o. Ä. brechen die DSGVO-Zusage.
+
+### 6. Vorgehensweise: erst denken, dann Code — und dann messen
+
+- **Sequential Thinking vor jeder Code-Ausgabe** (Entscheidung vom
+  2026-09-02). Der Server ist in `.mcp.json` konfiguriert. Verpflichtend
+  insbesondere bei Offline-Logik, Merge-/Sync-Semantik, Zeitrechnung über
+  Mitternacht und Krypto.
+- **Denken ersetzt keine Messung.** Die ältere Standing Rule bleibt
+  übergeordnet: Nichts gilt als funktionierend, bevor es ausgeführt wurde. Ein
+  durchdachter Plan ist kein Nachweis. Der Nachweis ist `npx tsx <script>.ts`,
+  `npm run check`, `npm run check:ui` oder eine Messung im Browser.
+- **Verhältnis zu Abschnitt 1:** Das Durchdenken kostet Token, das ist
+  eingepreist. Die Sparsamkeit aus Abschnitt 1 betrifft das Lesen und
+  Schreiben von Dateien (chirurgische Edits statt Volltext-Rewrites) und die
+  Länge der Antworten — nicht die Gründlichkeit vor dem Schreiben.
+
+### Nachtrag zu den Trefferflächen (Messung 2026-08-08, korrigiert 2026-09-02)
+
+Der Stand bis 0.9.19 war die AA-Stufe. Die Messung dazu lautete:
 
 | | |
 |---|---|
@@ -189,10 +239,69 @@ Die 43,5-px-Regel oben ist bei **360 px Breite in den Schriftgrößen „Groß" 
 | Bedarf für fünf Tasten à 44 px | 276,0 px |
 | Bedarf des Zahlenfelds für „999" bei 30 px Schrift | ~55 px |
 
-Drei Ziele, die sich hier gegenseitig ausschließen: Trefferfläche 44 px,
-Darstellung in einer Zeile, Lesbarkeit der Zahl. 0.9.7 hat sich entschieden,
-die **Fünferschritte** auf 40 px schrumpfen zu lassen (weiterhin über den 24 px
-der AA-Stufe) und dafür Zeile und Zahl zu erhalten; die primären Tasten `−`
-und `+` bleiben bei 52 px. Wer die Regel wörtlich durchsetzen will, muss eine
-der anderen beiden Eigenschaften aufgeben — das ist eine Produktentscheidung,
-keine Umsetzungsfrage.
+Daraus folgte 0.9.7: Fünferschritte schrumpfen, Zeile und Zahlenlesbarkeit
+bleiben. Mit der Entscheidung vom 2026-09-02 auf **Stufe AAA (2.5.5, 44 px)**
+gilt das nicht mehr als Zielzustand. Beim Nachlesen im Code sind dabei zwei
+Angaben dieses Nachtrags als **falsch** aufgefallen — sie stehen hier, damit
+niemand erneut darauf plant:
+
+- **Es gibt zwei Zweige, und der Nachtrag las sich wie einer.**
+  `CounterField.tsx` kennt `isCompact`. Standard ist der **Komfortzweig**
+  (`aussendienst_pwa_compact` ist per Default nicht gesetzt): Fünferschritte
+  `w-[48px] min-w-[40px]`, primäre Tasten `w-[64px] min-w-[52px]`. Der
+  kompakte Zweig ist kleiner (36 px bzw. 44 px). Die 40 px des alten Nachtrags
+  beschrieben also den Standardzweig korrekt — die Messung bestätigt exakt
+  40,0 px bei „Extra groß". Falsch war nur, sie als feste Größe zu lesen: Es
+  ist eine `min-width`, die erst bei „Extra groß" überhaupt greift. Bei
+  „Normal" sind dieselben Tasten 46,3 px breit.
+- **„Zahl verkleinern" ist als Weg bereits ausgeschöpft.** Das Zahlenfeld
+  steht auf `min-w-[56px] max-w-[72px]`; unter 56 px geht es heute nicht, und
+  die Schrift darin muss nach WCAG 1.4.4 mitwachsen.
+
+**Gemessen am 2026-09-02** (360 px, Standardlayout, alle drei Schriftgrößen,
+fünf Ansichten). Die Überschlagsrechnung, die zunächst hier stand, war in zwei
+Punkten falsch, und beide Male zeigte erst die Messung es:
+
+- **Im Handy-Profil lag kein einziges fokussierbares Element unter 43,5 px.**
+  Allein das Formular hat 93 davon, das kleinste misst 44 px. Die Annahme, die
+  Zählertasten seien die offene Baustelle, war damit falsch.
+  **Aber die Messung war es auch:** Sie lief nur bei 360 px. Das verschärfte
+  Prüfgate fand im **Schreibtisch-Profil** sofort drei Verstöße, die ihr
+  entgangen waren — die beiden Reiter der Zeit-Ansicht mit 287 × 38 px und
+  „Jahreskonto-Einstellungen bearbeiten" mit 540 × 42 px. Wer bei 360 px misst,
+  hat *eine* Breite geprüft, nicht die App. Alle drei sind mit
+  `min-h-[44px]` behoben.
+- **Die Bedienzeile stand bei „Extra groß" 2,1 px über** (253,9 px verfügbar,
+  256,0 px belegt), und alle fünf Elemente lagen bereits auf ihrer
+  `min-width`. Unsichtbar, weil die Seite nicht seitwärts scrollte — aber
+  ohne Reserve: Der nächste Zusatz in dieser Zeile hätte abgeschnitten.
+
+**Was daraufhin geändert wurde** — der Innenabstand der Zählerkarte von 10 auf
+6 px. Die 8 px kommen aus dem Weißraum, nicht aus einer Trefferfläche, und
+sind vollständig in die Tasten geflossen:
+
+| | vorher → nachher | „Groß" | „Normal" |
+|---|---|---|---|
+| Zeilenbreite bei „Extra groß" | 253,9 → **260,0 px** | 274,0 | 288,0 |
+| Überstand | +2,1 → **0** | 0 | 0 |
+| `±1` | 52,0 → **53,6 px** | 57,7 | 61,7 |
+| `±5` | 40,0 → **40,4 px** | 43,3 | 46,3 |
+
+**Die `±5`-Tasten bleiben unter 44 px** (bei „Normal" mit 46,3 px nicht) und
+laufen unter der **Gleichwertigkeitsausnahme in 2.5.5**: Sie sind
+`tabIndex={-1}` und `aria-hidden`, ihre Funktion ist über `±1` und das
+Zahlenfeld vollständig erreichbar, beide deutlich über 44 px. Die Begründung
+steht im Quelltext an der Stelle selbst (`CounterField.tsx`), nicht nur hier —
+eine Ausnahme, die man nur im Konzept findet, wird beim nächsten Umbau
+übersehen.
+
+Sie zu vergrößern wäre möglich, aber ein schlechter Tausch: Bei „Extra groß"
+sind 44 px dort nur zu haben, indem `±1` von 53,6 auf rund 45 px schrumpft —
+die wichtigste Taste zugunsten der unwichtigsten, ausgerechnet in der
+Schriftgröße für sehbehinderte Nutzer.
+
+**Das Prüfgate zieht jetzt mit.** `tests/oberflaeche.spec.ts` prüft zwei
+Klassen: 43,5 px für alles im Tab-Lauf, 24 px für das, was per `aria-hidden` /
+`tabIndex={-1}` außerhalb liegt. Vorher stand dort pauschal 24 px — also die
+AA-Stufe im Test gegen die 44 px im Dokument. Genau dieser Widerspruch hat die
+Entscheidung ausgelöst; er darf nicht als Nächstes andersherum entstehen.

@@ -215,7 +215,7 @@ export default function TimeModal({
               setActiveTab("stempeln");
               announceToAriaAndSpeech("Stempeluhr und Schichten ausgewählt");
             }}
-            className={`flex-1 pb-3 text-sm font-black border-b-2 transition-all cursor-pointer ${
+            className={`flex-1 min-h-[44px] flex items-end justify-center pb-3 text-sm font-black border-b-2 transition-all cursor-pointer ${
               activeTab === "stempeln"
                 ? "border-[var(--accent)] text-[var(--text-color)]"
                 : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-color)]"
@@ -229,7 +229,7 @@ export default function TimeModal({
               setActiveTab("konto");
               announceToAriaAndSpeech("Jahreskonto und Abwesenheiten ausgewählt");
             }}
-            className={`flex-1 pb-3 text-sm font-black border-b-2 transition-all cursor-pointer ${
+            className={`flex-1 min-h-[44px] flex items-end justify-center pb-3 text-sm font-black border-b-2 transition-all cursor-pointer ${
               activeTab === "konto"
                 ? "border-[var(--accent)] text-[var(--text-color)]"
                 : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-color)]"
@@ -258,7 +258,12 @@ export default function TimeModal({
                 onClick={() => {
                   onOpenCarryover();
                 }}
-                className="w-full py-2 px-3 bg-[var(--bg-color)] hover:bg-[var(--border-color)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                /* min-h: Ohne sie war die Taste 42 px hoch und lag damit unter
+                   der AAA-Schwelle (WCAG 2.5.5, 44 px), die seit dem
+                   2026-09-02 fuer alles im Tab-Lauf gilt. Gefunden hat das
+                   nicht das Auge, sondern das verschaerfte Pruefgate im
+                   Schreibtisch-Profil. */
+                className="w-full min-h-[44px] py-2 px-3 bg-[var(--bg-color)] hover:bg-[var(--border-color)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                 aria-label="Jahreskonto-Einstellungen anpassen"
               >
                 <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" />
@@ -429,7 +434,11 @@ export default function TimeModal({
                 onClick={() => {
                   onOpenCarryover();
                 }}
-                className="w-full py-2.5 px-3 bg-[var(--bg-color)] hover:bg-[var(--border-color)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                /* min-h aus demselben Grund wie oben. Diese Taste liegt im
+                   Reiter "Jahreskonto"; das Pruefgate sieht nur den beim
+                   Oeffnen aktiven Reiter, sie waere also erst aufgefallen,
+                   wenn jemand sie benutzt. */
+                className="w-full min-h-[44px] py-2.5 px-3 bg-[var(--bg-color)] hover:bg-[var(--border-color)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                 aria-label="Jahreskonto-Einstellungen anpassen"
               >
                 <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" />
