@@ -544,6 +544,24 @@ Ab hier hängt alles an Menschen und Geräten. Kein Werkzeug ersetzt das.
   (Android)** — vollständig, durch alle Bereiche. **Der Sync-Umbau aus 0.9.17
   muss ausdrücklich von einem der blinden Kollegen durchgespielt werden.** Ob
   er trägt, lässt sich anders nicht feststellen, und raten will hier niemand.
+
+  **Stand 2026-09-02: NVDA und VoiceOver sind laut Rückmeldung des
+  Projektinhabers ohne Befund durchgelaufen.** Die Angabe ist eine
+  Fremdauskunft; sie ist nicht von Claude nachvollzogen und trägt deshalb
+  allein noch keine Abnahme.
+
+  **TalkBack (Android) bleibt vorerst unbestätigt — aus einem sachlichen
+  Grund, nicht aus Nachlässigkeit: Die blinden Kollegen nutzen ausschließlich
+  iPhones.** Die Plattform ist mit der tatsächlichen Zielgruppe also gar nicht
+  prüfbar. Ein sehender Durchlauf mit TalkBack wäre technisch möglich, erfüllt
+  aber nicht den Maßstab dieses Eintrags, der ausdrücklich einen der blinden
+  Kollegen verlangt. Für den Konformitätsbericht heißt das: **TalkBack/Android
+  wird als ungeprüft ausgewiesen, nicht als erfüllt.** Relevant wird der Punkt
+  in dem Moment, in dem jemand im Team auf Android wechselt — und dann ist er
+  ungeprüft, nicht abgesegnet.
+
+  Ebenfalls nicht bestätigt: ob der Sync-Umbau aus 0.9.17 Teil der Durchläufe
+  war — genau der Punkt, den dieser Eintrag hervorhebt.
 - **Barrierefreiheitserklärung und Konformitätsbericht** gegen EN 301 549:
   welche Kriterien erfüllt sind, welche nicht, und warum. Ein belegter Bericht
   mit ehrlichen Lücken ist mehr wert als die Behauptung, alles sei erfüllt —

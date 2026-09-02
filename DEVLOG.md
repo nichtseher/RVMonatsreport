@@ -143,6 +143,36 @@ Nach dem Beenden des Vorschau-Servers war der Fehlschlag weg. Festgehalten in
 `CLAUDE.md`, weil er sich als etwas ausgibt, das er nicht ist: Wer diese
 Meldung für einen axe-Verstoß hält, sucht den Fehler in der Ansicht.
 
+### Nachtrag: NVDA und VoiceOver sind durchgelaufen
+
+Rückmeldung des Projektinhabers am selben Tag: Beide Durchläufe sind erfolgt,
+ohne Befund.
+
+**Das ist eine Fremdangabe, keine Messung.** Der Kopf dieses Devlogs behauptet
+für Einträge ab dem 2026-07-31, sie seien von Claude verifiziert — für diesen
+Absatz gilt das ausdrücklich nicht. Ich war an keinem der beiden Durchläufe
+beteiligt, habe kein Protokoll gesehen und kann das Ergebnis nicht
+nachvollziehen. Es steht hier, weil es die Grundlage für den nächsten Schritt
+ist, nicht weil es geprüft wäre.
+
+Nach der eigenen Liste im 1.0-Abschnitt bleibt damit offen:
+
+- **TalkBack (Android)** — bleibt vorerst unbestätigt, und der Grund ist
+  sachlich: Die blinden Kollegen nutzen ausschließlich iPhones. Die Plattform
+  ist mit der Zielgruppe nicht prüfbar; ein sehender Durchlauf erfüllt den
+  Maßstab der ROADMAP nicht. Im Konformitätsbericht wird sie als **ungeprüft**
+  geführt, nicht als erfüllt.
+- **Der Sync-Umbau aus 0.9.17**, den die ROADMAP ausdrücklich einem der
+  blinden Kollegen zuweist. Ob er Teil der Durchläufe war, ist nicht bestätigt
+  — und er ist der Teil, bei dem die Liste sagt, dass raten hier niemand will.
+
+Außerdem eine Korrektur an einer Aussage, die im Beratungsverlauf zu diesem
+Eintrag stand: **Der Screenreader-Durchlauf entscheidet die offene
+`±5`-Frage nicht.** Diese Tasten sind `aria-hidden` und außerhalb des
+Tab-Laufs — ein Screenreader-Nutzer begegnet ihnen nie. Die Frage betrifft
+sehende und sehbehinderte Touch-Nutzer und braucht jemanden, der mit
+Restsehvermögen tippt, nicht jemanden, der mit Sprachausgabe navigiert.
+
 ---
 
 ## 2026-09-01 — WebKit im Deploy-Tor: nichts gefunden, und das ist der Punkt
