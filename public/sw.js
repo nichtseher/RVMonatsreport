@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rv-report-v4';
+const CACHE_NAME = 'rv-report-v5';
 
 // Nur eigene, lokale Assets vorab cachen (keine externen Dienste -> DSGVO).
 const ASSETS = [
@@ -10,12 +10,45 @@ const ASSETS = [
   './apple-touch-icon.png'
 ];
 
+// WARUM HIER MEHR ALS DIE SCHALE GECACHT WIRD
+//
+// Gemessen am 2026-09-07: Wer ein Update OFFLINE anwendet, hatte danach eine
+// weisse Seite. Ablauf: 'activate' loescht jeden Cache ausser CACHE_NAME, der
+// neue Cache enthielt aber nur die ASSETS-Liste oben. Die frisch aktivierte
+// index.html verweist auf gehashte Build-Dateien (assets/index-<hash>.js/.css),
+// die weder im Netz (offline) noch im Cache (geloescht) erreichbar sind ->
+// #root blieb mit 0 Zeichen leer, zwei Anfragen schlugen fehl. Die Gegenprobe
+// offline OHNE Update rendert einwandfrei; es liegt also am Update, nicht am
+// Offline-Betrieb.
+//
+// Deshalb holt die Installation zusaetzlich alles, worauf die neue index.html
+// unter assets/ verweist. Sie laeuft immer online (ein Update wird ueber das
+// Netz entdeckt), der Cache ist also vollstaendig, BEVOR aktiviert wird.
+//
+// Was das bewusst NICHT abdeckt: die nachgeladenen Bildschirme (Geraete-Sync,
+// Datensicherung, Excel). Sie stehen als dynamische Importe nicht in der
+// index.html. Nach einem Update im Funkloch fehlt also nicht mehr die App,
+// aber diese drei brauchen einmalig Netz.
+async function cacheBuildDateien(cache) {
+  const antwort = await fetch('./index.html', { cache: 'no-cache' });
+  const html = await antwort.text();
+  const treffer = [...html.matchAll(/(?:src|href)="((?:\.\/|\/)?assets\/[^"]+)"/g)].map((m) => m[1]);
+  await Promise.allSettled([...new Set(treffer)].map((url) => cache.add(url)));
+}
+
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+    caches.open(CACHE_NAME).then(async (cache) => {
       // Robust: einzeln cachen, damit ein fehlendes Asset nicht die
       // gesamte Installation (und damit die Offline-Faehigkeit) verhindert.
-      return Promise.allSettled(ASSETS.map((asset) => cache.add(asset)));
+      await Promise.allSettled(ASSETS.map((asset) => cache.add(asset)));
+      // Ebenso robust: Schlaegt das fehl, bleibt es beim Schalenumfang --
+      // das ist der Stand vor dieser Aenderung, kein Rueckschritt.
+      try {
+        await cacheBuildDateien(cache);
+      } catch (fehler) {
+        console.warn('Build-Dateien konnten nicht vorgeladen werden:', fehler);
+      }
     })
   );
 });

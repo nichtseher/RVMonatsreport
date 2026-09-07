@@ -44,6 +44,41 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.22: Größere Tasten, sichtbare Schaltflächen, sichere Daten</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Die „−5“- und „+5“-Tasten sind weg – dafür sind die anderen deutlich größer.</strong> In der Zählerzeile stehen jetzt drei statt fünf Elemente. Die Plus- und Minus-Tasten sind bei großer Schrift von 54 auf 80 Pixel gewachsen, das Zahlenfeld von 72 auf bis zu 96. Wenn Sie mehrere Vorgänge auf einmal nachtragen wollen: <strong>Tippen Sie die Zahl direkt in das Feld</strong> – ein Hinweis darauf steht jetzt über den Zählern.</li>
+            <li><strong>Ein Speicherfehler beim Start konnte Ihr Archiv löschen.</strong> Wenn das Gerät die gespeicherten Daten beim Öffnen einmal nicht lesen konnte, startete die App mit einem leeren Stand – und die erste eingetippte Zahl überschrieb damit das gesamte Archiv. Ohne jede Warnung. Jetzt speichert die App in so einem Fall <strong>gar nichts</strong> und sagt Ihnen, was los ist: Ihre Daten sind dann nicht weg, sondern nur gerade nicht abrufbar, und ein Neuladen holt sie zurück.</li>
+            <li><strong>Die Bestätigungstaste beim Löschen war in zwei Farbschemata unsichtbar.</strong> In „Weiß auf Schwarz“ und „Gelb auf Schwarz“ stand die Beschriftung in derselben Farbe wie ihr Hintergrund. Wer eine Kategorie löschen oder das Formular zurücksetzen wollte, sah zwei Tasten, eine davon leer – und musste raten, welche löscht. Betroffen waren alle vier Sicherheitsabfragen.</li>
+            <li><strong>Die RV Analyse richtete sich nicht nach Ihrem Farbschema.</strong> Ring und Kurven benutzten feste Farben, die Legende daneben Ihre gewählten – im Hochkontrast passten die beiden nicht mehr zusammen. Jetzt folgen beide dem Schema, und die vier Kurven unterscheiden sich zusätzlich durch ihre Strichart, damit sie auch dann auseinanderzuhalten sind, wenn alle Farben gleich sind.</li>
+            <li><strong>In „Formularfelder verwalten“ kam man mit der Tastatur nicht mehr heraus.</strong> Die Ansicht hielt den Tabulator fest, die Liste ließ sich nicht anspringen, die Löschtaste war zu klein und die Überschrift schob die Seite bei großer Schrift weit über den Rand. Diese Ansicht war als einzige nie automatisch geprüft worden – das ist jetzt behoben, und die Prüfung deckt sie ab.</li>
+            <li><strong>Zehn Schaltflächen hießen für die Sprachsteuerung anders, als sie beschriftet sind.</strong> Wer „Klick Später“ oder „Klick Grafik“ sagte, traf nichts, weil die Schaltflächen intern völlig andere Namen trugen. Jetzt enthält jeder Name die sichtbare Beschriftung.</li>
+            <li><strong>Der Fristalarm ging weiter, obwohl Sie längst gesendet hatten.</strong> Er sah den Versandstatus gar nicht an – und erschien außerdem für Monate, deren Frist noch Wochen entfernt ist. Beides behoben.</li>
+            <li><strong>Beim Wischen zwischen den Bereichen sagte die App nichts.</strong> Ein Wisch blendet drei von vier Bereichen aus; angesagt wurde das nur beim Antippen einer Kachel, nicht beim Wischen. Jetzt bei beidem.</li>
+            <li><strong>Kleinere Korrekturen:</strong> Die Erinnerung an die Datensicherung verschwindet jetzt sofort, wenn Sie ein Backup erstellt haben, statt erst bei der nächsten Eingabe. Die Taste „Vorlage“ nennt den Monat, den sie wirklich lädt. Ein beschädigter Sync-Code kann die App nicht mehr zum Absturz bringen. Und bei vollem Speicher zeigt die App keinen Fehlerbildschirm mehr.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.21: Neue Fassungen kommen jetzt auch an</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Wer einmal „Später“ gedrückt hatte, wurde nie wieder gefragt.</strong> Der Hinweis auf eine neue Fassung kam danach auch nach mehrmaligem Neustart nicht zurück – es gab schlicht keinen Weg mehr, die neue Fassung zu holen. Jetzt fragt die App bei jedem Start erneut, bis sie aktuell ist.</li>
+            <li><strong>Und irgendwann fragt sie nicht mehr, sondern macht.</strong> Nach sieben Tagen entfällt „Später“, nach vierzehn Tagen aktualisiert sich die App beim nächsten Start selbst – angekündigt und mit ein paar Sekunden Vorlauf. Mitten in der Eingabe passiert das nie. Hintergrund: In einer alten Fassung steckt womöglich eine alte Excel-Vorlage, und das merkt man erst am Monatsende.</li>
+            <li><strong>Ein Update ohne Internetverbindung machte die App unbenutzbar.</strong> Danach blieb nur eine weiße Seite, bis wieder Netz da war – die Daten waren nicht weg, aber unerreichbar. Die App lädt jetzt alles Nötige vorher herunter und lässt sich auch nach einem Update im Funkloch normal bedienen.</li>
+            <li><strong>Der Hinweis selbst war kaum zu treffen.</strong> „Später“ war 41 × 20 Pixel groß, also kleiner als jede andere Schaltfläche der App. Beide Tasten sind jetzt mindestens 44 Pixel hoch und stapeln sich bei großer Schrift untereinander, statt aus dem Bild zu laufen.</li>
+            <li><strong>Er lag außerdem genau auf der Navigationsleiste</strong> und verdeckte sie – und er ignorierte Ihr gewähltes Farbschema, weil seine Farben fest eingebaut waren. Beides behoben.</li>
+            <li><strong>Beim allerersten Öffnen lud sich die Seite ohne Anlass zweimal.</strong> Wer mit Sprachausgabe arbeitet, bekam den kompletten Seitenaufbau doppelt vorgelesen. Jetzt wird nur noch neu geladen, wenn wirklich eine andere Fassung übernimmt.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.20: Tastaturbedienung, große Schrift, Lesbarkeit</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>

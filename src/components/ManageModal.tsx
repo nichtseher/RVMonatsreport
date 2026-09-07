@@ -36,25 +36,19 @@ export default function ManageModal({
         return;
       }
 
-      if (e.key === "Tab" && modalRef.current) {
-        const focusableElements = modalRef.current.querySelectorAll(
-          'button, [href], input, select, textarea, [tabindex="0"]'
-        );
-        const firstElement = focusableElements[0] as HTMLElement;
-        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+      /*
+        Hier stand bis 0.9.21 eine Fokusfalle -- dieselbe, die am 2026-09-02
+        aus `CarryoverModal` entfernt wurde und die hier überlebt hat, weil
+        keine Prüfung diese Ansicht je erreichte.
 
-        if (e.shiftKey) {
-          if (document.activeElement === firstElement) {
-            lastElement.focus();
-            e.preventDefault();
-          }
-        } else {
-          if (document.activeElement === lastElement) {
-            firstElement.focus();
-            e.preventDefault();
-          }
-        }
-      }
+        Sie war falsch, weil diese Ansicht **kein modaler Dialog ist.** Ihre
+        Wurzel ist eine gewöhnliche Karte im Seitenfluss -- kein `fixed
+        inset-0`, keine abdunkelnde Fläche, kein `aria-modal`. Die untere
+        Navigationsleiste bleibt sichtbar und mit der Maus anklickbar; mit der
+        Tastatur war sie es nicht mehr. Das ist WCAG 2.1.2, eine Tastaturfalle.
+
+        Escape schließt weiterhin -- das ist eine Abkürzung, keine Falle.
+      */
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -68,11 +62,9 @@ export default function ManageModal({
 
   if (!isOpen) return null;
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
+  /* `handleBackdropClick` stand hier bis 0.9.21 und war nirgends angebunden --
+     ein Überbleibsel aus der Zeit, als diese Ansicht ein Overlay war. Es war
+     zugleich der beste Beleg dafür, dass sie keines mehr ist. */
 
   const sectionLabels: Record<keyof SectionsConfig, string> = {
     s1: "1. Vorführungen & Auslieferungen",
@@ -101,7 +93,18 @@ export default function ManageModal({
           <ArrowLeft className="w-6 h-6" aria-hidden="true" />
         </button>
         <Settings className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
-        <h2 id="manage-modal-title" className="text-2xl md:text-3xl font-black">
+        {/*
+          min-w-0 und overflow-wrap: Ohne beides gab die Überschrift als
+          Flex-Kind ihre Breite nicht unter den Inhalt preis (`min-width:
+          auto`). Gemessen am 2026-09-07 durch Ausblenden bisektiert: mit dem
+          <h2> 531 px Inhalt in einem 360-px-Fenster, ohne es exakt 360. Neunter
+          Fall dieser Klasse in diesem Projekt -- und der erste in einer
+          Ansicht, die vorher keine Prüfung erreichte.
+        */}
+        <h2
+          id="manage-modal-title"
+          className="text-2xl md:text-3xl font-black min-w-0 [overflow-wrap:anywhere]"
+        >
           Formularfelder verwalten
         </h2>
       </div>
@@ -110,8 +113,19 @@ export default function ManageModal({
           Hier können Sie Kategorien löschen. <strong>Vorsicht:</strong> Wenn Sie eine Kategorie löschen, werden auch die eingetragenen Zahlen dafür gelöscht.
         </p>
 
-        {/* Categories List */}
-        <div className="space-y-6 max-h-[40vh] overflow-y-auto pr-2">
+        {/*
+          Der Bereich scrollt -- also muss er mit der Tastatur erreichbar sein.
+          `tabIndex={0}` plus `role="region"` und Beschriftung ist dasselbe
+          Muster, mit dem 0.9.20 die Hilfe repariert hat: Ohne das konnte man
+          zwar mit der Maus scrollen, mit der Tastatur aber an nichts unterhalb
+          der sichtbaren Kante heran.
+        */}
+        <div
+          tabIndex={0}
+          role="region"
+          aria-label="Liste der Kategorien"
+          className="space-y-6 max-h-[40vh] overflow-y-auto pr-2"
+        >
           {hasFields ? (
             (Object.keys(appFields) as Array<keyof SectionsConfig>).map((secKey) => {
               const list = appFields[secKey];
@@ -119,25 +133,46 @@ export default function ManageModal({
 
               return (
                 <div key={secKey} className="space-y-2">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border-color)] pb-1">
+                  {/* [overflow-wrap:anywhere]: „AUSLIEFERUNGEN" in Versalien mit
+                      Sperrung ist bei „Extra groß" und breiter Schrift ein
+                      einzelnes, nicht umbrechbares Wort. Es zwang dem
+                      scrollenden Bereich 245 px Mindestbreite auf, wo nur 174
+                      zur Verfügung standen -- der Bereich wurde damit still
+                      seitwärts scrollbar. `break-words` genügt dagegen nicht,
+                      es ändert die intrinsische Mindestbreite nicht. */}
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border-color)] pb-1 [overflow-wrap:anywhere]">
                     {sectionLabels[secKey]}
                   </h3>
                   <div className="space-y-1.5">
                     {list.map((field) => (
+                      /*
+                        min-w-0 am Text, flex-shrink-0 an der Taste: Ein
+                        Flex-Kind gibt seine Breite standardmäßig nicht unter
+                        seinen Inhalt preis. Mit langen Kategorienamen und
+                        breiter Schrift sprengte die Zeile das Fenster --
+                        gemessen 531 px Inhalt bei 360 px Fenster, bei 320 px
+                        derselbe Wert, und das Papierkorb-Symbol stand 95 px
+                        außerhalb. Zusätzlich `overflow-wrap:anywhere`, weil
+                        `break-words` die intrinsische Mindestbreite nicht
+                        ändert.
+                      */
                       <div
                         key={field.id}
-                        className="flex items-center justify-between p-3.5 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-xl"
+                        className="flex items-center justify-between gap-2 p-3.5 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-xl"
                       >
-                        <span className="font-bold text-sm leading-snug pr-3">
+                        <span className="font-bold text-sm leading-snug min-w-0 [overflow-wrap:anywhere]">
                           {field.label}
                         </span>
+                        {/* 40 px war unter den 44 px aus WCAG 2.5.5 -- unentdeckt,
+                            weil diese Ansicht bis 0.9.21 von keiner Prüfung
+                            erreicht wurde. */}
                         <button
                           type="button"
                           onClick={() => onDeleteField(secKey, field.id, field.label)}
                           aria-label={`Kategorie "${field.label}" unwiderruflich löschen`}
-                          className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--danger-bg)] hover:brightness-110 text-[var(--danger)] cursor-pointer transition-all"
+                          className="w-11 h-11 min-w-[44px] min-h-[44px] flex-shrink-0 rounded-xl flex items-center justify-center bg-[var(--danger-bg)] hover:brightness-110 text-[var(--danger)] cursor-pointer transition-all"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
                         </button>
                       </div>
                     ))}

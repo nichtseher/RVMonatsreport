@@ -113,18 +113,6 @@ export default React.memo(function CounterField({
     }
   };
 
-  const handleQuickChange = (dir: 1 | -1) => {
-    triggerHaptic();
-    const newVal = onDelta(dir * 5 * config.step);
-    playAudioFeedback(dir > 0 ? "up" : "down", newVal);
-    onAnnounce(
-      `${config.label}: Schnelländerung auf ${newVal === 0 ? "null" : newVal}`,
-      false,
-      config.id,
-      newVal === 0 ? "" : newVal,
-    );
-  };
-
   const parentPadding = isCompact ? "py-1.5 gap-2" : "py-4 gap-3";
   const labelSize = isCompact ? "text-sm font-bold" : "text-base font-bold";
   // Bedienflaechen bewusst in festen Pixeln statt in rem: Sie enthalten nur
@@ -133,47 +121,37 @@ export default React.memo(function CounterField({
   // auf einem 360-px-Handy bis zu 163 px aus dem Bildschirm heraus (gemessen).
   // min-w: Auf sehr schmalen Geraeten (320 px) duerfen auch Plus und Minus
   // etwas nachgeben, statt aus der Karte zu ragen. Ueberall sonst 56 px.
-  const buttonSize = isCompact
-    ? "w-[44px] h-[44px] min-w-[44px]"
-    : "w-[64px] h-[56px] min-w-[52px]";
   /*
-    Die Fuenferschritte duerfen als Einzige schrumpfen (44 -> 36 px), damit die
-    Zeile auch bei "Extra grosse Schrift" auf einem schmalen Handy EINE Zeile
-    bleibt. Sie sind reine Bequemlichkeit fuer sehende Touch-Nutzer
-    (aria-hidden, nicht im Tab-Lauf) -- ein Umbruch dort ist schlimmer als
-    36 px, und die verbindliche WCAG-Grenze von 24 px bleibt weit uebertroffen.
-    Wo Platz ist, sind es unveraendert 44 px.
+    DIE FUENFERSCHRITTE SIND WEG (0.9.22) -- und der Platz ist geblieben.
 
-    AUSNAHME NACH WCAG 2.5.5 (Stufe AAA), begruendet, nicht uebersehen:
-    Seit dem 2026-09-02 gilt fuer dieses Projekt AAA, also 44 x 44 px. Diese
-    beiden Tasten erfuellen das bei "Gross" und "Extra gross" nicht -- gemessen
-    am 2026-09-02 bei 360 px Breite im Standardlayout: 44,6 / 41,7 / 40,0 px
-    ueber die drei Schriftgroessen.
+    Bis 0.9.21 standen hier fuenf Elemente: -5, -1, Zahl, +1, +5. Die beiden
+    Fuenferschritte waren `tabIndex={-1}` und `aria-hidden`, also fuer
+    Screenreader-Nutzer nicht vorhanden, und liefen mit 40,0 px bei "Extra
+    gross" unter der Ausnahme "Equivalent" in WCAG 2.5.5 -- der einzigen
+    Ausnahme, die diese App ueberhaupt in Anspruch nahm. Sie sind entfernt.
+    Damit erfuellt jedes Bedienelement der App die 44 px ohne Ausnahme.
 
-    Sie fallen unter die Ausnahme "Equivalent": Dieselbe Funktion ist ueber ein
-    anderes Bedienelement derselben Seite erreichbar, das die Groesse erfuellt
-    -- fuenfmal +1/-1 (52 bis 60 px) oder direkte Eingabe im Zahlenfeld
-    (56 x 56 px). Fuer Screenreader-Nutzer existieren sie ohnehin nicht.
+    Der frei gewordene Platz (2 x 48 px plus zwei Zwischenraeume, rund 100 px)
+    ist vollstaendig in die verbleibenden drei Elemente geflossen. Die
+    Groessen unten sind gemessen, nicht geschaetzt: siehe DEVLOG zum
+    2026-09-07, gemessen bei 320 und 360 px ueber drei Schriftgroessen und mit
+    erzwungener Breitschrift.
 
-    Warum sie nicht einfach vergroessert werden: Die Bedienzeile hat bei
-    "Extra gross" 253,9 px, die fuenf Elemente belegen zusammen 256,0 px --
-    negativer Spielraum. 44 px hier waeren nur zu haben, indem +1/-1 von 52 auf
-    rund 45 px schrumpfen. Das verkleinert die wichtigste Taste zugunsten der
-    unwichtigsten, ausgerechnet in der Schriftgroesse fuer sehbehinderte
-    Nutzer. Wer das aendern will, aendert eine Produktentscheidung, keinen
-    Zahlenwert -- siehe CLAUDE.md, Nachtrag zu den Trefferflaechen.
+    Feste Pixel bleiben richtig: Die Tasten enthalten Symbole, keinen Text --
+    WCAG 1.4.4 verlangt fuer sie keine Skalierung, und `rem` schob sie bei
+    "Extra gross" bis zu 163 px aus dem Bildschirm.
   */
-  const quickButtonSize = isCompact
-    ? "w-[36px] h-[36px] min-w-[32px] text-[0.75rem]"
-    : "w-[48px] h-[56px] min-w-[40px] text-xs";
-  const iconSize = isCompact ? "w-4 h-4" : "w-6 h-6";
+  const buttonSize = isCompact
+    ? "w-[64px] h-[48px] min-w-[48px]"
+    : "w-[88px] h-[64px] min-w-[60px]";
+  const iconSize = isCompact ? "w-5 h-5" : "w-7 h-7";
   // Die Zahl selbst ist Text und MUSS mitwachsen (WCAG 1.4.4), darf dafuer
   // aber schrumpfen, wenn der Platz knapp wird.
   // Feste Hoehe statt Innenabstand: Mit py-3 wuchs das Zahlenfeld mit der
   // Schriftgroesse mit (gemessen 52 / 64 / 76 px) und war dadurch mal
   // niedriger, mal deutlich hoeher als die Tasten daneben -- die Zeile wirkte
   // dadurch unruhig. Die Zahl selbst skaliert weiterhin.
-  const inputSize = isCompact ? "h-[44px] text-base rounded-lg" : "h-[56px] text-xl rounded-xl";
+  const inputSize = isCompact ? "h-[48px] text-lg rounded-lg" : "h-[64px] text-2xl rounded-xl";
 
   return (
     <div 
@@ -218,28 +196,14 @@ export default React.memo(function CounterField({
       </div>
 
       {/*
-        Bedienzeile: "-5  -  Zahl  +  +5" -- auf JEDEM Geraet in derselben
-        Reihenfolge.
+        Bedienzeile: "-  Zahl  +" -- auf JEDEM Geraet in derselben Reihenfolge.
 
-        Bis 0.9.6 waren die Fuenferschritte auf dem Handy per CSS-order ans
-        Ende gestellt (-, Zahl, +, -5, +5), damit ein Umbruch sauber trennt.
-        Praxis-Rueckmeldung vom iPhone: Es bricht bei ueblicher Schriftgroesse
-        gar nicht um, man sah nur eine andere Reihenfolge als am PC -- das
-        "-5" stand rechts vom Plus. Deshalb jetzt ueberall gleich; der Umbruch
-        bleibt als Notnagel fuer sehr schmale Geraete mit sehr grosser Schrift.
+        Bis 0.9.21 standen hier fuenf Elemente. Die Fuenferschritte sind
+        entfernt; die drei verbleibenden sind dadurch deutlich groesser
+        geworden. Der Umbruch bleibt als Notnagel fuer sehr schmale Geraete mit
+        sehr grosser Schrift.
       */}
-      <div className="flex flex-nowrap items-center justify-center gap-[4px] sm:gap-2 w-full sm:w-auto sm:justify-end select-none">
-        {/* Quick -5 Button (Hidden from screen-readers to avoid cluttering tab order/swipe sequence for blind users) */}
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-hidden="true"
-          onClick={() => handleQuickChange(-1)}
-          className={`${quickButtonSize} rounded-xl border-2 border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--danger)] font-black transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
-        >
-          -5
-        </button>
-
+      <div className="flex flex-nowrap items-center justify-center gap-2 w-full sm:w-auto sm:justify-end select-none">
         {/* Decrement Button (Optimized for Touch-Only) */}
         <button
           type="button"
@@ -258,7 +222,11 @@ export default React.memo(function CounterField({
         {/* Grenzen in Pixeln, nicht in rem: rem waechst mit der
             Schrifteinstellung mit, dadurch sprengte gerade "Extra gross" die
             Zeile. Die Zahl selbst skaliert weiterhin (WCAG 1.4.4). */}
-        <div className="relative flex-1 min-w-[56px] max-w-[72px] sm:flex-none sm:w-20 sm:max-w-none">
+        {/* Deutlich breiter als bis 0.9.21 (56–72 px): Das Zahlenfeld ist der
+            Weg, mit dem man mehrere Zaehlungen auf einmal eintraegt, seit die
+            Fuenferschritte weg sind. Es soll aussehen wie ein Feld, in das man
+            tippt, nicht wie eine Anzeige zwischen zwei Tasten. */}
+        <div className="relative flex-1 min-w-[76px] max-w-[120px] sm:flex-none sm:w-28 sm:max-w-none">
           <input
             id={inputId}
             type="number"
@@ -285,7 +253,7 @@ export default React.memo(function CounterField({
             className={`${inputSize} w-full text-center font-black border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] focus:border-[var(--border-focus)] outline-none touch-manipulation`}
           />
           <p id={instructionsId} className="sr-only">
-            {`Eingabefeld für ${config.label}. Verwenden Sie die Pfeiltasten oder die Plus- und Minus-Tasten. Mit Enter springen Sie zum nächsten Feld.`}
+            {`Eingabefeld für ${config.label}. Sie können die Zahl direkt eintippen. Verwenden Sie sonst die Pfeiltasten oder die Plus- und Minus-Tasten. Mit Enter springen Sie zum nächsten Feld.`}
           </p>
         </div>
 
@@ -299,17 +267,6 @@ export default React.memo(function CounterField({
           className={`${buttonSize} rounded-xl flex items-center justify-center border-2 border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-text)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:opacity-85 touch-manipulation`}
         >
           <Plus className={iconSize} aria-hidden="true" />
-        </button>
-
-        {/* Quick +5 Button (Hidden from screen-readers to avoid cluttering tab order/swipe sequence for blind users) */}
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-hidden="true"
-          onClick={() => handleQuickChange(1)}
-          className={`${quickButtonSize} rounded-xl border-2 border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--accent)] font-black transition-all cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation`}
-        >
-          +5
         </button>
       </div>
     </div>

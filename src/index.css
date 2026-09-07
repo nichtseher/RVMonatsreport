@@ -525,3 +525,96 @@ input[type="range"].rv-slider::-moz-range-thumb {
     scroll-behavior: auto !important;
   }
 }
+
+/* UPDATE-HINWEIS
+
+   Erzeugt vom Skript in `index.html`, nicht von React -- er muss auch dann
+   noch erscheinen, wenn die App selbst nicht mehr laedt. Die Gestaltung stand
+   bis 0.9.20 als `style.cssText` in diesem Skript und war damit die einzige
+   Flaeche der App ausserhalb des Theme-Systems. Gemessen am 2026-09-07:
+
+   - "Jetzt aktualisieren" 152 x 36 px, "Spaeter" 41 x 20 px. Beide unter den
+     44 px aus WCAG 2.5.5, die zweite sogar unter den 24 px der AA-Stufe.
+   - Feste Farben (#1e293b, #22c55e, #cbd5e1) unabhaengig vom Farbschema.
+   - `bottom: 1rem` -- also genau auf der schwebenden Hauptnavigation, die
+     ebenfalls bei `bottom-4` sitzt. Der Hinweis verdeckte die Navigation.
+   - Text und zwei Tasten nebeneinander in einer Zeile ohne Umbruch: derselbe
+     `min-width: auto`-Fall, der in diesem Projekt achtmal die Breite gesprengt
+     hat. Deshalb hier gestapelt statt nebeneinander.
+
+   Die Fallwerte hinter jeder Variablen sind Absicht: Faellt das Stylesheet
+   aus, bleibt der Hinweis lesbar.
+
+   Zur Stapelhoehe: 300 statt der frueheren 99999. Modale Dialoge liegen in
+   dieser App bei 999 bis 1100 und fangen den Fokus ein (ConfirmDialog,
+   DeviceSyncModal, OnboardingModal). Ein Hinweis DARUEBER waere sichtbar, aber
+   mit der Tastatur nicht erreichbar -- sichtbare Bedienelemente ausserhalb des
+   Fokus-Trapps sind genau der Fehler, gegen den der Trapp gebaut ist. 300
+   liegt ueber der schwebenden Navigation (200) und unter jedem Dialog. */
+.rv-update-hinweis {
+  position: fixed;
+  left: 50%;
+  /* Ueber der schwebenden Navigationsleiste. 7rem ist dieselbe gemessene
+     Hoehe, mit der `scroll-padding-bottom` oben rechnet. */
+  bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: max-content;
+  max-width: min(92vw, 30rem);
+  padding: 1rem;
+  border: 1px solid var(--border-color, #8290a5);
+  border-radius: var(--rv-radius-lg, 16px);
+  background: var(--card-bg, #ffffff);
+  color: var(--text-color, #0f172a);
+  box-shadow: var(--rv-shadow-lg, 0 12px 32px rgba(15, 23, 42, 0.12));
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.rv-update-hinweis__text {
+  margin: 0;
+  min-width: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.4;
+  /* `break-words` genuegt gegen lange deutsche Woerter nicht: Es aendert die
+     intrinsische Mindestbreite nicht, das Flex-Elternteil bleibt also zu
+     breit. Siehe CLAUDE.md, Messung Changelog 408 -> 381 -> 360 px. */
+  overflow-wrap: anywhere;
+}
+
+.rv-update-hinweis__tasten {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rv-update-hinweis__taste {
+  flex: 1 1 auto;
+  min-width: 0;
+  /* 44 px nach WCAG 2.5.5 als Untergrenze, nicht als feste Groesse: Der Inhalt
+     ist Text und muss nach 1.4.4 mitwachsen duerfen. */
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--rv-radius-pill, 999px);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.rv-update-hinweis__taste--jetzt {
+  background: var(--accent, #15803d);
+  border-color: var(--accent, #15803d);
+  color: var(--accent-text, #ffffff);
+}
+
+.rv-update-hinweis__taste--spaeter {
+  background: transparent;
+  border-color: var(--border-color, #8290a5);
+  color: var(--text-color, #0f172a);
+}

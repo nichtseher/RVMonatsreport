@@ -16,17 +16,19 @@ The UI is German and addresses the user formally ("Sie"). Spoken announcements a
 npm install
 npm run dev        # tsx server.ts — dev server on http://localhost:3000 (Express + Vite middleware, HMR)
 npm run lint       # tsc --noEmit (covers src/, scripts/, tests/); no ESLint config
-npm run check      # tsx scripts/pruefen.ts — 142 checks, no test framework
-npm run check:ui   # playwright test — 162 UI/a11y checks, ~4.4 min (starts the dev server itself)
+npm run check      # tsx scripts/pruefen.ts — 148 checks, no test framework
+npm run check:ui   # playwright test — 387 UI/a11y checks over three profiles (226 run, 161 skipped by profile), ~7 min (starts the dev server itself)
 npm run build      # vite build (client) + esbuild bundles server.ts -> dist/server.cjs
 npm run start      # node dist/server.cjs — serve the production build
 ```
 
 `npm run check` covers the pure functions where a mistake does real damage: sync merge (including the per-field timestamps), Excel sum formulas, working-time math across midnight, backup encryption, and a scan of `src/` for double-encoded characters and BOMs. Add cases there rather than writing another throwaway script. `scripts/checks/kodierung.ts` carries an allowlist — `ChangelogModal.tsx` contains mojibake on purpose, as an example in the 0.7.0 entry.
 
-`npm run check:ui` (added 0.9.18) covers what a pure-function check cannot: horizontal overflow at 360 px across all three font sizes, WCAG 2.5.5 target sizes (43.5 px in the tab order, 24 px for what is deliberately outside it), an axe-core pass per view, and — since 2026-09-02 — a `color-contrast` pass per view in each of the three non-default colour schemes. That last axis exists because the plain axe pass runs without `data-theme` and therefore only ever saw the default scheme: the two high-contrast schemes, the ones built for this app's users, were the only part not continuously covered. Set the scheme through `localStorage` as the tests do, never by writing `data-theme` by hand — the app also sets `data-dark`, which drives Tailwind's `dark:` variants, and setting only one produces a combination that never occurs in the running app. It runs **serially on purpose** — with parallel workers, 9 of 30 checks failed erratically because concurrent page loads tore the execution context out from under Vite's on-demand transforms; the same checks passed with one worker. Three device profiles: `handy` (360×780, `hasTouch`, `isMobile`), `schreibtisch` (1280×900) and `handy-webkit` (same 360×780, but WebKit — the engine the colleagues' iPhones actually run). **Measuring by hand at 360 px is not the same as checking the app**: on 2026-09-02 a hand sweep across all five views and three font sizes found nothing, and the gate then found three targets under 44 px in the `schreibtisch` profile on its first run. Do not run `check:ui` while editing files — Playwright reuses a dev server that is already running (`reuseExistingServer`), and a save during the run tears the execution context out of the page. That failure reads as an axe violation and is not one. Note that Playwright's device emulation really does flip `@media (pointer: coarse)` — the ROADMAP long assumed those branches were untestable, which was true only for a resized browser window. `tests/oberflaeche.spec.ts` proves it rather than asserting it.
+`npm run check:ui` (added 0.9.18) covers what a pure-function check cannot: horizontal overflow at 360 px across all three font sizes, WCAG 2.5.5 target sizes (**one threshold, 44 px, for everything** — see the target-size note at the end of this file), an axe-core pass per view, and — since 2026-09-02 — a `color-contrast` pass per view in each of the three non-default colour schemes. That last axis exists because the plain axe pass runs without `data-theme` and therefore only ever saw the default scheme: the two high-contrast schemes, the ones built for this app's users, were the only part not continuously covered. Set the scheme through `localStorage` as the tests do, never by writing `data-theme` by hand — the app also sets `data-dark`, which drives Tailwind's `dark:` variants, and setting only one produces a combination that never occurs in the running app. It runs **serially on purpose** — with parallel workers, 9 of 30 checks failed erratically because concurrent page loads tore the execution context out from under Vite's on-demand transforms; the same checks passed with one worker. Three device profiles: `handy` (360×780, `hasTouch`, `isMobile`), `schreibtisch` (1280×900) and `handy-webkit` (same 360×780, but WebKit — the engine the colleagues' iPhones actually run). **Measuring by hand at 360 px is not the same as checking the app**: on 2026-09-02 a hand sweep across all five views and three font sizes found nothing, and the gate then found three targets under 44 px in the `schreibtisch` profile on its first run. Do not run `check:ui` while editing files — Playwright reuses a dev server that is already running (`reuseExistingServer`), and a save during the run tears the execution context out of the page. That failure reads as an axe violation and is not one. Note that Playwright's device emulation really does flip `@media (pointer: coarse)` — the ROADMAP long assumed those branches were untestable, which was true only for a resized browser window. `tests/oberflaeche.spec.ts` proves it rather than asserting it.
 
 **The app has eleven views, not five.** `activeTab` takes eleven values; only five are reachable through `?tab=` (the switch in `App.tsx` accepts exactly those). The other six — `manage`, `help`, `sync`, `backup`, `carryover`, `changelog` — have to be clicked, and that is precisely why they went unchecked until 2026-09-02. `ManageModal`, `HistoryModal`, `StatsModal` and `TimeModal` are **not dialogs** despite their names; they are full views. Covering the six behind their entry points found six real defects on the first run, four of which hit the target group directly (keyboard-unreachable scroll region, two reflow failures at "Extra groß", a shrunken back button). When you add a view, add it to `EINSTIEGE` in `tests/oberflaeche.spec.ts` — nothing else will notice it exists.
+
+**And an entry in `EINSTIEGE` is not proof that the view is covered.** From 0.9.18 to 0.9.21 this file claimed all eleven were checked; ten were. The entry named "Formular anpassen" clicks a menu row in `A11yModal` and lands on a **submenu of the same name** — not a separate `activeTab` at all. `ManageModal` sits one level below it, behind "Eigene Felder löschen", and is headed "Formularfelder verwalten". The test waited for the heading "Formular anpassen", found it immediately, and measured the wrong view for three versions. **Assert on a heading that only the intended view has**, and when a view needs two clicks, use the `dann` field. The first real run against `manage` produced six failures and five defects, including the keyboard trap that had been removed from `CarryoverModal` a week earlier.
 
 **A container that scrolls sideways on purpose must say so** with `data-scroll-x="absicht"`; the overflow check treats every other `overflow-x: auto` as the accident it usually is.
 
@@ -66,6 +68,10 @@ Measurement traps, all of which have produced false findings:
 
 **The same encoding trap ruins *measurements*, not just writes.** `Get-Content -Raw` (and `Select-String`) read UTF-8 files as ANSI on this machine, so every umlaut and emoji inflates the character count. Comparing a downloaded asset against a local one that way reported bundles as "different sizes, not identical" when they were byte-identical — the pure-ASCII chunk was the only one that "matched", which made the false finding look credible. Read both sides explicitly:
 `[System.IO.File]::ReadAllText($p, [System.Text.Encoding]::UTF8)` and `[System.Text.Encoding]::UTF8.GetString($response.RawContentStream.ToArray())`.
+
+**`src/App.tsx` uses CRLF line endings; the Markdown files use LF.** A multi-line anchor built with `\n` in a Node script therefore matches nothing in `App.tsx`, and the failure looks exactly like a wrong anchor — three attempts went into that on 2026-09-07 before the cause was obvious. Read the file, detect the ending (`s.includes('\r\n')`), and build anchors from that; or keep anchors single-line, where the difference cannot bite.
+
+**`command | tail` hides the exit code.** On 2026-09-07 the gate reported `exited with code 0` while its own output said `1 failed` — a pipeline returns the status of its *last* member, and that was `tail`. Read the summary line, or drop the pipe when the exit code is what you are checking.
 
 **A case-sensitive grep against JSX is a measurement, and it lies.** Searching `src/` for `autocomplete=` returns nothing — React writes `autoComplete`. On 2026-09-02 that produced a confident, wrong finding in the conformance report ("no autocomplete attribute exists anywhere"), when both name fields have carried one all along. The same trap waits for `tabindex`/`tabIndex`, `readonly`/`readOnly`, `maxlength`/`maxLength`, `for`/`htmlFor`, `class`/`className`. Search case-insensitively, and treat an empty result as a hypothesis until you have confirmed the search could have matched at all.
 
@@ -140,7 +146,15 @@ This is a first-class requirement, not a nice-to-have — the primary users are 
 
 ## PWA specifics
 
-`public/sw.js` is a hand-written service worker (network-first, same-origin only, no external caching) — it lives in `public/`, it is not generated by a plugin. Manifest shortcuts (`public/manifest.webmanifest`) route via `?tab=` query params read once in `App.tsx`'s `useState` initializer for `activeTab`. Service worker updates are user-confirmed (see the update toast wired up in `index.html`), never auto-reloading mid-edit.
+`public/sw.js` is a hand-written service worker (network-first, same-origin only, no external caching) — it lives in `public/`, it is not generated by a plugin. Manifest shortcuts (`public/manifest.webmanifest`) route via `?tab=` query params read once in `App.tsx`'s `useState` initializer for `activeTab`.
+
+**A browser detects an update only from the bytes of `sw.js` — and that file changes almost never.** It was untouched from 2026-07-19 to 2026-09-07: 50 commits, versions 0.8.0 through 0.9.20, `dist/sw.js` byte-identical to `public/sw.js`. So for seven weeks **no user ever saw the update notice**; the whole flow was dead code. What actually shipped new versions was network-first fetching of `index.html`. Two consequences: don't reason about the notice as if users see it routinely, and know that **any edit to `sw.js` fires the update flow for every installed user** on their next online start.
+
+**Applying an update while offline used to leave a white screen** (measured 2026-09-07: `#root` at 0 characters, two failed asset requests). `activate` deletes every cache but the new one, and `install` only precached the six-entry `ASSETS` shell — the new `index.html` then pointed at hashed chunks that existed neither on the network nor in any cache. `install` now also caches everything the freshly fetched `index.html` references under `assets/`. Lazy chunks (sync, backup, Excel) are dynamic imports, are not in that HTML, and still need the network once after an update.
+
+**Update policy is three-staged, in `index.html`:** the notice reappears at every start (it evaluates `reg.waiting`, not just `updatefound` — that was the bug: after one "Später" it never returned), loses "Später" after 7 days, and applies itself at the next start after 14 days — announced, with 8 seconds' lead, **only at startup and only online**. Startup is the one safe moment: nothing is typed yet. Never force a reload into a running session. A tab left open for weeks without a reload is therefore *not* auto-updated by design; it only escalates via an hourly re-check.
+
+The notice is created by plain DOM code, not React, and `check:ui` cannot reach it through any view — that is exactly how it came to have a 41 × 20 px button. `window.rvUpdateHinweis(art, tage)` exists as the seam the gate calls; keep it if you touch that script. Its styling lives in `src/index.css` as `.rv-update-hinweis`, under the same theme-variable rules as everything else.
 
 ## Documentation to keep current
 
@@ -177,7 +191,7 @@ Two things worth knowing about how it got there:
 - **UI-Ästhetik:** Nutze klare Kontraste, großzügigen Weißraum, sanfte `border-radius`-Werte, dezente Schatten und serifenlose Schriften. Das UI muss professionell, clean und hochwertig wirken. Die konkreten Mittel dafür stehen in Abschnitt 5 — Ästhetik ist hier keine freie Wahl pro Komponente, sondern die vorhandene Variablenskala.
 
 ### 3. Responsive Layout & Skalierung (Cross-Platform)
-- **Touch-Ziele — Stufe AAA (Entscheidung vom 2026-09-02):** Bindend ist **WCAG 2.5.5 „Target Size (Enhanced)", also 44 × 44 px**, nicht die 24 px der AA-Stufe 2.5.8. Gemessen wird gegen **43,5 px**, weil die Vorschau mit Faktor 0,99993 rendert und 44 px dort als 43,997 px ankommen. Zähler-Buttons nutzen feste Pixelgrößen (sie enthalten Symbole, keinen Text — WCAG 1.4.4 verlangt für sie keine Skalierung, und `rem` schob sie bei „Extra groß" bis zu 163 px aus dem Bildschirm). Das Zahlenfeld bleibt `rem`-basiert, weil es Text **ist**. Die Ausnahme in 2.5.5 für gleichwertig erreichbare Bedienelemente darf genutzt werden, muss aber im Code begründet stehen. **Status (2026-09-02): für alles im Tab-Lauf erfüllt und im Prüfgate abgesichert; die `±5`-Tasten laufen unter der Ausnahme** — siehe Nachtrag unten.
+- **Touch-Ziele — Stufe AAA (Entscheidung vom 2026-09-02):** Bindend ist **WCAG 2.5.5 „Target Size (Enhanced)", also 44 × 44 px**, nicht die 24 px der AA-Stufe 2.5.8. Gemessen wird über den Layout-Kasten gegen glatte 44 px. **Status (2026-09-07): für jedes Bedienelement der App erfüllt, ohne Ausnahme, und im Prüfgate mit genau einer Schwelle abgesichert.** Die Gleichwertigkeitsausnahme aus 2.5.5 ist damit unbenutzt — sie darf genutzt werden, muss dann aber im Quelltext an der Stelle selbst begründet und im Gate nachgetragen werden. Einzelheiten und die Messung dahinter: Abschnitt „Trefferflächen" am Ende dieser Datei.
 - **Überprüfung & Breakpoints:** Teste Layouts immer bei 360 px Breite und über alle drei Schriftgrößen (`normal`, `large`, `extra-large`). Es darf NIEMALS ein horizontaler Scrollbar entstehen. Seit 0.9.20 läuft zusätzlich **320 px** (iPhone SE) bei „Extra groß" im Prüfnetz mit.
 - **Der häufigste Layoutfehler dieses Projekts, mit Abstand: `min-width: auto` an Flex-Elementen.** Ein Flex-Kind gibt seine Breite standardmäßig **nicht** unter seinen Inhalt preis. Bei großer Schrift oder einer breiteren Schriftart sprengt es dann die Zeile, statt umzubrechen — die Seite wird waagerecht scrollbar (WCAG 1.4.10). Am 2026-09-02 war das **siebenmal** die Ursache: Überschrift im Jahreskonto, dessen Tastenzeile, die Versionsüberschriften im Changelog, die Zurück-Taste dort, die Reiter der Zeit-Ansicht, der Umschalter der Analyse und die Taste „Was gibt's Neues?" in den Optionen.
 
@@ -245,79 +259,62 @@ erzeugt hat:
   Schreiben von Dateien (chirurgische Edits statt Volltext-Rewrites) und die
   Länge der Antworten — nicht die Gründlichkeit vor dem Schreiben.
 
-### Nachtrag zu den Trefferflächen (Messung 2026-08-08, korrigiert 2026-09-02)
+### Trefferflächen: eine Schwelle, keine Ausnahme (Stand 2026-09-07)
 
-Der Stand bis 0.9.19 war die AA-Stufe. Die Messung dazu lautete:
+**44 × 44 px für jedes Bedienelement, ohne Ausnahme.** Verbindlich ist WCAG
+2.5.5 (Stufe AAA), nicht die 24 px der AA-Stufe 2.5.8. Das Prüfgate
+(`findeZuKleineZiele` in `tests/oberflaeche.spec.ts`) kennt seit 0.9.22 genau
+diese eine Schwelle.
 
-| | |
-|---|---|
-| Verfügbare Breite der Bedienzeile | 253,9 px |
-| Bedarf für fünf Tasten à 44 px | 276,0 px |
-| Bedarf des Zahlenfelds für „999" bei 30 px Schrift | ~55 px |
+Gemessen wird gegen glatte 44 über den **Layout-Kasten** (`offsetWidth` /
+`offsetHeight`), nicht über `getBoundingClientRect()`. Der Unterschied ist
+keine Feinheit: `getBoundingClientRect` rechnet CSS-Transformationen mit,
+modale Fenster starten hier bei `scale(0.95)`, und wo nicht kompositiert wird
+— im kopflosen CI-Lauf — bleiben sie darin stecken. Eine 44-px-Taste misst dann
+41,8 px, also exakt 44 × 0,95. Genau das hat am 2026-09-02 einen Deploy
+zerrissen, während lokal alles grün war. Der Layout-Kasten ist dagegen immun
+und ist zugleich das, was WCAG meint. Erkauft wird das mit einer blinden
+Stelle: ein dauerhaft per Transformation verkleinertes Bedienelement fiele
+nicht auf. In dieser App gibt es das nicht.
 
-Daraus folgte 0.9.7: Fünferschritte schrumpfen, Zeile und Zahlenlesbarkeit
-bleiben. Mit der Entscheidung vom 2026-09-02 auf **Stufe AAA (2.5.5, 44 px)**
-gilt das nicht mehr als Zielzustand. Beim Nachlesen im Code sind dabei zwei
-Angaben dieses Nachtrags als **falsch** aufgefallen — sie stehen hier, damit
-niemand erneut darauf plant:
+**Die Ausnahme ist entfallen, weil ihr Fall entfallen ist.** Bis 0.9.21 liefen
+die ±5-Tasten des Zählers unter der Gleichwertigkeitsausnahme aus 2.5.5:
+`tabIndex={-1}`, `aria-hidden`, bei „Extra groß" 40,0 px, Funktion vollständig
+über ±1 und das Zahlenfeld erreichbar. Mit 0.9.22 sind sie entfernt (Vorgabe
+des Projektinhabers), und kein Bedienelement der App trägt mehr `tabindex="-1"`
+oder `aria-hidden`. Eine Ausnahme ohne Fall ist eine offene Tür — deshalb steht
+im Gate nur noch eine Zahl.
 
-- **Es gibt zwei Zweige, und der Nachtrag las sich wie einer.**
-  `CounterField.tsx` kennt `isCompact`. Standard ist der **Komfortzweig**
-  (`aussendienst_pwa_compact` ist per Default nicht gesetzt): Fünferschritte
-  `w-[48px] min-w-[40px]`, primäre Tasten `w-[64px] min-w-[52px]`. Der
-  kompakte Zweig ist kleiner (36 px bzw. 44 px). Die 40 px des alten Nachtrags
-  beschrieben also den Standardzweig korrekt — die Messung bestätigt exakt
-  40,0 px bei „Extra groß". Falsch war nur, sie als feste Größe zu lesen: Es
-  ist eine `min-width`, die erst bei „Extra groß" überhaupt greift. Bei
-  „Normal" sind dieselben Tasten 46,3 px breit.
-- **„Zahl verkleinern" ist als Weg bereits ausgeschöpft.** Das Zahlenfeld
-  steht auf `min-w-[56px] max-w-[72px]`; unter 56 px geht es heute nicht, und
-  die Schrift darin muss nach WCAG 1.4.4 mitwachsen.
+Wer sie wieder braucht, begründet sie **im Quelltext an der Stelle selbst** und
+trägt sie hier UND im Gate nach. Eine Ausnahme, die man nur im Konzept findet,
+wird beim nächsten Umbau übersehen; ein Gate, das etwas anderes durchsetzt als
+dieses Dokument fordert, erzeugt das Gefühl von Deckung ohne die Deckung. Genau
+dieser Widerspruch hat am 2026-09-02 die Grundsatzentscheidung ausgelöst.
 
-**Gemessen am 2026-09-02** (360 px, Standardlayout, alle drei Schriftgrößen,
-fünf Ansichten). Die Überschlagsrechnung, die zunächst hier stand, war in zwei
-Punkten falsch, und beide Male zeigte erst die Messung es:
+**Was der Wegfall der ±5-Tasten gebracht hat** — gemessen am 2026-09-07 über
+320 und 360 px × drei Schriftgrößen × „Segoe UI" und erzwungenes Verdana,
+zwölf Kombinationen, kein Befund:
 
-- **Im Handy-Profil lag kein einziges fokussierbares Element unter 43,5 px.**
-  Allein das Formular hat 93 davon, das kleinste misst 44 px. Die Annahme, die
-  Zählertasten seien die offene Baustelle, war damit falsch.
-  **Aber die Messung war es auch:** Sie lief nur bei 360 px. Das verschärfte
-  Prüfgate fand im **Schreibtisch-Profil** sofort drei Verstöße, die ihr
-  entgangen waren — die beiden Reiter der Zeit-Ansicht mit 287 × 38 px und
-  „Jahreskonto-Einstellungen bearbeiten" mit 540 × 42 px. Wer bei 360 px misst,
-  hat *eine* Breite geprüft, nicht die App. Alle drei sind mit
-  `min-h-[44px]` behoben.
-- **Die Bedienzeile stand bei „Extra groß" 2,1 px über** (253,9 px verfügbar,
-  256,0 px belegt), und alle fünf Elemente lagen bereits auf ihrer
-  `min-width`. Unsichtbar, weil die Seite nicht seitwärts scrollte — aber
-  ohne Reserve: Der nächste Zusatz in dieser Zeile hätte abgeschnitten.
+| | 0.9.21 | 0.9.22 |
+|---|---|---|
+| Elemente in der Bedienzeile | 5 | **3** |
+| −1/+1 bei „Extra groß", 360 px | 53,6 × 56 px | **80 × 64 px** |
+| −1/+1 bei „Normal", 360 px | 61,7 × 56 px | **88 × 64 px** |
+| −1/+1 bei 320 px, „Extra groß" | ~53 px (±5: 40,4) | **60 × 64 px** |
+| Zahlenfeld | 56–72 × 56 px | **76–96 × 64 px** |
+| Reserve in der Zeile | 0 bzw. −2,1 px | **14 px überall** |
 
-**Was daraufhin geändert wurde** — der Innenabstand der Zählerkarte von 10 auf
-6 px. Die 8 px kommen aus dem Weißraum, nicht aus einer Trefferfläche, und
-sind vollständig in die Tasten geflossen:
+Drei Dinge, die dabei richtig bleiben und leicht falsch gelesen werden:
 
-| | vorher → nachher | „Groß" | „Normal" |
-|---|---|---|---|
-| Zeilenbreite bei „Extra groß" | 253,9 → **260,0 px** | 274,0 | 288,0 |
-| Überstand | +2,1 → **0** | 0 | 0 |
-| `±1` | 52,0 → **53,6 px** | 57,7 | 61,7 |
-| `±5` | 40,0 → **40,4 px** | 43,3 | 46,3 |
+- **Zähler-Tasten in festen Pixeln, nicht in `rem`.** Sie enthalten Symbole,
+  keinen Text; WCAG 1.4.4 verlangt für sie keine Skalierung, und `rem` schob
+  sie bei „Extra groß" bis zu 163 px aus dem Bildschirm.
+- **Das Zahlenfeld bleibt `rem`-basiert**, denn es *ist* Text. Die
+  Pixelgrenzen begrenzen dort nur den Kasten, nicht die Schrift.
 
-**Die `±5`-Tasten bleiben unter 44 px** (bei „Normal" mit 46,3 px nicht) und
-laufen unter der **Gleichwertigkeitsausnahme in 2.5.5**: Sie sind
-`tabIndex={-1}` und `aria-hidden`, ihre Funktion ist über `±1` und das
-Zahlenfeld vollständig erreichbar, beide deutlich über 44 px. Die Begründung
-steht im Quelltext an der Stelle selbst (`CounterField.tsx`), nicht nur hier —
-eine Ausnahme, die man nur im Konzept findet, wird beim nächsten Umbau
-übersehen.
-
-Sie zu vergrößern wäre möglich, aber ein schlechter Tausch: Bei „Extra groß"
-sind 44 px dort nur zu haben, indem `±1` von 53,6 auf rund 45 px schrumpft —
-die wichtigste Taste zugunsten der unwichtigsten, ausgerechnet in der
-Schriftgröße für sehbehinderte Nutzer.
-
-**Das Prüfgate zieht jetzt mit.** `tests/oberflaeche.spec.ts` prüft zwei
-Klassen: 43,5 px für alles im Tab-Lauf, 24 px für das, was per `aria-hidden` /
-`tabIndex={-1}` außerhalb liegt. Vorher stand dort pauschal 24 px — also die
-AA-Stufe im Test gegen die 44 px im Dokument. Genau dieser Widerspruch hat die
-Entscheidung ausgelöst; er darf nicht als Nächstes andersherum entstehen.
+- **Ein Bedienelement in einem umschließenden `<label>`** wird über das Label
+  gemessen, nicht über das Kästchen: Ein Klick irgendwo im Label schaltet die
+  Auswahl, und 2.5.5 meint die Fläche, die die Eingabe entgegennimmt. Ohne
+  diese Regel meldete das Gate die beiden Kästchen der Datensicherung mit
+  24 × 24 und 20 × 20 px als Verstoß — sie auf 44 px aufzublasen hätte die
+  Prüfung beruhigt und die Oberfläche verschlechtert.

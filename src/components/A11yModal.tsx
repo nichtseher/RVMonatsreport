@@ -286,7 +286,13 @@ export default function A11yModal({
         {onOpenHelp && (
           <MenuRow
             icon={<HelpCircle className="w-5 h-5" />}
-            iconClass="bg-[var(--cat-4)] text-white"
+            /* Nicht text-white: --cat-4 ist in "Weiß auf Schwarz" selbst
+               #ffffff und in "Gelb auf Schwarz" #ffff00 -- das Symbol war dort
+               unsichtbar. --primary-text trägt in allen vier Schemata genau den
+               passenden Gegenwert (weiß auf den beiden farbigen, schwarz auf
+               den beiden Hochkontrast-Schemata). Wer ein Schema ändert, prüft
+               diese Zeile mit. */
+            iconClass="bg-[var(--cat-4)] text-[var(--primary-text)]"
             label="Hilfe & Anleitung"
             hint="Handbuch, FAQ und Richtlinien"
             onClick={onOpenHelp}

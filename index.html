@@ -20,59 +20,229 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      /*
+        UPDATE-POLITIK -- drei Stufen statt "einmal fragen, dann nie wieder".
+
+        Gemessen am 2026-09-07 gegen die gebaute App, weil die ROADMAP fragte,
+        ob es fuer aufgeschobene Updates einen Boden gibt:
+
+        1. Nach einem Druck auf "Spaeter" kam der Hinweis NIE wieder -- auch
+           nach zwei Neuladungen nicht. Ausgewertet wurde nur 'updatefound',
+           und das feuert genau einmal je Installation. `reg.waiting` sah sich
+           niemand an. Der Nutzer hatte danach keinen Weg mehr, das Update
+           anzustossen; nicht das Wegdruecken war das Problem, sondern dass
+           die Frage nie wieder gestellt wurde.
+        2. Einen Boden gab es nur beim Browser: Sind ALLE Fenster der App zu,
+           aktiviert er den wartenden Worker von selbst (nachgemessen: neue
+           Fassung aktiv, alter Cache weg). Wer die Seite nur neu laedt --
+           am Schreibtisch der Normalfall --, bleibt beliebig lange alt.
+        3. Beim Erstbesuch lud sich die Seite selbst neu: `clients.claim()`
+           loest 'controllerchange' aus, obwohl gar keine andere Fassung
+           uebernimmt. Gemessen zwei Navigationen des Hauptrahmens -- fuer
+           einen Screenreader ein zweiter kompletter Seitenaufbau ohne Anlass.
+
+        Der Boden ist deshalb: sichtbar bleiben (Stufe "hinweis"), nicht mehr
+        wegdrueckbar ab TAGE_BIS_FAELLIG, und ab TAGE_BIS_ZWANG beim naechsten
+        Start selbst anwenden -- angesagt und mit Vorlauf. Zwang gibt es nur
+        beim Start, nie mitten in der Eingabe: Beim Start ist noch nichts
+        getippt, was verlorengehen koennte.
+      */
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js').then((reg) => {
+        var UPDATE_SEIT = 'aussendienst_pwa_update_seit';
+        var TAG_MS = 86400000;
+        var TAGE_BIS_FAELLIG = 7;
+        var TAGE_BIS_ZWANG = 14;
+        var ZWANG_VORLAUF_MS = 8000;
+        var NACHSCHAU_MS = 3600000; // stuendlich, fuer lange offene Tabs
+
+        // "Spaeter" gilt nur fuer diesen Seitenaufruf und nur unterhalb der
+        // Faelligkeit -- sonst waere es wieder ein Aus-Schalter.
+        var spaeterGedrueckt = false;
+        var zwangLaeuft = false;
+        // Welche Stufe gerade auf dem Schirm steht. Gebraucht wird das fuer die
+        // Eskalation: Ohne diesen Vergleich haette ein pauschales "es steht
+        // schon ein Hinweis da" die stuendliche Nachschau blockiert -- und
+        // damit ausgerechnet den Fall, fuer den sie gebaut ist.
+        var gezeigteArt = null;
+
+        function lies(schluessel) {
+          try { return localStorage.getItem(schluessel); } catch (e) { return null; }
+        }
+        function schreibe(schluessel, wert) {
+          // Kontingent voll oder Privatmodus: Dann gibt es eben keine Uhr,
+          // aber der Hinweis erscheint trotzdem bei jedem Start.
+          try { localStorage.setItem(schluessel, wert); } catch (e) { /* egal */ }
+        }
+        function loesche(schluessel) {
+          try { localStorage.removeItem(schluessel); } catch (e) { /* egal */ }
+        }
+
+        function tageOffen() {
+          var seit = lies(UPDATE_SEIT);
+          if (!seit) return 0;
+          var ms = Date.now() - Date.parse(seit);
+          // Eine in die Zukunft verstellte Uhr darf nicht in Zwang kippen.
+          if (!isFinite(ms) || ms < 0) return 0;
+          return Math.floor(ms / TAG_MS);
+        }
+
+        function bewerte(beimStart) {
+          var tage = tageOffen();
+          // Offline NICHT selbst anwenden: Der neue Cache ist zwar vollstaendig
+          // (siehe sw.js), aber ein erzwungener Neustart ohne Netz ist der
+          // schlechteste Moment fuer eine Ueberraschung. Dann bleibt es beim
+          // sichtbaren, nicht wegdrueckbaren Hinweis.
+          if (tage >= TAGE_BIS_ZWANG && beimStart && navigator.onLine) {
+            return { art: 'zwang', tage: tage };
+          }
+          if (tage >= TAGE_BIS_FAELLIG) return { art: 'faellig', tage: tage };
+          return { art: 'hinweis', tage: tage };
+        }
+
+        function wendeAn() {
+          // Bewusst die Registrierung neu befragen statt eine Worker-Referenz
+          // festzuhalten: Zwischen Anzeige und Klick koennen Minuten liegen.
+          navigator.serviceWorker.getRegistration().then(function (reg) {
+            var ziel = reg && (reg.waiting || reg.installing);
+            if (ziel) ziel.postMessage({ type: 'SKIP_WAITING' });
+          });
+        }
+
+        function zeigeUpdateHinweis(art, tage) {
+          var alt = document.getElementById('sw-update-toast');
+          if (alt) alt.remove();
+
+          var box = document.createElement('div');
+          box.id = 'sw-update-toast';
+          box.className = 'rv-update-hinweis';
+          // Unterhalb der Faelligkeit hoeflich (status), danach unterbrechend
+          // (alert). Die Rolle steht beim Erzeugen fest; sie nachtraeglich zu
+          // aendern lesen Screenreader unzuverlaessig.
+          box.setAttribute('role', art === 'hinweis' ? 'status' : 'alert');
+
+          var text = document.createElement('p');
+          text.className = 'rv-update-hinweis__text';
+          if (art === 'zwang') {
+            text.textContent = 'Die App wird jetzt auf die neue Fassung aktualisiert. Ihre Daten bleiben erhalten.';
+          } else if (art === 'faellig') {
+            text.textContent = 'Seit ' + tage + ' Tagen liegt eine neue Fassung bereit. Bitte jetzt aktualisieren.';
+          } else {
+            text.textContent = 'Eine neue Fassung ist verf\u00fcgbar.';
+          }
+
+          var reihe = document.createElement('div');
+          reihe.className = 'rv-update-hinweis__tasten';
+
+          var jetzt = document.createElement('button');
+          jetzt.type = 'button';
+          jetzt.className = 'rv-update-hinweis__taste rv-update-hinweis__taste--jetzt';
+          jetzt.textContent = 'Jetzt aktualisieren';
+          jetzt.addEventListener('click', wendeAn);
+          reihe.appendChild(jetzt);
+
+          if (art === 'hinweis') {
+            var spaeter = document.createElement('button');
+            spaeter.type = 'button';
+            spaeter.className = 'rv-update-hinweis__taste rv-update-hinweis__taste--spaeter';
+            // Kein aria-label, das die sichtbare Beschriftung ersetzt: Das
+            // verletzt WCAG 2.5.3 (Label in Name) und macht die Taste per
+            // Sprachsteuerung untreffbar. Der Satz darueber traegt den Kontext.
+            spaeter.textContent = 'Sp\u00e4ter';
+            spaeter.addEventListener('click', function () {
+              spaeterGedrueckt = true;
+              gezeigteArt = null;
+              box.remove();
+            });
+            reihe.appendChild(spaeter);
+          }
+
+          box.appendChild(text);
+          box.appendChild(reihe);
+          document.body.appendChild(box);
+          gezeigteArt = art;
+          return box;
+        }
+
+        /*
+          Pruefhaken fuer die Oberflaechenpruefung.
+
+          Der Hinweis erscheint sonst nur, wenn tatsaechlich ein Update wartet
+          -- er waere damit die einzige Bedienflaeche der App, die das
+          Pruefgate nie zu sehen bekommt. Genau so sind seine Maengel
+          entstanden: gemessen 152 x 36 px fuer "Jetzt aktualisieren" und
+          41 x 20 px fuer "Spaeter", also unter den 44 px aus WCAG 2.5.5 und
+          bei der zweiten sogar unter den 24 px der AA-Stufe.
+        */
+        window.rvUpdateHinweis = zeigeUpdateHinweis;
+
+        function pruefeStand(beimStart) {
+          return navigator.serviceWorker.getRegistration().then(function (reg) {
+            if (!reg) return;
+            if (!reg.waiting) {
+              // Solange noch installiert wird, ist nichts entschieden.
+              if (!reg.installing) loesche(UPDATE_SEIT);
+              return;
+            }
+            if (!lies(UPDATE_SEIT)) schreibe(UPDATE_SEIT, new Date().toISOString());
+
+            var stand = bewerte(beimStart);
+            if (stand.art === 'zwang') {
+              if (zwangLaeuft) return;
+              zwangLaeuft = true;
+              zeigeUpdateHinweis('zwang', stand.tage);
+              window.setTimeout(wendeAn, ZWANG_VORLAUF_MS);
+              return;
+            }
+            if (stand.art === 'hinweis' && spaeterGedrueckt) return;
+            // Nur neu zeichnen, wenn sich die Stufe geaendert hat. Ein
+            // pauschales "steht schon da" haette den Aufstieg von 'hinweis'
+            // auf 'faellig' in einem lange offenen Tab verhindert.
+            if (document.getElementById('sw-update-toast') && gezeigteArt === stand.art) return;
+            zeigeUpdateHinweis(stand.art, stand.tage);
+          });
+        }
+
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('./sw.js').then(function (reg) {
             console.log('PWA ServiceWorker registered successfully:', reg.scope);
 
-            // Sanfter Update-Flow: Nutzer entscheidet selbst, wann neu geladen
-            // wird (kein erzwungener Reload mitten in der Dateneingabe).
-            reg.addEventListener('updatefound', () => {
-              const newWorker = reg.installing;
-              if (newWorker) {
-                newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    showUpdateToast(newWorker);
-                  }
-                });
-              }
+            // Wartet schon eines aus einer frueheren Sitzung? 'updatefound'
+            // feuert dafuer nicht mehr -- das war die Luecke.
+            pruefeStand(true);
+
+            reg.addEventListener('updatefound', function () {
+              var neu = reg.installing;
+              if (!neu) return;
+              neu.addEventListener('statechange', function () {
+                if (neu.state === 'installed' && navigator.serviceWorker.controller) {
+                  pruefeStand(false);
+                }
+              });
             });
-          }).catch((err) => {
+
+            // Ein Tab, der wochenlang offen bleibt, erlebt weder Start noch
+            // 'updatefound' ein zweites Mal. Ohne diese Nachschau bliebe der
+            // Hinweis dort auf der ersten Stufe stehen.
+            window.setInterval(function () { pruefeStand(false); }, NACHSCHAU_MS);
+          }).catch(function (err) {
             console.error('PWA ServiceWorker registration failed:', err);
           });
         });
 
-        // Seite neu laden, sobald der neue Service Worker aktiv ist
-        let refreshing = false;
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          if (!refreshing) {
-            refreshing = true;
-            window.location.reload();
+        var hatteController = !!navigator.serviceWorker.controller;
+        var laedtNeu = false;
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          // Erstbesuch: Der frisch installierte Worker uebernimmt per
+          // clients.claim(). Es wechselt keine Fassung, es gibt also nichts
+          // neu zu laden -- vorher waren das zwei Seitenaufbauten statt einem.
+          if (!hatteController) {
+            hatteController = true;
+            return;
           }
+          if (laedtNeu) return;
+          laedtNeu = true;
+          window.location.reload();
         });
-
-        function showUpdateToast(worker) {
-          if (document.getElementById('sw-update-toast')) return;
-          const toast = document.createElement('div');
-          toast.id = 'sw-update-toast';
-          toast.setAttribute('role', 'alert');
-          toast.style.cssText = 'position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);z-index:99999;background:#1e293b;color:#fff;padding:0.9rem 1.1rem;border-radius:9999px;display:flex;gap:0.75rem;align-items:center;font-family:system-ui,sans-serif;font-size:0.9rem;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,0.35);max-width:92vw;';
-          const text = document.createElement('span');
-          text.textContent = 'Neue Version verf\u00fcgbar.';
-          const btn = document.createElement('button');
-          btn.textContent = 'Jetzt aktualisieren';
-          btn.style.cssText = 'background:#22c55e;color:#052e16;border:0;border-radius:9999px;padding:0.5rem 0.9rem;font-weight:800;cursor:pointer;font-size:0.85rem;';
-          btn.addEventListener('click', () => {
-            worker.postMessage({ type: 'SKIP_WAITING' });
-          });
-          const later = document.createElement('button');
-          later.textContent = 'Sp\u00e4ter';
-          later.setAttribute('aria-label', 'Update sp\u00e4ter installieren');
-          later.style.cssText = 'background:transparent;color:#cbd5e1;border:0;font-weight:700;cursor:pointer;font-size:0.85rem;';
-          later.addEventListener('click', () => toast.remove());
-          toast.append(text, btn, later);
-          document.body.appendChild(toast);
-        }
       }
     </script>
   </body>

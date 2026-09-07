@@ -244,12 +244,29 @@ async function findeZuKleineZiele(page: Page) {
       const breite = ziel.offsetWidth;
       const hoehe = ziel.offsetHeight;
       if (breite === 0 || hoehe === 0) continue; // unsichtbar
-      const ausserhalbTabLauf =
-        el.getAttribute("tabindex") === "-1" || el.getAttribute("aria-hidden") === "true";
-      const schwelle = ausserhalbTabLauf ? 24 : 44;
-      if (breite < schwelle || hoehe < schwelle) {
+      /*
+        EINE Schwelle, 44 px -- seit 0.9.22.
+
+        Bis dahin gab es hier zwei Klassen: 44 px im Tab-Lauf und 24 px für
+        alles mit `tabindex="-1"` oder `aria-hidden="true"`. Die zweite Klasse
+        hatte genau zwei Mitglieder, die ±5-Tasten des Zählers, und sie war die
+        einzige Stelle, an der diese App die Gleichwertigkeitsausnahme aus WCAG
+        2.5.5 in Anspruch nahm.
+
+        Mit dem Wegfall der ±5-Tasten trägt kein Bedienelement mehr `tabindex
+        ="-1"` oder `aria-hidden` (geprüft über `src/`: übrig sind ein
+        Container in `HistoryModal` und eine Überschrift in `OnboardingModal`,
+        beides keine Bedienelemente). Die Ausnahme hat damit niemanden mehr --
+        und eine Ausnahme ohne Fall ist eine offene Tür.
+
+        Wer sie wieder braucht, führt sie mit Begründung im Quelltext ein und
+        trägt sie hier UND in `CLAUDE.md` nach. Ein Prüfgate, das eine andere
+        Schwelle durchsetzt als das Dokument fordert, war schon einmal der
+        Auslöser für eine Grundsatzentscheidung (2026-09-02).
+      */
+      if (breite < 44 || hoehe < 44) {
         treffer.push(
-          `${el.tagName}"${(el.textContent || (el as HTMLElement).ariaLabel || "").trim().slice(0, 28)}" ${breite}×${hoehe} (Schwelle ${schwelle})`,
+          `${el.tagName}"${(el.textContent || (el as HTMLElement).ariaLabel || "").trim().slice(0, 28)}" ${breite}×${hoehe}`,
         );
       }
     }
@@ -453,6 +470,28 @@ const EINSTIEGE = [
     ueberschrift: /Formular anpassen/,
   },
   {
+    /*
+      `manage` -- bis zum 2026-09-07 die einzige der elf Ansichten, die keine
+      Prüfung je gesehen hat.
+
+      Warum sie durchs Netz fiel: Der Eintrag „Formular anpassen" klickt eine
+      Menüzeile in `A11yModal` und landet auf einem UNTERMENÜ gleichen Namens
+      -- kein eigener `activeTab`, sondern ein Zustand innerhalb der Optionen.
+      `ManageModal` liegt eine Ebene tiefer, hinter „Eigene Felder löschen",
+      und trägt die Überschrift „Formularfelder verwalten". Die Prüfung wartete
+      auf „Formular anpassen", fand es sofort -- und maß seither die falsche
+      Ansicht. Von elf Ansichten waren also zehn abgedeckt, nicht elf.
+
+      Was dort überlebt hat: dieselbe Fokusfalle, die am 2026-09-02 aus
+      `CarryoverModal` entfernt wurde, plus vier weitere Defekte.
+    */
+    name: "Felder verwalten",
+    start: "options",
+    einstieg: /Formular anpassen/,
+    dann: /Eigene Felder löschen/,
+    ueberschrift: /Formularfelder verwalten/,
+  },
+  {
     name: "Geräte-Sync",
     start: "options",
     einstieg: /Geräte-Sync/,
@@ -489,6 +528,12 @@ const EINSTIEGE = [
 async function oeffneUeberEinstieg(page: Page, eintrag: (typeof EINSTIEGE)[number]) {
   await oeffne(page, eintrag.start);
   await page.getByRole("button", { name: eintrag.einstieg }).first().click();
+  // Manche Ansichten liegen zwei Ebenen tief. Ohne diesen Schritt landete die
+  // Prüfung auf dem Untermenü und meldete grün für die falsche Ansicht.
+  const weiter = (eintrag as { dann?: RegExp }).dann;
+  if (weiter) {
+    await page.getByRole("button", { name: weiter }).first().click();
+  }
   // Das Warten auf die Ueberschrift ist zugleich der Nachweis, dass die
   // Ansicht wirklich offen ist. Ohne ihn wuerde die Pruefung im Zweifel die
   // Optionen-Liste messen und gruen melden -- derselbe Fehler, gegen den
@@ -683,7 +728,29 @@ async function zaehleErreichbare(page: Page) {
   });
 }
 
-async function tabulatorDurchlauf(page: Page, maxSchritte = 400) {
+/**
+ * Tabulator-Runde.
+ *
+ * `zielAnzahl` beendet die Schleife, sobald so viele **verschiedene** Elemente
+ * gesehen wurden -- das ist die eigentliche Abbruchbedingung, nicht
+ * `maxSchritte`.
+ *
+ * Warum das nötig wurde: Die Schrittzahl war auf „Anzahl erreichbarer Elemente
+ * plus 30" gedeckelt, und am 2026-09-07 lief der Durchlauf im Gesamtlauf
+ * **zwei Elemente vor Rundenschluss** aus dem Budget — gemeldet wurden „RV
+ * Archiv" und „Optionen" als angeblich unerreichbar. Einzeln bestand derselbe
+ * Test; die Erreichbarkeit war also nie das Problem, das Budget schon.
+ *
+ * Warum die feste Zugabe nicht reicht: Nicht jedes Element ist ein einzelner
+ * Tabulatorschritt. Der Fokus wandert beim Umlauf durch die Browserleiste,
+ * das Zahlenfeld ruft beim Fokussieren `select()` und stößt damit ein neues
+ * Rendern an, und das Fokussieren eines Zählerfelds tauscht die untere Leiste
+ * gegen eine andere aus — die Menge der Stationen ändert sich also *während*
+ * des Laufens. Unter Last verschiebt sich das genug, um eine feste Zugabe zu
+ * sprengen. Ein großzügiges Limit kostet nichts, weil die Schleife ohnehin
+ * aussteigt, sobald die Runde vollständig ist.
+ */
+async function tabulatorDurchlauf(page: Page, maxSchritte = 400, zielAnzahl?: number) {
   await page.evaluate(() => {
     (document.activeElement as HTMLElement | null)?.blur();
     window.scrollTo(0, 0);
@@ -692,6 +759,25 @@ async function tabulatorDurchlauf(page: Page, maxSchritte = 400) {
   const folge: { idx: number; tag: string; name: string }[] = [];
   for (let i = 0; i < maxSchritte; i++) {
     await page.keyboard.press("Tab");
+    /*
+      Kurz warten, bevor gemessen wird -- und zwar aus einem gemessenen Grund.
+
+      Das Fokussieren eines Zählerfelds blendet die untere Hauptnavigation aus
+      und eine Feld-Werkzeugleiste ein (`focusedFieldId` in `App.tsx`). Beim
+      Verlassen kommt die Navigation zurück, aber erst nach einer
+      Verzögerung von 120 ms plus Rendern -- nachgemessen am 2026-09-07: nach
+      50 ms war sie weg, nach 450 ms wieder da.
+
+      Ohne diese Pause tabbt die Prüfung schneller, als die Oberfläche
+      nachkommt, und meldete „RV Archiv" und „Optionen" als unerreichbar. Das
+      ist kein Erreichbarkeitsfehler, sondern eine Wettlaufsituation in der
+      Messung: Ein Mensch tippt nicht 25-mal in 400 ms.
+
+      Was dabei als echte Zerbrechlichkeit übrig bleibt -- sehr schnelles
+      Tabben kann an der Navigation vorbeilaufen -- steht als eigener Punkt in
+      der ROADMAP. Diese Prüfung ist nicht der Ort, ihn zu erzwingen.
+    */
+    await page.waitForTimeout(40);
     const stelle = await page.evaluate(() => {
       const el = document.activeElement as HTMLElement | null;
       if (!el || el === document.body || el === document.documentElement) return null;
@@ -723,6 +809,14 @@ async function tabulatorDurchlauf(page: Page, maxSchritte = 400) {
     // nur gedreht.
     if (folge.length > 0 && stelle.idx === folge[0].idx && stelle.idx !== -1) break;
     folge.push(stelle);
+
+    // Alle gesuchten Stationen gesehen -- weiterlaufen brächte nichts.
+    // `idx === -1` heißt „stand beim Messen nicht in der Kandidatenliste" und
+    // darf nicht mitzählen, sonst steigt die Schleife zu früh aus.
+    if (zielAnzahl !== undefined) {
+      const verschieden = new Set(folge.filter((f) => f.idx >= 0).map((f) => f.idx)).size;
+      if (verschieden >= zielAnzahl) break;
+    }
   }
   return folge;
 }
@@ -890,8 +984,17 @@ test.describe("Tooltips und Fehlermeldungen", () => {
     await oeffneUeberEinstieg(page, EINSTIEGE.find((e) => e.name === "Datensicherung")!);
 
     // Verschluesselung einschalten und ein zu kurzes Passwort eingeben.
-    await page.getByRole("checkbox", { name: /Verschlüsselung aktivieren/ }).check();
-    await page.getByLabel(/Passwort/i).first().fill("ab");
+    /* Der Kasten heißt jetzt so, wie er beschriftet ist. Bis 0.9.21 trug er ein
+       `aria-label="Verschlüsselung aktivieren"`, das die sichtbare Beschriftung
+       „Backup mit Passwort schützen" überschrieb (WCAG 2.5.3) -- und diese
+       Prüfung suchte ihn über genau diesen Namen und schrieb den Verstoß damit
+       fest. Eine Prüfung, die einen Fehler zur Voraussetzung macht, verteidigt
+       ihn. */
+    await page.getByRole("checkbox", { name: /Backup mit Passwort schützen/ }).check();
+    /* Genau das Passwortfeld, nicht „irgendetwas mit Passwort": Seit der Kasten
+       darüber korrekt „Backup mit Passwort schützen" heißt, trifft `/Passwort/i`
+       auch ihn -- und `.fill()` auf einem Kontrollkästchen scheitert. */
+    await page.getByLabel("Passwort", { exact: true }).fill("ab");
     await page.getByRole("button", { name: /Auf Gerät speichern/ }).click();
 
     /*
@@ -942,13 +1045,21 @@ test.describe("Tastatur: Erreichbarkeit und Reihenfolge", () => {
         durchfiel -- die unangenehmste aller Fehlerarten, weil sie wie ein
         echter Befund aussieht.
 
-        Mit `anzahl + 30` ist die Schleife von der Zyklus-Erkennung
-        unabhaengig: Die Reichweite genuegt fuer eine volle Runde samt der
-        Mehrfachstops in Datums- und Zeitfeldern, und was danach fehlt, faellt
-        in der Erreichbarkeitspruefung auf.
+        `anzahl + 30` war die erste Antwort darauf und hat am 2026-09-07
+        wieder nicht gereicht: Im Gesamtlauf lief der Durchlauf ZWEI Elemente
+        vor Rundenschluss aus dem Budget und meldete „RV Archiv" und
+        „Optionen" als unerreichbar -- einzeln bestand derselbe Test. Eine
+        feste Zugabe ist die falsche Stellschraube, weil sich die Menge der
+        Stationen waehrend des Laufens aendert (siehe `tabulatorDurchlauf`).
+
+        Jetzt ist die Zielzahl die Abbruchbedingung und die Schrittzahl nur
+        noch eine Notbremse. Das kostet nichts: Ist die Runde vollstaendig,
+        steigt die Schleife sofort aus. Bleibt wirklich etwas unerreichbar,
+        laeuft sie bis zur Notbremse und meldet es -- also genau dann laenger,
+        wenn es etwas zu melden gibt.
       */
       const anzahl = await zaehleErreichbare(page);
-      const folge = await tabulatorDurchlauf(page, anzahl + 30);
+      const folge = await tabulatorDurchlauf(page, anzahl * 3 + 60, anzahl);
 
       // 1. Keine Falle: Der Fokus darf nicht an einer Stelle kleben bleiben.
       let laengsteWiederholung = 1;
@@ -1083,4 +1194,349 @@ test.describe("Touch-Erkennung", () => {
       expect(lage.touchPunkte, `matchMedia-Lage: ${JSON.stringify(lage)}`).toBeGreaterThan(0);
     }
   });
+});
+
+/**
+ * Update-Hinweis.
+ *
+ * Warum es das gibt: Der Hinweis „Eine neue Fassung ist verfügbar" erscheint
+ * nur, wenn tatsächlich ein Service-Worker-Update wartet. Er war damit die
+ * einzige Bedienfläche der App, die dieses Prüfnetz nie zu sehen bekam — und
+ * er sah entsprechend aus. Gemessen am 2026-09-07 an der gebauten App:
+ *
+ * | Element | vorher | Schwelle |
+ * |---|---|---|
+ * | „Jetzt aktualisieren" | 152 × 36 px | 44 px (WCAG 2.5.5) |
+ * | „Später" | 41 × 20 px | 44 px — und sogar unter den 24 px der AA-Stufe |
+ *
+ * Dazu feste Farben außerhalb des Theme-Systems und `bottom: 1rem`, also genau
+ * auf der schwebenden Hauptnavigation.
+ *
+ * `window.rvUpdateHinweis` ist der Prüfhaken dafür (siehe `index.html`). Er
+ * erzeugt denselben Hinweis, den der echte Ablauf erzeugt — geprüft wird also
+ * das Original und keine Nachbildung. Schlägt der erste `expect` fehl, ist der
+ * Haken verschwunden und die Prüfung misst nichts mehr.
+ */
+const UPDATE_STUFEN = [
+  { art: "hinweis", tage: 0, beschreibung: "unter der Fälligkeit, mit „Später“" },
+  { art: "faellig", tage: 9, beschreibung: "fällig, ohne „Später“" },
+  { art: "zwang", tage: 15, beschreibung: "Zwang, wird selbst angewandt" },
+] as const;
+
+async function zeigeUpdateHinweis(page: Page, art: string, tage: number) {
+  const vorhanden = await page.evaluate(
+    ([a, t]) => {
+      const fenster = window as unknown as {
+        rvUpdateHinweis?: (art: string, tage: number) => HTMLElement;
+      };
+      if (typeof fenster.rvUpdateHinweis !== "function") return false;
+      document.getElementById("sw-update-toast")?.remove();
+      fenster.rvUpdateHinweis(a as string, t as number);
+      return true;
+    },
+    [art, tage] as [string, number],
+  );
+  expect(
+    vorhanden,
+    "window.rvUpdateHinweis fehlt — ohne den Prüfhaken in index.html misst diese Prüfung nichts",
+  ).toBe(true);
+  await page.locator("#sw-update-toast").waitFor({ state: "visible", timeout: 5_000 });
+  await page.waitForTimeout(120);
+}
+
+/** Der Hinweis darf die schwebende Hauptnavigation nicht verdecken. */
+async function verdecktNavigation(page: Page) {
+  return page.evaluate(() => {
+    const hinweis = document.getElementById("sw-update-toast");
+    const nav = document.querySelector('[aria-label="Hauptnavigation"]');
+    if (!hinweis || !nav) return null;
+    const h = hinweis.getBoundingClientRect();
+    const n = nav.getBoundingClientRect();
+    const ueberlappt = h.bottom > n.top && h.top < n.bottom && h.right > n.left && h.left < n.right;
+    return ueberlappt ? `Hinweis ${Math.round(h.top)}..${Math.round(h.bottom)} über Navigation ${Math.round(n.top)}..${Math.round(n.bottom)}` : null;
+  });
+}
+
+test.describe("Update-Hinweis", () => {
+  for (const groesse of SCHRIFTGROESSEN) {
+    test(`Update-Hinweis bei ${groesse}`, async ({ page }) => {
+      await oeffne(page, "form");
+      await setzeSchriftgroesse(page, groesse);
+      await warteAufRuhigesLayout(page);
+
+      for (const stufe of UPDATE_STUFEN) {
+        await zeigeUpdateHinweis(page, stufe.art, stufe.tage);
+        await pruefeGeometrie(page, `Update-Hinweis (${stufe.beschreibung}) / ${groesse}`);
+        expect(
+          await verdecktNavigation(page),
+          `Update-Hinweis (${stufe.beschreibung}) / ${groesse}: verdeckt die Hauptnavigation`,
+        ).toBeNull();
+      }
+    });
+  }
+
+  test("Update-Hinweis bei 320 px und breiter Schrift", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Eine Breite genuegt, sie haengt nicht am Motor");
+    await erzwingeBreiteSchrift(page);
+    await page.setViewportSize({ width: 320, height: 780 });
+    await oeffne(page, "form");
+    await setzeSchriftgroesse(page, "extra-large");
+    await warteAufRuhigesLayout(page);
+
+    for (const stufe of UPDATE_STUFEN) {
+      await zeigeUpdateHinweis(page, stufe.art, stufe.tage);
+      await pruefeGeometrie(page, `Update-Hinweis (${stufe.beschreibung}) / 320 px`);
+    }
+  });
+
+  test("Update-Hinweis ohne schwere Verstöße", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "axe haengt nicht am Motor");
+    await oeffne(page, "form");
+
+    for (const stufe of UPDATE_STUFEN) {
+      await zeigeUpdateHinweis(page, stufe.art, stufe.tage);
+      const ergebnis = await new AxeBuilder({ page })
+        .include("#sw-update-toast")
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+        .analyze();
+      const befunde = ergebnis.violations
+        .filter((v) => v.impact === "critical" || v.impact === "serious")
+        .flatMap((v) =>
+          v.nodes.map(
+            (n) => `${v.id} @ ${n.target.join(" ")} — ${n.failureSummary?.replace(/\s+/g, " ").trim()}`,
+          ),
+        );
+      expect(befunde, `Update-Hinweis (${stufe.beschreibung})`).toEqual([]);
+    }
+  });
+});
+
+/**
+ * Ein Lesefehler beim Start darf den gespeicherten Bestand nicht löschen.
+ *
+ * Warum es das gibt: Am 2026-09-07 reproduziert. Der `catch`-Zweig des
+ * Ladevorgangs füllte den Zustand mit `leererMonat()` und `{}` auf. Beides
+ * sieht nach Aufräumen aus und war ein Löschbefehl mit Verzögerung — `{}` ist
+ * wahrheitswertig und lief damit durch den Wächter des Archiv-Spiegels
+ * (`if (!prev) return prev`), der genau davor schützen sollte.
+ *
+ * Gemessen: Archiv mit 2026-06, 2026-07 und 2026-08; **eine** getippte Zahl;
+ * danach enthielt das Archiv nur noch den laufenden Monat. Die App zeigte
+ * dabei keine einzige Warnung.
+ *
+ * Der Auslöser hier ist präzise und nicht grob: Es scheitern nur die ersten
+ * beiden **lesenden** Transaktionen, schreibende bleiben erlaubt. Genau so
+ * verhält sich ein vorübergehender Lesefehler auf einer intakten Datenbank —
+ * würde man die Datenbank ganz blockieren, schlüge auch das Schreiben fehl und
+ * der Fehler bliebe unsichtbar.
+ */
+test.describe("Lesefehler beim Start", () => {
+  test("löscht weder Archiv noch Bericht", async ({ page, baseURL }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Speicherverhalten haengt nicht am Geraeteprofil");
+
+    // Eine leere Seite gleicher Herkunft: Sie teilt sich die IndexedDB mit der
+    // App, laedt diese aber nicht -- sonst schriebe die App beim Schliessen
+    // ihren eigenen (leeren) Anfangszustand ueber den angelegten Bestand.
+    await page.route("**/leerseite-fuer-pruefung", (route) =>
+      route.fulfill({ contentType: "text/html", body: "<!doctype html><title>leer</title>" }),
+    );
+
+    const rohIdb = () => {
+      const oeffne = () =>
+        new Promise<IDBDatabase>((res, rej) => {
+          const r = indexedDB.open("keyval-store", 1);
+          r.onupgradeneeded = () => {
+            if (!r.result.objectStoreNames.contains("keyval")) r.result.createObjectStore("keyval");
+          };
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => rej(r.error);
+        });
+      return {
+        schreibe: async (k: string, v: unknown) => {
+          const db = await oeffne();
+          return new Promise<void>((res, rej) => {
+            const t = db.transaction("keyval", "readwrite");
+            t.objectStore("keyval").put(v, k);
+            t.oncomplete = () => res();
+            t.onerror = () => rej(t.error);
+          });
+        },
+        lies: async (k: string) => {
+          const db = await oeffne();
+          return new Promise<any>((res, rej) => {
+            const t = db.transaction("keyval", "readonly");
+            const q = t.objectStore("keyval").get(k);
+            q.onsuccess = () => res(q.result);
+            q.onerror = () => rej(q.error);
+          });
+        },
+      };
+    };
+
+    await page.goto("/leerseite-fuer-pruefung");
+    await page.evaluate(async (quelle) => {
+      const idb = new Function(`return (${quelle})()`)() as {
+        schreibe: (k: string, v: unknown) => Promise<void>;
+      };
+      const archiv: Record<string, unknown> = {};
+      for (const m of ["2026-06", "2026-07", "2026-08"]) {
+        archiv[m] = {
+          month: m, name: "Marc", notes: "echte Daten", values: { f1: 7 },
+          valuesUpdatedAt: { f1: "2026-08-01T10:00:00.000Z" }, timeLogs: [],
+          fieldsSnapshot: {}, savedAt: "2026-08-01T10:00:00.000Z",
+        };
+      }
+      await idb.schreibe("aussendienst_pwa_history", archiv);
+      await idb.schreibe("aussendienst_pwa_data", {
+        month: "2026-09", name: "Marc", notes: "laufender Monat",
+        values: { f1: 4 }, valuesUpdatedAt: {}, timeLogs: [],
+      });
+    }, rohIdb.toString());
+
+    await page.addInitScript(() => {
+      localStorage.setItem("aussendienst_pwa_onboarding_v1", "1");
+      let uebrig = 2;
+      const original = IDBDatabase.prototype.transaction;
+      IDBDatabase.prototype.transaction = function (this: IDBDatabase, ...args: any[]) {
+        if (args[1] === "readonly" && uebrig > 0) {
+          uebrig--;
+          throw new DOMException("simulierter Lesefehler", "UnknownError");
+        }
+        return (original as any).apply(this, args);
+      } as typeof IDBDatabase.prototype.transaction;
+    });
+
+    await page.goto("/?tab=form", { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(2500);
+
+    // Statt des Formulars muss eine Meldung stehen -- wer hier tippt, tippt in
+    // einen leeren Stand, der anschliessend ueber den vorhandenen ginge.
+    await expect(
+      page.getByRole("heading", { name: /nicht gelesen werden/i }),
+      "Fehleransicht fehlt -- das Formular oeffnet trotz Lesefehler",
+    ).toBeVisible();
+    expect(
+      await page.locator('input[role="spinbutton"]').count(),
+      "Zaehlerfelder trotz Lesefehler bedienbar",
+    ).toBe(0);
+
+    await page.waitForTimeout(2000);
+    const bestand = await page.evaluate(async (quelle) => {
+      const idb = new Function(`return (${quelle})()`)() as { lies: (k: string) => Promise<any> };
+      const h = await idb.lies("aussendienst_pwa_history");
+      const d = await idb.lies("aussendienst_pwa_data");
+      return { archiv: Object.keys(h || {}).sort(), notiz: d?.notes ?? null, werte: d?.values ?? null };
+    }, rohIdb.toString());
+
+    expect(bestand.archiv, "Archivmonate nach dem Lesefehler").toEqual([
+      "2026-06", "2026-07", "2026-08",
+    ]);
+    expect(bestand.notiz, "laufender Monat ueberschrieben").toBe("laufender Monat");
+    expect(bestand.werte, "Zaehlerstaende ueberschrieben").toEqual({ f1: 4 });
+  });
+});
+
+/**
+ * WCAG 2.5.3 „Label in Name".
+ *
+ * Wo eine sichtbare Beschriftung steht, MUSS der zugängliche Name sie
+ * enthalten. Ein `aria-label`, das sie *ersetzt*, macht das Bedienelement per
+ * Sprachsteuerung untreffbar: Der Nutzer sagt, was er liest — „Klick Später" —
+ * und nichts passiert, weil das Element in Wirklichkeit „Erinnerung an die
+ * Datensicherung ausblenden" heißt.
+ *
+ * Das Projekt kennt die Regel (`CLAUDE.md`, Abschnitt 2) und schreibt sie
+ * sogar im Quelltext des Update-Hinweises aus. Durchgesetzt hat sie bis
+ * 0.9.21 nichts.
+ *
+ * Bewusst eng gefasst, damit die Prüfung nicht rauscht:
+ * - Nur Elemente, die **beides** haben, sichtbaren Text und `aria-label`.
+ *   Ein Symbolknopf ohne Text ist genau der Fall, für den `aria-label` da ist.
+ * - Verglichen wird nach Kleinschreibung, ohne Satzzeichen und mit
+ *   zusammengezogenen Leerräumen — „Später" und „später." sollen gleich sein.
+ * - `aria-hidden`-Elemente bleiben außen vor; sie haben keinen Namen.
+ */
+async function findeNamensverstoesse(page: Page) {
+  return page.evaluate(() => {
+    const normal = (s: string) =>
+      s
+        .toLowerCase()
+        /* Satzzeichen UND Klammern und das kaufmännische Und. „&" gegen „und"
+           ist der einzige Symbol-Fall in dieser App: Sichtbar steht „Monat
+           abschließen & neu starten", angesagt wird „…und neu starten". Wer
+           per Sprachsteuerung liest, sagt ohnehin „und" — daran soll die
+           Prüfung nicht scheitern. Ein fehlendes WORT bleibt ein Verstoß. */
+        .replace(/[.,:;!?„“"'’–—&()[\]{}/-]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const treffer: string[] = [];
+    const kandidaten = document.querySelectorAll<HTMLElement>(
+      'button[aria-label], a[href][aria-label], [role="button"][aria-label], [role="tab"][aria-label], summary[aria-label]',
+    );
+    for (const el of Array.from(kandidaten)) {
+      if (el.closest('[aria-hidden="true"]')) continue;
+      if (el.offsetWidth === 0 && el.offsetHeight === 0) continue;
+
+      // Sichtbarer Text ohne das, was Screenreadern ohnehin verborgen ist.
+      const klon = el.cloneNode(true) as HTMLElement;
+      klon.querySelectorAll('[aria-hidden="true"], .sr-only, svg').forEach((k) => k.remove());
+      /*
+        Textknoten einzeln einsammeln und mit Leerzeichen verbinden.
+        `textContent` zieht benachbarte Elemente ohne Trenner zusammen: Aus
+        „Vorführungen" und „0" wurde „vorführungen0", also ein Wort, das in
+        keinem Namen vorkommt. Vier Kacheln wurden dadurch falsch gemeldet.
+      */
+      const laeufer = document.createTreeWalker(klon, NodeFilter.SHOW_TEXT);
+      const stuecke: string[] = [];
+      while (laeufer.nextNode()) stuecke.push(laeufer.currentNode.nodeValue || "");
+      const sichtbar = normal(stuecke.join(" "));
+      if (!sichtbar) continue;
+
+      const name = normal(el.getAttribute("aria-label") || "");
+
+      /*
+        Wortweise und in der Reihenfolge, nicht als Teilzeichenkette.
+
+        Ein reiner `includes` meldete vier Kacheln fälschlich: Deren sichtbarer
+        Text steht in zwei Elementen („Vorführungen" und „0"), `textContent`
+        zieht ihn ohne Trennzeichen zu „vorführungen0" zusammen, und das steht
+        so in keinem Namen. Der Name enthält beide Wörter sehr wohl — nur mit
+        Text dazwischen, was 2.5.3 ausdrücklich erlaubt. Geprüft wird deshalb,
+        ob alle Wörter der Beschriftung in derselben Reihenfolge im Namen
+        vorkommen.
+      */
+      const woerter = sichtbar.split(" ").filter(Boolean);
+      const imNamen = name.split(" ").filter(Boolean);
+      let i = 0;
+      for (const wort of imNamen) {
+        if (wort === woerter[i]) i++;
+      }
+      if (i < woerter.length) {
+        treffer.push(
+          `${el.tagName}: sichtbar "${sichtbar}" / Name "${name}" (fehlt ab "${woerter[i]}")`,
+        );
+      }
+    }
+    return treffer;
+  });
+}
+
+test.describe("WCAG 2.5.3: Name enthält die sichtbare Beschriftung", () => {
+  const alle = [
+    ...ANSICHTEN.map((a) => ({ name: a.name, oeffne: (p: Page) => oeffne(p, a.tab) })),
+    ...EINSTIEGE.map((e) => ({ name: e.name, oeffne: (p: Page) => oeffneUeberEinstieg(p, e) })),
+  ];
+
+  for (const ansicht of alle) {
+    test(`${ansicht.name}: kein Name ersetzt die Beschriftung`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "Namen haengen nicht am Geraeteprofil");
+      await ansicht.oeffne(page);
+      const verstoesse = await findeNamensverstoesse(page);
+      expect(
+        verstoesse,
+        `${ansicht.name}: aria-label ersetzt die sichtbare Beschriftung — ${verstoesse.join(" | ")}`,
+      ).toEqual([]);
+    });
+  }
 });

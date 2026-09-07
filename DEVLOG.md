@@ -10,6 +10,446 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-07 — v0.9.22: Plausibilitätsprüfung der ganzen Codebasis
+
+Auftrag: den gesamten Code auf Plausibilität prüfen, **alles verifizieren und
+nichts behaupten**, die Barrierefreiheit lückenlos machen und die ±5-Tasten
+entfernen.
+
+„Plausibilität" heißt in diesem Projekt nicht Stil, sondern: Tut der Code das,
+was sein Name, sein Kommentar oder die Dokumentation behauptet? Gesucht waren
+Widersprüche zwischen Behauptung und Wirkung. Es waren mehr, als erwartet.
+
+**Zur Veröffentlichung:** 0.9.21 (Update-Boden) war fertig und grün, aber noch
+nicht gepusht, als der erste Befund kam. Die im Plan festgehaltene
+Abbruchbedingung — bei einem Fund, der Daten gefährdet, wird nicht
+veröffentlicht — hat gegriffen. Beide Stände gehen deshalb zusammen live; der
+Changelog führt sie getrennt, weil es zwei verschiedene Dinge sind.
+
+---
+
+### Der schwerste Fund: Ein Lesefehler beim Start löschte das Archiv
+
+Reproduziert gegen die **gebaute** App, nicht am Quelltext abgeleitet. Der
+Auslöser ist bewusst präzise: Es scheitern nur die ersten beiden **lesenden**
+Transaktionen (`IDBDatabase.prototype.transaction` mit `mode === "readonly"`),
+schreibende bleiben erlaubt. Genau so verhält sich ein vorübergehender
+Lesefehler auf einer intakten Datenbank — hätte ich die Datenbank ganz
+blockiert, wäre auch das Schreiben gescheitert und der Fehler unsichtbar
+geblieben.
+
+| Schritt | Ergebnis vorher |
+|---|---|
+| Archiv angelegt | `2026-06`, `2026-07`, `2026-08` |
+| App geladen, ein Lesefehler | App rendert normal, **keine Warnung** |
+| **Eine** Zahl eingetippt | Archiv enthält nur noch `2026-09` |
+
+Drei Monate weg, ohne einen Hinweis. Ursache war nicht ein fehlender Wächter,
+sondern ein Fehlerzweig, der die vorhandenen aushebelte:
+
+```
+} catch (e) {
+  setReportData(leererMonat(aktuellerMonat()));
+  setHistory({});          // <- wahrheitswertig
+```
+
+Der Archiv-Spiegel prüft `if (!prev) return prev` — gedacht als „Archiv noch
+nicht geladen, also nichts schreiben". `{}` ist wahrheitswertig und lief
+durch. Parallel löste der leere Monat den Speichereffekt aus, der 400 ms
+später den laufenden Bericht überschrieb.
+
+**Behoben, indem der Zweig nichts mehr in den Zustand schreibt.** `reportData`
+und `history` bleiben `null`, womit die vorhandenen Wächter von selbst
+greifen; `App.tsx` zeigt statt des Formulars eine eigene Meldung mit
+`role="alert"` und Ansage. Gegenprobe mit derselben Messung: Archiv und
+Bericht unverändert, kein Zählerfeld bedienbar, eine Taste „Erneut versuchen"
+(404 × 48 px).
+
+**Ein zweiter Fund fiel beim Bau des Prüffalls an:** Im Entwicklungsmodus rief
+React den Ladeeffekt im StrictMode zweimal auf. Der erste Lauf scheiterte wie
+gewollt, der zweite gelang — Entwicklungs- und Produktionsfassung verhielten
+sich also unterschiedlich, und die Prüfung hätte etwas anderes gemessen als
+das, was ausgeliefert wird. Mit einem `useRef`-Wächter läuft er einmal.
+
+**Zwei weitere Stellen derselben Ebene:**
+
+- Der Wächter der Notfallkopie prüfte nur, ob der Schlüssel *existiert* —
+  während der Kommentar darüber seit jeher sagt, dieser Pfad habe „schon
+  einmal einen nahezu leeren Stand über echte Daten geschrieben". Jetzt
+  entscheidet der Inhalt: Eine leere Notfallkopie verliert gegen einen vollen
+  regulären Stand.
+- Eine gemeinsame Flagge für zwei Speicherebenen: Ein erfolgreicher Schreib-
+  vorgang des **Berichts** löschte die Warnung über ein fehlgeschlagenes
+  **Archiv** mit. Kontingent voll → das große Archivobjekt scheitert, Banner
+  erscheint; eine getippte Zahl passt noch ins kleine `aussendienst_pwa_data`
+  → 400 ms später ist das Banner weg, das Archiv weiter ungesichert. Jetzt
+  zwei Flaggen, und `persistHistory` meldet auch den Erfolg zurück.
+- `speicherFehler` ist ein String. Zweimal derselbe Fehlschlag setzte denselben
+  Wert, React rendert nicht neu, der Ansage-Effekt lief nicht erneut — der
+  **zweite** Fehlversuch blieb stumm, während der Toast daneben Erfolg meldete.
+  Ein Zähler daneben löst das.
+
+---
+
+### Elf Ansichten, zehn geprüft
+
+`CLAUDE.md` sagt seit 0.9.18, die Prüfung decke alle elf Ansichten ab. Das
+stimmte nicht: Der Eintrag „Formular anpassen" klickt eine Menüzeile in
+`A11yModal` und landet auf einem **Untermenü gleichen Namens** — kein eigener
+`activeTab`. `ManageModal` („Formularfelder verwalten") liegt eine Ebene
+tiefer. Die Prüfung wartete auf die Überschrift „Formular anpassen", fand sie
+sofort und maß seither die falsche Ansicht.
+
+Beim ersten echten Lauf gegen `manage`: **sechs Fehlschläge, fünf Defekte.**
+
+| Befund | Wirkung |
+|---|---|
+| Fokusfalle (Tab-Umlauf) | WCAG 2.1.2 — mit der Tastatur kam man aus der Ansicht nicht heraus, mit der Maus schon. Dieselbe Falle, die am 2026-09-02 aus `CarryoverModal` entfernt wurde |
+| Scrollbereich ohne `tabIndex` | mit der Tastatur nicht anspringbar — derselbe Fall, den 0.9.20 in der Hilfe behoben hat |
+| Überschrift ohne `min-w-0` | **531 px Inhalt in einem 360-px-Fenster**, bisektiert durch Ausblenden. Neunter Fall dieser Klasse |
+| Abschnittsüberschrift in Versalien | erzwang dem Scrollbereich 245 px Mindestbreite bei 174 px Platz → stilles Seitwärtsscrollen |
+| Löschtaste 40 × 40 px | unter den 44 px aus WCAG 2.5.5 |
+| `handleBackdropClick` | toter Code — und der beste Beleg dafür, dass die Ansicht kein Overlay mehr ist |
+
+Alle behoben, alle sieben Prüfungen der Ansicht laufen.
+
+---
+
+### Kontrast: Die Bestätigungstaste war in zwei Schemata unsichtbar
+
+`ConfirmDialog` setzte `text-white` auf `bg-[var(--danger-solid)]`. Diese
+Variable ist im Schema „Weiß auf Schwarz" selbst `#ffffff` und in „Gelb auf
+Schwarz" `#ffff00`.
+
+| Schema | vorher | nachher |
+|---|---|---|
+| Weiß auf Schwarz | **1,00:1** | 21,00:1 |
+| Gelb auf Schwarz | ~1,07:1 | 19,56:1 |
+
+Betroffen waren **alle vier zerstörenden Rückfragen** (Kategorie löschen,
+Formular zurücksetzen, Schicht löschen, alles ersetzen): Der Nutzer sah zwei
+Tasten, eine davon leer, und musste raten, welche löscht — in genau den beiden
+Schemata, die für diese Zielgruppe gebaut sind. Die passende Variable
+`--danger-solid-text` existiert und wird überall sonst benutzt.
+
+**Warum das Prüfgate es nicht fand:** Der Kontrastlauf misst gerenderte
+Ansichten, `ConfirmDialog` rendert nur bei offener Rückfrage, und keine
+Prüfung öffnet eine. Zwei weitere unsichtbare Symbole derselben Machart
+(Hilfe-Kopf, Optionen-Menü) kamen dazu.
+
+Nachgemessen wurden alle Reparaturen über **vier Schemata × sechs Stellen =
+24 Kombinationen**, keine darunter.
+
+### Die RV Analyse folgte keiner Theme-Wahl
+
+`var(--primary-color, #10b981)` — diese Variable ist **im ganzen Projekt
+nirgends definiert**, der Rückfallwert griff also immer. Ring und Trendkurven
+standen auf festen Hex-Werten, die Legende daneben längst auf `--cat-1..4`. In
+„Gelb auf Schwarz" waren die Legendenpunkte einheitlich gelb, die Ringsegmente
+grün/orange/indigo — die Zuordnung war zerrissen (WCAG 1.4.1), und `#6366f1`
+auf Schwarz liegt mit rund 2,3:1 unter den 3:1 für grafische Elemente.
+
+Behoben mit Theme-Variablen **und Strichmustern**: In den Hochkontrast-Schemata
+fallen alle vier Kategoriefarben absichtlich zusammen, dort wären vier
+gleichfarbige Kurven ununterscheidbar. Die Legende zeigt jetzt dieselben Muster
+statt vier Punkten.
+
+---
+
+### WCAG 2.5.3 „Label in Name" — erst die Prüfung, dann die Liste
+
+Das Projekt kennt die Regel und schreibt sie im Quelltext aus. Durchgesetzt hat
+sie nichts. Statt eine übernommene Liste abzuarbeiten, ist zuerst die Prüfung
+entstanden: Jedes Element mit sichtbarem Text **und** `aria-label` muss alle
+Wörter der Beschriftung in derselben Reihenfolge im Namen führen.
+
+Das war die richtige Reihenfolge — die erste Fassung der Prüfung meldete vier
+Kacheln falsch, weil `textContent` „Vorführungen" und „0" ohne Trenner zu
+`vorführungen0` zusammenzieht. Textknoten einzeln einsammeln, wortweise
+vergleichen, Klammern und `&` wie Satzzeichen behandeln: Danach blieben zehn
+echte Verstöße, darunter „Später" (Name: „Erinnerung an die Datensicherung
+ausblenden"), „Grafik" (Name: „Grafische Ansicht") und der Kasten „Backup mit
+Passwort schützen", dessen `aria-label` die umschließende Beschriftung
+überschrieb. Wer per Sprachsteuerung sagt, was er liest, traf nichts.
+
+**Zwei Prüfungen verteidigten den Fehler**, statt ihn zu finden: Sie suchten
+den Kasten über genau das `aria-label`, das ihn kaputt machte. Beide zeigen
+jetzt auf die sichtbare Beschriftung.
+
+---
+
+### Die ±5-Tasten sind weg — und der Platz ist geblieben
+
+Sie waren die **einzige** Stelle, an der diese App eine WCAG-Ausnahme in
+Anspruch nahm (2.5.5, Gleichwertigkeit): `tabIndex={-1}`, `aria-hidden`, bei
+„Extra groß" 40,0 px. Mit ihrem Wegfall erfüllt jedes Bedienelement der App die
+44 px **ohne Ausnahme**, und das Prüfgate kennt nur noch eine Schwelle statt
+zweier.
+
+Gemessen über 320 und 360 px × drei Schriftgrößen × „Segoe UI" und erzwungenes
+Verdana (12 Kombinationen, kein Befund):
+
+| | 0.9.21 | 0.9.22 |
+|---|---|---|
+| Elemente in der Bedienzeile | 5 | **3** |
+| −1/+1 bei „Extra groß", 360 px | 53,6 × 56 px | **80 × 64 px** |
+| −1/+1 bei „Normal", 360 px | 61,7 × 56 px | **88 × 64 px** |
+| −1/+1 bei 320 px, „Extra groß" | ~53 px (±5: 40,4) | **60 × 64 px** |
+| Zahlenfeld | 56–72 × 56 px | **76–96 × 64 px** |
+| Reserve in der Zeile | 0 bzw. −2,1 px | **14 px in jeder Kombination** |
+
+Die Direkteingabe trägt die weggefallene Funktion: Das Zahlenfeld ist deutlich
+größer, seine Feldbeschreibung nennt sie ausdrücklich, und über den Zählern
+steht **einmal** ein sichtbarer Hinweis. Bewusst nicht je Abschnitt — vier
+gleiche Sätze stehen auch viermal in der Vorlesereihenfolge, und für diese
+Zielgruppe ist das kein Hinweis mehr, sondern Ballast.
+
+---
+
+### Reine Logik: drei Befunde, der Rest deckungsgleich
+
+Geprüft und unauffällig: `merge.ts` (Idempotenz, feldweise Zeitstempel,
+Versand-Markierung über `sentUpdatedAt`, kein verlorenes Feld beim Wiederaufbau
+von `ReportData`), `timeUtils.ts` samt Zeitumstellung — der einzige Aufrufer in
+der App übergibt das Datum tatsächlich —, `crypto.ts`, `stableJson.ts`,
+`archivEintrag.ts`, `liveSync.ts` (beide dokumentierten Feinheiten stimmen),
+`speicherSchutz.ts`.
+
+**`pruefeSyncPaket` ließ ein Paket durch, an dem das Zusammenführen abstürzt.**
+Geprüft wurde nur `Array.isArray(timeLogs)`, nie die Einträge. Ausgeführt mit
+`npx tsx`:
+
+```
+pruefeSyncPaket: ANGENOMMEN
+mergeSyncPayload: ABSTURZ -> TypeError: Cannot read properties of
+                             undefined (reading 'localeCompare')
+```
+
+`mergeTimeLogs` sortiert über `x.date.localeCompare(...)`. Ein Eintrag ohne
+`date` reicht. Das ist genau die Fehlerklasse, für die diese Datei angelegt
+wurde — die Kopfzeile beschreibt sie wörtlich. `reportData.timeLogs` wurde gar
+nicht auf „ist eine Liste" geprüft. Beides behoben, vier Prüffälle dazu
+(144 → 148).
+
+**Ein Kommentar begründete Code mit einer Lage, die es nicht mehr gibt.**
+`syncSchema.ts` erklärte seine Typform damit, `strict` sei „noch aus (bekannte
+Schuld Richtung 1.0)". `tsconfig.json` steht seit 0.9.13 auf `"strict": true`.
+
+**Die Sicherungs-Erinnerung verstummte nicht, wenn man ihr folgte.**
+`merkeSicherung()` schreibt nur nach `localStorage` und löst kein Rendern aus;
+der auswertende Effekt hing an `[reportData, history]`. Wer ein Backup
+erstellte und zurückging, sah „Ihre letzte Datensicherung ist 21 Tage her"
+unverändert weiterstehen. `activeTab` in den Abhängigkeiten löst es an dem
+Punkt, an dem das Band wieder sichtbar werden kann.
+
+---
+
+### Weitere bestätigte Befunde
+
+- **Der Fristalarm las den Versandstatus nie.** `history` kam in
+  `getDeadlineAlert` nicht vor; wer am 2. September gesendet hatte, wurde bis
+  zum 8. weiter aufgefordert, „sofort" zu senden — in einem `role="alert"` mit
+  Ansage. Zweitens hieß die Variable `isPastDeadlineMonth`, die Bedingung war
+  aber „irgendein anderer Monat", also auch jeder **zukünftige**.
+- **Ein rohes `localStorage.setItem` im Rumpf eines Effekts.** Bei vollem
+  Kontingent reißt das die App in die ErrorBoundary — der Nutzer sähe ab dem 8.
+  des Monats den Absturzbildschirm statt des Formulars. Es war die einzige
+  Stelle im Projekt, die am `safeSetItem`-Schutz vorbeischrieb.
+- **Das Wischen wechselte den Bereichsfilter stumm.** Ein Wisch blendet drei von
+  vier Abschnitten aus; jeder Klick auf eine Kachel sagt es an, der Wisch nicht.
+  Die dafür angelegte Namenstabelle stand ungenutzt im Code, mitsamt dem
+  Arbeitsvermerk „Wait, we need to define this later".
+- **„Vormonats-Werte" war nicht der Vormonat.** Geladen wird der jüngste
+  archivierte Monat — beim Blick in einen alten Archivmonat also einer, der
+  *nach* dem bearbeiteten liegt. Der Bestätigungsdialog nannte ihn richtig, das
+  `aria-label` nicht; für die blinde Zielgruppe war es der einzige Hinweis vor
+  dem Antippen.
+- **44 Zeilen toter Code mit Schreibzugriff** (`applyTemplate`) plus sechs tote
+  Bezeichner. `getReportWarnings` und `handleExportExcel` erweckten den
+  Eindruck, es gäbe einen zweiten Exportweg.
+
+---
+
+### Zwei Messfallen, die diesmal zugeschlagen haben
+
+- **`src/App.tsx` ist CRLF.** Mehrzeilige Anker in Node-Skripten mit `\n`
+  finden nichts, und der Fehlschlag sieht aus wie ein falscher Anker. Drei
+  Anläufe gingen dafür drauf.
+- **`befehl | tail` verdeckt den Rückgabewert.** Der Prüflauf meldete
+  „exited with code 0", während in der Ausgabe „1 failed" stand — die Pipe
+  liefert den Status von `tail`. Wer den Rückgabewert auswertet, darf nicht
+  durch `tail` leiten.
+
+### Was offen bleibt
+
+NVDA, VoiceOver und ein echtes iPhone. Ein grünes Prüfgate ist kein
+Konformitätsnachweis: axe findet einen Teil der WCAG-Verstöße, nie alle, und
+die schwersten Funde dieses Tages — eine unsichtbare Bestätigungstaste, eine
+Tastaturfalle, ein gelöschtes Archiv — hat keiner von ihnen gemeldet. Gefunden
+hat sie das Lesen und das Nachstellen.
+
+---
+
+## 2026-09-07 — v0.9.21: Der Update-Hinweis, den nie jemand gesehen hat
+
+Auftrag war der letzte offene technische Punkt aus 0.9.20: „Untergrenze für
+Service-Worker-Updates. Updates sind bestätigungspflichtig und laden nie von
+selbst neu — beim Tippen richtig. Wer aber immer wegdrückt, bleibt beliebig
+lange auf einer alten Fassung. Prüfen, ob es einen Boden gibt, und sonst einen
+einziehen."
+
+Geprüft wurde mit einem echten Update-Zyklus gegen die **gebaute** App: ein
+eigener statischer Server für `dist/` (ohne CSP, wie GitHub Pages es liefert),
+Playwright davor, und `dist/sw.js` zwischendurch verändert, damit der Browser
+ein Update tatsächlich entdeckt. Kein Nachbau der Logik, sondern der Ablauf
+selbst.
+
+### Der Befund, der die Frage umdreht
+
+**`public/sw.js` ist seit dem 2026-07-19 unverändert.** Danach 50 weitere
+Commits, die Fassungen 0.8.0 bis 0.9.20 — keine hat die Datei angefasst,
+`dist/sw.js` ist byteidentisch mit `public/sw.js`.
+
+Ein Browser erkennt ein Service-Worker-Update ausschließlich an den Bytes
+dieser Datei. Also: **Der Hinweis „Neue Version verfügbar" ist seit sieben
+Wochen kein einziges Mal erschienen.** Kein Nutzer hat ihn je gesehen. Die
+Lage, nach der die ROADMAP fragte — jemand drückt immer weg und versauert auf
+einer alten Fassung —, hat es nie gegeben.
+
+Dass die Kollegen trotzdem die aktuelle Fassung bekommen, liegt an etwas
+anderem: Der Worker arbeitet **network-first**. `index.html` wird bei jeder
+Navigation zuerst aus dem Netz geholt und verweist auf die neuen gehashten
+Dateien. Die Aktualisierung läuft, nur nicht über den Weg, den der Code
+dokumentiert.
+
+### Was die Messung sonst fand — sechs Punkte, fünf davon Defekte
+
+| Gemessen | Ergebnis |
+|---|---|
+| Erstbesuch | **2 Navigationen** des Hauptrahmens. `clients.claim()` löst `controllerchange` aus, obwohl gar keine andere Fassung übernimmt — die Seite lud sich selbst neu. Mit Sprachausgabe ein zweiter kompletter Seitenaufbau ohne Anlass. |
+| Trefferflächen des Hinweises | „Jetzt aktualisieren" **152 × 36 px**, „Später" **41 × 20 px**. Unter den 44 px aus WCAG 2.5.5, die zweite sogar unter den 24 px der AA-Stufe. |
+| Nach „Später" + Neuladen | Hinweis kam **nicht** wieder, auch nach zwei Neuladungen nicht. `reg.waiting` wurde nirgends ausgewertet, nur `updatefound` — und das feuert genau einmal je Installation. |
+| Lage des Hinweises | `bottom: 1rem`, `z-index: 99999` — also genau auf der schwebenden Hauptnavigation (`bottom-4`, `z-[200]`). Er verdeckte sie. |
+| Farben | `#1e293b` / `#22c55e` / `#cbd5e1` fest verdrahtet, unabhängig vom gewählten Farbschema. Die einzige Fläche der App außerhalb des Theme-Systems. |
+| Kaltstart (alle Fenster zu) | Neue Fassung aktiviert sich **von selbst**, alter Cache weg, eine Navigation. |
+
+Die letzte Zeile ist die ehrliche Korrektur am ROADMAP-Satz: **Einen Boden gab
+es, er gehörte nur nicht uns.** Sind alle Clients geschlossen — auf dem Handy
+der Normalfall —, aktiviert der Browser den wartenden Worker selbst. Nur wer
+die Seite bloß neu lädt und nie schließt, bleibt beliebig lange alt. „Beliebig
+lange auf einer alten Fassung" stimmt also für den Schreibtisch, nicht fürs
+Handy.
+
+Der eigentliche Defekt war ein anderer als vermutet: Nach einmal „Später"
+hatte der Nutzer **keinen Weg mehr**, das Update anzustoßen. Nicht das
+Wegdrücken war das Problem, sondern dass die Frage nie wieder gestellt wurde.
+
+### Der Fund, der alles andere aufgehalten hat
+
+Bevor ein Boden ein Update erzwingen darf, muss klar sein, was ein erzwungenes
+Update anrichtet. Gemessen:
+
+| Ablauf | Ergebnis |
+|---|---|
+| Offline, **ohne** Update, Seite neu laden | App rendert, keine fehlgeschlagene Anfrage |
+| Offline ein wartendes Update **anwenden** | **`#root` leer (0 Zeichen)**, `assets/index-*.js` und `-*.css` schlagen fehl, Cache enthält nur noch Schale und Icons |
+
+Ursache: `activate` löscht jeden Cache außer dem neuen, und der neue enthielt
+nach `install` nur die sechs Einträge der `ASSETS`-Liste — nicht die gehashten
+Build-Dateien. Die frisch aktivierte `index.html` verweist auf Dateien, die
+weder im Netz (offline) noch im Cache (gelöscht) liegen. Weiße Seite, bis
+wieder Netz da ist. Die Daten sind nicht verloren, aber unerreichbar — für
+Außendienst im Funkloch der schlechteste denkbare Zustand.
+
+Das ist **kein neuer Fehler**: Die Taste „Jetzt aktualisieren" konnte das
+schon immer auslösen. Es ist aber die Vorbedingung für jeden Zwang, und
+deshalb zuerst behoben.
+
+### Was geändert wurde
+
+**`public/sw.js`** — `install` holt zusätzlich alles, worauf die frisch
+geladene `index.html` unter `assets/` verweist. Die Installation läuft immer
+online (ein Update wird über das Netz entdeckt), der Cache ist also
+vollständig, *bevor* aktiviert wird. Gegenprobe mit demselben Skript:
+
+| | vorher | nachher |
+|---|---|---|
+| Cacheinhalt nach dem Update | Schale + Icons | Schale + Icons + `index-*.css` + `index-*.js` |
+| Fehlgeschlagene Anfragen | 2 | 0 |
+| App nach Offline-Update bedienbar | **NEIN** (0 Zeichen in `#root`) | **JA** |
+
+**`index.html`** — drei Stufen statt „einmal fragen, dann nie wieder":
+
+1. `reg.waiting` wird beim Start ausgewertet, nicht nur `updatefound`. Der
+   Hinweis kommt damit bei jedem Start wieder.
+2. Ab **7 Tagen** entfällt „Später"; die Rolle wechselt von `status` auf
+   `alert`, der Text nennt die Zahl der Tage.
+3. Ab **14 Tagen** wendet der nächste Start das Update selbst an — angesagt,
+   mit 8 Sekunden Vorlauf, und **nur beim Start**: Dort ist noch nichts
+   getippt, was verlorengehen könnte. Offline wird nicht erzwungen, dann
+   bleibt es beim nicht wegdrückbaren Hinweis.
+
+Dazu der Wächter gegen den Erstbesuch-Reload und ein Prüfhaken
+`window.rvUpdateHinweis`, über den die Oberflächenprüfung denselben Hinweis
+erzeugt, den der echte Ablauf erzeugt.
+
+**`src/index.css`** — die Gestaltung ist aus dem `style.cssText` heraus in eine
+Klasse gewandert: Theme-Variablen statt fester Farben, `--rv-radius-*` und
+`--rv-shadow-*`, gestapelt statt nebeneinander, `min-height: 44px`, und über
+statt auf der Navigationsleiste.
+
+### Nachgemessen, alle drei Schriftgrößen, zwei Breiten, zwei Schriftarten
+
+36 Kombinationen (320 und 360 px × „Segoe UI" und erzwungenes Verdana als
+Nachstellung des CI-Läufers × drei Schriftgrößen × drei Stufen):
+
+| | vorher | nachher |
+|---|---|---|
+| „Jetzt aktualisieren" | 152 × 36 px | 171 × 44 bis 281 × 85 px |
+| „Später" | 41 × 20 px | 82 × 44 bis 281 × 56 px |
+| kleinstes Element | 41 × 20 px | **82 × 44 px** |
+| waagerechter Überlauf | — | keiner (`scrollWidth` = Fensterbreite in allen 36) |
+| verdeckt die Navigation | ja | in keiner Kombination |
+
+Und der Boden selbst, mit vorgestellter Uhr im Speicher:
+
+| Stufe | Ergebnis |
+|---|---|
+| Erstbesuch | **1 Navigation** (vorher 2) |
+| 0 Tage | Hinweis, Rolle `status`, zwei Tasten |
+| „Später" + Neuladen | **Hinweis ist wieder da** (vorher: nie wieder) |
+| 9 Tage | Rolle `alert`, „Später" verschwunden, Text nennt die Tage |
+| 15 Tage | Update wird beim Start selbst angewandt: 2 Navigationen, nur noch der neue Cache, Uhr zurückgestellt, Hinweis weg, **App bedienbar** |
+
+### Was das nicht abdeckt
+
+- **Ein Tab, der wochenlang offen bleibt und nie neu geladen wird**, erlebt
+  keinen Start und wird deshalb nicht automatisch aktualisiert. Er eskaliert
+  über eine stündliche Nachschau bis zur Stufe „nicht mehr wegdrückbar", mehr
+  nicht. Ein Reload in eine laufende Sitzung hinein, deren Ruhe niemand
+  nachweisen kann, wäre gegen die stehende Regel dieses Projekts — und der
+  Preis wäre Datenverlust, nicht Bequemlichkeit.
+- **Nachgeladene Bildschirme** (Geräte-Sync, Datensicherung, Excel) stehen als
+  dynamische Importe nicht in der `index.html` und werden deshalb nicht
+  vorgeladen. Nach einem Update im Funkloch fehlt nicht mehr die App, aber
+  diese drei brauchen einmalig Netz.
+- **Nichts davon ist auf einem echten iPhone geprüft**, und wie sich die Ansage
+  der Zwangsstufe mit VoiceOver anhört, ist offen. Das bleibt Handarbeit
+  für 1.0.
+
+### Ein Punkt, der zur Veröffentlichung gehört
+
+Diese Änderung fasst `sw.js` an. Damit ist dieser Deploy **das erste
+Update-Ereignis seit dem 2026-07-19**: Jeder Bestandsnutzer bekommt beim
+nächsten Online-Start den Hinweis zu sehen — zum ersten Mal überhaupt. Genau
+deshalb musste der Hinweis vorher stimmen. Der Ablauf für den Bestandsnutzer
+ist im Zyklus oben durchgespielt: neue `index.html` über network-first, neuer
+Install-Code füllt den Cache vollständig, dann erst die Frage.
+
+`lint` sauber, 144 Funktionsprüfungen, Oberflächenprüfung siehe unten.
+
+---
+
 ## 2026-09-02 — Zwei Regelwerke abgeglichen, und die eigene Rechnung widerlegt
 
 Auftrag war ein Abgleich: vier neue Grundregeln gegen den Bestand aus

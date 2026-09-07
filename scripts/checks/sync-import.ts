@@ -147,3 +147,69 @@ pruefe("beschädigte QR-Teilstücke werden abgelehnt", () => {
   gleich(parseChunk("RV1|ABCD|4|3|z|daten"), null, "Teil 4 von 3 darf es nicht geben");
   gleich(parseChunk("RV1|ABCD|1"), null, "zu wenige Felder");
 });
+
+/*
+  Schichten im Paket -- die EINTRAEGE, nicht nur die Liste.
+
+  Bis 0.9.21 pruefte pruefeSyncPaket nur `Array.isArray(timeLogs)`. Ein Paket
+  mit `timeLogs: [{ id: "a" }]` kam damit durch und riss danach das
+  Zusammenfuehren ab: `mergeTimeLogs` sortiert ueber
+  `x.date.localeCompare(...)` und lief auf `undefined`. Reproduziert am
+  2026-09-07 -- `pruefeSyncPaket` sagte ANGENOMMEN, `mergeSyncPayload` warf
+  "TypeError: Cannot read properties of undefined (reading 'localeCompare')".
+
+  Genau diese Fehlerklasse ist der Grund, aus dem es pruefeSyncPaket gibt.
+*/
+pruefe("Schicht ohne Datum wird abgelehnt statt spaeter abzustuerzen", () => {
+  const paket = {
+    app: PAKET_APP,
+    fmt: 1,
+    history: {
+      "2026-01": {
+        month: "2026-01", name: "Marc", notes: "", values: { f1: 3 },
+        timeLogs: [{ id: "a" }],
+        savedAt: "2026-01-31T10:00:00.000Z",
+      },
+    },
+  };
+  const e = pruefeSyncPaket(paket);
+  gleich(e.ok, false, "Paket mit datumsloser Schicht wurde angenommen");
+  wahr(String(e.grund).includes("Datum"), "Der Grund nennt das fehlende Datum nicht");
+});
+
+pruefe("Schicht ohne Dauer und ohne Kennung wird abgelehnt", () => {
+  const bau = (log: unknown) => ({
+    app: PAKET_APP,
+    fmt: 1,
+    reportData: { month: "2026-02", name: "", notes: "", values: {}, timeLogs: [log] },
+  });
+  gleich(pruefeSyncPaket(bau({ id: "a", date: "2026-02-01" })).ok, false, "fehlende Dauer");
+  gleich(pruefeSyncPaket(bau({ date: "2026-02-01", duration: 8 })).ok, false, "fehlende Kennung");
+});
+
+pruefe("timeLogs des laufenden Monats muessen eine Liste sein", () => {
+  const paket = {
+    app: PAKET_APP,
+    fmt: 1,
+    reportData: { month: "2026-02", name: "", notes: "", values: {}, timeLogs: "kaputt" },
+  };
+  gleich(pruefeSyncPaket(paket).ok, false, "Zeichenkette statt Liste wurde angenommen");
+});
+
+pruefe("vollstaendige Schichten passieren weiterhin", () => {
+  const schicht: TimeLog = {
+    id: "s1", date: "2026-01-05", clockIn: "08:00", clockOut: "16:00",
+    breakMinutes: 30, duration: 7.5, officeRatio: 0.5, officeHours: 3.75, fieldHours: 3.75,
+  };
+  const paket = {
+    app: PAKET_APP,
+    fmt: 1,
+    history: {
+      "2026-01": {
+        month: "2026-01", name: "Marc", notes: "", values: { f1: 3 },
+        timeLogs: [schicht], savedAt: "2026-01-31T10:00:00.000Z",
+      },
+    },
+  };
+  gleich(pruefeSyncPaket(paket).ok, true, "gueltige Schicht wurde faelschlich abgelehnt");
+});

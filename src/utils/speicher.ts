@@ -28,8 +28,16 @@ export const persistHistory = (
   data: Record<string, unknown>,
   onFailure: OnPersistFailure,
   context: string,
+  /**
+   * Wird nach einem geglueckten Schreibvorgang gerufen. Optional, weil nicht
+   * jeder Aufrufer eine Warnung zurueckzunehmen hat -- wer eine gesetzt haben
+   * koennte, muss sie hierueber auch wieder aufheben koennen.
+   */
+  onSuccess?: () => void,
 ) => {
-  set("aussendienst_pwa_history", data).catch((err) => onFailure(context, err));
+  set("aussendienst_pwa_history", data)
+    .then(() => onSuccess?.())
+    .catch((err) => onFailure(context, err));
 };
 
 /**

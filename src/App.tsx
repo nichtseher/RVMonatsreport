@@ -44,7 +44,6 @@ import {
   HistoryRecord,
   YearlyCarryover,
   TimeLog,
-  ValueTimestamps,
 } from "./types";
 import { baueArchivEintrag } from "./utils/archivEintrag";
 import { persistHistory, safeSetItem } from "./utils/speicher";
@@ -56,7 +55,6 @@ import { useStempeluhr } from "./hooks/useStempeluhr";
 import { useBerichtsdaten } from "./hooks/useBerichtsdaten";
 import { monthHasContent } from "./utils/monatInhalt";
 import { stempeln, stempelNachtragen, stempelnGeaenderte } from "./utils/zeitstempel";
-import { stableStringify } from "./utils/stableJson";
 import { pruefeSyncPaket } from "./utils/syncSchema";
 import {
   sichereSpeicher,
@@ -70,8 +68,6 @@ import {
 // hier und in HistoryModal.tsx -- drei Kopien, die auseinanderlaufen konnten.
 import { formatMonthGerman } from "./utils/dateUtils";
 import {
-  exportTimeLogsToExcel,
-  triggerFileDownload,
 } from "./utils/excelUtils";
 import { subscribeLiveSync, getLiveSyncSnapshot } from "./utils/liveSync";
 import A11yModal from "./components/A11yModal";
@@ -113,13 +109,13 @@ import { ChangelogModal } from "./components/ChangelogModal";
 const ONBOARDING_KEY = "aussendienst_pwa_onboarding_v1";
 
 /**
- * Hat dieser Monat echten Inhalt -- also etwas, das verloren gehen koennte?
+ * Die Felder, mit denen die App ausgeliefert wird.
  *
- * Der Name zaehlt bewusst NICHT dazu: Er wird beim Monatswechsel automatisch
- * mitgenommen, dadurch galt jeder frische Monat sofort als "hat Daten" und
- * landete leer im RV Archiv. Die Archivliste fuellte sich mit Eintraegen
- * "Zaehler: 0", und ein Rueckgaengig nach dem Monatsabschluss haette einen
- * leeren Monat zurueckgelassen.
+ * Hier stand bis 0.9.22 die Beschreibung von `monthHasContent` -- einer
+ * Funktion, die seit 0.9.15 in `utils/monatInhalt.ts` liegt und ihren Text
+ * dort nochmals fuehrt. Ein Doc-Block ueber der falschen Deklaration ist
+ * schlimmer als keiner: Er beschreibt beim Ueberfliegen etwas, das gar nicht
+ * darunter steht.
  */
 const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
   s1: [
@@ -429,26 +425,42 @@ export default function App() {
 
   const tabs = ["all", "s1", "s2", "s3", "s4"] as const;
   
+  /*
+    BEREICHSNAMEN FÜR DIE ANSAGE -- wörtlich dieselben wie an den vier Kacheln.
+
+    Bis 0.9.21 wechselte das Wischen den Filter STUMM. Ein Wisch blendet drei
+    von vier Abschnitten aus dem Dokument aus; wer nicht sieht, dem wurde die
+    Seite ohne ein Wort leergeräumt, während jeder Klick auf eine Kachel
+    ordentlich „Filter gewechselt auf …" ansagt. Im Quelltext stand die dafür
+    angelegte Tabelle sogar schon -- ungenutzt, mitsamt dem Arbeitsvermerk
+    „Wait, we need to define this later".
+  */
+  const bereichsNamen: Record<(typeof tabs)[number], string> = {
+    all: "Alle Bereiche",
+    s1: "Bereich 1: Vorführungen",
+    s2: "Bereich 2: Schulungen & Support",
+    s3: "Bereich 3: Spezialprodukte",
+    s4: "Bereich 4: Arbeitszeit",
+  };
+
+  const wechsleBereich = (ziel: (typeof tabs)[number]) => {
+    setActiveSectionTab(ziel);
+    triggerHaptic(15);
+    announceToAriaAndSpeech(
+      ziel === "all"
+        ? "Filter auf alle Bereiche zurückgesetzt"
+        : `Filter gewechselt auf ${bereichsNamen[ziel]}`,
+    );
+  };
+
   const handleSwipeLeft = () => {
     const currentIndex = tabs.indexOf(activeSectionTab);
-    if (currentIndex < tabs.length - 1) {
-      const nextTab = tabs[currentIndex + 1];
-      setActiveSectionTab(nextTab);
-      // Using a basic haptic simulation (assuming triggerHaptic exists in scope)
-      triggerHaptic && triggerHaptic(15);
-      const tabNames = { s1: "Bereich 1: Vorführungen", s2: "Bereich 2: Schulungen & Support", s3: "Bereich 3: Spezialprodukte", s4: "Bereich 4: Arbeitszeit" };
-      // Assuming announceToAriaAndSpeech is hoisted or available, otherwise we use a side-effect.
-      // Wait, we need to define this later if announceToAriaAndSpeech is defined after.
-    }
+    if (currentIndex < tabs.length - 1) wechsleBereich(tabs[currentIndex + 1]);
   };
 
   const handleSwipeRight = () => {
     const currentIndex = tabs.indexOf(activeSectionTab);
-    if (currentIndex > 0) {
-      const prevTab = tabs[currentIndex - 1];
-      setActiveSectionTab(prevTab);
-      triggerHaptic && triggerHaptic(15);
-    }
+    if (currentIndex > 0) wechsleBereich(tabs[currentIndex - 1]);
   };
 
   const swipeHandlers = useSwipeable({
@@ -534,8 +546,8 @@ export default function App() {
     reportData, setReportData,
     history, setHistory,
     saveStatus, lastSavedTime,
-    storageWriteFailed, setStorageWriteFailed,
-    speicherFehler, handleHistoryPersistFailure,
+    storageWriteFailed, ladeFehler,
+    speicherFehler, fehlerZaehler, handleHistoryPersistFailure,
     handleValueChange, applyValueDelta, handleValueInput, handleMetaChange,
     lastMonthClose, setLastMonthClose,
   } = useBerichtsdaten({
@@ -609,7 +621,30 @@ export default function App() {
         : "Achtung: Speichern fehlgeschlagen. Bitte jetzt ein Backup erstellen, damit keine Daten verloren gehen.",
       true,
     );
-  }, [speicherFehler, announceToAriaAndSpeech]);
+    // `fehlerZaehler` gehört in die Abhängigkeiten, nicht nur `speicherFehler`:
+    // Zwei gleichartige Fehlschläge hintereinander setzen denselben String, der
+    // Effekt liefe sonst kein zweites Mal und der zweite Fehlversuch bliebe
+    // stumm.
+  }, [speicherFehler, fehlerZaehler, announceToAriaAndSpeech]);
+
+  /**
+   * Lesefehler beim Start ansagen.
+   *
+   * Arbeitsteilung, weil die Fehleransicht die übrige App ersetzt: Den
+   * Screenreader erreicht der Text über das `role="alert"` der Ansicht — das
+   * wird erst nach dem Fehlschlag ins Dokument gehängt und deshalb angesagt.
+   * Der reguläre Live-Bereich existiert in diesem Zweig gar nicht (nachgemessen
+   * am 2026-09-07: `[aria-live]` findet dort nichts); dieser Aufruf trägt hier
+   * also die *Sprachausgabe*, nicht die ARIA-Meldung.
+   */
+  useEffect(() => {
+    if (!ladeFehler) return;
+    announceToAriaAndSpeech(
+      "Ihre Daten konnten nicht gelesen werden. Sie sind nicht verloren, aber gerade nicht abrufbar. " +
+        "Es wird nichts gespeichert, damit nichts überschrieben wird. Bitte laden Sie die App erneut.",
+      true,
+    );
+  }, [ladeFehler, announceToAriaAndSpeech]);
 
   const finishOnboarding = useCallback(() => {
     safeSetItem(ONBOARDING_KEY, "1");
@@ -721,9 +756,25 @@ export default function App() {
     const hasValues = Object.values(reportData?.values || {}).some(
       (v) => typeof v === "number" && v > 0,
     );
-    const isPastDeadlineMonth = reportData?.month !== realCurrentMonthStr;
+    /*
+      ZWEI FEHLER, DIE HIER BIS 0.9.21 STANDEN.
 
-    if (currentDay <= 8 && isPastDeadlineMonth && hasValues) {
+      1. Der Name sagte „isPastDeadlineMonth", die Bedingung war aber nur
+         „irgendein anderer Monat als der laufende" -- also auch jeder
+         ZUKÜNFTIGE. Wer am 3. September vorausschauend auf Oktober wechselt
+         und dort etwas einträgt, bekam einen dringlichen Fristalarm für einen
+         Monat, dessen Frist Wochen entfernt ist.
+      2. Der Alarm behauptete „Sie haben ungesendete Zählerstände", hat den
+         Versandstatus aber nie gelesen: `history` kam in dieser Funktion nicht
+         vor. Wer den Bericht am 2. September gesendet hatte, wurde bis zum 8.
+         weiter aufgefordert, ihn „sofort" zu senden -- in einem `role="alert"`
+         mit Sprachansage. Eine Warnung, die auch nach dem Erledigen weiter
+         warnt, bringt man sich bei zu überhören.
+    */
+    const istFrueher = !!reportData?.month && reportData.month < realCurrentMonthStr;
+    const bereitsGesendet = !!(reportData?.month && history?.[reportData.month]?.sentAt);
+
+    if (currentDay <= 8 && istFrueher && hasValues && !bereitsGesendet) {
       return {
         sichtbar: true,
         isUrgent: true,
@@ -850,13 +901,12 @@ export default function App() {
   const {
     setzeVersandStatus,
     handleToggleVersandStatus,
-    getReportWarnings,
-    handleExportExcel,
     handleExportTimeLogsExcel,
     handleSendToVL,
   } = useExport({
     reportData,
     appFields,
+    history,
     accessibility,
     setHistory,
     announceToAriaAndSpeech,
@@ -866,19 +916,31 @@ export default function App() {
     onPersistFailure: handleHistoryPersistFailure,
   });
 
-  const getPreviousSavedMonthRecord = (): HistoryRecord | null => {
+  /**
+   * Der **jüngste** archivierte Monat, der nicht der gerade bearbeitete ist.
+   *
+   * Hieß bis 0.9.21 `getPreviousSavedMonthRecord`, und der Kommentar sprach vom
+   * „closest chronologically saved month". Beides traf nicht zu: Sortiert wird
+   * absteigend und `[0]` genommen -- das ist der neueste Eintrag, unabhängig
+   * davon, ob er vor oder nach dem Arbeitsmonat liegt. Wer aus dem Archiv den
+   * Januar öffnet und daneben den August archiviert hat, bekam über die Taste
+   * „Vorlage" die August-Zahlen, während die Beschriftung „Vormonats-Werte"
+   * versprach. Der Bestätigungsdialog nannte den Monat schon immer richtig --
+   * für die blinde Zielgruppe war der Name vor dem Antippen aber der einzige
+   * Hinweis.
+   */
+  const getJuengsterArchivMonat = (): HistoryRecord | null => {
     if (!history) return null;
     const savedMonths = Object.keys(history).filter(
       (m) => m !== reportData?.month,
     );
     if (savedMonths.length === 0) return null;
-    // Sort descending to get the closest chronologically saved month
     savedMonths.sort((a, b) => b.localeCompare(a));
     return history[savedMonths[0]];
   };
 
   const handleCopyPreviousMonth = () => {
-    const prevRecord = getPreviousSavedMonthRecord();
+    const prevRecord = getJuengsterArchivMonat();
     if (!prevRecord) return;
 
     const formattedMonth = formatMonthGerman(prevRecord.month);
@@ -1159,7 +1221,13 @@ export default function App() {
    * Monatsabschluss zurueckholen. Der neue Monat wird dabei nur dann aus dem
    * Archiv entfernt, wenn dort nichts eingetragen wurde -- sonst bliebe ein
    * leerer Eintrag stehen. Sobald der Nutzer im neuen Monat wirklich zu
-   * arbeiten beginnt, verschwindet das Angebot (siehe clearMonthCloseUndo).
+   * arbeiten beginnt, verschwindet das Angebot -- allerdings nur ueber
+   * `handleValueChange` und `handleMetaChange`. Andere Wege in denselben
+   * Zustand (Aus- und Einstempeln, Vorlage laden, Feld loeschen,
+   * Werkseinstellungen) leeren es NICHT. Datenverlust entsteht dadurch nicht,
+   * `monthHasContent` verhindert das Loeschen des Archiveintrags; das Angebot
+   * steht dann nur laenger da, als der Satz oben verspricht. Die frueher hier
+   * genannte Funktion `clearMonthCloseUndo` gibt es im Projekt nicht mehr.
    */
   const handleUndoMonthClose = () => {
     if (!lastMonthClose) return;
@@ -1244,7 +1312,22 @@ export default function App() {
       Object.keys(history).length > 0 || monthHasContent(reportData);
     const urteil = beurteileSicherung(leseLetzteSicherung(), new Date(), hatInhalt);
     setSicherungUrteil(urteil.faellig ? urteil : null);
-  }, [reportData, history]);
+    /*
+      `activeTab` gehört in die Abhängigkeiten, obwohl es im Rumpf nicht
+      vorkommt -- und das ist hier kein Versehen, sondern der Punkt.
+
+      `merkeSicherung()` schreibt nur nach `localStorage` und löst kein neues
+      Rendern aus. Mit den Abhängigkeiten `[reportData, history]` allein lief
+      dieser Effekt nach einer erstellten Sicherung erst bei der nächsten
+      Datenänderung wieder: Wer dem Band folgte, ein Backup erstellte und
+      zurückging, sah „Ihre letzte Datensicherung ist 21 Tage her" unverändert
+      weiterstehen -- und sicherte womöglich ein zweites Mal.
+
+      Der Wechsel der Ansicht ist der zuverlässige Zeitpunkt dafür: Das Band
+      steht im Formular, die Sicherung entsteht in einer anderen Ansicht. Wer
+      es wiedersehen kann, hat vorher navigiert.
+    */
+  }, [reportData, history, activeTab]);
 
   // --- LOKALE MONATSBERICHT-ERINNERUNG (serverlos, ohne Push-Dienst) ---
   useEffect(() => {
@@ -1255,7 +1338,12 @@ export default function App() {
     const monthKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
     const doneKey = "aussendienst_pwa_reminder_done_" + monthKey;
     if (localStorage.getItem(doneKey)) return;
-    localStorage.setItem(doneKey, "1");
+    // safeSetItem statt localStorage.setItem: Ein rohes setItem im Rumpf eines
+    // Effekts reißt bei vollem Kontingent (QuotaExceededError) die ganze App in
+    // die ErrorBoundary -- der Nutzer sähe ab dem 8. des Monats statt des
+    // Formulars den Absturzbildschirm. Es war die einzige Stelle im Projekt,
+    // die am Schutz vorbeischrieb.
+    safeSetItem(doneKey, "1");
     const reminderText = "Erinnerung: Bitte denken Sie an die Abgabe des Monatsberichts an die VL.";
     triggerToast(reminderText);
     announceToAriaAndSpeech(reminderText);
@@ -1273,49 +1361,13 @@ export default function App() {
     // Läuft bewusst nur einmal pro Monat (doneKey-Sperre in localStorage).
   }, [reportData?.month]);
 
-  // --- TEMPLATES ---
-  const applyTemplate = (templateName: string) => {
-    triggerHaptic(20);
-    if (!reportData) return;
-    
-    let newValues = { ...(reportData.values || {}) };
-    let newNotes = reportData.notes || "";
-
-    switch (templateName) {
-      case "Geraete-Erprobung":
-        newValues["vf_arbeit"] = (newValues["vf_arbeit"] || 0) + 1;
-        newValues["std_aussendienst"] = (newValues["std_aussendienst"] || 0) + 2.5;
-        newNotes = (newNotes ? newNotes + "\n" : "") + "Standard Geräte-Erprobung durchgeführt.";
-        announceToAriaAndSpeech("Template Geräte-Erprobung angewendet.");
-        triggerToast("Vorlage Geräte-Erprobung geladen");
-        break;
-      case "Buerotag":
-        newValues["std_buero"] = (newValues["std_buero"] || 0) + 8;
-        newValues["tage_arbeit"] = (newValues["tage_arbeit"] || 0) + 1;
-        newNotes = (newNotes ? newNotes + "\n" : "") + "Regulärer Bürotag.";
-        announceToAriaAndSpeech("Template Bürotag angewendet.");
-        triggerToast("Vorlage Bürotag geladen");
-        break;
-      case "Schulung":
-        newValues["schul_vorort"] = (newValues["schul_vorort"] || 0) + 1;
-        newValues["std_aussendienst"] = (newValues["std_aussendienst"] || 0) + 4;
-        newNotes = (newNotes ? newNotes + "\n" : "") + "Schulung vor Ort durchgeführt.";
-        announceToAriaAndSpeech("Template Schulung angewendet.");
-        triggerToast("Vorlage Schulung geladen");
-        break;
-    }
-
-    setReportData({
-      ...reportData,
-      values: newValues,
-      valuesUpdatedAt: stempelnGeaenderte(
-        reportData.valuesUpdatedAt,
-        reportData.values || {},
-        newValues,
-      ),
-      notes: newNotes,
-    });
-  };
+  /* Hier standen bis 0.9.21 42 Zeilen `applyTemplate` mit drei fertigen
+     Vorlagen (Geräte-Erprobung, Bürotag, Schulung) -- inklusive Schreibzugriff
+     auf `reportData` und gepflegten Zeitstempeln. Der Bezeichner kam in der
+     ganzen Datei genau einmal vor: in seiner eigenen Definition. Es gab keinen
+     Aufrufer; die sichtbaren „Vorlagen"-Knöpfe rufen `handleApplyNoteTemplate`
+     auf, das nur Text an die Notiz anhängt. Entfernt, weil toter Code mit
+     Schreibzugriff bei der nächsten Durchsicht als Feature gelesen wird. */
 
   // --- COMPUTE LIVE TOTALS FOR DASHBOARD ---
   const s1Total = getSectionTotal(appFields.s1);
@@ -1347,6 +1399,52 @@ export default function App() {
   const hasVisibleFields = (fields: FieldConfig[]): boolean => {
     return filterFields(fields).length > 0;
   };
+
+  /*
+    LESEFEHLER BEIM START -- eigene Ansicht statt Formular.
+
+    Warum kein Formular: Ein Lesefehler heißt nicht, dass die Daten weg sind,
+    sondern dass wir sie gerade nicht sehen. Wer in diesem Zustand tippt,
+    arbeitet in einem leeren Stand, der anschließend über den vorhandenen
+    geschrieben würde — genau der Weg, über den am 2026-09-07 ein Archiv mit
+    drei Monaten nachweislich auf einen einzigen zusammenschrumpfte.
+
+    `role="alert"` und die Ansage, weil ein blinder Nutzer sonst nur eine
+    stille Seite vorfindet.
+  */
+  if (ladeFehler) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-[var(--bg-color)] p-4">
+        <div
+          role="alert"
+          className="w-full max-w-md rounded-2xl border-2 border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger-text)] p-5 flex flex-col gap-4"
+        >
+          <h1 className="text-xl font-black flex items-start gap-2.5">
+            <AlertTriangle className="w-6 h-6 flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <span className="min-w-0 [overflow-wrap:anywhere]">
+              Ihre Daten konnten nicht gelesen werden
+            </span>
+          </h1>
+          <p className="text-sm font-bold leading-relaxed">
+            Der Speicher dieses Geräts hat beim Start nicht geantwortet. Ihre Daten sind
+            deshalb <strong>nicht verloren</strong> — sie sind nur gerade nicht abrufbar.
+          </p>
+          <p className="text-sm font-bold leading-relaxed">
+            Damit nichts überschrieben wird, speichert die App bis auf Weiteres nichts.
+            Bitte laden Sie die App neu. Hilft das nicht, schließen Sie sie ganz und öffnen
+            sie erneut.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="min-h-[44px] px-5 py-3 rounded-xl font-black bg-[var(--danger-solid)] text-[var(--danger-solid-text)] hover:brightness-110 transition-all cursor-pointer"
+          >
+            Erneut versuchen
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!reportData || !history) {
     return <div className="flex h-screen w-screen items-center justify-center bg-[var(--bg-color)] text-[var(--text-muted)]">Lade Daten...</div>;
@@ -1466,7 +1564,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab("sync")}
-                aria-label={`Live-Verbindung mit dem anderen Gerät ist aktiv.${liveSync.lastSyncTime ? ` Letzter Abgleich um ${liveSync.lastSyncTime} Uhr.` : ""} Antippen zum Verwalten.`}
+                aria-label={`Live verbunden. Die Live-Verbindung mit dem anderen Gerät ist aktiv.${liveSync.lastSyncTime ? ` Letzter Abgleich um ${liveSync.lastSyncTime} Uhr.` : ""} Antippen zum Verwalten.`}
                 className="ml-2 flex items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[var(--success-text)] cursor-pointer hover:brightness-110 transition-colors"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" aria-hidden="true"></span>
@@ -1554,7 +1652,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setLastMonthClose(null)}
-              aria-label="Hinweis zum Monatsabschluss ausblenden"
+              aria-label="Alles klar. Hinweis zum Monatsabschluss ausblenden."
               className="min-h-[44px] px-4 rounded-xl font-bold text-sm border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--border-color)] transition-all cursor-pointer active:scale-95 focus-visible:ring-4"
             >
               Alles klar
@@ -1687,7 +1785,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setSicherungHinweisAusgeblendet(true)}
-                    aria-label="Erinnerung an die Datensicherung ausblenden"
+                    aria-label="Später. Erinnerung an die Datensicherung ausblenden."
                     className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-xl font-black text-sm border-2 border-current hover:brightness-110 transition-all cursor-pointer"
                   >
                     Später
@@ -1947,8 +2045,8 @@ export default function App() {
           }`}
           aria-label={
             goalsConfig.enabled
-              ? `Bereich 3: Spezialprodukte. Aktuelle Summe: ${s3Total} von Monatsziel ${goalsConfig.s3}. Klick, um auf diesen Bereich zu filtern.`
-              : `Bereich 3: Spezialprodukte. Aktuelle Summe: ${s3Total}. Klick, um auf diesen Bereich zu filtern.`
+              ? `Spezial. Bereich 3: Spezialprodukte. Aktuelle Summe: ${s3Total} von Monatsziel ${goalsConfig.s3}. Klick, um auf diesen Bereich zu filtern.`
+              : `Spezial. Bereich 3: Spezialprodukte. Aktuelle Summe: ${s3Total}. Klick, um auf diesen Bereich zu filtern.`
           }
         >
           <div className="flex items-center gap-2 w-full">
@@ -2006,8 +2104,8 @@ export default function App() {
           }`}
           aria-label={
             goalsConfig.enabled
-              ? `Bereich 4: Arbeitszeit. Aktuelle Summe: ${s4Hours} Stunden von Monatsziel ${goalsConfig.s4} Stunden. Klick, um auf diesen Bereich zu filtern.`
-              : `Bereich 4: Arbeitszeit. Aktuelle Summe: ${s4Hours} Stunden. Klick, um auf diesen Bereich zu filtern.`
+              ? `Bürozeit ${s4Hours} h. Bereich 4: Arbeitszeit. Aktuelle Summe: ${s4Hours} Stunden von Monatsziel ${goalsConfig.s4} Stunden. Klick, um auf diesen Bereich zu filtern.`
+              : `Bürozeit ${s4Hours} h. Bereich 4: Arbeitszeit. Aktuelle Summe: ${s4Hours} Stunden. Klick, um auf diesen Bereich zu filtern.`
           }
         >
           <div className="flex items-center gap-2 w-full">
@@ -2094,17 +2192,26 @@ export default function App() {
                 nicht. Der aria-label traegt dieselbe Auskunft und erreicht
                 auch die Hilfstechnik. Galt genauso fuer die beiden anderen
                 Stellen (Live-Verbindung, Monatsziele). */}
-            {getPreviousSavedMonthRecord() && (
-              <button
-                type="button"
-                onClick={handleCopyPreviousMonth}
-                aria-label="Vormonats-Werte als Vorlage laden"
-                className="px-2.5 min-h-[44px] rounded-lg text-xs font-bold border bg-[var(--success-bg)] text-[var(--success-text)] border-[var(--success-border)] hover:brightness-110 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
-              >
-                <Copy className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>Vorlage</span>
-              </button>
-            )}
+            {(() => {
+              const vorlage = getJuengsterArchivMonat();
+              if (!vorlage) return null;
+              return (
+                <button
+                  type="button"
+                  onClick={handleCopyPreviousMonth}
+                  /* Der Name nennt den Monat, den die Taste wirklich lädt.
+                     „Vormonats-Werte" war falsch: Geladen wird der jüngste
+                     archivierte Monat, der auch NACH dem bearbeiteten liegen
+                     kann — beim Blick in einen alten Archivmonat war das die
+                     Regel, nicht die Ausnahme. */
+                  aria-label={`Werte aus ${formatMonthGerman(vorlage.month)} als Vorlage laden`}
+                  className="px-2.5 min-h-[44px] rounded-lg text-xs font-bold border bg-[var(--success-bg)] text-[var(--success-text)] border-[var(--success-border)] hover:brightness-110 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
+                >
+                  <Copy className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Vorlage</span>
+                </button>
+              );
+            })()}
 
             {/* Acoustic Auditor / summary reader button */}
             <button
@@ -2304,6 +2411,29 @@ export default function App() {
       </div>
 
       <div {...swipeHandlers} className="w-full">
+        {/*
+          HINWEIS AUF DIE DIREKTEINGABE -- genau einmal, nicht je Abschnitt.
+
+          Steht hier, seit die Fünferschritte weggefallen sind (0.9.22): Wer
+          zehn Vorführungen auf einmal nachträgt, tippt die Zahl, statt zehnmal
+          zu tippen. Der Weg war immer da, sah aber nach Anzeige aus statt nach
+          Eingabefeld.
+
+          Warum nur einmal und nicht in jeder Abschnittskarte: Vier gleiche
+          Sätze stehen auch viermal in der Vorlesereihenfolge -- für die
+          Zielgruppe dieser App ist das kein Hinweis mehr, sondern Ballast. Wer
+          mit Screenreader an einem Feld steht, bekommt dieselbe Auskunft
+          ohnehin aus dessen eigener Beschreibung (`CounterField.tsx`,
+          `sr-only`), also genau dort, wo sie hilft.
+        */}
+        <p className="flex items-start gap-2 mb-4 px-3 py-2.5 rounded-xl border border-[var(--info-border)] bg-[var(--info-bg)] text-[var(--info-text)] text-xs font-bold leading-snug">
+          <Info className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <span className="min-w-0 [overflow-wrap:anywhere]">
+            Tipp: Sie können jede Zahl direkt in das Feld eintippen — auch größere
+            Mengen auf einmal.
+          </span>
+        </p>
+
         {/* SECTION 1: VORFÜHRUNGEN & AUSLIEFERUNGEN */}
         {(activeSectionTab === "all" || activeSectionTab === "s1") &&
           hasVisibleFields(appFields.s1) && (
@@ -2657,7 +2787,11 @@ export default function App() {
         <button
           type="button"
           onClick={handleStartNewMonth}
-          aria-label="Nächsten Monat starten. Der aktuelle Monat wird automatisch im RV Archiv gesichert."
+          /* Der Name muss die sichtbare Beschriftung enthalten (WCAG 2.5.3).
+             Vorher hieß die Taste sichtbar „Monat abschließen & neu starten
+             (Auto-Archiv)", zugänglich aber „Nächsten Monat starten…" — wer
+             per Sprachsteuerung „Klick Monat abschließen" sagt, traf nichts. */
+          aria-label="Monat abschließen und neu starten. Auto-Archiv: Der aktuelle Monat wird automatisch im RV Archiv gesichert."
           className="w-full py-4 px-6 rounded-2xl font-black bg-[var(--primary)] hover:opacity-90 text-[var(--primary-text)] text-base md:text-lg flex items-center justify-center gap-2.5 shadow-md cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-4 mb-4"
         >
           <CalendarPlus

@@ -163,7 +163,7 @@ export default function StatsModal({
             <button
               type="button"
               onClick={() => setViewType("visual")}
-              aria-label="Grafische Ansicht"
+              aria-label="Grafik. Grafische Ansicht."
               className={`px-2 min-h-[44px] rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
                 viewType === "visual"
                   ? "bg-[var(--card-bg)] text-[var(--text-color)] shadow-sm"
@@ -176,7 +176,7 @@ export default function StatsModal({
             <button
               type="button"
               onClick={() => setViewType("table")}
-              aria-label="Tabellarische Ansicht"
+              aria-label="Tabelle. Tabellarische Ansicht."
               className={`px-2 min-h-[44px] rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
                 viewType === "table"
                   ? "bg-[var(--card-bg)] text-[var(--text-color)] shadow-sm"
@@ -290,9 +290,18 @@ export default function StatsModal({
                             const circ = 2 * Math.PI * r;
 
                             return [
-                              { val: currentS1, color: "var(--primary-color, #10b981)", name: "Vorführungen" },
-                              { val: currentS2, color: "#f59e0b", name: "Schulung" },
-                              { val: currentS3, color: "#6366f1", name: "Spezialprodukte" }
+                              /* Theme-Variablen statt fester Hex-Werte. Vorher stand hier
+                                 `var(--primary-color, #10b981)` -- und --primary-color ist im
+                                 ganzen Projekt nirgends definiert, der Rückfallwert griff also
+                                 immer. Die Legende daneben benutzte längst --cat-1..3, der Ring
+                                 aber Grün/Orange/Indigo: Im Schema "Gelb auf Schwarz" waren die
+                                 drei Legendenpunkte einheitlich gelb, die Ringsegmente dagegen
+                                 bunt -- die Zuordnung Legende↔Ring war zerrissen (WCAG 1.4.1),
+                                 und #6366f1 auf Schwarz liegt mit rund 2,3:1 unter den 3:1 für
+                                 grafische Elemente (1.4.11). */
+                              { val: currentS1, color: "var(--cat-1)", name: "Vorführungen" },
+                              { val: currentS2, color: "var(--cat-2)", name: "Schulung" },
+                              { val: currentS3, color: "var(--cat-3)", name: "Spezialprodukte" }
                             ].map((item, idx) => {
                               if (item.val === 0) return null;
                               const pct = (item.val / totalActions) * 100;
@@ -477,27 +486,44 @@ export default function StatsModal({
                                     );
                                   })}
 
-                                  {/* Section 1 Line (Vorführungen) - Emerald */}
-                                  <path d={s1Points} fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                                  
-                                  {/* Section 2 Line (Schulungen) - Amber */}
-                                  <path d={s2Points} fill="none" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                  {/*
+                                    FARBE PLUS STRICHART -- beides zusammen, nicht Farbe allein.
 
-                                  {/* Section 3 Line (Spezial) - Indigo */}
-                                  <path d={s3Points} fill="none" stroke="#6366f1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                    Die Farben kommen jetzt aus --cat-1..4 wie die Legende
+                                    darunter; vorher standen hier feste Hex-Werte, wodurch
+                                    Legende und Kurve im Hochkontrast-Schema verschiedene
+                                    Farben zeigten. In "Weiß auf Schwarz" und "Gelb auf
+                                    Schwarz" fallen alle vier Kategoriefarben absichtlich auf
+                                    denselben Wert zusammen -- dort wären vier gleichfarbige
+                                    Kurven ununterscheidbar. Die Strichart trägt die
+                                    Unterscheidung deshalb mit (WCAG 1.4.1: Farbe darf nicht
+                                    das einzige Mittel sein). Die Legende zeigt dieselben
+                                    Muster.
+                                  */}
+                                  {/* 1. Vorführungen -- durchgezogen */}
+                                  <path d={s1Points} fill="none" stroke="var(--cat-1)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
 
-                                  {/* Bureau hours - Blue */}
-                                  <path d={hoursPoints} fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeDasharray="3 3" strokeLinecap="round" strokeLinejoin="round" />
+                                  {/* 2. Schulungen -- lange Striche */}
+                                  <path d={s2Points} fill="none" stroke="var(--cat-2)" strokeWidth="3" strokeDasharray="9 5" strokeLinecap="round" strokeLinejoin="round" />
+
+                                  {/* 3. Spezialprodukte -- gepunktet */}
+                                  <path d={s3Points} fill="none" stroke="var(--cat-3)" strokeWidth="3" strokeDasharray="1 5" strokeLinecap="round" strokeLinejoin="round" />
+
+                                  {/* Bürostunden -- Strich-Punkt */}
+                                  <path d={hoursPoints} fill="none" stroke="var(--cat-4)" strokeWidth="2.5" strokeDasharray="7 4 1 4" strokeLinecap="round" strokeLinejoin="round" />
 
                                   {/* Data dots */}
                                   {sortedMonths.map((m, idx) => {
                                     const x = getX(idx);
                                     return (
                                       <g key={idx}>
-                                        <circle cx={x} cy={getY(m.s1)} r="4.5" fill="#10b981" stroke="white" strokeWidth="1" className="cursor-pointer" />
-                                        <circle cx={x} cy={getY(m.s2)} r="4.5" fill="#f59e0b" stroke="white" strokeWidth="1" className="cursor-pointer" />
-                                        <circle cx={x} cy={getY(m.s3)} r="4.5" fill="#6366f1" stroke="white" strokeWidth="1" className="cursor-pointer" />
-                                        <circle cx={x} cy={getY(m.hours)} r="4" fill="#3b82f6" stroke="white" strokeWidth="1" className="cursor-pointer" />
+                                        {/* stroke: die Kartenfläche, nicht "white" -- auf dunklem
+                                            Grund zog ein weißer Ring sonst eine helle Kontur um
+                                            jeden Punkt. */}
+                                        <circle cx={x} cy={getY(m.s1)} r="4.5" fill="var(--cat-1)" stroke="var(--card-bg)" strokeWidth="1" className="cursor-pointer" />
+                                        <circle cx={x} cy={getY(m.s2)} r="4.5" fill="var(--cat-2)" stroke="var(--card-bg)" strokeWidth="1" className="cursor-pointer" />
+                                        <circle cx={x} cy={getY(m.s3)} r="4.5" fill="var(--cat-3)" stroke="var(--card-bg)" strokeWidth="1" className="cursor-pointer" />
+                                        <circle cx={x} cy={getY(m.hours)} r="4" fill="var(--cat-4)" stroke="var(--card-bg)" strokeWidth="1" className="cursor-pointer" />
                                       </g>
                                     );
                                   })}
@@ -520,23 +546,34 @@ export default function StatsModal({
                       </div>
 
                       {/* Legends */}
+                      {/*
+                        Die Legende zeigt dasselbe Strichmuster wie die Kurve, nicht nur einen
+                        Farbpunkt. Vorher war es dreimal ein Punkt und einmal ein gestrichelter
+                        Strich -- in den beiden Hochkontrast-Schemata, in denen alle vier
+                        Kategoriefarben zusammenfallen, waren die drei Punkte damit identisch
+                        und die Zuordnung zur Kurve nicht mehr herstellbar. Die Muster stehen
+                        wörtlich so auch im Diagramm darüber.
+                      */}
                       <div className="flex flex-wrap gap-x-5 gap-y-2 justify-center pt-2 border-t border-[var(--border-color)]">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-color)]">
-                          <span className="w-3 h-3 bg-[var(--cat-1)] rounded-full" />
-                          <span>1. Vorführungen</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-color)]">
-                          <span className="w-3 h-3 bg-[var(--cat-2)] rounded-full" />
-                          <span>2. Schulungen</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-color)]">
-                          <span className="w-3 h-3 bg-[var(--cat-3)] rounded-full" />
-                          <span>3. Spezialprodukte</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-color)]">
-                          <span className="w-3.5 h-1 border-b-2 border-dashed border-[var(--cat-4)]" />
-                          <span>Bürostunden ca.</span>
-                        </div>
+                        {[
+                          { farbe: "var(--cat-1)", muster: undefined, text: "1. Vorführungen" },
+                          { farbe: "var(--cat-2)", muster: "9 5", text: "2. Schulungen" },
+                          { farbe: "var(--cat-3)", muster: "1 5", text: "3. Spezialprodukte" },
+                          { farbe: "var(--cat-4)", muster: "7 4 1 4", text: "Bürostunden ca." },
+                        ].map((eintrag) => (
+                          <div key={eintrag.text} className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-color)]">
+                            <svg width="26" height="10" viewBox="0 0 26 10" aria-hidden="true" className="flex-shrink-0">
+                              <line
+                                x1="1" y1="5" x2="25" y2="5"
+                                stroke={eintrag.farbe}
+                                strokeWidth="3"
+                                strokeDasharray={eintrag.muster}
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                            <span className="min-w-0">{eintrag.text}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}

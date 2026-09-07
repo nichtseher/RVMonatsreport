@@ -52,12 +52,24 @@ export interface Berichtsdaten {
 
   saveStatus: SaveStatus;
   lastSavedTime: string;
-  /** Treibt das Warnbanner. */
+  /** Treibt das Warnbanner. Wahr, solange EINE der beiden Ebenen klemmt. */
   storageWriteFailed: boolean;
-  setStorageWriteFailed: (fehler: boolean) => void;
-  /** Wechselt bei jedem neuen Fehlschlag -- App.tsx sagt ihn an. */
+  /**
+   * Art des letzten Fehlschlags. Zusammen mit `fehlerZaehler` sagt `App.tsx`
+   * ihn an -- der Zaehler ist noetig, weil zwei gleiche Fehlschlaege
+   * hintereinander denselben String setzen und ohne ihn kein erneutes Rendern
+   * und damit keine zweite Ansage ausloesen wuerden.
+   */
   speicherFehler: SpeicherFehler;
+  /** Zaehlt jeden Fehlschlag, damit auch der zweite gleiche angesagt wird. */
+  fehlerZaehler: number;
   handleHistoryPersistFailure: (context: string, err: unknown) => void;
+  /**
+   * Das Lesen beim Start ist fehlgeschlagen. `App.tsx` zeigt dann statt des
+   * Formulars eine Meldung -- und es wird nichts geschrieben, damit ein
+   * vorhandener Bestand nicht ueberschrieben wird.
+   */
+  ladeFehler: boolean;
 
   handleValueChange: (id: string, val: number | "") => void;
   /** Zaehler aendern und den neuen Wert sofort zurueckgeben. */
@@ -115,9 +127,38 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
       second: "2-digit",
     }),
   );
-  const [storageWriteFailed, setStorageWriteFailed] = useState(false);
+  /*
+    ZWEI EBENEN, ZWEI FLAGGEN.
+
+    Bis 0.9.21 gab es nur eine gemeinsame Flagge. Ein erfolgreicher Schreib-
+    vorgang des BERICHTS loeschte damit auch die Warnung ueber ein
+    fehlgeschlagenes ARCHIV: Kontingent voll -> das grosse Archivobjekt
+    scheitert, Banner erscheint; der Nutzer tippt eine Zahl -> das kleine
+    `aussendienst_pwa_data` passt noch -> 400 ms spaeter ist das Banner weg,
+    obwohl das Archiv weiterhin ungesichert ist.
+  */
+  const [berichtFehler, setBerichtFehler] = useState(false);
+  const [archivFehler, setArchivFehler] = useState(false);
+  const storageWriteFailed = berichtFehler || archivFehler;
   const [speicherFehler, setSpeicherFehler] = useState<SpeicherFehler>(null);
+  /*
+    Warum ein Zaehler neben der Art des Fehlers steht: `speicherFehler` ist ein
+    String. Zweimal hintereinander `setSpeicherFehler("archiv")` setzt denselben
+    Wert, React rendert nicht neu, und der Ansage-Effekt in `App.tsx` laeuft
+    nicht erneut -- der zweite Fehlversuch blieb also stumm, waehrend der Toast
+    daneben Erfolg meldete. Fuer einen blinden Nutzer ist genau das unhoerbar.
+  */
+  const [fehlerZaehler, setFehlerZaehler] = useState(0);
+  const melde = useCallback((art: Exclude<SpeicherFehler, null>) => {
+    setSpeicherFehler(art);
+    setFehlerZaehler((n) => n + 1);
+  }, []);
   const [lastMonthClose, setLastMonthClose] = useState<MonatsAbschluss>(null);
+  /**
+   * Das Lesen beim Start ist fehlgeschlagen. Solange das gilt, wird NICHTS
+   * geschrieben -- siehe die Begruendung im catch-Zweig von `loadData`.
+   */
+  const [ladeFehler, setLadeFehler] = useState(false);
 
   /**
    * Zentrale Reaktion, wenn ein Archiv-Schreibvorgang fehlschlaegt -- z. B.
@@ -128,14 +169,30 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
   const handleHistoryPersistFailure = useCallback(
     (context: string, err: unknown) => {
       console.error(`Speichern des RV Archivs fehlgeschlagen (${context})`, err);
-      setStorageWriteFailed(true);
-      setSpeicherFehler("archiv");
+      setArchivFehler(true);
+      melde("archiv");
     },
-    [],
+    [melde],
   );
+
+  /*
+    Der Ladevorgang darf genau einmal laufen.
+
+    Ohne diesen Waechter ruft React im StrictMode den Effekt zweimal auf --
+    und die Entwicklungsfassung verhaelt sich dann anders als die
+    Produktionsfassung. Aufgefallen am 2026-09-07 beim Prueffall zum
+    Lesefehler: Der erste Lauf scheiterte wie gewollt, der zweite gelang, und
+    die Fehleransicht stand ueber einem bereits geladenen Zustand. Kein
+    Datenverlust, aber zwei verschiedene Wirklichkeiten -- und die Pruefung
+    haette dann etwas anderes gemessen als das, was ausgeliefert wird.
+  */
+  const ladenGestartet = useRef(false);
 
   // --- Laden ------------------------------------------------------------
   useEffect(() => {
+    if (ladenGestartet.current) return;
+    ladenGestartet.current = true;
+
     async function loadData() {
       try {
         const [savedData, savedHistory] = await Promise.all([
@@ -151,7 +208,26 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
         let initialData = savedData;
         if (notfall) {
           try {
-            initialData = JSON.parse(notfall);
+            const kopie = JSON.parse(notfall);
+            /*
+              Der Waechter prueft jetzt den INHALT, nicht nur das Vorhandensein.
+
+              Der Kommentar oben sagt seit jeher, dieser Pfad habe "schon
+              einmal einen nahezu leeren Stand ueber echte Daten geschrieben".
+              Geprueft wurde bis 0.9.21 aber nur, ob der Schluessel existiert
+              -- also genau die Bedingung, die den beschriebenen Fall NICHT
+              abdeckt. Eine leere Notfallkopie schlug den vollen regulaeren
+              Stand.
+
+              Regel: uebernehmen, wenn sie Inhalt hat -- oder wenn der
+              regulaere Stand ohnehin keinen hat. Ein leerer Notstand ueber
+              echten Daten wird verworfen.
+            */
+            if (monthHasContent(kopie) || !monthHasContent(savedData)) {
+              initialData = kopie;
+            } else {
+              console.warn("Notfallkopie ohne Inhalt verworfen -- regulaerer Stand ist reicher");
+            }
             localStorage.removeItem(SCHLUESSEL_NOTFALL);
           } catch {
             /* unbrauchbare Notfallkopie -- der regulaere Stand gilt */
@@ -194,9 +270,35 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
           setShowOnboarding(true);
         }
       } catch (e) {
+        /*
+          HIER WIRD BEWUSST NICHTS IN DEN ZUSTAND GESCHRIEBEN.
+
+          Bis 0.9.21 stand hier `setReportData(leererMonat(...))` und
+          `setHistory({})`. Beides sieht nach Aufraeumen aus und war in
+          Wahrheit ein Loeschbefehl mit Verzoegerung:
+
+          - `{}` ist wahrheitswertig. Der Waechter des Archiv-Spiegels unten
+            (`if (!prev) return prev`) prueft auf `null` und lief deshalb
+            durch. Die erste getippte Zahl schrieb ein Ein-Monats-Archiv ueber
+            den gespeicherten Bestand.
+          - Der leere Monat loeste den Speichereffekt aus, der 400 ms spaeter
+            `aussendienst_pwa_data` ueberschrieb.
+
+          Gemessen am 2026-09-07 gegen die gebaute App: Archiv mit den Monaten
+          2026-06, 2026-07 und 2026-08; eine einzelne lesende Transaktion
+          scheitern lassen (schreibende weiter erlaubt -- genau das, was ein
+          transienter Lesefehler auf intakter Datenbank bewirkt); EINE Zahl
+          eingetippt. Danach enthielt das Archiv nur noch 2026-09. Die App
+          zeigte dabei keine einzige Warnung.
+
+          Die Waechter waren also richtig -- dieser Zweig hat sie ausgehebelt.
+          `reportData` und `history` bleiben deshalb `null`: Damit greifen der
+          Waechter unten, die Bedingung `if (!reportData) return` im
+          Speichereffekt und die Notrettung beim Wegwischen von selbst, und
+          `App.tsx` zeigt statt des Formulars eine ehrliche Meldung.
+        */
         console.error("Failed to load from IDB", e);
-        setReportData(leererMonat(aktuellerMonat()));
-        setHistory({});
+        setLadeFehler(true);
         // Im Fehlerfall keinen Einstieg erzwingen -- der Nutzer hat
         // moeglicherweise Daten, die nur gerade nicht lesbar waren.
         setShowOnboarding(false);
@@ -209,14 +311,19 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
 
   // --- Speichern des Berichts (verzoegert) ------------------------------
   useEffect(() => {
+    // Ohne geladenen Stand gibt es nichts zu sichern -- und die Anzeige darf
+    // dann nicht "wird gesichert" behaupten.
+    if (!reportData) return;
     setSaveStatus("saving");
     const t = setTimeout(() => {
       if (!reportData) return;
       set(SCHLUESSEL_BERICHT, reportData)
         .then(() => {
           setSaveStatus("saved");
-          setStorageWriteFailed(false);
-          setSpeicherFehler(null);
+          setBerichtFehler(false);
+          // Nur die eigene Ebene entwarnen. Ob das Archiv geschrieben werden
+          // konnte, sagt dieser Erfolg nicht aus.
+          setSpeicherFehler((prev) => (prev === "archiv" ? prev : null));
           setLastSavedTime(
             new Date().toLocaleTimeString("de-DE", {
               hour: "2-digit",
@@ -230,8 +337,8 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
           // Anzeige weiterhin "gesichert", obwohl nichts geschrieben wurde.
           console.error("Speichern des Reports fehlgeschlagen", err);
           setSaveStatus("error");
-          setStorageWriteFailed(true);
-          setSpeicherFehler("bericht");
+          setBerichtFehler(true);
+          melde("bericht");
         });
     }, SPEICHER_VERZOEGERUNG_MS);
     return () => clearTimeout(t);
@@ -280,7 +387,12 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
           new Date().toISOString(),
         ),
       };
-      persistHistory(updated, handleHistoryPersistFailure, "auto-save");
+      // Der Erfolgsfall entwarnt die Archiv-Ebene. Ohne ihn bliebe das Banner
+      // stehen, bis die App neu geladen wird -- das Versprechen "bleibt
+      // sichtbar, bis ein Speichervorgang wieder klappt" waere dann falsch.
+      persistHistory(updated, handleHistoryPersistFailure, "auto-save", () =>
+        setArchivFehler(false),
+      );
       return updated;
     });
   }, [
@@ -381,8 +493,8 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
     reportData, setReportData,
     history, setHistory,
     saveStatus, lastSavedTime,
-    storageWriteFailed, setStorageWriteFailed,
-    speicherFehler, handleHistoryPersistFailure,
+    storageWriteFailed, ladeFehler,
+    speicherFehler, fehlerZaehler, handleHistoryPersistFailure,
     handleValueChange, applyValueDelta, handleValueInput, handleMetaChange,
     lastMonthClose, setLastMonthClose,
   };

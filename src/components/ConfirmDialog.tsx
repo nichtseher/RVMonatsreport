@@ -148,7 +148,18 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
               }}
               className={`flex-1 py-3 px-4 rounded-xl font-black transition-all cursor-pointer ${
                 danger
-                  ? "bg-[var(--danger-solid)] text-white hover:bg-[var(--danger-solid)]"
+                  /* text-white war hier ein Blindgänger: --danger-solid ist im
+                     Schema "Weiß auf Schwarz" selbst #ffffff und in "Gelb auf
+                     Schwarz" #ffff00. Die Beschriftung der bestätigenden Taste
+                     stand also mit 1,0:1 bzw. 1,07:1 auf ihrem eigenen
+                     Hintergrund -- unsichtbar, und zwar in genau den beiden
+                     Schemata, die für diese Zielgruppe gebaut sind. Betroffen
+                     waren alle vier zerstörenden Rückfragen (löschen,
+                     zurücksetzen, Schicht löschen, alles ersetzen): Der Nutzer
+                     sah zwei Tasten, eine davon leer, und musste raten.
+                     --danger-solid-text existiert genau dafür und ist an jeder
+                     anderen Stelle auch benutzt. */
+                  ? "bg-[var(--danger-solid)] text-[var(--danger-solid-text)] hover:bg-[var(--danger-solid)]"
                   : "bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90"
               }`}
             >

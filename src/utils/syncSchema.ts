@@ -28,10 +28,15 @@ export interface SyncPaket {
 }
 
 /*
-  Beide Zweige führen beide Felder auf. Grund: `strict` ist in diesem Projekt
-  noch aus (bekannte Schuld Richtung 1.0), und ohne `strictNullChecks` grenzt
-  TypeScript eine unterschiedene Union über `if (!ergebnis.ok)` nicht
-  zuverlässig ein. So bleiben die Aufrufstellen einfach lesbar.
+  Beide Zweige führen beide Felder auf -- mit `grund?: undefined` bzw.
+  `paket?: undefined`. Damit lässt sich an der Aufrufstelle sowohl
+  `ergebnis.paket` als auch `ergebnis.grund` ohne Umweg lesen.
+
+  Die frühere Begründung hier lautete, `strict` sei im Projekt „noch aus
+  (bekannte Schuld Richtung 1.0)". Das stimmt seit 0.9.13 nicht mehr:
+  `tsconfig.json` steht auf `"strict": true`, und `npm run lint` ist genau
+  dieser Durchlauf. Eine Erklärung, die sich auf eine Lage beruft, die es nicht
+  mehr gibt, ist schlimmer als keine -- sie lädt dazu ein, darauf zu planen.
 */
 export type PruefErgebnis =
   | { ok: true; paket: SyncPaket; grund?: undefined }
@@ -47,6 +52,39 @@ function feldListePruefen(liste: unknown, bereich: string): string | null {
   for (const feld of liste) {
     if (!istObjekt(feld) || typeof feld.id !== "string" || typeof feld.label !== "string") {
       return `Eine Kategorie in Bereich ${bereich} ist unvollständig.`;
+    }
+  }
+  return null;
+}
+
+/**
+ * Schichten prüfen -- die Einträge, nicht nur die Liste.
+ *
+ * Bis 0.9.21 wurde nur `Array.isArray` geprüft. Ein Paket mit
+ * `timeLogs: [{ id: "a" }]` kam damit durch und riss anschließend das
+ * Zusammenführen ab: `mergeTimeLogs` sortiert über `x.date.localeCompare(...)`
+ * und lief auf `undefined`. Nachgestellt am 2026-09-07 mit `npx tsx`:
+ * `pruefeSyncPaket` sagte ANGENOMMEN, `mergeSyncPayload` warf
+ * "TypeError: Cannot read properties of undefined (reading 'localeCompare')".
+ * Das ist genau die Fehlerklasse, für die diese Datei angelegt wurde.
+ *
+ * Geprüft wird weiterhin nur so viel, wie das Weiterverarbeiten braucht:
+ * `id` ist der Schlüssel beim Vereinigen, `date` die Sortiergrundlage, und
+ * `duration` wird in der Schichtliste mit `.toFixed(2)` angezeigt. Die übrigen
+ * Zahlen laufen über tolerante Leser (`schicht.officeHours || 0`) und bleiben
+ * deshalb ungeprüft -- unbekannte Zusatzfelder ohnehin.
+ */
+function schichtenPruefen(schichten: unknown, wo: string): string | null {
+  if (!Array.isArray(schichten)) return `Die Schichten ${wo} sind beschädigt.`;
+  for (const schicht of schichten) {
+    if (!istObjekt(schicht) || typeof schicht.id !== "string") {
+      return `Eine Schicht ${wo} hat keine gültige Kennung.`;
+    }
+    if (typeof schicht.date !== "string") {
+      return `Einer Schicht ${wo} fehlt das Datum.`;
+    }
+    if (typeof schicht.duration !== "number") {
+      return `Einer Schicht ${wo} fehlt die Dauer.`;
     }
   }
   return null;
@@ -109,8 +147,9 @@ export function pruefeSyncPaket(unbekannt: unknown): PruefErgebnis {
       }
       const fehler = werteObjektPruefen(datensatz.values, `im Archiv-Eintrag ${monat}`);
       if (fehler) return { ok: false, grund: fehler };
-      if (datensatz.timeLogs !== undefined && !Array.isArray(datensatz.timeLogs)) {
-        return { ok: false, grund: `Die Schichten im Archiv-Eintrag ${monat} sind beschädigt.` };
+      if (datensatz.timeLogs !== undefined) {
+        const schichtFehler = schichtenPruefen(datensatz.timeLogs, `im Archiv-Eintrag ${monat}`);
+        if (schichtFehler) return { ok: false, grund: schichtFehler };
       }
     }
   }
@@ -124,6 +163,11 @@ export function pruefeSyncPaket(unbekannt: unknown): PruefErgebnis {
     }
     const fehler = werteObjektPruefen(unbekannt.reportData.values, "im laufenden Monat");
     if (fehler) return { ok: false, grund: fehler };
+    // Wurde bis 0.9.21 gar nicht geprüft: `timeLogs: "kaputt"` kam durch.
+    if (unbekannt.reportData.timeLogs !== undefined) {
+      const schichtFehler = schichtenPruefen(unbekannt.reportData.timeLogs, "im laufenden Monat");
+      if (schichtFehler) return { ok: false, grund: schichtFehler };
+    }
   }
 
   if (unbekannt.carryover !== undefined && unbekannt.carryover !== null) {

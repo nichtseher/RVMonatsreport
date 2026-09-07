@@ -28,6 +28,15 @@ import { ConfirmRequest } from "../components/ConfirmDialog";
 export interface ExportParameter {
   reportData: ReportData | null;
   appFields: SectionsConfig;
+  /**
+   * Nur zum Nachsehen, ob ein Monat ueberhaupt im Archiv liegt. Die Ansage
+   * nach dem Export behauptete bis 0.9.21 IMMER "im RV Archiv als gesendet
+   * markiert" -- auch dann, wenn `setzeVersandStatus` wortlos ausgestiegen
+   * war, weil es den Monat dort gar nicht gibt (ein Monat ohne Inhalt wird
+   * nach `monthHasContent` nicht archiviert und laesst sich trotzdem ueber
+   * "Trotzdem senden" ausgeben).
+   */
+  history: Record<string, HistoryRecord> | null;
   accessibility: Pick<AccessibilitySettings, "enableTimeTracking">;
   setHistory: React.Dispatch<
     React.SetStateAction<Record<string, HistoryRecord> | null>
@@ -57,6 +66,7 @@ export interface ExportFunktionen {
 export function useExport(p: ExportParameter): ExportFunktionen {
   const {
     reportData, appFields, accessibility, setHistory,
+    history,
     announceToAriaAndSpeech, triggerToast, triggerHaptic,
     setConfirmRequest, onPersistFailure,
   } = p;
@@ -148,10 +158,15 @@ export function useExport(p: ExportParameter): ExportFunktionen {
         return;
       }
       // Erst hier markieren -- siehe Kopfkommentar.
+      const imArchiv = !!history?.[monthVal];
       setzeVersandStatus(monthVal, true);
       triggerToast(`Excel-Report erfolgreich ${ergebnis}!`);
+      // Nur behaupten, was auch passiert ist: `setzeVersandStatus` steigt
+      // wortlos aus, wenn der Monat nicht im Archiv liegt.
       announceToAriaAndSpeech(
-        `Excel-Report ${ergebnis}. Der Monat ist im RV Archiv als gesendet markiert.`,
+        imArchiv
+          ? `Excel-Report ${ergebnis}. Der Monat ist im RV Archiv als gesendet markiert.`
+          : `Excel-Report ${ergebnis}. Dieser Monat liegt nicht im RV Archiv und konnte dort nicht als gesendet markiert werden.`,
       );
     } catch (err) {
       console.error("Excel-Export fehlgeschlagen", err);
@@ -159,7 +174,7 @@ export function useExport(p: ExportParameter): ExportFunktionen {
       announceToAriaAndSpeech("Fehler beim Erstellen der Excel-Datei.", true);
     }
   }, [
-    reportData, appFields, triggerHaptic, meldeNochNichtGeladen,
+    reportData, appFields, history, triggerHaptic, meldeNochNichtGeladen,
     triggerToast, announceToAriaAndSpeech, setzeVersandStatus,
   ]);
 

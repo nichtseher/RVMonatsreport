@@ -74,7 +74,10 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             >
               <ArrowLeft className="w-6 h-6" aria-hidden="true" />
             </button>
-            <div className="w-12 h-12 bg-[var(--primary)] rounded-full hidden sm:flex items-center justify-center text-white shadow-inner flex-shrink-0">
+            {/* text-[var(--primary-text)] statt text-white: --primary ist in
+                "Weiß auf Schwarz" selbst #ffffff und in "Gelb auf Schwarz"
+                #ffff00 -- das Fragezeichen war dort unsichtbar. */}
+            <div className="w-12 h-12 bg-[var(--primary)] rounded-full hidden sm:flex items-center justify-center text-[var(--primary-text)] shadow-inner flex-shrink-0">
               <HelpCircle className="w-6 h-6" aria-hidden="true" />
             </div>
             <div className="min-w-0">
@@ -171,7 +174,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   </ul>
                   <p className="mt-2">Vermeiden Sie außerdem den privaten Modus des Browsers: Dort werden die Daten beim Schließen gelöscht.</p>
                   <p className="mt-2"><strong>Eine Sicherung einspielen überschreibt nichts mehr:</strong> Unter „Backup wiederherstellen“ werden die Daten aus der Datei standardmäßig mit dem vorhandenen Stand <strong>zusammengeführt</strong>. Nur wenn Sie den Haken „Vorhandene Daten ersetzen“ setzen, wird alles auf diesem Gerät überschrieben.</p>
-                  <p className="mt-2"><strong>Falls die App einmal abstürzt:</strong> Auf dem Fehlerbildschirm steht ganz oben „Daten als Datei sichern“. Nutzen Sie diese Schaltfläche <strong>bevor</strong> Sie etwas anderes versuchen – die Datei lässt sich später über Optionen → Datensicherung → Backup einspielen wieder laden. „Kompletten Reset durchführen“ löscht dagegen alles.</p>
+                  <p className="mt-2"><strong>Falls die App einmal abstürzt:</strong> Auf dem Fehlerbildschirm steht ganz oben „Daten als Datei sichern“. Nutzen Sie diese Schaltfläche <strong>bevor</strong> Sie etwas anderes versuchen – die Datei lässt sich später über Optionen → Datensicherung → <strong>Backup wiederherstellen</strong> wieder laden. „Kompletten Reset durchführen“ löscht dagegen alles.</p>
                 </FAQItem>
 
                 <FAQItem
@@ -183,7 +186,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <p><strong>Live-Verbindung:</strong> Nach einer einmaligen Kopplung gleichen sich beide Geräte von selbst ab – immer dann, wenn sich etwas geändert hat. Sie können das Sync-Fenster danach schließen und ganz normal weiterarbeiten; oben erscheint der Hinweis <strong>„Live verbunden“</strong>. Voraussetzung: beide Geräte im gleichen WLAN, App auf beiden geöffnet.</p>
                   <p>Tippen Sie auf beiden Geräten kurz hintereinander etwas ein, bleiben <strong>beide Eingaben erhalten</strong> – jede Kategorie wird einzeln abgeglichen. Nur wenn Sie dieselbe Kategorie gleichzeitig auf beiden Geräten ändern, gilt die zuletzt getippte.</p>
                   <p>Die Verbindung endet, wenn Sie sie trennen oder die App schließen. Bricht sie von selbst ab – WLAN weg, anderes Gerät zugeklappt –, meldet die App das mit einem <strong>deutlichen Hinweis samt Ansage</strong> und bietet „Neu verbinden“ an. Solange Sie diesen Hinweis sehen, landen Ihre Eingaben nur noch auf diesem einen Gerät.</p>
-                  <p><strong>Keine Kamera nötig:</strong> Auf dem empfangenden Gerät steht das Feld „Ohne Kamera: Code einfügen“ <strong>ganz oben</strong> – noch vor der Kameravorschau. Ein eingefügter Code wird sofort übernommen, Sie müssen danach keine Schaltfläche mehr suchen. Jeder Code lässt sich auf dem sendenden Gerät mit „Code kopieren“ übertragen; eine Webcam am PC braucht es dafür nicht.</p>
+                  <p><strong>Keine Kamera nötig:</strong> Auf dem empfangenden Gerät steht das Feld „Ohne Kamera: Code einfügen“ <strong>ganz oben</strong> – noch vor der Kameravorschau. Ein eingefügter Code wird sofort übernommen, Sie müssen danach keine Schaltfläche mehr suchen. Nur bei einem <em>verschlüsselten</em> Code fragt die App zuerst nach dem Passwort; dann tragen Sie es ein und tippen auf „Code übernehmen“. Jeder Code lässt sich auf dem sendenden Gerät mit „Code kopieren“ übertragen; eine Webcam am PC braucht es dafür nicht.</p>
                   <p><strong>Zum Antwort-Code der Live-Verbindung:</strong> Lassen Sie sich Zeit – nachgemessen funktioniert er noch nach mehreren Minuten. Sollte die Verbindung trotzdem nicht zustande kommen, erzeugen Sie auf dem zweiten Gerät einfach einen neuen Antwort-Code und übertragen ihn erneut.</p>
                   <p>Alternativ steht weiterhin die Funktion "Sicheres Backup" unter "Optionen" zur Verfügung. Alles funktioniert komplett offline – ganz ohne Server.</p>
                 </FAQItem>
@@ -194,7 +197,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 >
                   <p>Diese Kürzel funktionieren überall in der App. Halten Sie <strong>Alt</strong> und <strong>Umschalt</strong> zusammen gedrückt und tippen Sie dann den Buchstaben:</p>
                   <ul className="list-disc pl-4 space-y-1 mt-1">
-                    <li><strong>Alt+Umschalt+M</strong> – zum Feld „Berichtsmonat“ springen</li>
+                    <li><strong>Alt+Umschalt+M</strong> – zum Feld „Monat“ springen</li>
                     <li><strong>Alt+Umschalt+N</strong> – zum Feld „Mitarbeiter/in“ springen</li>
                     <li><strong>Alt+Umschalt+O</strong> – zum Notizfeld springen</li>
                     <li><strong>Alt+Umschalt+T</strong> – RV Zeit (Stempeluhr) öffnen</li>
@@ -202,8 +205,17 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                     <li><strong>Alt+Umschalt+S</strong> – Sprachansagen ein- oder ausschalten</li>
                     <li><strong>Alt+Umschalt+L</strong> – Ein-Hand-Modus ein- oder ausschalten</li>
                   </ul>
-                  <p className="mt-2">In den Zähler-Eingabefeldern gilt zusätzlich: <strong>Pfeil hoch/runter</strong> ändert den Wert, <strong>Enter</strong> springt zum nächsten Feld, <strong>Umschalt+Enter</strong> zum vorherigen.</p>
+                  <p className="mt-2">In den Zähler-Eingabefeldern gilt zusätzlich: Sie können die <strong>Zahl direkt eintippen</strong>, <strong>Pfeil hoch/runter</strong> ändert den Wert, <strong>Enter</strong> springt zum nächsten Feld, <strong>Umschalt+Enter</strong> zum vorherigen.</p>
                   <p>Ganz oben auf der Seite liegt außerdem ein Sprunglink <strong>„Zum Hauptinhalt springen“</strong>, den Sie mit der Tabulatortaste erreichen.</p>
+                </FAQItem>
+
+                <FAQItem
+                  icon={<Zap className="text-[var(--accent)]" />}
+                  title="Was passiert, wenn es eine neue Fassung der App gibt?"
+                >
+                  <p>Unten erscheint der Hinweis <strong>„Eine neue Fassung ist verfügbar“</strong> mit den Schaltflächen <strong>Jetzt aktualisieren</strong> und <strong>Später</strong>. Mitten in der Eingabe wird nie von selbst neu geladen – Sie entscheiden, wann.</p>
+                  <p>Der Hinweis kommt allerdings bei jedem Start wieder, bis Sie aktualisiert haben. <strong>Nach sieben Tagen</strong> entfällt „Später“, und <strong>nach vierzehn Tagen</strong> aktualisiert sich die App beim nächsten Start selbst – angekündigt und mit ein paar Sekunden Vorlauf. Das ist Absicht: Eine veraltete Fassung kann eine veraltete Excel-Vorlage enthalten, und das fällt erst am Monatsende auf.</p>
+                  <p><strong>Ihre Daten bleiben dabei erhalten.</strong> Aktualisiert wird das Programm, nicht der Bericht – Zählerstände, Archiv und Zeiterfassung liegen davon getrennt auf Ihrem Gerät.</p>
                 </FAQItem>
               </div>
             </div>
@@ -227,6 +239,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   title="Wie trage ich meine Tätigkeiten im RV Report ein?"
                 >
                   <p>Unter dem Reiter <strong>RV Report</strong> finden Sie verschiedene Bereiche (z.B. Vorführungen, Schulungen). Tippen Sie einfach auf das <strong>+</strong> Symbol, um den Zähler für eine Tätigkeit um 1 zu erhöhen. Tippen Sie auf das <strong>-</strong> Symbol, um ihn wieder zu verringern.</p>
+                  <p className="mt-2"><strong>Mehrere Vorgänge auf einmal?</strong> Tippen Sie die Zahl direkt in das Feld zwischen den beiden Tasten. Das ist der schnellste Weg, wenn Sie einen ganzen Tag nachtragen – Sie müssen nicht zehnmal auf Plus tippen.</p>
                   <p>Sie können auch in das Eingabefeld zwischen + und - tippen, um direkt eine größere Zahl über die Tastatur einzugeben.</p>
                   <p><strong>Mit Tastatur:</strong> Im Eingabefeld erhöhen und verringern die Pfeiltasten den Wert. Mit <strong>Enter</strong> springen Sie zum nächsten Feld, mit <strong>Umschalt+Enter</strong> zum vorherigen.</p>
                   <p>Die Suchleiste über den Bereichen filtert die Kategorien – hilfreich, wenn Sie eine bestimmte schnell finden möchten.</p>
@@ -278,7 +291,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 >
                   <p>Die App berechnet Ihr Gleitzeitkonto automatisch anhand Ihrer täglichen Soll-Stunden. Im Bereich <strong>RV Zeit</strong> wechseln Sie dafür oben auf den Reiter <strong>Jahreskonto</strong>.</p>
                   <p>Dort sehen Sie für jeden Monat, wie viele Stunden Sie arbeiten sollten (Soll) und wie viele Sie tatsächlich gearbeitet haben (Ist, aus Büro + Außendienst). Auch Ihr Resturlaub wird dort berechnet – auf Basis der Urlaubstage, die Sie im RV Report eingetragen haben.</p>
-                  <p>Ihre Startwerte (z. B. Resturlaub aus dem Vorjahr, alte Überstunden, Soll-Stunden pro Tag) passen Sie über <strong>Jahreskonto-Einstellungen bearbeiten</strong> an.</p>
+                  <p>Ihre Startwerte (z. B. Resturlaub aus dem Vorjahr, alte Überstunden, Soll-Stunden pro Tag) passen Sie dort über <strong>Jahresübertrag &amp; Soll-Stunden bearbeiten</strong> an. Auf dem Reiter „Stempeluhr &amp; Schichten“ führt <strong>Jahreskonto-Einstellungen bearbeiten</strong> zur selben Ansicht.</p>
                 </FAQItem>
               </div>
             </div>

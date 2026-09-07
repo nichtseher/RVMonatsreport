@@ -1,6 +1,6 @@
 # Roadmap — RV Monatsreport (RV Mobil)
 
-Stand: 2026-08-31, Version 0.9.18 (0.9.16 bis 0.9.18 sind veröffentlicht)
+Stand: 2026-09-07, Version 0.9.22 (bis 0.9.20 ist veröffentlicht)
 
 Diese Roadmap ist aus **gemessenen Befunden** entstanden, nicht aus Vermutungen.
 Wo eine Zahl steht, wurde sie nachgemessen. Punkte ohne Beleg sind als
@@ -450,11 +450,17 @@ können, ist der belegte Konformitätsstand.
   Reserve. Innenabstand der Zählerkarte 10 → 6 px, die 8 px kamen aus dem
   Weißraum und sind in die Tasten geflossen (`±1` 52,0 → 53,6 px).
 
-  Die `±5`-Tasten bleiben unter 44 px und laufen unter der
+  Die `±5`-Tasten blieben unter 44 px und liefen unter der
   Gleichwertigkeitsausnahme in 2.5.5, begründet im Quelltext. Das Prüfnetz
-  trennt jetzt zwei Klassen (43,5 px im Tab-Lauf, 24 px außerhalb) und fand im
-  ersten Lauf drei Verstöße, die der Handmessung entgangen waren — alle im
+  trennte damals zwei Klassen (43,5 px im Tab-Lauf, 24 px außerhalb) und fand
+  im ersten Lauf drei Verstöße, die der Handmessung entgangen waren — alle im
   Schreibtisch-Profil, weil nur bei 360 px gemessen worden war.
+
+  **Nachtrag 2026-09-07:** Die `±5`-Tasten sind auf Vorgabe des
+  Projektinhabers entfernt (0.9.22). Damit ist die Ausnahme gegenstandslos, das
+  Prüfnetz kennt nur noch eine Schwelle, und der frei gewordene Platz ist in
+  die verbleibenden drei Elemente geflossen — `±1` bei „Extra groß" von
+  53,6 auf **80 × 64 px**, das Zahlenfeld von 56–72 auf **76–96 px**.
 - ~~**320 px** (iPhone SE 1./2. Gen.)~~ **Behoben am 2026-09-02, nicht als
   Nicht-Ziel festgeschrieben.**
 
@@ -560,11 +566,161 @@ können, ist der belegte Konformitätsstand.
   darunter eine, die nachweist, dass der Prüflauf wirklich auf Europe/Berlin
   läuft — auf dem UTC-Läufer der CI gäbe es sonst gar keine Sommerzeit, und
   die Fälle wären grün, ohne etwas zu messen.
-- **Untergrenze für Service-Worker-Updates.** Updates sind
-  bestätigungspflichtig und laden nie von selbst neu — beim Tippen richtig. Wer
-  aber immer wegdrückt, bleibt beliebig lange auf einer alten Fassung, im
-  Zweifel mit einer veralteten Excel-Vorlage darin. Prüfen, ob es einen Boden
-  gibt, und sonst einen einziehen.
+- ~~**Untergrenze für Service-Worker-Updates.**~~ **Erledigt am 2026-09-07 mit
+  0.9.21 — und die Ausgangsfrage war falsch gestellt.**
+
+  Der Eintrag hier ging davon aus, dass jemand den Hinweis immer wegdrückt.
+  Gemessen an der gebauten App gibt es diesen Menschen nicht: **`public/sw.js`
+  ist seit dem 2026-07-19 unverändert**, 50 Commits und die Fassungen 0.8.0 bis
+  0.9.20 haben sie nicht angefasst. Ein Browser erkennt ein Update
+  ausschließlich an den Bytes dieser Datei — **der Hinweis ist also seit sieben
+  Wochen kein einziges Mal erschienen.** Dass die Kollegen trotzdem aktuell
+  sind, liegt am network-first-Verhalten des Workers, nicht am Hinweis.
+
+  **Einen Boden gab es außerdem, er gehörte nur nicht uns.** Sind alle Fenster
+  der App geschlossen — auf dem Handy der Normalfall —, aktiviert der Browser
+  den wartenden Worker von selbst (nachgemessen: neue Fassung aktiv, alter
+  Cache weg, eine Navigation). „Beliebig lange auf einer alten Fassung" stimmt
+  für den Schreibtisch, nicht fürs Handy.
+
+  Der echte Defekt war ein anderer: **Nach einmal „Später" kam der Hinweis nie
+  wieder** — auch nach zwei Neuladungen nicht, weil nur `updatefound`
+  ausgewertet wurde und nie `reg.waiting`. Der Nutzer hatte danach keinen Weg
+  mehr, das Update anzustoßen.
+
+  **Und ein Fund, der den Zwang erst möglich machen musste:** Ein Update
+  **offline** anzuwenden hinterließ eine weiße Seite — `#root` mit 0 Zeichen,
+  zwei fehlgeschlagene Anfragen. `activate` löscht jeden Cache außer dem neuen,
+  der neue enthielt aber nur die Schale. Die Gegenprobe offline *ohne* Update
+  rendert einwandfrei. Kein neuer Fehler — die Taste „Jetzt aktualisieren"
+  konnte das immer schon —, aber die Vorbedingung: Ein Boden, der ein Update
+  erzwingen darf, darf die App nicht unbenutzbar machen. Behoben, indem
+  `install` die gehashten Build-Dateien mit vorlädt.
+
+  Der Boden ist jetzt dreistufig und gemessen: Hinweis bei jedem Start, ab
+  **7 Tagen** ohne „Später" (Rolle `alert`), ab **14 Tagen** beim nächsten
+  Start selbst angewandt — angesagt, 8 Sekunden Vorlauf, nur beim Start und nur
+  online. Nebenbei behoben: der Hinweis war mit 152 × 36 px und 41 × 20 px zu
+  klein, lag auf der Hauptnavigation, ignorierte das Farbschema, und der
+  Erstbesuch lud die Seite ohne Anlass zweimal.
+
+  **Zwei Rest-Lücken, ausdrücklich benannt:** Ein Tab, der wochenlang offen
+  bleibt und nie neu geladen wird, erlebt keinen Start und wird deshalb nicht
+  automatisch aktualisiert — er eskaliert nur bis „nicht mehr wegdrückbar". Und
+  die nachgeladenen Bildschirme (Sync, Sicherung, Excel) stehen nicht in der
+  `index.html` und werden nicht vorgeladen; nach einem Update im Funkloch
+  brauchen sie einmalig Netz.
+
+  **Zur Veröffentlichung gehört:** Diese Änderung fasst `sw.js` an. Der Deploy
+  ist damit das erste Update-Ereignis seit dem 2026-07-19 — jeder
+  Bestandsnutzer sieht den Hinweis beim nächsten Online-Start zum ersten Mal
+  überhaupt.
+
+---
+
+## 0.9.22 — Plausibilitätsprüfung der ganzen Codebasis — ERLEDIGT (2026-09-07)
+
+Auftrag: den gesamten Code auf Plausibilität prüfen, **alles verifizieren und
+nichts behaupten**, die Barrierefreiheit lückenlos machen, die ±5-Tasten
+entfernen. Vollständiges Protokoll mit allen Messwerten im
+[DEVLOG](DEVLOG.md).
+
+**Der schwerste Fund war keiner aus der Liste, sondern ein Datenverlust.** Ein
+vorübergehender Lesefehler beim Start löschte das Archiv: Der `catch`-Zweig des
+Ladevorgangs füllte den Zustand mit `leererMonat()` und `{}` auf, und `{}` ist
+wahrheitswertig — es lief damit durch genau den Wächter, der davor schützen
+sollte. Reproduziert gegen die gebaute App: drei Archivmonate, ein Lesefehler,
+**eine** getippte Zahl, danach war nur noch der laufende Monat übrig. Ohne jede
+Warnung. Die Wächter waren richtig; der Fehlerzweig hat sie ausgehebelt.
+
+| Ergebnis | vorher | nachher |
+|---|---|---|
+| Archivmonate nach einem Lesefehler und einer Eingabe | 1 von 3 | **3 von 3** |
+| Laufender Bericht | überschrieben | unverändert |
+| Rückmeldung an den Nutzer | keine | eigene Ansicht mit Ansage |
+
+**Zehn von elf Ansichten waren geprüft, nicht elf.** Der Prüfeintrag „Formular
+anpassen" landete auf einem gleichnamigen Untermenü statt in `ManageModal`.
+Erster echter Lauf gegen die Ansicht: sechs Fehlschläge, fünf Defekte —
+darunter eine Tastaturfalle (WCAG 2.1.2), ein mit der Tastatur nicht
+anspringbarer Scrollbereich und eine Überschrift, die 531 px Inhalt in ein
+360-px-Fenster schob.
+
+**Die Bestätigungstaste war in zwei Farbschemata unsichtbar.** `text-white` auf
+`--danger-solid` — und diese Variable ist in „Weiß auf Schwarz" selbst
+`#ffffff`, in „Gelb auf Schwarz" `#ffff00`. Kontrast 1,00:1 bzw. 1,07:1, in
+**allen vier zerstörenden Rückfragen**, in genau den Schemata, die für diese
+Zielgruppe gebaut sind. Das Prüfgate konnte es nicht finden: Es misst
+gerenderte Ansichten, und keine Prüfung öffnete je eine Rückfrage.
+
+**Die ±5-Tasten sind weg — und damit die einzige WCAG-Ausnahme der App.** Sie
+liefen unter der Gleichwertigkeitsausnahme in 2.5.5. Jetzt erfüllt jedes
+Bedienelement die 44 px ohne Ausnahme, das Prüfnetz kennt eine Schwelle statt
+zweier, und der frei gewordene Platz ist vollständig in die verbleibenden drei
+Elemente geflossen.
+
+Weiter behoben und je einzeln nachgemessen: die RV Analyse folgte keiner
+Theme-Wahl (`var(--primary-color, …)` — diese Variable existiert nirgends);
+zehn Bedienelemente, deren `aria-label` die sichtbare Beschriftung ersetzte
+(WCAG 2.5.3); `pruefeSyncPaket` ließ ein Paket durch, an dem das
+Zusammenführen abstürzt; der Fristalarm las den Versandstatus nie und warnte
+auch für zukünftige Monate; ein rohes `localStorage.setItem` in einem Effekt;
+das Wischen wechselte den Bereichsfilter stumm.
+
+**Vier neue Prüfungen im Gate**, die je einen dieser Fehler festhalten:
+Lesefehler beim Start, WCAG 2.5.3 über alle Ansichten, die Ansicht `manage`,
+und die Schichten im Sync-Paket. Prüfungen **144 → 148** und die
+Oberflächenprüfung entsprechend gewachsen.
+
+### Zerbrechlich, gemessen, benannt
+
+**Die Hauptnavigation ist aus dem Dokument, solange ein Zählerfeld den Fokus
+hat — und 120 ms darüber hinaus.** `focusedFieldId` blendet die untere Leiste
+aus und eine Feld-Werkzeugleiste ein; beim Verlassen kommt sie über einen
+`setTimeout(…, 120)` zurück. Nachgemessen am 2026-09-07: 50 ms nach dem
+Weitertabben war sie weg, nach 450 ms wieder da.
+
+Für einen Menschen geht das auf — niemand tabbt 25-mal in 400 ms. Der
+Tabulator-Durchlauf der Prüfung tat genau das und meldete „RV Archiv" und
+„Optionen" als unerreichbar; er wartet jetzt 40 ms je Schritt, weil er sonst
+eine Wettlaufsituation misst statt der Erreichbarkeit.
+
+Was als echte Zerbrechlichkeit bleibt: Ein Bedienelement, das für ein
+Zeitfenster **aus dem Dokument verschwindet**, ist für einen Screenreader
+nicht dasselbe wie eines, das nur unsichtbar wird — der virtuelle Puffer wird
+neu aufgebaut, und wer schnell navigiert, läuft daran vorbei. Sauberer wäre,
+die Navigation immer eingehängt zu lassen und nur ihre Darstellung zu
+wechseln. Das ist eine Änderung an der Leisten-Logik und gehört mit eigener
+Messung in eine eigene Fassung — nicht ans Ende dieser.
+
+### Bestätigt, aber bewusst NICHT in dieser Fassung behoben
+
+**Ein Archivmonat zu öffnen ersetzt die Feldkonfiguration der App — dauerhaft.**
+`App.tsx` setzt beim Laden eines Archivmonats `setAppFields(savedRecord
+.fieldsSnapshot)`, und `useEinstellungen` schreibt das sofort nach
+`aussendienst_pwa_fields`. Wer im September eine eigene Kategorie anlegt und
+danach zum Nachsehen den Januar öffnet, findet die Feldliste auf dem
+Januar-Stand — die eigene Kategorie ist aus Formular und Speicher
+verschwunden. Sie kehrt nur zurück, wenn der September selbst archiviert ist
+und wieder geöffnet wird.
+
+Der Schnappschuss ist richtig und muss bleiben: Ein alter Monat soll mit den
+Feldern erscheinen, die er damals hatte. Falsch ist, dass dieselbe Variable
+beides trägt — die Anzeige des betrachteten Monats **und** die gespeicherte
+Konfiguration des Nutzers.
+
+**Warum hier nicht behoben:** Das ist keine Zeile, sondern eine Trennung. Die
+Feldkonfiguration müsste in zwei Zustände zerfallen (die eigene, dauerhafte
+und die des gerade betrachteten Monats), und `appFields` hängt an der
+Darstellung aller vier Abschnitte, am Archiv-Schnappschuss und am
+Excel-Export. Ein solcher Umbau gehört in eine eigene Fassung mit eigenen
+Messungen und nicht an das Ende eines ohnehin großen Standes. Er ist damit
+benannt, nicht vergessen.
+
+**Zwei Prüfungen verteidigten einen Fehler, statt ihn zu finden** — sie suchten
+ein Bedienelement über genau das `aria-label`, das den Verstoß ausmachte. Wer
+eine Prüfung schreibt, die einen Fehler zur Voraussetzung macht, macht ihn
+dauerhaft.
 
 ---
 

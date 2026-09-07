@@ -188,7 +188,12 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
                   checked={useEncryption}
                   onChange={(e) => setUseEncryption(e.target.checked)}
                   className="w-6 h-6 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--border-focus)] transition-all"
-                  aria-label="Verschlüsselung aktivieren"
+                  /* Kein aria-label mehr: Das umschließende <label> trägt den
+                     sichtbaren Text „Backup mit Passwort schützen" und ist damit
+                     der zugängliche Name. Ein aria-label überschreibt ihn — der
+                     Screenreader las „Verschlüsselung aktivieren", und wer den in
+                     der Hilfe genannten Text suchte, fand ihn nirgends
+                     (WCAG 2.5.3, Label in Name). */
                 />
               </div>
               <span className="text-[var(--text-color)] font-normal group-hover:text-[var(--text-color)] transition-colors">

@@ -264,7 +264,7 @@ export default function TimeModal({
                    nicht das Auge, sondern das verschaerfte Pruefgate im
                    Schreibtisch-Profil. */
                 className="w-full min-h-[44px] py-2 px-3 bg-[var(--bg-color)] hover:bg-[var(--border-color)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-                aria-label="Jahreskonto-Einstellungen anpassen"
+                aria-label="Jahreskonto-Einstellungen bearbeiten"
               >
                 <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" />
                 <span>Jahreskonto-Einstellungen bearbeiten</span>
@@ -439,7 +439,7 @@ export default function TimeModal({
                    Oeffnen aktiven Reiter, sie waere also erst aufgefallen,
                    wenn jemand sie benutzt. */
                 className="w-full min-h-[44px] py-2.5 px-3 bg-[var(--bg-color)] hover:bg-[var(--border-color)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-                aria-label="Jahreskonto-Einstellungen anpassen"
+                aria-label="Jahresübertrag und Soll-Stunden bearbeiten"
               >
                 <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" />
                 <span>Jahresübertrag &amp; Soll-Stunden bearbeiten</span>
