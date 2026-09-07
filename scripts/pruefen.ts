@@ -24,6 +24,7 @@ import "./checks/kodierung";
 import "./checks/symbole";
 import "./checks/speicher-schutz";
 import "./checks/zeigerabbruch";
+import "./checks/zustandsdeckung";
 import { alleLaufen } from "./helfer";
 
 alleLaufen()

@@ -747,6 +747,37 @@ dauerhaft.
 
 ---
 
+## 0.9.27 — Die Prüfung selbst — ERLEDIGT (2026-09-07)
+
+Vier von fünf Punkten aus der kritischen Bilanz. An der App ändert sich
+nichts; geändert hat sich, wie geprüft wird.
+
+- **Ersteinstieg im Prüfnetz** (sechster Fall der Zustandslücke): 31
+  Prüfungen, **kein Befund**. `oeffne()` unterdrückt den Assistenten in jeder
+  Prüfung — der erste Bildschirm eines neuen Nutzers war der einzige nie
+  gemessene. Er war von Anfang an sauber.
+- **Tabulator-Prüfung zweistufig.** Der Fehlschlag, der am 2026-09-02 zwei
+  Deploys zerriss, ist keine Erreichbarkeitslücke, sondern ein Rennen mit der
+  Navigation, die nach dem Verlassen eines Zählerfelds 120 ms braucht. Ein
+  Befund gilt jetzt erst, wenn er einen langsamen Nachlauf übersteht.
+  Belegt über einen künstlich gekürzten ersten Durchlauf: ohne zweite Stufe
+  12 Fehlschläge und rund 90 falsche „unerreichbar", mit ihr 12 bestanden.
+- **Zustandszähler** (`scripts/checks/zustandsdeckung.ts`). Sechs
+  Defektserien entstanden, weil eine gepflegte Liste vergessen wurde. Jetzt
+  zählt eine Prüfung die Zustandsschalter (40 in zehn Dateien) und wird rot,
+  sobald einer hinzukommt — mit der Handlungsanweisung dabei. Beweist keine
+  Deckung, erzwingt eine Entscheidung.
+- **Screenreader-Durchlauf vorbereitet und vertagt** (Entscheidung des
+  Projektinhabers): `SCREENREADER-DURCHLAUF.md`, acht Stellen mit
+  vorher/nachher. Das Dokument liegt bereit, bis der Durchlauf ansteht.
+
+**Das größte offene Risiko ist nicht technisch.** Der letzte Durchlauf mit dem
+blinden Kollegen lief auf 0.9.22; seither sind die zugänglichen Namen breit
+umgebaut. Normkonform und ungeprüft — axe misst, ob ein Name existiert, nicht
+ob er vorgelesen taugt. Das entscheidet der Durchlauf, nicht das Gate.
+
+---
+
 ## 0.9.26 — Zwei blinde Flecken im Formular — ERLEDIGT (2026-09-07)
 
 Fünfter Fall derselben Klasse, und der lehrreichste: nicht in einer selten

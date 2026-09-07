@@ -10,6 +10,110 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-07 — v0.9.27: Vier Punkte aus der kritischen Bilanz
+
+Auf die Frage „ist jetzt alles perfekt?" lautete die Antwort nein, mit fünf
+Punkten. Vier davon sind hier abgearbeitet; der fünfte kann ich nicht selbst
+erledigen und ist stattdessen so vorbereitet, dass er in einer halben Stunde
+zu erledigen ist.
+
+**An der App ändert sich nichts.** Das ist Absicht: Diese Fassung ändert, wie
+geprüft wird.
+
+### 1. Der Ersteinstieg — sechster Fall, und der erste ohne Befund
+
+`oeffne()` setzt in **jeder** Prüfung die Onboarding-Marke, weil der Assistent
+sonst als Overlay jede Messung der Ansicht dahinter verfälscht. Die Folge: Der
+erste Bildschirm, den ein neuer Nutzer überhaupt sieht, war der einzige, den
+nie eine Messung berührt hat.
+
+Fünf Schritte, je Trefferflächen und Reflow bei „normal" und „Extra groß",
+WCAG 2.5.3 und axe, dazu eine eigene Prüfung der Fokusfalle in **beide**
+Richtungen — einschließlich des Falls, der in diesem Projekt schon zweimal
+durchgerutscht ist: Startfokus auf der Überschrift mit `tabindex="-1"`, von
+der Shift+Tab in den Hintergrund entkam.
+
+**31 Prüfungen, alle grün beim ersten Lauf.** Kein Defekt. Der Assistent war
+von Anfang an sorgfältig gebaut — das gehört genauso berichtet wie ein Fund,
+und es ist in dieser Serie das erste Mal.
+
+### 2. Die Tabulator-Prüfung ist nicht mehr zerbrechlich
+
+Der Fehlschlag „per Tabulator nicht erreichbar — RV Archiv | Optionen" hat am
+2026-09-02 **zwei Deploys zerrissen** und fiel am 2026-09-07 einmal im
+Gesamtlauf durch, während er einzeln dreimal bestand. Ursache ist keine
+Erreichbarkeitslücke, sondern eine Wettlaufsituation: Das Fokussieren eines
+Zählerfelds blendet die Hauptnavigation aus, beim Verlassen kommt sie erst
+nach 120 ms plus Rendern zurück. Unter Last läuft ein schneller Durchlauf
+daran vorbei.
+
+Ein fester Wartewert ist die falsche Stellschraube — er ist immer entweder zu
+klein für den schlimmsten Fall oder zu teuer für den Normalfall. Stattdessen
+jetzt **zweistufig**: Meldet der schnelle Durchlauf etwas, wird mit 250 ms
+Ruhezeit nachgemessen, und nur was dort erneut fehlt, gilt als Befund.
+
+**Gegenprobe**, weil die Mechanik sonst nichts beweist. Das echte Rennen ließ
+sich hier nicht auslösen — auch bei 1 ms Wartezeit blieben alle zwölf
+Prüfungen grün, die Flanke tritt nur unter Last auf. Also den Auslöser
+künstlich hergestellt, indem der erste Durchlauf auf drei Schritte gekürzt
+wurde:
+
+| | ohne Stufe 2 | mit Stufe 2 |
+|---|---|---|
+| Ergebnis | **12 Fehlschläge**, rund 90 falsche „unerreichbar" | **12 bestanden** |
+| Laufzeit | 22 s | 1,5 min |
+
+Die Laufzeit belegt zugleich, dass die zweite Stufe wirklich lief. Im
+Normalfall — nichts fehlt — läuft sie gar nicht.
+
+### 3. Ein Zähler gegen den häufigsten Prüffehler dieses Projekts
+
+Sechs Defektserien zwischen 0.9.22 und 0.9.26, immer dieselbe Ursache: Das
+Prüfnetz zielt auf `activeTab`, die Defekte sitzen in Zuständen darunter. Die
+Gegenmaßnahme war bis 0.9.26 eine **Liste, die jemand pflegen muss** — also
+dieselbe Art von Zusage, die hier schon sechsmal versagt hat.
+
+`scripts/checks/zustandsdeckung.ts` zählt jetzt in den zeichnenden Dateien die
+Zustandsschalter (`useState` mit `true`/`false`/Zeichenkette als Anfangswert)
+und vergleicht gegen eine hinterlegte Zahl. Aktueller Stand: **40 Schalter in
+zehn Dateien.**
+
+Die Prüfung beweist **nicht**, dass ein Zustand geprüft ist. Sie erzwingt eine
+Entscheidung: aufnehmen oder begründet heraufsetzen. Aus „daran denken" wird
+„nicht weiterkommen".
+
+**Gegenprobe:** Ein eingefügter Schalter in `StatsModal.tsx` machte den Lauf
+rot („erwartet 2, gefunden 3") samt Handlungsanweisung; nach dem Zurücksetzen
+wieder grün. 155 Prüfungen.
+
+### 4. Der Screenreader-Durchlauf ist vorbereitet — und vertagt
+
+Das größte offene Risiko habe ich selbst erzeugt: Der letzte Durchlauf mit dem
+blinden Kollegen lief auf **0.9.22**, und seither sind in 0.9.23–0.9.27 die
+zugänglichen Namen breit umgebaut worden. Das ist nach Norm richtig und von
+keinem Screenreader nachgeprüft. axe misst, **ob** ein Name existiert und die
+sichtbare Beschriftung enthält — nicht, ob er vorgelesen taugt.
+
+`SCREENREADER-DURCHLAUF.md` listet die acht geänderten Stellen, jeweils mit
+vorher/nachher und der konkreten Frage. Bewusst kurz: nur das Geänderte, nicht
+die ganze App.
+
+Die Stelle, bei der ich am unsichersten bin, steht zuerst — der Name einer
+Archivzeile ist von „August 2026, am 01.09.2026 an die Vertriebsleitung
+gesendet" auf den vollen sichtbaren Inhalt gewachsen, also deutlich länger.
+Normkonform, aber möglicherweise beim Durchblättern von zehn Monaten lästig.
+Zweitunsicherste Stelle: ob der neue `role="status"` der Archivsuche
+überhaupt vorgelesen wird.
+
+### Was weiterhin offen bleibt
+
+Unverändert und benannt: die aufgebaute Live-Verbindung und der Sync-Zustand
+`confirm` (zweites Gerät nötig), die wirkungslosen Sicherheits-Header, das
+Ersetzen der Feldkonfiguration beim Öffnen eines Archivmonats, die
+Schichtliste hinter einer Einklappung.
+
+---
+
 ## 2026-09-07 — v0.9.26: Zwei blinde Flecken in der meistgeprüften Ansicht
 
 Fünfter Fall derselben Klasse — und der lehrreichste, weil er nicht in einer

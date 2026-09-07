@@ -757,7 +757,12 @@ async function zaehleErreichbare(page: Page) {
  * sprengen. Ein großzügiges Limit kostet nichts, weil die Schleife ohnehin
  * aussteigt, sobald die Runde vollständig ist.
  */
-async function tabulatorDurchlauf(page: Page, maxSchritte = 400, zielAnzahl?: number) {
+async function tabulatorDurchlauf(
+  page: Page,
+  maxSchritte = 400,
+  zielAnzahl?: number,
+  wartezeit = 40,
+) {
   await page.evaluate(() => {
     (document.activeElement as HTMLElement | null)?.blur();
     window.scrollTo(0, 0);
@@ -784,7 +789,7 @@ async function tabulatorDurchlauf(page: Page, maxSchritte = 400, zielAnzahl?: nu
       Tabben kann an der Navigation vorbeilaufen -- steht als eigener Punkt in
       der ROADMAP. Diese Prüfung ist nicht der Ort, ihn zu erzwingen.
     */
-    await page.waitForTimeout(40);
+    await page.waitForTimeout(wartezeit);
     const stelle = await page.evaluate(() => {
       const el = document.activeElement as HTMLElement | null;
       if (!el || el === document.body || el === document.documentElement) return null;
@@ -1125,39 +1130,82 @@ test.describe("Tastatur: Erreichbarkeit und Reihenfolge", () => {
         gewoehnliche Karte im Seitenfluss -- dort war die Falle ein Fehler und
         ist entfernt.
       */
-      const nichtErreicht = await page.evaluate((erreichteIdx) => {
-        const dialog = Array.from(document.querySelectorAll('[aria-modal="true"]')).find(
-          (d) => (d as HTMLElement).offsetWidth > 0,
-        );
-        // ACHTUNG: exakt derselbe Selektor wie im Durchlauf. Steht hier eine
-        // andere Liste, zeigen die Indizes in einen anderen Raum und die
-        // Pruefung meldet Unsinn -- beim Schreiben genau einmal passiert.
-        const kandidaten = Array.from(
-          document.querySelectorAll("button, a[href], input, select, textarea, [tabindex]"),
-        );
-        const fehlt: string[] = [];
-        kandidaten.forEach((el, i) => {
-          const h = el as HTMLElement;
-          if (h.offsetWidth === 0 || h.offsetHeight === 0) return; // unsichtbar
-          if ((el as HTMLButtonElement).disabled) return;
-          if (el.getAttribute("tabindex") === "-1") return;
-          if (el.closest('[aria-hidden="true"]')) return;
-          if (dialog && !dialog.contains(el)) return; // hinter einem modalen Dialog
-          if (erreichteIdx.includes(i)) return;
-          fehlt.push(
-            `${el.tagName}"${(el.getAttribute("aria-label") || el.textContent || "").trim().slice(0, 28)}"`,
-          );
-        });
-        return fehlt;
-      }, folge.map((f) => f.idx));
+      const nichtErreicht = await findeNichtErreichte(page, folge.map((f) => f.idx));
+
+      /*
+        Zweite Stufe: Ein Befund gilt erst, wenn er den langsamen Durchlauf
+        überlebt.
+
+        Warum das nötig ist -- und warum die Wartezeit allein es nicht löst:
+        Die Menge der Stationen ändert sich WÄHREND des Laufens. Das
+        Fokussieren eines Zählerfelds blendet die Hauptnavigation aus und eine
+        Feld-Werkzeugleiste ein; beim Verlassen kommt die Navigation nach
+        120 ms plus Rendern zurück. Unter Last (Gesamtlauf, geteilte CPU,
+        CI-Läufer) verschiebt sich dieses Fenster genug, dass der schnelle
+        Durchlauf an der Navigation vorbeiläuft.
+
+        Belegt: Am 2026-09-02 hat genau das ZWEI Deploys zerrissen -- Meldung
+        „Formular: per Tabulator nicht erreichbar — RV Archiv | Optionen",
+        lokal jedes Mal grün. Am 2026-09-07 fiel derselbe Test im Gesamtlauf
+        einmal durch und bestand einzeln dreimal. Ein fester Wartewert ist die
+        falsche Stellschraube: Er ist immer entweder zu klein für den
+        schlimmsten Fall oder zu teuer für den Normalfall.
+
+        Die zweite Stufe kostet nur, wenn es etwas zu melden gibt. Im
+        Normalfall ist `nichtErreicht` leer und dieser Block wird
+        übersprungen. Meldet der langsame Durchlauf dasselbe Element erneut,
+        ist es ein echter Befund -- und der Test sagt dann auch, dass er
+        bestätigt ist.
+      */
+      let bestaetigt = nichtErreicht;
+      if (nichtErreicht.length > 0) {
+        await warteAufRuhigesLayout(page);
+        const anzahl2 = await zaehleErreichbare(page);
+        const folge2 = await tabulatorDurchlauf(page, anzahl2 * 3 + 60, anzahl2, 250);
+        bestaetigt = await findeNichtErreichte(page, folge2.map((f) => f.idx));
+      }
 
       expect(
-        nichtErreicht,
-        `${ansicht.name}: per Tabulator nicht erreichbar — ${nichtErreicht.join(" | ")}`,
+        bestaetigt,
+        `${ansicht.name}: per Tabulator nicht erreichbar (im langsamen Durchlauf bestätigt) — ${bestaetigt.join(" | ")}`,
       ).toEqual([]);
     });
   }
 });
+
+/**
+ * Welche sichtbaren Bedienelemente hat der Durchlauf nicht getroffen?
+ *
+ * Steht als eigene Funktion da, weil sie zweimal gebraucht wird: einmal für
+ * den schnellen Durchlauf und einmal für die Bestätigung im langsamen.
+ */
+async function findeNichtErreichte(page: Page, erreichteIdxListe: number[]) {
+  return page.evaluate((erreichteIdx) => {
+    const dialog = Array.from(document.querySelectorAll('[aria-modal="true"]')).find(
+      (d) => (d as HTMLElement).offsetWidth > 0,
+    );
+    // ACHTUNG: exakt derselbe Selektor wie im Durchlauf. Steht hier eine
+    // andere Liste, zeigen die Indizes in einen anderen Raum und die
+    // Pruefung meldet Unsinn -- beim Schreiben genau einmal passiert.
+    const kandidaten = Array.from(
+      document.querySelectorAll("button, a[href], input, select, textarea, [tabindex]"),
+    );
+    const fehlt: string[] = [];
+    kandidaten.forEach((el, i) => {
+      const h = el as HTMLElement;
+      if (h.offsetWidth === 0 || h.offsetHeight === 0) return; // unsichtbar
+      if ((el as HTMLButtonElement).disabled) return;
+      if (el.getAttribute("tabindex") === "-1") return;
+      if (el.closest('[aria-hidden="true"]')) return;
+      if (dialog && !dialog.contains(el)) return; // hinter einem modalen Dialog
+      if (erreichteIdx.includes(i)) return;
+      fehlt.push(
+        `${el.tagName}"${(el.getAttribute("aria-label") || el.textContent || "").trim().slice(0, 28)}"`,
+      );
+    });
+return fehlt;
+  }, erreichteIdxListe);
+}
 
 test.describe("Touch-Erkennung", () => {
   test("pruefe-medienabfrage: das Handy-Profil meldet wirklich pointer: coarse", async ({
@@ -1927,6 +1975,122 @@ test.describe("Zustände des Archivs", () => {
     ).toBe("false");
     await klappe.click();
     await expect(klappe).toHaveAttribute("aria-expanded", "true");
+  });
+});
+
+/**
+ * Der Ersteinstieg.
+ *
+ * Sechster Fall derselben Klasse, und der offensichtlichste im Rückblick:
+ * `oeffne()` setzt in **jeder** Prüfung
+ * `localStorage.aussendienst_pwa_onboarding_v1 = "1"` — mit gutem Grund, denn
+ * der Assistent liegt als Overlay über allem und würde jede Messung der
+ * dahinterliegenden Ansicht verfälschen. Die Folge war trotzdem, dass der
+ * **erste Bildschirm, den ein neuer Nutzer sieht**, als einziger nie gemessen
+ * wurde.
+ *
+ * Er hat fünf Schritte, und jeder ist ein eigener Zustand mit eigenem Inhalt:
+ * Begrüßung, Namensfeld, Seh- und Höreinstellungen (die längste Seite, mit
+ * Schriftgrößen und Farbschemata), Erfassungshinweise, Datenschutz.
+ *
+ * Gemessen wird über das Fenster selbst, nicht über eine Ansicht dahinter —
+ * `role="dialog"` mit `aria-modal="true"`, verankert an der Überschrift des
+ * jeweiligen Schritts.
+ */
+const EINSTIEG_SCHRITTE = [
+  "Willkommen bei RV Mobil",
+  "Wie heißen Sie?",
+  "Sehen und Hören",
+  "So erfassen Sie am schnellsten",
+  "Ihre Daten bleiben bei Ihnen",
+] as const;
+
+/**
+ * Startet die App mit **wirklich leerem** Speicher, damit der Assistent
+ * erscheint, und blättert bis zum gewünschten Schritt.
+ *
+ * Kein `oeffne()`: Das setzt genau die Marke, die den Assistenten unterdrückt.
+ */
+async function oeffneEinstieg(page: Page, schritt: number) {
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page
+    .getByRole("heading", { name: EINSTIEG_SCHRITTE[0] })
+    .waitFor({ state: "visible", timeout: 20_000 });
+  for (let i = 0; i < schritt; i++) {
+    await page.getByRole("button", { name: /^Weiter$/ }).click();
+    await page
+      .getByRole("heading", { name: EINSTIEG_SCHRITTE[i + 1] })
+      .waitFor({ state: "visible", timeout: 15_000 });
+  }
+  await page.waitForTimeout(300);
+}
+
+test.describe("Ersteinstieg", () => {
+  for (let schritt = 0; schritt < EINSTIEG_SCHRITTE.length; schritt++) {
+    const name = `Einstieg ${schritt + 1}: ${EINSTIEG_SCHRITTE[schritt]}`;
+
+    for (const groesse of ["normal", "extra-large"] as const) {
+      test(`${name} bei ${groesse}`, async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name === "handy-webkit", "Geometrie haengt nicht am Motor");
+        await oeffneEinstieg(page, schritt);
+        await setzeSchriftgroesse(page, groesse);
+        await warteAufRuhigesLayout(page);
+        await pruefeGeometrie(page, `${name} / ${groesse}`);
+      });
+    }
+
+    test(`${name}: kein Name ersetzt die Beschriftung`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "Namen haengen nicht am Geraeteprofil");
+      await oeffneEinstieg(page, schritt);
+      const verstoesse = await findeNamensverstoesse(page);
+      expect(verstoesse, `${name}: ${verstoesse.join(" | ")}`).toEqual([]);
+    });
+
+    test(`${name} ohne schwere Verstöße`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "axe haengt nicht am Motor");
+      await oeffneEinstieg(page, schritt);
+      const ergebnis = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+        .analyze();
+      const befunde = ergebnis.violations
+        .filter((v) => v.impact === "critical" || v.impact === "serious")
+        .flatMap((v) => v.nodes.map((n) => `${v.id} @ ${n.target.join(" ")} — ${n.failureSummary?.replace(/\s+/g, " ").trim()}`));
+      expect(befunde, `${name}`).toEqual([]);
+    });
+  }
+
+  /*
+    Die Fokusfalle ist hier keine Formsache: Der Assistent ist das erste, was
+    ein blinder Nutzer von dieser App erlebt. Entkommt der Fokus nach hinten,
+    landet er in einem Formular, das er noch gar nicht sehen soll.
+
+    Geprüft wird der Fall, der in diesem Projekt schon zweimal durchgerutscht
+    ist: Der Startfokus liegt auf der Überschrift mit `tabindex="-1"`, und die
+    steht in keiner der beiden Randprüfungen — Shift+Tab entkam von dort in
+    den Hintergrund.
+  */
+  test("Fokus bleibt im Assistenten, auch rückwärts von der Überschrift", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Fokus haengt nicht am Geraeteprofil");
+    await oeffneEinstieg(page, 0);
+
+    const startetAufUeberschrift = await page.evaluate(
+      () => document.activeElement?.id === "onboarding-title",
+    );
+    expect(startetAufUeberschrift, "Startfokus liegt nicht auf der Überschrift").toBe(true);
+
+    for (const richtung of ["Shift+Tab", "Tab"] as const) {
+      await oeffneEinstieg(page, 0);
+      for (let i = 0; i < 25; i++) {
+        await page.keyboard.press(richtung);
+        await page.waitForTimeout(30);
+        const drin = await page.evaluate(() => {
+          const el = document.activeElement as HTMLElement | null;
+          if (!el || el === document.body) return true; // Umlauf über die Browserleiste
+          return !!el.closest('[aria-modal="true"]');
+        });
+        expect(drin, `${richtung}, Schritt ${i + 1}: Fokus hat den Assistenten verlassen`).toBe(true);
+      }
+    }
   });
 });
 

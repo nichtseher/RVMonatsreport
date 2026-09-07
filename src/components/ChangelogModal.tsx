@@ -44,6 +44,19 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.27: Nichts Sichtbares – die Prüfung selbst</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>An der App ändert sich in dieser Fassung nichts.</strong> Sie sieht aus und verhält sich wie 0.9.26. Geändert hat sich, wie gründlich sie vor jeder Veröffentlichung geprüft wird – und das ist der Grund, warum die letzten Fassungen so viele Fehler zutage gefördert haben.</li>
+            <li><strong>Der Einrichtungs-Assistent wird jetzt automatisch geprüft.</strong> Ausgerechnet der erste Bildschirm, den Sie beim allerersten Start sehen, war der einzige, den keine Prüfung je zu Gesicht bekommen hatte – weil jede Prüfung ihn überspringt, um an die Ansicht dahinter zu kommen. Ergebnis: keine Beanstandung. Er war von Anfang an sauber gebaut.</li>
+            <li><strong>Eine Prüfung, die sporadisch falschen Alarm schlug, tut das nicht mehr.</strong> Die Tastatur-Prüfung meldete unter Last Schaltflächen als „nicht erreichbar", die es sehr wohl waren – zweimal hat das eine Veröffentlichung verhindert. Ein Befund gilt jetzt erst, wenn er einen zweiten, langsamen Durchlauf übersteht.</li>
+            <li><strong>Und eine neue Prüfung sorgt dafür, dass so etwas nicht wiederkehrt.</strong> Sechsmal in Folge saßen Fehler an Stellen, die nur nach einem Klick sichtbar werden – die automatische Prüfung sah immer nur den Ausgangszustand. Jetzt schlägt der Prüflauf fehl, sobald ein solcher Zustand hinzukommt, ohne dass jemand ihn in die Prüfung aufnimmt.</li>
+          </ul>
+        </div>
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.26: Die Schnell-Erfassung und der Ein-Hand-Modus</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
