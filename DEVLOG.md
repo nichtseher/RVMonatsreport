@@ -10,7 +10,194 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-07 — v0.9.25: Das Archiv war geprüft, aber immer leer
+
+Vierter Punkt der Liste: die Archivbearbeitung. Und zum vierten Mal dieselbe
+Lücke — diesmal in einer Form, die besonders gut versteckt war.
+
+### Die Ansicht stand im Prüfnetz. Der Bildschirm nicht.
+
+`history` steht seit 0.9.18 in `ANSICHTEN` und wird bei jeder Schriftgröße, in
+jedem Farbschema und in allen drei Geräteprofilen gemessen. Was `oeffne()`
+anlegt, ist aber nur die Onboarding-Marke — **kein gespeicherter Monat**.
+Gemessen wurde damit über zwanzig Versionen hinweg ausschließlich der Satz
+„Noch keine Monate im Archiv."
+
+Nie gemessen: die Suchzeile, die Jahres-Klappe, die Monatskarte und alles im
+aufgeklappten Zustand — Laden, Löschen samt Rückfrage, die beiden
+Excel-Ausgaben, die Versandmarkierung. Also der Bildschirm, über den der
+Monatsbericht das Haus verlässt.
+
+Das ist gefährlicher als die drei Fälle davor. Bei `manage`, den Formularen
+der Stempeluhr und den Sync-Zuständen zeigte die Prüfliste ehrlich eine Lücke.
+Hier stand „Archiv: bestanden" — und war die Aussage über einen leeren
+Bildschirm.
+
+### Erster Lauf mit echtem Bestand: drei Fehlerklassen
+
+Bestand über IndexedDB gelegt (drei Monate, zwei Jahre, einer mit Schichten
+und Versandmarkierung, einer ohne), dann gemessen.
+
+**Trefferflächen und axe: sauber.** In allen vier Zuständen, bei „normal" und
+„Extra groß", in beiden Geräteprofilen. Kein Überlauf, kein verstecktes
+Seitwärtsscrollen, kein schwerer axe-Verstoß. Das gehört genauso berichtet wie
+die Funde.
+
+**WCAG 2.5.3 (Label in Name): sechs Verstöße, plus einer, der erst später
+auffiel.** Das Archiv ist damit die dichteste Fundstelle dieser Art im ganzen
+Projekt:
+
+| sichtbar | zugänglicher Name |
+|---|---|
+| „August 2026 · Zähler: 23 · Gesendet 01.09.2026 · Mitarbeiter: Marc Petry" | „August 2026, am 01.09.2026 an die Vertriebsleitung gesendet. Details ausklappen" |
+| „Doch noch offen" | „August 2026 ist am … gesendet. Markierung zurücknehmen" |
+| „Laden / Editieren" | „August 2026 laden und bearbeiten" |
+| „Export RV Report" | „August 2026 RV Report als Excel exportieren und teilen" |
+| „Export RV Zeit" | „August 2026 RV Zeit Zeiterfassung als Excel exportieren und teilen" |
+| „Wirklich löschen" | „August 2026 wirklich aus dem RV Archiv löschen" |
+
+Bei „Doch noch offen" kommt **kein einziges** sichtbares Wort im Namen vor.
+Wer per Sprachsteuerung sagt, was er liest, trifft nichts — und das an der
+Taste, die den Versandstand eines abgeschlossenen Monats umschaltet.
+
+Behoben nach der Regel aus `CLAUDE.md`: Der sichtbare Inhalt **ist** der Name;
+was zusätzlich gesagt werden muss, hängt als `sr-only` dahinter. Vier
+`aria-label` sind ersatzlos entfallen, der Klappzustand kommt von
+`aria-expanded`. Die reinen Symboltasten (Papierkorb, Abbrechen-Kreuz)
+behalten ihr `aria-label` — dort ist es richtig.
+
+**Die Suche fand Kommentare und zeigte sie nicht.** Gemessen: Suche nach
+„Nachfassaktion", einem Wort, das nur im Kommentar eines Monats steht. Die
+Monatskarte erschien, die beiden anderen Monate verschwanden — und das Wort
+selbst stand nirgends im `document.body.innerText`.
+
+Genau der Fall, mit dem die Projektregel „nichts hinter einer Einklappung
+verstecken" begründet ist. Die Jahresebene löst ihn bereits (`&& !searchQuery`
+klappt bei laufender Suche alles auf), die Monatsebene nicht.
+
+Behoben, indem der getroffene Kommentar **neben** der Klappe erscheint, nicht
+durch automatisches Aufklappen: Eine Karte zwangsweise zu öffnen hinterlässt
+eine Taste, die `aria-expanded="true"` meldet und auf Druck nichts ändert.
+
+**Die Jahres-Klappe hatte kein `aria-expanded`.** Gemessen: `null`. Ein
+Screenreader nennt sie „Schaltfläche Jahr 2025", ohne zu sagen, ob das Jahr
+offen ist. Nachgetragen — und dabei fiel derselbe Widerspruch auf, den ich
+mir bei der Suche gerade verboten hatte: Bei laufender Suche steht das Jahr
+zwangsweise offen und ließe sich nicht schließen. Dort steht jetzt eine
+schlichte Überschrift statt einer Taste. Es gibt nichts aufzuklappen.
+
+### Was das Lesen zusätzlich ergab
+
+- **„Clear".** Ein englisches Wort in einer durchgehend deutschen, siezenden
+  Oberfläche, als reiner Text ohne Polsterung. Es war nie gemessen worden,
+  weil die Taste erst mit eingetippter Suche erscheint — ein Zustand im
+  Zustand. Jetzt ein Kreuz mit 44 px und dem Namen „Suche zurücksetzen".
+- **Das Suchfeld hatte keine Beschriftung**, nur einen Platzhalter. Ein
+  `sr-only`-`<label>` nachgetragen.
+- **Die Trefferzahl wurde nicht gemeldet** (WCAG 4.1.3). Die Liste ändert sich
+  beim Tippen, ohne dass der Fokus sie berührt. Jetzt sagt ein dauerhaft
+  vorhandener `role="status"`: „3 von 5 Monaten gefunden."
+- **`versandText` war nach den Korrekturen verwaist.** `tsc` meldet das nicht,
+  `noUnusedLocals` ist aus. Entfernt, mit Begründung an der Stelle.
+
+### Ein eigener Messfehler, und diesmal der gefährlichste bisher
+
+Beim Bestätigen des 0.9.24-Deploys habe ich die GitHub-API in einer Schleife
+ohne Wartezeit abgefragt — rund 65 Aufrufe. Das Limit für unangemeldete
+Zugriffe liegt bei 60 pro Stunde. Ab dem 61. kam eine Fehlermeldung statt der
+Laufliste, mein Skript fand darin kein `workflow_runs` und meldete
+**„KEIN-LAUF"**.
+
+Das ist exakt das Symptom, das am 2026-08-08 einen echten, verlorenen Deploy
+anzeigte und das in `CLAUDE.md` als Warnung steht. Eine Drosselung ist von
+einem verschwundenen Lauf **nicht zu unterscheiden**, wenn man nur auf das
+Vorhandensein prüft. Wer daraufhin neu pusht oder Alarm schlägt, handelt auf
+eine Messung hin, die gar keine war.
+
+Nachgetragen in `CLAUDE.md`, zusammen mit dem Ausweg: Der Deploy lässt sich
+ohne API bestätigen, indem man die laufende Seite nach einem Merkmal der neuen
+Fassung durchsucht — für 0.9.24 die Abwesenheit von „GPS-Standort" im
+Bündel. Das braucht kein Kontingent und misst das, worauf es ankommt: was
+ausgeliefert wird.
+
+### Der Deploy von 0.9.24 ist gescheitert — und die Ursache war eine Lücke im Prüfnetz
+
+Beim Bestätigen fiel auf: `Run 76` trägt `failure`, Produktion stand weiter
+auf 0.9.23. Zwei Fehlschläge, beide derselbe Fall:
+
+```
+Arbeitszeit verbuchen / extra-large: 368 px Inhalt bei 360 px Fenster
+   Übersteht: span.font-mono "0.00h"
+Schicht nachtragen / extra-large:    369 px Inhalt bei 360 px Fenster
+   Übersteht: span.font-mono "8.00h"
+```
+
+Die Zeile „Gesamtstunden dieser Schicht:" — `flex justify-between`, kein
+`min-w-0` an der Beschriftung. Zwölfter und dreizehnter Fall derselben
+Ursache in diesem Projekt.
+
+**Der eigentliche Befund liegt eine Ebene höher.** Lokal war der Lauf grün,
+und das war kein Zufall: Der Block „Breitere Schrift als hier installiert"
+läuft über `ANSICHTEN` und `EINSTIEGE` — also über alles, was ein `?tab=`
+oder ein Menüpunkt erreicht. Die Zustände *innerhalb* einer Ansicht kamen ab
+0.9.24 als eigene Blöcke dazu und **erbten die Schriftvariante nicht**.
+Gemessen wurden sie ausschließlich mit den hier installierten Schriften.
+
+Das erklärt den Rückfall als Muster statt als Zufall: Jeder neue
+Zustandsblock startet ohne die Schriftvariante, und der Unterschied zeigt
+sich erst im Deploy — dort aber als roter Lauf, nicht als Hinweis.
+
+Behoben an beiden Enden: die zwei Zeilen (`flex-wrap` + `min-w-0` +
+`[overflow-wrap:anywhere]`), und ein neuer Block „Zustände mit breiter
+Schrift" am Dateiende, der alle zehn Zustände abdeckt — die beiden Formulare
+der Stempeluhr, die vier Sync-Zustände, die vier Archivzustände.
+
+**Gegenprobe gemacht**, weil eine Prüfung ohne sie nichts beweist: Mit
+zurückgenommener Korrektur meldet der neue Block lokal 370 px und 372 px
+gegen die 368/369 px des Läufers — dasselbe Element, dieselbe Ursache, mit
+etwas mehr Reserve, weil Verdana breiter ist als das Mono-Pendant auf
+`ubuntu-latest`. Danach wieder hergestellt.
+
+**Wie der Fehlschlag gefunden wurde, ohne API-Kontingent:** Die öffentliche
+HTML-Seite der Actions trägt den Zustand im `aria-label` jeder Zeile.
+
+```
+curl -s "https://github.com/nichtseher/RVMonatsreport/actions?query=branch%3Amain" \
+  | grep -o 'aria-label="[^"]*Deploy PWA[^"]*"'
+→ failed: Run 76 … 0.9.24
+→ completed successfully: Run 75 … 0.9.23
+```
+
+Das Job-Log braucht dann doch eine Anmeldung — der Push-Zugang taugt als
+Bearer-Token, wie in `CLAUDE.md` beschrieben. Authentifiziert liegt die
+Grenze bei 5000 Aufrufen pro Stunde statt bei 60; die Drosselung von vorhin
+wäre damit gar nicht erst entstanden.
+
+### Stand der Prüfung
+
+`check:ui` deckt jetzt vier Archivzustände ab — Liste, aufgeklappter Monat,
+Löschabfrage und laufende Suche — je mit Trefferflächen und Reflow bei
+„normal" und „Extra groß", WCAG 2.5.3 und axe, dazu zwei gezielte Prüfungen
+für den Suchtreffer und den Klappzustand, plus zehn Zustände mit erzwungener
+Breitschrift.
+
+### Was weiterhin offen ist
+
+Die Schnell-Erfassung, der Ersteinstieg mit wirklich leerem Speicher, die
+aufgebaute Live-Verbindung und der Sync-Zustand `confirm` (beide brauchen ein
+zweites Gerät).
+
+---
+
 ## 2026-09-07 — v0.9.24: Die Formulare der Stempeluhr, und GPS ist raus
+
+> **Nachtrag (noch am selben Tag):** Diese Fassung ist **nie in Produktion
+> angekommen.** `Run 76` starb an `npm run check:ui` — zwei Reflow-Fehler in
+> genau den beiden Formularen, die dieser Eintrag beschreibt, sichtbar nur mit
+> den Schriften des CI-Läufers. Der unten berichtete grüne Lauf war echt und
+> ist trotzdem keine Aussage über den Deploy gewesen. Ursache, Gegenprobe und
+> die Netzlücke dahinter stehen im Eintrag zu 0.9.25; 0.9.24 erreicht die
+> Nutzer als Teil davon, so wie seinerzeit 0.9.8 über 0.9.9.
 
 Dritter Punkt der Liste: `ClockInWidget` durcharbeiten. Der Ertrag war
 größer als bei den ersten beiden Punkten zusammen.

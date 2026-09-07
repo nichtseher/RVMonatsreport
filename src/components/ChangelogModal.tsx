@@ -44,6 +44,20 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.25: Das Archiv sagt jetzt, was es tut</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Sieben Schaltflächen im Archiv hießen für die Sprachsteuerung anders, als sie beschriftet sind.</strong> „Doch noch offen", „Laden / Editieren", „Export RV Report", „Export RV Zeit", „Wirklich löschen" und die Monatszeilen selbst – wer den sichtbaren Text vorlas, traf nichts. Jetzt enthält jeder Name die sichtbare Beschriftung, und die Zusatzangabe (welcher Monat, wohin die Datei geht) hängt für die Sprachausgabe hinten dran.</li>
+            <li><strong>Die Suche fand Kommentare, zeigte sie aber nicht.</strong> Wenn ein Suchwort nur im Kommentar eines Monats vorkam, erschien der Monat in der Liste – das gefundene Wort stand nirgends auf dem Bildschirm. Jetzt wird der Kommentar unter dem Treffer angezeigt, ohne dass Sie ihn aufklappen müssen.</li>
+            <li><strong>Die Suche sagt jetzt, wie viel sie gefunden hat.</strong> „3 von 5 Monaten gefunden." – vorher änderte sich die Liste stillschweigend, was ohne Blick auf den Bildschirm nicht zu bemerken war.</li>
+            <li><strong>Die Jahres-Zeile verriet der Sprachausgabe nicht, ob sie offen ist.</strong> Behoben. Und während einer Suche ist sie keine Klappe mehr, sondern eine schlichte Überschrift – vorher meldete sie „aufgeklappt" und ließ sich trotzdem nicht schließen.</li>
+            <li><strong>Die Taste zum Leeren des Suchfelds hieß „Clear".</strong> Ein englisches Wort in einer sonst durchgehend deutschen App, dazu nur ein paar Pixel groß. Jetzt ein deutlich sichtbares Kreuz in voller Größe, mit Rückmeldung beim Drücken.</li>
+          </ul>
+        </div>
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.24: Die Zeiterfassung ist bedienbar geworden</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>

@@ -54,6 +54,17 @@ Job logs need authentication (403 without). The push credential works as a beare
 The `gh` CLI is **not** installed here. Confirm a deploy through the public REST API instead, then compare the live bundle filename against `dist/assets/`:
 `https://api.github.com/repos/nichtseher/RVMonatsreport/actions/runs?per_page=5`
 
+**A rate-limited API answer is indistinguishable from a lost deploy — do not poll.** Unauthenticated requests are capped at **60 per hour** per IP. On 2026-09-07 a polling loop with no delay spent ~65 of them in two minutes; from then on the endpoint returned `{"message":"API rate limit exceeded …"}` with no `workflow_runs` key, and the checking script duly reported *no run for this SHA* — the exact symptom of the genuine 2026-08-08 failure documented above. Acting on that (pushing again, raising an alarm) would be acting on a non-measurement. Poll at 30 s or slower, count the calls, and **treat a missing `workflow_runs` key as an error, never as an empty result**.
+
+The way around it needs no quota at all, and measures the thing that actually matters — what is being served. Fetch the live `index.html`, take the asset filename out of it, fetch that bundle, and grep it for a marker that only the new version has (or, for a removal, must no longer have):
+
+```
+curl -s https://nichtseher.github.io/RVMonatsreport/ | grep -o 'assets/index-[A-Za-z0-9._-]*\.js'
+curl -s https://nichtseher.github.io/RVMonatsreport/assets/index-<hash>.js | grep -c '<marker>'
+```
+
+For 0.9.24 the marker was the *absence* of `GPS-Standort`. A changed bundle hash alone proves a new build was published; a marker proves it is the build you meant.
+
 ## Verification expectations
 
 There is no test runner. The project owner's standing rule is that nothing is reported as working until it has actually been exercised — reading the code is not enough.

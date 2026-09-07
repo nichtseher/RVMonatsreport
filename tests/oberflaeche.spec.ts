@@ -619,6 +619,13 @@ test.describe("Breitere Schrift als hier installiert", () => {
       await pruefeGeometrie(page, `${eintrag.name} / breit`);
     });
   }
+
+  /*
+    Die Zustände INNERHALB einer Ansicht fehlen hier -- sie stehen am Ende
+    der Datei in „Zustände mit breiter Schrift". Der Grund ist banal und
+    zwingend: `test.describe` führt seinen Rumpf sofort beim Einlesen aus,
+    und die Listen der Zustände sind dort noch nicht angelegt.
+  */
 });
 
 test.describe("Ansichten hinter den Einstiegen", () => {
@@ -1551,8 +1558,8 @@ test.describe("WCAG 2.5.3: Name enthält die sichtbare Beschriftung", () => {
  * Zeit-Ansicht sind. Bis 0.9.23 hat sie deshalb **keine** Prüfung je gesehen.
  *
  * Was darin steckt: Pausen-Tasten, vier Vorwahl-Schaltflächen, ein
- * Schieberegler, zwei Zahlenfelder, ein Notizfeld, der GPS-Knopf und der
- * Absender. Dieselbe Lage wie bei `manage` — und dort waren es beim ersten
+ * Schieberegler, zwei Zahlenfelder, ein Notizfeld und der Absender (der
+ * GPS-Knopf, der hier ursprünglich stand, ist mit 0.9.24 entfallen). Dieselbe Lage wie bei `manage` — und dort waren es beim ersten
  * echten Lauf fünf Defekte.
  *
  * Das Einstempeln schreibt einen Zeitstempel nach `localStorage`; der Test
@@ -1692,6 +1699,290 @@ test.describe("Zustände des Geräte-Syncs", () => {
         .filter((v) => v.impact === "critical" || v.impact === "serious")
         .flatMap((v) => v.nodes.map((n) => `${v.id} @ ${n.target.join(" ")} — ${n.failureSummary?.replace(/\s+/g, " ").trim()}`));
       expect(befunde, `${zustand.name}`).toEqual([]);
+    });
+  }
+});
+
+/**
+ * Die Zustände des Archivs.
+ *
+ * Warum es das gibt: `history` steht seit 0.9.18 in `ANSICHTEN` und wird bei
+ * jeder Schriftgröße, in jedem Farbschema und in allen drei Geräteprofilen
+ * gemessen — aber immer mit **leerem** Archiv. `oeffne()` setzt nur die
+ * Onboarding-Marke; einen gespeicherten Monat legt niemand an. Gemessen wurde
+ * damit ausschließlich der Satz „Noch keine Monate im Archiv."
+ *
+ * Nie gemessen: die Suchzeile, die Jahres-Klappe, die Monatskarte, und alles
+ * im aufgeklappten Zustand — Laden, Löschen samt Rückfrage, die beiden
+ * Excel-Ausgaben, die Versandmarkierung. Also der Bildschirm, über den der
+ * Monatsbericht das Haus verlässt.
+ *
+ * Vierter Fall derselben Klasse nach `manage` (0.9.22), den Formularen der
+ * Stempeluhr und den Sync-Zuständen (beide 0.9.24). Das Muster ist jedes Mal
+ * dasselbe: Geprüft wird, was ein `?tab=` erreicht — ein Zustand *innerhalb*
+ * einer Ansicht erreicht es nicht.
+ *
+ * Der Bestand wird über IndexedDB gelegt und nicht über die Oberfläche: In
+ * das Archiv kommt ein Monat nur über „Nächsten Monat starten", und das würde
+ * diese Messung von einem halben Dutzend anderer Abläufe abhängig machen.
+ */
+const ARCHIV_BESTAND = [
+  {
+    month: "2026-08",
+    name: "Marc Petry",
+    notes:
+      "Schwerpunkt Vorführungen bei Bestandskunden; Nachfassaktion Sonderveranstaltungsplanung läuft.",
+    values: { s1_1: 12, s1_2: 4, s2_1: 7 },
+    valuesUpdatedAt: { s1_1: "2026-08-31T10:00:00.000Z" },
+    fieldsSnapshot: {},
+    savedAt: "2026-08-31T10:00:00.000Z",
+    sentAt: "2026-09-01T08:15:00.000Z",
+    sentAtUpdatedAt: "2026-09-01T08:15:00.000Z",
+    timeLogs: [
+      {
+        id: "t1",
+        date: "2026-08-14",
+        clockIn: "08:00",
+        clockOut: "16:30",
+        breakMinutes: 45,
+        duration: 7.75,
+        officeRatio: 0.5,
+        officeHours: 3.88,
+        fieldHours: 3.87,
+        notes: "Kundentermin",
+      },
+    ],
+  },
+  {
+    // Ohne Schichten und ohne Versandmarkierung: zeigt den Platzhalter
+    // „Keine Schichten erfasst" und das Abzeichen „Noch offen".
+    month: "2026-07",
+    name: "Marc Petry",
+    notes: "Urlaubsmonat, wenig Aussendienst.",
+    values: { s1_1: 2 },
+    valuesUpdatedAt: {},
+    fieldsSnapshot: {},
+    savedAt: "2026-07-31T10:00:00.000Z",
+    timeLogs: [],
+  },
+  {
+    // Voriges Jahr: erzwingt eine zweite, eingeklappte Jahres-Klappe.
+    month: "2025-12",
+    name: "Marc Petry",
+    notes: "Jahresabschluss.",
+    values: { s1_1: 5 },
+    valuesUpdatedAt: {},
+    fieldsSnapshot: {},
+    savedAt: "2025-12-31T10:00:00.000Z",
+    timeLogs: [],
+  },
+] as const;
+
+/*
+  Bewusst eine eigene Kopie der IndexedDB-Anbindung statt einer gemeinsamen
+  Hilfsfunktion mit „Lesefehler beim Start": Jene Prüfung ist der
+  Regressionstest für den Datenverlust aus 0.9.22, bei dem ein fehlgeschlagener
+  Lesevorgang das gesamte Archiv überschrieb. Sie umzubauen, um hier zwanzig
+  Zeilen zu sparen, wäre ein schlechter Tausch.
+*/
+async function legeArchivAn(page: Page) {
+  // Leere Seite gleicher Herkunft: teilt sich die IndexedDB mit der App, lädt
+  // sie aber nicht -- sonst schriebe die App ihren leeren Anfangszustand
+  // darüber.
+  await page.route("**/leerseite-fuer-archivpruefung", (route) =>
+    route.fulfill({ contentType: "text/html", body: "<!doctype html><title>leer</title>" }),
+  );
+  await page.goto("/leerseite-fuer-archivpruefung");
+  await page.evaluate(async (bestand) => {
+    const db = await new Promise<IDBDatabase>((res, rej) => {
+      const r = indexedDB.open("keyval-store", 1);
+      r.onupgradeneeded = () => {
+        if (!r.result.objectStoreNames.contains("keyval")) r.result.createObjectStore("keyval");
+      };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+    const archiv: Record<string, unknown> = {};
+    for (const eintrag of bestand) archiv[eintrag.month] = eintrag;
+    await new Promise<void>((res, rej) => {
+      const t = db.transaction("keyval", "readwrite");
+      t.objectStore("keyval").put(archiv, "aussendienst_pwa_history");
+      t.oncomplete = () => res();
+      t.onerror = () => rej(t.error);
+    });
+  }, ARCHIV_BESTAND as unknown as { month: string }[]);
+}
+
+type ArchivZustand = "liste" | "offen" | "loeschabfrage" | "suche";
+
+async function oeffneArchiv(page: Page, zustand: ArchivZustand) {
+  await legeArchivAn(page);
+  await oeffne(page, "history");
+  const kopfzeile = page.getByRole("button", { name: /August 2026/ }).first();
+  await kopfzeile.waitFor({ state: "visible", timeout: 15_000 });
+
+  if (zustand === "suche") {
+    // Die Suchzeile erscheint erst mit Bestand -- und die Zuruecksetzen-Taste
+    // erst mit eingetippter Suche. Beides war deshalb nie gemessen.
+    await page.getByPlaceholder(/Monat, Name oder Kommentar suchen/).fill("Nachfassaktion");
+    await page.waitForTimeout(400);
+    return;
+  }
+
+  if (zustand !== "liste") {
+    await kopfzeile.click();
+    await page
+      .getByRole("button", { name: /Laden \/ Editieren/ })
+      .first()
+      .waitFor({ state: "visible", timeout: 15_000 });
+  }
+
+  if (zustand === "loeschabfrage") {
+    await page.getByRole("button", { name: /August 2026 aus RV Archiv löschen/ }).click();
+    await page
+      .getByRole("button", { name: /Wirklich löschen/ })
+      .first()
+      .waitFor({ state: "visible", timeout: 15_000 });
+  }
+
+  await page.waitForTimeout(500);
+}
+
+const ARCHIV_ZUSTAENDE = [
+  { name: "Archiv: Monate aufgelistet", zustand: "liste" as ArchivZustand },
+  { name: "Archiv: Monat aufgeklappt", zustand: "offen" as ArchivZustand },
+  { name: "Archiv: Löschabfrage", zustand: "loeschabfrage" as ArchivZustand },
+  { name: "Archiv: Suche läuft", zustand: "suche" as ArchivZustand },
+] as const;
+
+test.describe("Zustände des Archivs", () => {
+  for (const zustand of ARCHIV_ZUSTAENDE) {
+    for (const groesse of ["normal", "extra-large"] as const) {
+      test(`${zustand.name} bei ${groesse}`, async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name === "handy-webkit", "Geometrie haengt nicht am Motor");
+        await oeffneArchiv(page, zustand.zustand);
+        await setzeSchriftgroesse(page, groesse);
+        await warteAufRuhigesLayout(page);
+        await pruefeGeometrie(page, `${zustand.name} / ${groesse}`);
+      });
+    }
+
+    test(`${zustand.name}: kein Name ersetzt die Beschriftung`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "Namen haengen nicht am Geraeteprofil");
+      await oeffneArchiv(page, zustand.zustand);
+      const verstoesse = await findeNamensverstoesse(page);
+      expect(verstoesse, `${zustand.name}: ${verstoesse.join(" | ")}`).toEqual([]);
+    });
+
+    test(`${zustand.name} ohne schwere Verstöße`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "axe haengt nicht am Motor");
+      await oeffneArchiv(page, zustand.zustand);
+      const ergebnis = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+        .analyze();
+      const befunde = ergebnis.violations
+        .filter((v) => v.impact === "critical" || v.impact === "serious")
+        .flatMap((v) => v.nodes.map((n) => `${v.id} @ ${n.target.join(" ")} — ${n.failureSummary?.replace(/\s+/g, " ").trim()}`));
+      expect(befunde, `${zustand.name}`).toEqual([]);
+    });
+  }
+
+  /*
+    Die Projektregel „nichts hinter einer Einklappung verstecken" begründet
+    sich ausdrücklich damit, dass die Suche sonst ins Leere liefe. Das Archiv
+    ist die einzige Ansicht mit einer Suche UND einer Einklappung -- hier muss
+    die Regel also nachweisbar halten.
+
+    Die Jahres-Klappe klappt bei einer laufenden Suche auf (`&& !searchQuery`).
+    Für die Monatskarte gilt das nicht: Getroffen wird auch auf `notes`, und
+    der Kommentar steht im eingeklappten Teil.
+  */
+  test("Suchtreffer im Kommentar zeigt den Kommentar", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Suche haengt nicht am Geraeteprofil");
+    await oeffneArchiv(page, "liste");
+    await page.getByPlaceholder(/Monat, Name oder Kommentar suchen/).fill("Nachfassaktion");
+    await page.waitForTimeout(400);
+
+    // Genau ein Monat trägt das Wort -- die anderen beiden müssen weg sein.
+    await expect(page.getByRole("button", { name: /August 2026/ }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /Juli 2026/ })).toHaveCount(0);
+
+    const zeigtTreffer = await page.evaluate(() =>
+      document.body.innerText.includes("Nachfassaktion"),
+    );
+    expect(
+      zeigtTreffer,
+      "Der Kommentar, auf den die Suche getroffen hat, steht nicht auf dem Bildschirm",
+    ).toBe(true);
+  });
+
+  test("Jahres-Klappe meldet ihren Zustand", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "ARIA haengt nicht am Geraeteprofil");
+    await oeffneArchiv(page, "liste");
+    const klappe = page.getByRole("button", { name: /Jahr 2025/ }).first();
+    await expect(klappe).toBeVisible();
+    expect(
+      await klappe.getAttribute("aria-expanded"),
+      "Jahres-Klappe ohne aria-expanded: der Screenreader sagt nicht an, ob das Jahr offen ist",
+    ).toBe("false");
+    await klappe.click();
+    await expect(klappe).toHaveAttribute("aria-expanded", "true");
+  });
+});
+
+/**
+ * Zustände mit breiter Schrift.
+ *
+ * Warum es das gibt: Der Block „Breitere Schrift als hier installiert" läuft
+ * über `ANSICHTEN` und `EINSTIEGE` — also über alles, was ein `?tab=` oder
+ * ein Menüpunkt erreicht. Die Zustände *innerhalb* einer Ansicht kamen ab
+ * 0.9.24 als eigene Blöcke dazu und **erbten die Schriftvariante nicht**.
+ * Gemessen wurden sie damit ausschließlich mit den auf diesem Rechner
+ * installierten Schriften.
+ *
+ * Was das gekostet hat: Der Deploy von 0.9.24 (`Run 76`) starb an genau
+ * dieser Stelle. Die Zeile „Gesamtstunden dieser Schicht:" sprengte auf dem
+ * CI-Läufer bei „Extra groß" das 360-px-Fenster — 368 px im Verbuchen-,
+ * 369 px im Nachtragen-Formular. Lokal grün, weil „Segoe UI" und sein
+ * Mono-Pendant schmaler sind als das, was `ubuntu-latest` einsetzt.
+ * Produktion blieb fünf Stunden auf 0.9.23, bis es auffiel.
+ *
+ * **Wer einen neuen Zustandsblock anlegt, trägt ihn hier nach.** Sonst wird
+ * er nur mit den Schriften dieses Rechners geprüft, und der Unterschied
+ * zeigt sich erst im Deploy — dort aber als roter Lauf, nicht als Hinweis.
+ *
+ * Steht am Dateiende, weil `test.describe` seinen Rumpf sofort beim Einlesen
+ * ausführt und die Listen der Zustände weiter oben noch nicht angelegt sind.
+ */
+const ZUSTAENDE_MIT_SCHRIFT: Array<{ name: string; oeffne: (p: Page) => Promise<void> }> = [
+  ...ZEIT_FORMULARE.map((f) => ({ name: f.name, oeffne: f.oeffne })),
+  ...SYNC_ZUSTAENDE.map((z) => ({
+    name: z.name,
+    oeffne: (p: Page) => oeffneSyncZustand(p, z),
+  })),
+  ...ARCHIV_ZUSTAENDE.map((z) => ({
+    name: z.name,
+    oeffne: (p: Page) => oeffneArchiv(p, z.zustand),
+  })),
+];
+
+test.describe("Zustände mit breiter Schrift", () => {
+  test.beforeEach(async ({ page }) => {
+    // Wie im Block der Stempeluhr: Der Zeitstempel des Einstempelns darf
+    // nicht auf dem Stand eines früheren Laufs aufsetzen.
+    await page.addInitScript(() => {
+      localStorage.removeItem("aussendienst_pwa_clockin");
+    });
+  });
+
+  for (const zustand of ZUSTAENDE_MIT_SCHRIFT) {
+    test(`${zustand.name} mit breiter Schrift`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "Schriftbreite haengt nicht am Geraeteprofil");
+      await erzwingeBreiteSchrift(page);
+      await zustand.oeffne(page);
+      await setzeSchriftgroesse(page, "extra-large");
+      await warteAufRuhigesLayout(page);
+      await pruefeGeometrie(page, `${zustand.name} / breit`);
     });
   }
 });

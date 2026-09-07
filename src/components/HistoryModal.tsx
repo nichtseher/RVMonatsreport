@@ -40,11 +40,14 @@ const kurzesDatum = (iso?: string): string => {
   return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
 };
 
-/** Ansage-Text fuer den Versandstand eines Monats. */
-const versandText = (r: HistoryRecord): string =>
-  r.sentAt
-    ? `am ${kurzesDatum(r.sentAt)} an die Vertriebsleitung gesendet`
-    : "noch nicht an die Vertriebsleitung gesendet";
+/*
+  `versandText` stand hier bis 0.9.25 und lieferte den Versandstand als Satz
+  fuer die aria-label der Monatszeile und der Versandtaste. Beide sind
+  entfallen, weil sie die sichtbare Beschriftung ersetzt haben (WCAG 2.5.3);
+  denselben Inhalt tragen jetzt die sichtbaren Abzeichen plus ein sr-only-
+  Zusatz. `tsc` haette die verwaiste Funktion nicht gemeldet --
+  `noUnusedLocals` ist aus.
+*/
 
 export default function HistoryModal({
   appFields,
@@ -227,24 +230,55 @@ export default function HistoryModal({
 
           {/* Search bar integration for clutter-free scaling */}
           {records.length > 0 && (
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-3.5 text-[var(--text-muted)]" />
-              <input
-                type="text"
-                placeholder="Monat, Name oder Kommentar suchen..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-11 pl-9 pr-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] text-xs font-bold text-[var(--text-color)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-3 text-[var(--text-muted)] hover:text-[var(--text-color)] text-xs font-black cursor-pointer"
-                >
-                  Clear
-                </button>
-              )}
+            <div className="space-y-1.5">
+              <div className="relative">
+                <label htmlFor="archiv-suche" className="sr-only">
+                  Im Archiv nach Monat, Name oder Kommentar suchen
+                </label>
+                <Search
+                  className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                  aria-hidden="true"
+                />
+                <input
+                  id="archiv-suche"
+                  type="text"
+                  placeholder="Monat, Name oder Kommentar suchen..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full min-h-[44px] pl-9 pr-14 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] text-xs font-bold text-[var(--text-color)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]"
+                />
+                {/* Hiess bis 0.9.25 "Clear" -- ein englisches Wort in einer
+                    durchgehend deutschen, siezenden Oberflaeche, und als
+                    reiner Text ohne Polsterung deutlich unter 44 px. Jetzt
+                    ein Symbol mit eindeutigem Namen und voller
+                    Trefferflaeche. */}
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      announceToAriaAndSpeech("Suche zurückgesetzt. Alle Monate werden wieder angezeigt.");
+                    }}
+                    aria-label="Suche zurücksetzen"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-[var(--text-muted)] hover:text-[var(--text-color)] cursor-pointer focus-visible:ring-4"
+                  >
+                    <X className="w-4 h-4" aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+              {/* WCAG 4.1.3: Die Liste aendert sich beim Tippen, ohne dass
+                  der Fokus sie beruehrt. Ohne diese Meldung erfaehrt ein
+                  Screenreader-Nutzer nicht, ob die Suche etwas gefunden hat.
+                  Dauerhaft vorhanden, nicht erst mit der Meldung erzeugt --
+                  ein nachtraeglich eingefuegter Live-Bereich wird
+                  unzuverlaessig vorgelesen. */}
+              <p role="status" className="text-[0.75rem] font-bold text-[var(--text-muted)] px-1 min-h-[1rem]">
+                {searchQuery
+                  ? filteredRecords.length === 0
+                    ? "Keine Treffer."
+                    : `${filteredRecords.length} von ${records.length} ${records.length === 1 ? "Monat" : "Monaten"} gefunden.`
+                  : ""}
+              </p>
             </div>
           )}
 
@@ -272,24 +306,43 @@ export default function HistoryModal({
                 
                 return (
                   <div key={year} className="space-y-2">
-                    {/* Year Accordion Header */}
-                    <button
-                      type="button"
-                      onClick={() => toggleYear(year)}
-                      className="w-full flex items-center justify-between min-h-[44px] px-3 bg-[var(--bg-color)]/60 rounded-xl border border-[var(--border-color)] text-left cursor-pointer hover:bg-[var(--bg-color)] transition-all select-none"
-                    >
-                      <span className="text-xs font-black tracking-wider text-[var(--text-color)] uppercase flex items-center gap-1.5">
-                        <Filter className="w-3 h-3 text-[var(--accent)]" />
-                        Jahr {year} ({yearRecords.length} {yearRecords.length === 1 ? "Monat" : "Monate"})
-                      </span>
-                      <div className="text-[var(--text-muted)]">
-                        {isYearCollapsed ? (
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        ) : (
-                          <ChevronUp className="w-3.5 h-3.5" />
-                        )}
+                    {/* Jahres-Klappe.
+
+                        Waehrend einer Suche ist sie KEINE Klappe: Die Zeile
+                        oben erzwingt `isYearCollapsed = false`, das Jahr steht
+                        also offen und liesse sich nicht schliessen. Eine Taste
+                        mit aria-expanded="true", die auf Druck nichts aendert,
+                        meldet dem Screenreader einen Zustand, den sie nicht
+                        hat (WCAG 4.1.2). Deshalb steht dort dann eine
+                        schlichte Ueberschrift -- es gibt nichts aufzuklappen,
+                        alles ist sichtbar. */}
+                    {searchQuery ? (
+                      <div className="w-full flex items-center min-h-[44px] px-3 bg-[var(--bg-color)]/60 rounded-xl border border-[var(--border-color)] select-none">
+                        <span className="text-xs font-black tracking-wider text-[var(--text-color)] uppercase flex items-center gap-1.5">
+                          <Filter className="w-3 h-3 text-[var(--accent)]" aria-hidden="true" />
+                          Jahr {year} ({yearRecords.length} {yearRecords.length === 1 ? "Treffer" : "Treffer"})
+                        </span>
                       </div>
-                    </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => toggleYear(year)}
+                        aria-expanded={!isYearCollapsed}
+                        className="w-full flex items-center justify-between min-h-[44px] px-3 bg-[var(--bg-color)]/60 rounded-xl border border-[var(--border-color)] text-left cursor-pointer hover:bg-[var(--bg-color)] transition-all select-none"
+                      >
+                        <span className="text-xs font-black tracking-wider text-[var(--text-color)] uppercase flex items-center gap-1.5">
+                          <Filter className="w-3 h-3 text-[var(--accent)]" aria-hidden="true" />
+                          Jahr {year} ({yearRecords.length} {yearRecords.length === 1 ? "Monat" : "Monate"})
+                        </span>
+                        <div className="text-[var(--text-muted)]">
+                          {isYearCollapsed ? (
+                            <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+                          ) : (
+                            <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
+                          )}
+                        </div>
+                      </button>
+                    )}
 
                     {/* Year Accordion Content */}
                     {!isYearCollapsed && (
@@ -308,7 +361,19 @@ export default function HistoryModal({
                                 type="button"
                                 onClick={() => toggleMonth(record.month)}
                                 aria-expanded={isExpanded}
-                                aria-label={`${formatMonthGerman(record.month)}, ${versandText(record)}. Details ${isExpanded ? "einklappen" : "ausklappen"}`}
+                                /*
+                                  KEIN aria-label. Es lautete
+                                  "August 2026, am 01.09.2026 an die
+                                  Vertriebsleitung gesendet. Details
+                                  ausklappen" -- und ersetzte damit die
+                                  sichtbare Zeile, in der "Zähler: 23" und
+                                  "Mitarbeiter: ..." stehen. Wer per
+                                  Sprachsteuerung sagt, was er liest, traf
+                                  nichts (WCAG 2.5.3). Der sichtbare Inhalt
+                                  IST jetzt der Name; die Ergaenzungen stehen
+                                  als sr-only dahinter, und den Klappzustand
+                                  meldet aria-expanded von selbst.
+                                */
                                 className="w-full text-left p-3.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-[var(--bg-color)] transition-all select-none focus:outline-none focus-visible:ring-4"
                               >
                                 <div className="min-w-0 flex-1">
@@ -329,10 +394,15 @@ export default function HistoryModal({
                                       <span className="text-[0.6875rem] font-black px-2 py-0.5 rounded-full bg-[var(--success-bg)] text-[var(--success-text)] border border-[var(--success-border)] flex items-center gap-1">
                                         <Check className="w-3 h-3" aria-hidden="true" />
                                         Gesendet {kurzesDatum(record.sentAt)}
+                                        <span className="sr-only"> an die Vertriebsleitung</span>
                                       </span>
                                     ) : (
                                       <span className="text-[0.6875rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">
                                         Noch offen
+                                        <span className="sr-only">
+                                          {" "}
+                                          — noch nicht an die Vertriebsleitung gesendet
+                                        </span>
                                       </span>
                                     )}
                                   </div>
@@ -348,6 +418,35 @@ export default function HistoryModal({
                                   )}
                                 </div>
                               </button>
+
+                              {/*
+                                Suchtreffer im Kommentar sichtbar machen.
+
+                                Die Suche greift auch auf `notes` -- und der
+                                Kommentar stand bis 0.9.25 ausschliesslich im
+                                eingeklappten Teil. Gemessen am 2026-09-07: Die
+                                Suche nach einem Wort, das nur im Kommentar
+                                vorkommt, lieferte die Monatskarte, und das
+                                Wort selbst stand nirgends auf dem Bildschirm.
+                                Genau der Fall, mit dem die Projektregel
+                                "nichts hinter einer Einklappung verstecken"
+                                begruendet ist (ROADMAP, "Bewusst NICHT
+                                geplant").
+
+                                Bewusst NEBEN der Klappe statt in ihr: Die
+                                Karte automatisch aufzuklappen wuerde eine
+                                Taste hinterlassen, die aria-expanded="true"
+                                meldet und auf Druck nichts aendert.
+                              */}
+                              {!isExpanded &&
+                                searchQuery &&
+                                String(record.notes || "")
+                                  .toLowerCase()
+                                  .includes(searchQuery.toLowerCase()) && (
+                                  <p className="px-3.5 pb-3 -mt-1 text-[0.75rem] italic text-[var(--text-muted)] leading-relaxed [overflow-wrap:anywhere]">
+                                    <strong>Kommentar:</strong> „{String(record.notes)}"
+                                  </p>
+                                )}
 
                               {/* Collapsible content body */}
                               {isExpanded && (
@@ -365,11 +464,6 @@ export default function HistoryModal({
                                     type="button"
                                     aria-pressed={!!record.sentAt}
                                     onClick={() => onToggleVersand(record.month, !record.sentAt)}
-                                    aria-label={
-                                      record.sentAt
-                                        ? `${formatMonthGerman(record.month)} ist ${versandText(record)}. Markierung zurücknehmen`
-                                        : `${formatMonthGerman(record.month)} als an die Vertriebsleitung gesendet markieren`
-                                    }
                                     className={`w-full min-h-[44px] px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all focus-visible:ring-4 border ${
                                       record.sentAt
                                         ? "border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)]"
@@ -387,6 +481,10 @@ export default function HistoryModal({
                                         <span>Als gesendet markieren</span>
                                       </>
                                     )}
+                                    <span className="sr-only">
+                                      {" "}
+                                      für {formatMonthGerman(record.month)}
+                                    </span>
                                   </button>
 
                                   {/* Action buttons (Touch-optimized heights of 44px)
@@ -410,10 +508,14 @@ export default function HistoryModal({
                                           type="button"
                                           onClick={() => executeDelete()}
                                           className="flex-1 min-h-[44px] px-3 rounded-xl border border-[var(--danger-border)] bg-[var(--danger-solid)] text-[var(--danger-solid-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:brightness-110 active:scale-95 transition-all focus-visible:ring-4"
-                                          aria-label={`${formatMonthGerman(record.month)} wirklich aus dem RV Archiv löschen`}
                                         >
                                           <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                                           <span>Wirklich löschen</span>
+                                          <span className="sr-only">
+                                            {" "}
+                                            — {formatMonthGerman(record.month)} endgültig aus dem
+                                            Archiv entfernen
+                                          </span>
                                         </button>
                                         <button
                                           type="button"
@@ -431,11 +533,14 @@ export default function HistoryModal({
                                           onClick={() => {
                                             onLoadMonth(record.month);
                                           }}
-                                          aria-label={`${formatMonthGerman(record.month)} laden und bearbeiten`}
                                           className="flex-1 min-h-[44px] px-3 rounded-xl bg-[var(--primary)] text-[var(--primary-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all focus-visible:ring-4"
                                         >
                                           <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
                                           <span>Laden / Editieren</span>
+                                          <span className="sr-only">
+                                            {" "}
+                                            — {formatMonthGerman(record.month)} in das Formular holen
+                                          </span>
                                         </button>
                                         <button
                                           type="button"
@@ -452,22 +557,29 @@ export default function HistoryModal({
                                       <button
                                         type="button"
                                         onClick={() => handleDirectExport(record)}
-                                        aria-label={`${formatMonthGerman(record.month)} RV Report als Excel exportieren und teilen`}
-                                        className="h-11 rounded-xl border border-[var(--accent)] bg-[var(--cat-1-soft)] text-[var(--cat-1-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:bg-[var(--cat-1-soft)] active:scale-95 transition-all focus-visible:ring-4"
+                                        className="min-h-[44px] rounded-xl border border-[var(--accent)] bg-[var(--cat-1-soft)] text-[var(--cat-1-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:bg-[var(--cat-1-soft)] active:scale-95 transition-all focus-visible:ring-4"
                                       >
                                         <FileSpreadsheet className="w-3.5 h-3.5 text-[var(--accent)]" aria-hidden="true" />
                                         <span>Export RV Report</span>
+                                        <span className="sr-only">
+                                          {" "}
+                                          für {formatMonthGerman(record.month)} als Excel-Datei, zum Teilen
+                                        </span>
                                       </button>
 
                                       {record.timeLogs && Array.isArray(record.timeLogs) && record.timeLogs.length > 0 ? (
                                         <button
                                           type="button"
                                           onClick={() => handleDirectExportTimeLogs(record)}
-                                          aria-label={`${formatMonthGerman(record.month)} RV Zeit Zeiterfassung als Excel exportieren und teilen`}
-                                          className="h-11 rounded-xl border border-[var(--info-border)] bg-[var(--info-bg)] text-[var(--info-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:bg-[var(--info-bg)] active:scale-95 transition-all focus-visible:ring-4"
+                                          className="min-h-[44px] rounded-xl border border-[var(--info-border)] bg-[var(--info-bg)] text-[var(--info-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:bg-[var(--info-bg)] active:scale-95 transition-all focus-visible:ring-4"
                                         >
                                           <Clock className="w-3.5 h-3.5 text-[var(--info-text)]" aria-hidden="true" />
                                           <span>Export RV Zeit</span>
+                                          <span className="sr-only">
+                                            {" "}
+                                            — Zeiterfassung für {formatMonthGerman(record.month)} als
+                                            Excel-Datei, zum Teilen
+                                          </span>
                                         </button>
                                       ) : (
                                         <div className="h-11 rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-muted)] text-[0.75rem] font-bold flex items-center justify-center select-none">

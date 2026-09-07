@@ -747,6 +747,51 @@ dauerhaft.
 
 ---
 
+## 0.9.25 — Das Archiv war geprüft, aber immer leer — ERLEDIGT (2026-09-07)
+
+**Die Prüfliste sagte „Archiv: bestanden" und meinte einen leeren
+Bildschirm.** `history` steht seit 0.9.18 in `ANSICHTEN`, aber `oeffne()` legt
+keinen gespeicherten Monat an — gemessen wurde über zwanzig Versionen hinweg
+nur der Satz „Noch keine Monate im Archiv."
+
+Das unterscheidet diesen Fall von den drei Vorgängern (`manage`, die Formulare
+der Stempeluhr, die Sync-Zustände): Dort zeigte die Liste ehrlich eine Lücke.
+Hier stand ein grüner Haken über einer Aussage, die den fraglichen Bildschirm
+nie berührt hat. **Wer eine Ansicht ins Prüfnetz aufnimmt, muss den Zustand
+herstellen, in dem sie benutzt wird** — sonst prüft er den Leerlauf.
+
+Gefunden mit echtem Bestand (drei Monate, zwei Jahre, einer mit Schichten):
+
+- **Sieben Verstöße gegen WCAG 2.5.3.** Die dichteste Fundstelle im Projekt.
+  Bei „Doch noch offen" kam **kein einziges** sichtbares Wort im zugänglichen
+  Namen vor. Vier `aria-label` sind ersatzlos entfallen; der sichtbare Inhalt
+  ist jetzt der Name, Zusätze stehen als `sr-only` dahinter.
+- **Die Suche fand Kommentare und zeigte sie nicht.** Gemessen mit einem Wort,
+  das nur in einem Kommentar steht: Karte da, Wort nirgends im Text der Seite.
+  Genau der Fall, mit dem „Bewusst NICHT geplant" die Einklapp-Regel begründet.
+  Behoben neben der Klappe, nicht durch Aufklappen — eine zwangsweise geöffnete
+  Karte hinterlässt eine Taste, die `aria-expanded="true"` meldet und nichts tut.
+- **Die Jahres-Klappe hatte kein `aria-expanded`** und meldete bei laufender
+  Suche einen Zustand, den sie nicht ändern konnte. Sie ist dann keine Taste
+  mehr.
+- **„Clear"**, englisch und wenige Pixel groß, plus ein Suchfeld ohne
+  Beschriftung und eine Trefferliste ohne Statusmeldung (WCAG 4.1.3).
+
+**Trefferflächen, Reflow und axe waren in allen vier Zuständen sauber.** Das
+gehört genauso berichtet wie die Funde.
+
+Vier Archivzustände sind jetzt im Prüfgate: Liste, aufgeklappter Monat,
+Löschabfrage, laufende Suche.
+
+**Nachtrag zum Messverfahren:** Die GitHub-API in einer Schleife ohne
+Wartezeit abzufragen sprengt das Kontingent von 60 Aufrufen pro Stunde, und
+die gedrosselte Antwort ist von „kein Lauf vorhanden" nicht zu unterscheiden —
+also vom echten Ausfall des 2026-08-08. Der Deploy lässt sich ohne API
+bestätigen, indem man das ausgelieferte Bündel nach einem Merkmal der neuen
+Fassung durchsucht. In `CLAUDE.md` festgehalten.
+
+---
+
 ## 0.9.24 — Die Formulare der Stempeluhr, und GPS ist raus — ERLEDIGT (2026-09-07)
 
 **GPS ist entfernt** (Anweisung des Projektinhabers). Zwei Knöpfe „Aktuellen

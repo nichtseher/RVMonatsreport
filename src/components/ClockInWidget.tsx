@@ -601,9 +601,15 @@ export default React.memo(function ClockInWidget({
                     />
                   </div>
                 </div>
-                <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex justify-between bg-[var(--bg-color)] p-2 rounded-lg">
-                  <span>Gesamtstunden dieser Schicht:</span>
-                  <span className="font-mono text-[var(--total-text)]">
+                {/* min-w-0 + flex-wrap: Die Beschriftung ist ein langes
+                    deutsches Wortband und gibt ihre Breite sonst nicht unter
+                    ihren Inhalt preis. Auf dem CI-Laeufer, der weder "Segoe
+                    UI" noch dessen Mono-Pendant hat, sprengte diese Zeile bei
+                    "Extra gross" das 360-px-Fenster (368 px gemessen) -- hier
+                    unsichtbar, weil die Schriften vorhanden sind. */}
+                <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex flex-wrap justify-between gap-x-2 bg-[var(--bg-color)] p-2 rounded-lg">
+                  <span className="min-w-0 [overflow-wrap:anywhere]">Gesamtstunden dieser Schicht:</span>
+                  <span className="font-mono text-[var(--total-text)] flex-shrink-0">
                     {(typedOfficeHours !== "" || typedFieldHours !== ""
                       ? (parseFloat(typedOfficeHours) || 0) +
                         (parseFloat(typedFieldHours) || 0)
@@ -947,9 +953,12 @@ export default React.memo(function ClockInWidget({
                 />
               </div>
             </div>
-            <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex justify-between bg-[var(--bg-color)] p-2 rounded-lg">
-              <span>Gesamtstunden dieser Schicht:</span>
-              <span className="font-mono text-[var(--total-text)]">
+            {/* Gleiche Behandlung wie im Verbuchen-Formular oben: ohne
+                min-w-0 und flex-wrap sprengt diese Zeile auf dem CI-Laeufer
+                bei "Extra gross" das Fenster (369 px gemessen). */}
+            <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex flex-wrap justify-between gap-x-2 bg-[var(--bg-color)] p-2 rounded-lg">
+              <span className="min-w-0 [overflow-wrap:anywhere]">Gesamtstunden dieser Schicht:</span>
+              <span className="font-mono text-[var(--total-text)] flex-shrink-0">
                 {(typedManualOfficeHours !== "" || typedManualFieldHours !== ""
                   ? (parseFloat(typedManualOfficeHours) || 0) +
                     (parseFloat(typedManualFieldHours) || 0)
