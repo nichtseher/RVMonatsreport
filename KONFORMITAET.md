@@ -7,6 +7,7 @@
 | **Maßstab** | EN 301 549 V3.2.1 (2021-03), Abschnitt 9 → WCAG 2.1 Stufe A und AA |
 | **Zusätzlich dokumentiert** | die neun Erfolgskriterien aus WCAG 2.2, die der Entwurf EN 301 549 V4.1.0 aufnimmt |
 | **Art des Dokuments** | technische Selbstauskunft |
+| **Nachtrag** | 2026-09-07 — Screenreader-Durchlauf auf 0.9.22 (siehe 3.3) und geänderte Kriterienlage (siehe „Was sich seit diesem Bericht geändert hat") |
 
 ---
 
@@ -111,10 +112,29 @@ liest, liest ihn falsch:
 
 ### 3.3 Screenreader-Durchlauf
 
-**NVDA (PC) und VoiceOver (iOS) sind am 2026-09-02 ohne Befund durchgelaufen**
-— nach Rückmeldung des Projektinhabers. Diese Angabe ist **nicht von den
-Entwicklungswerkzeugen nachvollzogen**: kein eingesehenes Protokoll, keine
-Aufzeichnung. Sie steht hier als das, was sie ist, eine Fremdauskunft.
+**Nachtrag 2026-09-07 — der bislang belastbarste Durchlauf.** NVDA und
+VoiceOver sind **auf der veröffentlichten Fassung 0.9.22 ohne Befund
+durchgelaufen, durchgeführt von einem blinden Kollegen aus dem Team.** Damit
+ist zum ersten Mal beides zugleich erfüllt, was dieser Bericht verlangt: die
+**aktuelle** Fassung und die **richtige** Person.
+
+Warum die Fassung hier ausdrücklich dasteht: Die öffentliche Adresse hat bis
+zum 2026-09-07 gegen 16:00 Uhr den Stand `497fef3` vom 2026-09-02
+ausgeliefert — die beiden Commits danach waren an einem fehlgeschlagenen
+Deploy hängengeblieben, ohne dass es auffiel. Ein Durchlauf „auf der App"
+prüfte in diesen fünf Tagen also nicht das, was im Quelltext stand. Für den
+früheren Durchlauf unten heißt das: Welche Fassung er abgedeckt hat, ist
+nachträglich nicht mehr sicher zu bestimmen.
+
+Was die Angabe weiterhin **nicht** ist: von den Entwicklungswerkzeugen
+nachvollzogen. Kein eingesehenes Protokoll, keine Aufzeichnung. Sie bleibt
+eine Fremdauskunft — aber eine, die den selbst gesetzten Maßstab dieses
+Dokuments erfüllt.
+
+**Früherer Durchlauf, unverändert dokumentiert:** NVDA (PC) und VoiceOver
+(iOS) sind am 2026-09-02 ohne Befund durchgelaufen — nach Rückmeldung des
+Projektinhabers, ohne eingesehenes Protokoll, und ohne gesicherte Zuordnung
+zu einer Fassung.
 
 **TalkBack (Android) ist ungeprüft** — und zwar aus einem sachlichen Grund:
 Die blinden Kollegen nutzen ausschließlich iPhones. Die Plattform ist mit der
@@ -336,3 +356,25 @@ fortgeschrieben, wenn:
   **23. Oktober 2026**; ab dann ist WCAG 2.2 AA der Maßstab, und Abschnitt 4
   wandert in Abschnitt 5,
 - der Screenreader-Durchlauf wiederholt wird oder Befunde liefert.
+
+
+---
+
+## Was sich seit diesem Bericht geändert hat (Nachtrag 2026-09-07)
+
+Der Bericht oben ist für **0.9.19** geschrieben. Er ist für 0.9.22 **nicht
+vollständig neu erhoben** — das wäre eine eigene Arbeit. Was seither
+gemessen und geändert wurde, gehört aber hierher, weil es Kriterien betrifft,
+die der Bericht behandelt:
+
+| Kriterium | Änderung seit 0.9.19 |
+|---|---|
+| **1.4.3 Kontrast** | Die Bestätigungstaste aller vier zerstörenden Rückfragen stand in „Weiß auf Schwarz" bei **1,00:1** und in „Gelb auf Schwarz" bei ~1,07:1 — sie war unsichtbar. Behoben (21,00:1 bzw. 19,56:1), zwei weitere unsichtbare Symbole ebenfalls. Über vier Schemata nachgemessen. |
+| **1.4.1 Ohne Farbe** | Die Kurven der RV Analyse standen auf festen Hex-Werten, die Legende auf Theme-Variablen; im Hochkontrast war die Zuordnung zerrissen. Jetzt gleiche Quelle **und** unterscheidbare Strichmuster. |
+| **2.1.2 Keine Tastaturfalle** | In „Formularfelder verwalten" hielt ein Tab-Umlauf den Fokus fest. Behoben. Die Ansicht war zuvor von **keiner** automatischen Prüfung erreicht worden. |
+| **2.5.3 Label in Name** | Zehn Bedienelemente trugen ein `aria-label`, das die sichtbare Beschriftung ersetzte. Alle behoben; eine eigene Prüfung setzt das jetzt über alle Ansichten durch. |
+| **2.5.5 Trefferfläche (AAA)** | Die ±5-Tasten des Zählers sind entfernt. Damit entfällt die **einzige** Ausnahme, die die App in Anspruch nahm; das Prüfgate kennt nur noch eine Schwelle von 44 px. |
+| **4.1.3 Statusmeldungen** | Der Bereichswechsel per Wischen erfolgte stumm; jetzt wird er angesagt. Ein Lesefehler beim Start meldet sich mit `role="alert"` und Ansage, statt still einen leeren Stand anzuzeigen. |
+
+**Nicht bestätigt, unverändert:** ob der Geräteabgleich (Kopplung, QR- und
+Textcode, Zusammenführen) Teil der Screenreader-Durchläufe war.

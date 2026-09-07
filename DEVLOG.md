@@ -318,13 +318,52 @@ Zwei Lehren, beide in `CLAUDE.md` nachgetragen:
   `e638f68` meldet „190 Oberflaechenpruefungen bestanden", und das stimmte —
   lokal. Auf dem Läufer stimmte es nicht.
 
+### Nachtrag: Der Screenreader-Durchlauf lief auf 0.9.22 — und war sauber
+
+Rückmeldung des Projektinhabers am 2026-09-07, nach dem Deploy: **NVDA und
+VoiceOver sind auf der veröffentlichten Fassung 0.9.22 ohne Befund
+durchgelaufen, durchgeführt von einem blinden Kollegen aus dem Team.**
+
+Das ist der belastbarste Durchlauf, den dieses Projekt bisher hatte, und zwar
+aus zwei Gründen zugleich: Er lief auf der **aktuellen** Fassung und wurde von
+der **richtigen** Person gemacht. Der ROADMAP-Punkt verlangt beides
+ausdrücklich; bisher war jeweils höchstens eines davon belegt.
+
+Warum die Fassung hier steht und nicht nur das Datum: Bis heute gegen 16:00 Uhr
+lieferte die öffentliche Adresse den Stand `497fef3` vom 2026-09-02 aus. Ein
+Durchlauf „auf der App" hätte in den fünf Tagen davor also nicht den Stand des
+Quelltextes geprüft — für den früheren Durchlauf vom 2026-09-02 ist deshalb
+nachträglich nicht mehr sicher zu sagen, welche Fassung er abgedeckt hat. Die
+Frage nach der Fassung ist hier keine Formalie.
+
+Der Durchlauf deckt damit die Änderungen ab, die 0.9.22 an der
+Screenreader-Oberfläche vorgenommen hat: zehn geänderte zugängliche Namen, die
+neue Zählerzeile ohne ±5 samt erweiterter Feldbeschreibung, der
+Fehlerbildschirm beim Lesefehler, die Ansage beim Wischen und die entfernte
+Fokusfalle in „Formularfelder verwalten".
+
+**Was er nicht ist:** von hier aus nachvollzogen. Kein eingesehenes Protokoll,
+keine Aufzeichnung — er bleibt eine Fremdauskunft, so wie dieses Projekt es
+durchgehend führt. Und **offen bleibt, ob der Geräteabgleich Teil des
+Durchlaufs war**; das ist der zuletzt umgebaute Bereich und der einzige, den
+der ROADMAP-Punkt gesondert hervorhebt.
+
 ### Was offen bleibt
 
-NVDA, VoiceOver und ein echtes iPhone. Ein grünes Prüfgate ist kein
-Konformitätsnachweis: axe findet einen Teil der WCAG-Verstöße, nie alle, und
+NVDA und VoiceOver sind inzwischen gelaufen — siehe den Nachtrag darüber; als
+dieser Abschnitt entstand, standen sie noch aus. Offen bleiben der
+Geräteabgleich innerhalb dieser Durchläufe, TalkBack (mit der tatsächlichen
+Zielgruppe nicht prüfbar, die Kollegen nutzen iPhones) und die Klasse, die nur
+echte Hardware zeigt: Bildschirmtastatur, Safe-Areas, Kamerakopplung zwischen
+zwei Geräten.
+
+Was davon unberührt bleibt: **Ein grünes Prüfgate ist kein
+Konformitätsnachweis.** axe findet einen Teil der WCAG-Verstöße, nie alle, und
 die schwersten Funde dieses Tages — eine unsichtbare Bestätigungstaste, eine
 Tastaturfalle, ein gelöschtes Archiv — hat keiner von ihnen gemeldet. Gefunden
-hat sie das Lesen und das Nachstellen.
+hat sie das Lesen und das Nachstellen. Ein sauberer Screenreader-Durchlauf
+ändert daran nichts: Er prüft, was ein Mensch bemerkt, nicht was ein Fehler im
+Speicherpfad anrichtet.
 
 ---
 

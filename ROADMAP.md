@@ -767,10 +767,23 @@ Ab hier hängt alles an Menschen und Geräten. Kein Werkzeug ersetzt das.
   muss ausdrücklich von einem der blinden Kollegen durchgespielt werden.** Ob
   er trägt, lässt sich anders nicht feststellen, und raten will hier niemand.
 
-  **Stand 2026-09-02: NVDA und VoiceOver sind laut Rückmeldung des
-  Projektinhabers ohne Befund durchgelaufen.** Die Angabe ist eine
-  Fremdauskunft; sie ist nicht von Claude nachvollzogen und trägt deshalb
-  allein noch keine Abnahme.
+  **Stand 2026-09-07: NVDA und VoiceOver sind auf der veröffentlichten
+  Fassung 0.9.22 ohne Befund durchgelaufen — durchgeführt von einem blinden
+  Kollegen aus dem Team.** Damit ist zum ersten Mal beides zugleich erfüllt,
+  was dieser Punkt verlangt: die aktuelle Fassung und die richtige Person.
+
+  Warum die Fassung hier ausdrücklich steht: Bis zum 2026-09-07 gegen 16:00 Uhr
+  lieferte die öffentliche Adresse `497fef3` vom 2026-09-02 aus — die beiden
+  Commits danach hingen an einem fehlgeschlagenen Deploy. Ein Durchlauf „auf
+  der App" prüfte in diesen fünf Tagen also nicht den Stand des Quelltextes.
+  Für den früheren Durchlauf vom 2026-09-02 lässt sich deshalb nachträglich
+  nicht mehr sicher sagen, welche Fassung er abgedeckt hat.
+
+  Was die Angabe weiterhin nicht ist: von Claude nachvollzogen. Kein
+  eingesehenes Protokoll, keine Aufzeichnung — sie bleibt eine Fremdauskunft.
+  **Offen bleibt außerdem, ob der Geräteabgleich Teil des Durchlaufs war**;
+  das ist der Teil, den 0.9.17 zuletzt umgebaut hat und den dieser Eintrag
+  ausdrücklich hervorhebt.
 
   **TalkBack (Android) bleibt vorerst unbestätigt — aus einem sachlichen
   Grund, nicht aus Nachlässigkeit: Die blinden Kollegen nutzen ausschließlich
