@@ -10,6 +10,68 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-07 — v0.9.26: Zwei blinde Flecken in der meistgeprüften Ansicht
+
+Fünfter Fall derselben Klasse — und der lehrreichste, weil er nicht in einer
+selten geöffneten Ansicht steckt, sondern im Formular. Das ist der
+Bildschirm, den `check:ui` in drei Geräteprofilen, drei Schriftgrößen, vier
+Farbschemata und mit erzwungener Breitschrift misst.
+
+Zwei Bedienflächen darin hat trotzdem nie eine Messung gesehen:
+
+- **Der Editor der Schnell-Erfassung** (`isEditorOpen` in `QuickEntryPanel`)
+  liegt hinter einem Klick auf „Anpassen".
+- **Die Ein-Hand-Leiste** (`App.tsx`) erscheint nur, wenn
+  `localStorage.aussendienst_pwa_mobile_comfort === "true"`. Ohne den
+  Schlüssel ist sie `false`, und kein Prüflauf hat ihn je gesetzt.
+
+### Gemessen
+
+| Bedienelement | gemessen |
+|---|---|
+| „Automatisch (meistgenutzt)" | 239 × **36** |
+| 16 Kategorie-Zeilen (Trefferfläche = `<label>`) | 296 × **34**, im Desktop-Profil 872 × **34** |
+| Ein-Hand: Monat / Name / Notizen / Zeit | 72 × **38**, 68 × 38, 81 × 38, **53** × 38 |
+| Kategorienliste bei „Extra groß" | verstecktes Seitwärtsscrollen |
+
+Das versteckte Scrollen ist wieder `overflow-y: auto`, das die x-Achse
+mitzieht — dieselbe Ursache wie seinerzeit im Geräte-Sync. Behoben mit
+`overflow-x-hidden` plus `min-w-0` und `[overflow-wrap:anywhere]` an der
+Beschriftung, damit lange Kategorienamen umbrechen statt zu schieben.
+
+Die Kategorie-Zeilen sind der Fall, für den die Label-Regel des Prüfgates
+gebaut wurde: Gemessen wird das `<label>`, nicht das 16-px-Kästchen darin,
+denn ein Klick irgendwo in der Zeile schaltet die Auswahl.
+
+### Vorsorglich mitgenommen
+
+`aria-label` auf dem `<span>` mit der Positionsnummer („#1") — unzulässig auf
+einem Element ohne Rolle (`aria-prohibited-attr`), dieselbe Stelle, die im
+Geräte-Sync schon einmal aufgefallen ist. Der Prüfung wäre sie entgangen: Das
+Zeichen erscheint erst, wenn eine Kategorie ausgewählt ist, also in einem
+Zustand im Zustand im Zustand. Der sichtbare Kurztext bleibt, die
+Vorlesefassung („Position 1") steht als `sr-only` daneben.
+
+### Was daraus folgt
+
+Fünf Fälle in vier Tagen, immer dasselbe Muster: **Das Prüfnetz zielt auf
+`activeTab`, die Defekte sitzen in Zuständen darunter.** Eine Ansicht in
+`ANSICHTEN` einzutragen heißt nicht, sie zu prüfen — es heißt, ihren
+Ausgangszustand zu prüfen. Wer einen Zustand hinter einen Klick oder einen
+gespeicherten Schalter legt, legt ihn aus dem Prüfnetz heraus, und niemand
+merkt es, weil die Liste grün bleibt.
+
+Die Gegenmaßnahme ist keine Regel, sondern eine Liste: `ZUSTAENDE_MIT_SCHRIFT`
+am Ende von `tests/oberflaeche.spec.ts` führt inzwischen zwölf Zustände. Wer
+einen neuen anlegt, trägt ihn dort ein.
+
+### Stand der Prüfung
+
+Zehn neue Prüfungen für die beiden Formularzustände, dazu die zwei Einträge
+in der Breitschrift-Liste. Alle grün, ebenso die zwölf Breitschrift-Prüfungen.
+
+---
+
 ## 2026-09-07 — v0.9.25: Das Archiv war geprüft, aber immer leer
 
 Vierter Punkt der Liste: die Archivbearbeitung. Und zum vierten Mal dieselbe

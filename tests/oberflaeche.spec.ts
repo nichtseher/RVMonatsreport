@@ -1931,6 +1931,91 @@ test.describe("Zustände des Archivs", () => {
 });
 
 /**
+ * Zustände der Formularansicht.
+ *
+ * Fünfter Fall derselben Klasse. Die Formularansicht steht in `ANSICHTEN` und
+ * ist damit die meistgeprüfte Ansicht der App — aber zwei Bedienflächen darin
+ * erscheinen nur nach einem Klick bzw. nach einer gespeicherten Einstellung
+ * und sind deshalb nie gemessen worden:
+ *
+ * - **Der Editor der Schnell-Erfassung** (`isEditorOpen` in
+ *   `QuickEntryPanel`): Umschalter „Automatisch (meistgenutzt)" plus eine
+ *   Liste aller Kategorien mit Kästchen.
+ * - **Die Ein-Hand-Leiste** (`mobileComfortMode && !isDesktop` in `App.tsx`):
+ *   vier Sprungtasten. `mobileComfortMode` liest
+ *   `localStorage.aussendienst_pwa_mobile_comfort === "true"` — ohne
+ *   gesetzten Schlüssel also `false`, und der Prüflauf setzt ihn nicht.
+ *
+ * Die Ein-Hand-Leiste gibt es nur ohne Desktop-Breite; sie wird deshalb nur
+ * im Profil `handy` gemessen.
+ */
+const FORMULAR_ZUSTAENDE = [
+  {
+    name: "Schnell-Erfassung anpassen",
+    nurHandy: false,
+    oeffne: async (page: Page) => {
+      await oeffne(page, "form");
+      await page.getByRole("button", { name: /Schnell-Erfassung anpassen/ }).first().click();
+      await page
+        .getByRole("button", { name: /Automatisch \(meistgenutzt\)/ })
+        .waitFor({ state: "visible", timeout: 15_000 });
+      await page.waitForTimeout(300);
+    },
+  },
+  {
+    name: "Ein-Hand-Leiste",
+    nurHandy: true,
+    oeffne: async (page: Page) => {
+      await page.addInitScript(() => {
+        localStorage.setItem("aussendienst_pwa_mobile_comfort", "true");
+      });
+      await oeffne(page, "form");
+      await page
+        .getByRole("toolbar", { name: /Schnellzugriffe für den Ein-Hand-Modus/ })
+        .waitFor({ state: "visible", timeout: 15_000 });
+      await page.waitForTimeout(300);
+    },
+  },
+] as const;
+
+test.describe("Zustände der Formularansicht", () => {
+  for (const zustand of FORMULAR_ZUSTAENDE) {
+    for (const groesse of ["normal", "extra-large"] as const) {
+      test(`${zustand.name} bei ${groesse}`, async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name === "handy-webkit", "Geometrie haengt nicht am Motor");
+        test.skip(
+          zustand.nurHandy && testInfo.project.name !== "handy",
+          "Diese Leiste gibt es nur ohne Desktop-Breite",
+        );
+        await zustand.oeffne(page);
+        await setzeSchriftgroesse(page, groesse);
+        await warteAufRuhigesLayout(page);
+        await pruefeGeometrie(page, `${zustand.name} / ${groesse}`);
+      });
+    }
+
+    test(`${zustand.name}: kein Name ersetzt die Beschriftung`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "Namen haengen nicht am Geraeteprofil");
+      await zustand.oeffne(page);
+      const verstoesse = await findeNamensverstoesse(page);
+      expect(verstoesse, `${zustand.name}: ${verstoesse.join(" | ")}`).toEqual([]);
+    });
+
+    test(`${zustand.name} ohne schwere Verstöße`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "axe haengt nicht am Motor");
+      await zustand.oeffne(page);
+      const ergebnis = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+        .analyze();
+      const befunde = ergebnis.violations
+        .filter((v) => v.impact === "critical" || v.impact === "serious")
+        .flatMap((v) => v.nodes.map((n) => `${v.id} @ ${n.target.join(" ")} — ${n.failureSummary?.replace(/\s+/g, " ").trim()}`));
+      expect(befunde, `${zustand.name}`).toEqual([]);
+    });
+  }
+});
+
+/**
  * Zustände mit breiter Schrift.
  *
  * Warum es das gibt: Der Block „Breitere Schrift als hier installiert" läuft
@@ -1956,6 +2041,7 @@ test.describe("Zustände des Archivs", () => {
  */
 const ZUSTAENDE_MIT_SCHRIFT: Array<{ name: string; oeffne: (p: Page) => Promise<void> }> = [
   ...ZEIT_FORMULARE.map((f) => ({ name: f.name, oeffne: f.oeffne })),
+  ...FORMULAR_ZUSTAENDE.map((z) => ({ name: z.name, oeffne: z.oeffne })),
   ...SYNC_ZUSTAENDE.map((z) => ({
     name: z.name,
     oeffne: (p: Page) => oeffneSyncZustand(p, z),

@@ -747,6 +747,32 @@ dauerhaft.
 
 ---
 
+## 0.9.26 — Zwei blinde Flecken im Formular — ERLEDIGT (2026-09-07)
+
+Fünfter Fall derselben Klasse, und der lehrreichste: nicht in einer selten
+geöffneten Ansicht, sondern im **Formular** — dem Bildschirm, den `check:ui`
+in drei Geräteprofilen, drei Schriftgrößen, vier Farbschemata und mit
+erzwungener Breitschrift misst.
+
+- **Editor der Schnell-Erfassung**: „Automatisch (meistgenutzt)" 239 × 36 px,
+  16 Kategorie-Zeilen 34 px hoch, und bei „Extra groß" verstecktes
+  Seitwärtsscrollen (`overflow-y: auto` zieht die x-Achse mit — dieselbe
+  Ursache wie im Geräte-Sync).
+- **Ein-Hand-Leiste**: vier Tasten 38 px hoch, „Zeit" nur 53 px breit.
+  Erscheint nur bei gesetztem `aussendienst_pwa_mobile_comfort` — ein
+  Schalter, den kein Prüflauf je gesetzt hat.
+
+**Die Lehre, in einem Satz:** Eine Ansicht in `ANSICHTEN` einzutragen prüft
+ihren *Ausgangszustand*, nicht die Ansicht. Wer einen Zustand hinter einen
+Klick oder einen gespeicherten Schalter legt, legt ihn aus dem Prüfnetz
+heraus — und die Liste bleibt grün.
+
+Die Gegenmaßnahme ist eine Liste, keine Regel: `ZUSTAENDE_MIT_SCHRIFT` am Ende
+von `tests/oberflaeche.spec.ts` führt zwölf Zustände. Wer einen neuen anlegt,
+trägt ihn dort ein.
+
+---
+
 ## 0.9.25 — Das Archiv war geprüft, aber immer leer — ERLEDIGT (2026-09-07)
 
 **Die Prüfliste sagte „Archiv: bestanden" und meinte einen leeren

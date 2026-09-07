@@ -44,6 +44,19 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.26: Die Schnell-Erfassung und der Ein-Hand-Modus</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Die Kategorienliste unter „Anpassen" war kaum zu treffen.</strong> Jede Zeile war nur 34 Pixel hoch – bei einer Liste, in der Sie mit dem Finger genau die richtige Kategorie erwischen müssen. Jetzt sind alle Zeilen mindestens 44 Pixel hoch, ebenso die Schaltfläche „Automatisch (meistgenutzt)".</li>
+            <li><strong>Bei „Extra groß" ließ sich diese Liste seitlich verschieben.</strong> Unbeabsichtigt und ohne sichtbaren Balken – lange Kategorienamen schoben den Inhalt zur Seite, statt umzubrechen. Jetzt brechen sie um.</li>
+            <li><strong>Die vier Tasten des Ein-Hand-Modus waren zu klein.</strong> „Monat", „Name", „Notizen" und „Zeit" waren 38 Pixel hoch, „Zeit" dazu nur 53 breit. Ausgerechnet die Leiste, die das Bedienen mit einer Hand erleichtern soll. Jetzt alle in voller Größe.</li>
+            <li><strong>Warum das erst jetzt auffiel:</strong> Beide Bereiche erscheinen nur nach einem Klick beziehungsweise nur, wenn der Ein-Hand-Modus eingeschaltet ist – und die automatische Prüfung hat sie deshalb nie zu Gesicht bekommen. Sie sind jetzt fest im Prüflauf.</li>
+          </ul>
+        </div>
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.25: Das Archiv sagt jetzt, was es tut</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>

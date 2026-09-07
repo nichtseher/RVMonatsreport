@@ -1705,10 +1705,10 @@ export default function App() {
       {mobileComfortMode && !isDesktop && (
         <div className="mb-4 rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-3 shadow-sm" role="toolbar" aria-label="Schnellzugriffe für den Ein-Hand-Modus">
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" onClick={() => focusAndAnnounce("month")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-3 py-1.5 text-xs font-black">Monat</button>
-            <button type="button" onClick={() => focusAndAnnounce("name")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-3 py-1.5 text-xs font-black">Name</button>
-            <button type="button" onClick={() => focusAndAnnounce("notes")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-3 py-1.5 text-xs font-black">Notizen</button>
-            <button type="button" onClick={() => setActiveTab("time")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-3 py-1.5 text-xs font-black">Zeit</button>
+            <button type="button" onClick={() => focusAndAnnounce("month")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-4 min-h-[44px] text-xs font-black inline-flex items-center justify-center cursor-pointer focus-visible:ring-4">Monat</button>
+            <button type="button" onClick={() => focusAndAnnounce("name")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-4 min-h-[44px] text-xs font-black inline-flex items-center justify-center cursor-pointer focus-visible:ring-4">Name</button>
+            <button type="button" onClick={() => focusAndAnnounce("notes")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-4 min-h-[44px] text-xs font-black inline-flex items-center justify-center cursor-pointer focus-visible:ring-4">Notizen</button>
+            <button type="button" onClick={() => setActiveTab("time")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-4 min-h-[44px] text-xs font-black inline-flex items-center justify-center cursor-pointer focus-visible:ring-4">Zeit</button>
           </div>
         </div>
       )}

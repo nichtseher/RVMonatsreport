@@ -197,7 +197,7 @@ export default function QuickEntryPanel({
                 onConfigChange({ mode: "auto", ids: [] });
                 announce("Automatische Auswahl aktiviert: Es werden die meistgenutzten Kategorien angezeigt.");
               }}
-              className={`px-3 py-1.5 rounded-full text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-4 min-h-[44px] rounded-full text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 focus-visible:ring-4 ${
                 config.mode === "auto" || config.ids.length === 0
                   ? "bg-[var(--accent)] text-[var(--accent-text)]"
                   : "bg-[var(--bg-color)] text-[var(--text-color)] border border-[var(--border-color)]"
@@ -211,15 +211,23 @@ export default function QuickEntryPanel({
             </span>
           </div>
 
-          <ul className="space-y-1.5 list-none p-0 m-0 max-h-64 overflow-y-auto pr-1">
+          {/* overflow-x-hidden ist Absicht: `overflow-y: auto` zieht die
+              x-Achse mit, und bei „Extra groß" entstand daraus ein
+              verstecktes Seitwärtsscrollen (gemessen 2026-09-07). Die
+              Beschriftungen brechen um, statt zu schieben. */}
+          <ul className="space-y-1.5 list-none p-0 m-0 max-h-64 overflow-y-auto overflow-x-hidden pr-1">
             {allFields.map((field) => {
               const pos = config.ids.indexOf(field.id);
               const checked = pos !== -1;
               const disabled = !checked && config.ids.length >= MAX_QUICK_FIELDS;
               return (
                 <li key={field.id}>
+                  {/* min-h-[44px] am LABEL, nicht am Kästchen: Ein Klick
+                      irgendwo in der Zeile schaltet die Auswahl, also ist die
+                      Zeile die Trefferfläche (WCAG 2.5.5). Gemessen wurde sie
+                      mit 34 px Höhe. */}
                   <label
-                    className={`flex items-center gap-2.5 p-2 rounded-lg border cursor-pointer transition-all ${
+                    className={`flex items-center gap-2.5 p-2 min-h-[44px] rounded-lg border cursor-pointer transition-all ${
                       checked
                         ? "border-[var(--accent)] bg-[var(--accent)]/5"
                         : "border-[var(--border-color)] bg-[var(--bg-color)]"
@@ -232,12 +240,17 @@ export default function QuickEntryPanel({
                       onChange={() => toggleCustomId(field.id)}
                       className="w-4 h-4 accent-[var(--accent)]"
                     />
-                    <span className="text-xs font-bold text-[var(--text-color)] flex-1 leading-tight">
+                    <span className="text-xs font-bold text-[var(--text-color)] flex-1 min-w-0 [overflow-wrap:anywhere] leading-tight">
                       {field.label}
                     </span>
+                    {/* aria-label auf einem <span> ohne Rolle ist unzulässig
+                        (axe: aria-prohibited-attr) -- dieselbe Stelle, die im
+                        Geräte-Sync schon einmal aufgefallen ist. Der sichtbare
+                        Kurztext bleibt, die Vorlesefassung steht daneben. */}
                     {checked && (
-                      <span className="text-[0.75rem] font-black text-[var(--accent)]" aria-label={`Position ${pos + 1}`}>
-                        #{pos + 1}
+                      <span className="text-[0.75rem] font-black text-[var(--accent)] flex-shrink-0">
+                        <span aria-hidden="true">#{pos + 1}</span>
+                        <span className="sr-only">Position {pos + 1}</span>
                       </span>
                     )}
                   </label>
