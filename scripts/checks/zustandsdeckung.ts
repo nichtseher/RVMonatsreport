@@ -65,7 +65,11 @@ const MUSTER = /useState(?:<[^>]*>)?\(\s*(?:false|true|"[^"]*"|'[^']*')\s*\)/g;
 const ERWARTET: Record<string, number> = {
   "App.tsx": 10,
   "A11yModal.tsx": 1,
-  "ClockInWidget.tsx": 14,
+  // 0.9.29: von 14 auf 13. `isLogsCollapsed` ist entfallen -- das
+  // Schicht-Protokoll lag hinter einer Einklappung, die die Projektregel
+  // ausdruecklich verbietet, und versteckte neben der Liste auch die
+  // Excel-Ausgabe. Diese Prüfung hat den Wegfall selbst gemeldet.
+  "ClockInWidget.tsx": 13,
   "DeviceSyncModal.tsx": 6,
   "HelpModal.tsx": 1,
   "HistoryModal.tsx": 1,

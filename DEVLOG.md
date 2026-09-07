@@ -10,6 +10,81 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-07 — v0.9.29: Die Einklappung, die die Projektregel verbietet
+
+Siebter Fall derselben Klasse — und diesmal einer, den die eigene ROADMAP
+seit 0.9.23 als „benannt, nicht geändert" führte.
+
+### Der Abschnitt existierte für den Prüflauf nicht
+
+`ANSICHTEN` öffnet `?tab=time` mit **leerem** Bericht. Der ganze Abschnitt
+„Schicht-Protokoll" hängt aber an `timeLogs.length > 0` und ist damit nie
+gerendert worden. Darin liegen: der Umschalter, die Excel-Ausgabe des
+Schichtprotokolls, die scrollbare Liste und je Schicht eine Löschtaste.
+
+### Vier Befunde, einer davon nicht vorhergesagt
+
+Ich hatte vier Verdachtsmomente aus dem Quelltext notiert. Die Messung fand
+drei davon bestätigt, einen widerlegt — und einen, den ich **nicht** auf der
+Liste hatte und der der schwerste ist:
+
+| | vorhergesagt? | gemessen |
+|---|---|---|
+| **Löschtaste je Schicht** | **nein** | **32 × 32 px** |
+| Umschalter „Schicht-Protokoll" | ja (~28 geschätzt) | 540 × **36** |
+| Reflow bei „Extra groß" | nein | **395 px** in 360 |
+| Scrollbereich ohne `tabIndex` | ja | bestätigt |
+| Excel-Taste zu klein | ja | **falsch** — sie hält |
+
+Zwei Löschtasten mit 32 px direkt untereinander sind die unangenehmste Sorte:
+Danebentippen löscht die falsche Schicht. Dass ausgerechnet dieser Befund
+nicht auf meiner Verdachtsliste stand, ist das Argument für die Messung — eine
+Durchsicht des Quelltextes hätte ihn nicht gefunden.
+
+Der fehlende `tabIndex` am scrollbaren Bereich ist derselbe Defekt, der bis
+0.9.22 in `ManageModal` steckte: `role="region"` plus `overflow-y-auto`, aber
+nicht fokussierbar. Wer nicht zeigen kann, kommt an die unteren Einträge nicht
+heran.
+
+### Die Einklappung ist weg, nicht repariert
+
+`CLAUDE.md` verbietet ausdrücklich, Inhalte hinter einer Einklappung zu
+verstecken, und sagt dazu, die Regel gewinne gegen etablierte Muster: „Wer
+Länge reduzieren will, kürzt Inhalt oder trennt Ansichten, er versteckt
+nicht." Hier versteckte die App nicht nur eine Liste, sondern **eine ganze
+Funktion** — die Excel-Ausgabe des Schichtprotokolls, standardmäßig
+zugeklappt.
+
+Der Umschalter ist ersatzlos entfallen; an seiner Stelle steht eine schlichte
+Überschrift mit der Zahl der Einträge. Gegen die Länge steht der scrollbare
+Bereich, der jetzt per Tastatur erreichbar ist. Das ist kein Verstecken: Der
+Inhalt steht im Lesefluss.
+
+### Der Zähler aus 0.9.27 hat sich zum ersten Mal im Betrieb gemeldet
+
+Mit dem Wegfall von `isLogsCollapsed` sank die Zahl der Zustandsschalter in
+`ClockInWidget.tsx` von 14 auf 13, und `npm run check` wurde rot — nicht in
+einer Gegenprobe, sondern im echten Ablauf.
+
+Das ist die richtige Richtung: Der Zähler meldet auch das **Wegfallen** eines
+Zustands. Auch dann kann Prüfdeckung ins Leere zeigen — der Prüfblock, den ich
+gerade geschrieben hatte, wartete noch auf den Umschalter und lief in zwölf
+Zeitüberschreitungen. Die Zahl ist mit Begründung nachgezogen.
+
+### Und der Nachtrag, den ich beim letzten Mal vergessen hatte
+
+`Zeit: Schicht-Protokoll` steht in `ZUSTAENDE_MIT_SCHRIFT`. Beim Ersteinstieg
+war genau das eine Fassung lang liegengeblieben.
+
+### Nebenbei: die CRLF-Falle, zum zweiten Mal
+
+Ein Node-Skript sollte die State-Zeile entfernen und fand sie nicht — der
+Anker endete auf `\n`, die Datei benutzt `\r\n`. Steht seit dem 2026-09-07 in
+`CLAUDE.md`, und ich bin trotzdem hineingelaufen. Die Abhilfe ist eine Zeile:
+Zeilenende erst ermitteln, dann den Anker daraus bauen.
+
+---
+
 ## 2026-09-07 — v0.9.28: Eine eigene Kategorie ging beim Blick ins Archiv verloren
 
 Erster Punkt aus der Liste „bekannt offen, bewusst nicht behoben" — und der

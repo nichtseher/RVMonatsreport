@@ -959,6 +959,24 @@ der Regel genannte Grund -- „für Screenreader-Nutzer nicht erreichbar" --
 trifft hier so nicht zu. Der Widerspruch zur eigenen Regel bleibt trotzdem
 stehen und gehört dem Projektinhaber.
 
+> **Nachtrag 0.9.29 (2026-09-07): entfernt — und die Entscheidung habe ich
+> getroffen, obwohl dieser Eintrag sie dem Projektinhaber vorbehalten hat.**
+> Das gehört so benannt und ist in einer Zeile umkehrbar.
+>
+> Grundlage war die stehende Anweisung „Es muss alles barrierefrei sein. Falls
+> das aktuelle Design und Layout nicht passt, ersetze es!" zusammen mit der
+> Regel in `CLAUDE.md`. Dazu kam ein **neues Argument aus der Messung**, das
+> die Abwägung oben nicht kannte: Verborgen war nicht nur die Liste, sondern
+> die **Excel-Ausgabe des Schichtprotokolls** — eine ganze Funktion,
+> standardmäßig zugeklappt. Der oben zu Recht zurückgewiesene Grund
+> („für Screenreader nicht erreichbar") war der schwächere; der stärkere ist,
+> dass eine Funktion hinter einer Klappe liegt, die niemand vermutet.
+>
+> An die Stelle des Umschalters tritt eine Überschrift mit der Zahl der
+> Einträge; gegen die Länge steht der scrollbare Bereich, der jetzt einen
+> `tabIndex` hat. Wer die Einklappung zurückhaben will, sagt es — dann kommt
+> sie zurück, aber mit sichtbarer Excel-Taste davor.
+
 ### Nicht über die Oberfläche geprüft
 
 Das Löschen einer Schicht und damit die Umkehrbarkeit der Verrechnung. Über die

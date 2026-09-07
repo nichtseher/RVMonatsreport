@@ -2334,6 +2334,138 @@ test.describe("Feldkonfiguration beim Blick ins Archiv", () => {
 });
 
 /**
+ * Die Zeit-Ansicht mit erfassten Schichten.
+ *
+ * Siebter Fall derselben Klasse. `ANSICHTEN` öffnet `?tab=time` mit **leerem**
+ * Bericht — der ganze Abschnitt „Schicht-Protokoll" hängt aber an
+ * `timeLogs.length > 0` und ist damit nie gerendert worden. Darin liegen: der
+ * Umschalter der Einklappung, die Excel-Ausgabe des Schichtprotokolls, die
+ * scrollbare Liste und je Schicht eine Löschtaste.
+ *
+ * Der Bestand wird über IndexedDB gelegt: Schichten entstehen sonst nur über
+ * Ein- und Ausstempeln, und das machte diese Messung von einem anderen Ablauf
+ * abhängig.
+ */
+const SCHICHTEN_BESTAND = [
+  {
+    id: "p1",
+    date: "2026-09-02",
+    clockIn: "08:00",
+    clockOut: "16:30",
+    breakMinutes: 45,
+    duration: 7.75,
+    officeRatio: 0.5,
+    officeHours: 3.88,
+    fieldHours: 3.87,
+    notes: "Kundentermin Berufsförderungswerk",
+  },
+  {
+    id: "p2",
+    date: "2026-09-03",
+    clockIn: "09:00",
+    clockOut: "17:15",
+    breakMinutes: 30,
+    duration: 7.75,
+    officeRatio: 1,
+    officeHours: 7.75,
+    fieldHours: 0,
+    notes: "",
+  },
+];
+
+async function oeffneZeitMitSchichten(page: Page) {
+  await page.route("**/leerseite-fuer-schichtpruefung", (route) =>
+    route.fulfill({ contentType: "text/html", body: "<!doctype html><title>leer</title>" }),
+  );
+  await page.goto("/leerseite-fuer-schichtpruefung");
+  await page.evaluate(async (schichten) => {
+    const db = await new Promise<IDBDatabase>((res, rej) => {
+      const r = indexedDB.open("keyval-store", 1);
+      r.onupgradeneeded = () => {
+        if (!r.result.objectStoreNames.contains("keyval")) r.result.createObjectStore("keyval");
+      };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+    await new Promise<void>((res, rej) => {
+      const t = db.transaction("keyval", "readwrite");
+      t.objectStore("keyval").put(
+        {
+          month: "2026-09",
+          name: "Marc Petry",
+          notes: "",
+          values: {},
+          valuesUpdatedAt: {},
+          timeLogs: schichten,
+        },
+        "aussendienst_pwa_data",
+      );
+      t.oncomplete = () => res();
+      t.onerror = () => rej(t.error);
+    });
+  }, SCHICHTEN_BESTAND);
+
+  await oeffne(page, "time");
+  // Kein Umschalter mehr: Das Protokoll steht seit 0.9.29 offen im Lesefluss.
+  await page.getByRole("heading", { name: /Schicht-Protokoll/ }).waitFor({ timeout: 15_000 });
+  await page.getByRole("region", { name: /Monatliche Schichtliste/ }).waitFor({ timeout: 15_000 });
+  await page.waitForTimeout(400);
+}
+
+const SCHICHT_ZUSTAENDE = [{ name: "Zeit: Schicht-Protokoll" }] as const;
+
+test.describe("Zeit-Ansicht mit Schichten", () => {
+  for (const zustand of SCHICHT_ZUSTAENDE) {
+    for (const groesse of ["normal", "extra-large"] as const) {
+      test(`${zustand.name} bei ${groesse}`, async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name === "handy-webkit", "Geometrie haengt nicht am Motor");
+        await oeffneZeitMitSchichten(page);
+        await setzeSchriftgroesse(page, groesse);
+        await warteAufRuhigesLayout(page);
+        await pruefeGeometrie(page, `${zustand.name} / ${groesse}`);
+      });
+    }
+
+    test(`${zustand.name}: kein Name ersetzt die Beschriftung`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "Namen haengen nicht am Geraeteprofil");
+      await oeffneZeitMitSchichten(page);
+      const verstoesse = await findeNamensverstoesse(page);
+      expect(verstoesse, `${zustand.name}: ${verstoesse.join(" | ")}`).toEqual([]);
+    });
+
+    test(`${zustand.name} ohne schwere Verstöße`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "axe haengt nicht am Motor");
+      await oeffneZeitMitSchichten(page);
+      const ergebnis = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+        .analyze();
+      const befunde = ergebnis.violations
+        .filter((v) => v.impact === "critical" || v.impact === "serious")
+        .flatMap((v) => v.nodes.map((n) => `${v.id} @ ${n.target.join(" ")} — ${n.failureSummary?.replace(/\s+/g, " ").trim()}`));
+      expect(befunde, `${zustand.name}`).toEqual([]);
+    });
+  }
+
+  /*
+    Ein scrollbarer Bereich, den die Tastatur nicht erreicht, ist Inhalt hinter
+    einer Wand. Genau dieser Defekt steckte bis 0.9.22 in `ManageModal`: eine
+    Liste mit `overflow-y-auto` und `role="region"`, aber ohne `tabIndex`.
+    Wer nicht zeigen kann, kommt an den unteren Teil nicht heran.
+  */
+  test("die Schichtliste ist per Tastatur scrollbar", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Tastatur haengt nicht am Geraeteprofil");
+    await oeffneZeitMitSchichten(page);
+    const liste = page.getByRole("region", { name: /Monatliche Schichtliste/ });
+    const tabindex = await liste.getAttribute("tabindex");
+    expect(
+      tabindex,
+      "Der scrollbare Bereich der Schichtliste ist nicht fokussierbar — " +
+        "mit der Tastatur kommt man nicht an die unteren Einträge",
+    ).toBe("0");
+  });
+});
+
+/**
  * Zustände mit breiter Schrift.
  *
  * Warum es das gibt: Der Block „Breitere Schrift als hier installiert" läuft
@@ -2387,6 +2519,7 @@ const ZUSTAENDE_MIT_SCHRIFT: Array<{ name: string; oeffne: (p: Page) => Promise<
     name: `Einstieg ${i + 1}: ${titel}`,
     oeffne: (p: Page) => oeffneEinstieg(p, i),
   })),
+  { name: "Zeit: Schicht-Protokoll", oeffne: oeffneZeitMitSchichten },
 ];
 
 test.describe("Zustände mit breiter Schrift", () => {

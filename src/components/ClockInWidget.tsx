@@ -45,7 +45,6 @@ export default React.memo(function ClockInWidget({
   // Timer state for active clock-in
   const [elapsed, setElapsed] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isLogsCollapsed, setIsLogsCollapsed] = useState(true);
 
   // Form states for clocking out
   const [breakMinutes, setBreakMinutes] = useState(30);
@@ -1009,28 +1008,31 @@ export default React.memo(function ClockInWidget({
         </form>
       )}
 
-      {/* SHIFT LOGS COLLAPSIBLE (WCAG-compliant custom component) */}
+      {/*
+        SCHICHT-PROTOKOLL -- bewusst ohne Einklappung.
+
+        Bis 0.9.28 lag dieser ganze Abschnitt hinter einem Umschalter, und zwar
+        standardmaessig ZUGEKLAPPT. Versteckt war damit nicht nur die Liste,
+        sondern eine ganze Funktion: die Excel-Ausgabe des Schichtprotokolls.
+
+        `CLAUDE.md` verbietet das ausdruecklich ("Nichts, was Inhalte hinter
+        einer Einklappung versteckt") und sagt dazu, die Regel gewinne gegen
+        etablierte Muster -- wer Laenge reduzieren will, kuerzt Inhalt oder
+        trennt Ansichten, er versteckt nicht. Die ROADMAP fuehrte den
+        Widerspruch seit 0.9.23 als "benannt, nicht geaendert".
+
+        Gegen die Laenge steht der scrollbare Bereich unten, der per Tastatur
+        erreichbar ist (tabIndex). Das ist kein Verstecken: Der Inhalt steht im
+        Lesefluss und die Suche des Screenreaders findet ihn.
+      */}
       {timeLogs.length > 0 && (
         <div className="pt-2 border-t border-[var(--border-color)]">
-          <button
-            type="button"
-            onClick={() => {
-              setIsLogsCollapsed(!isLogsCollapsed);
-              announceToAriaAndSpeech(
-                isLogsCollapsed
-                  ? "Schichtprotokoll ausgeklappt"
-                  : "Schichtprotokoll eingeklappt",
-              );
-            }}
-            className="w-full py-1.5 flex items-center justify-between text-xs font-black text-[var(--text-muted)] uppercase tracking-wider hover:text-[var(--text-color)] cursor-pointer"
-            aria-expanded={!isLogsCollapsed}
-            aria-controls="shift-logs-list"
-          >
-            <span>Schicht-Protokoll ({timeLogs.length} Einträge)</span>
-            <span>{isLogsCollapsed ? "Anzeigen" : "Ausblenden"}</span>
-          </button>
+          <h3 className="py-1.5 text-xs font-black text-[var(--text-muted)] uppercase tracking-wider min-w-0 [overflow-wrap:anywhere]">
+            Schicht-Protokoll ({timeLogs.length}{" "}
+            {timeLogs.length === 1 ? "Eintrag" : "Einträge"})
+          </h3>
 
-          {!isLogsCollapsed && (
+          {(
             <div className="space-y-3 mt-2.5">
               {onExportExcel && (
                 <button
@@ -1042,9 +1044,14 @@ export default React.memo(function ClockInWidget({
                   <span>Schichtprotokoll als Excel exportieren</span>
                 </button>
               )}
+              {/* tabIndex am scrollbaren Bereich: Ohne ihn kommt die Tastatur
+                  nicht an die unteren Eintraege -- derselbe Defekt, der bis
+                  0.9.22 in `ManageModal` steckte. overflow-x-hidden, weil
+                  overflow-y die x-Achse mitzieht. */}
               <div
                 id="shift-logs-list"
-                className="divide-y divide-[var(--border-color)] max-h-56 overflow-y-auto space-y-1.5 pr-1"
+                tabIndex={0}
+                className="divide-y divide-[var(--border-color)] max-h-56 overflow-y-auto overflow-x-hidden space-y-1.5 pr-1 focus-visible:ring-4 rounded-lg"
                 role="region"
                 aria-label="Monatliche Schichtliste"
               >
@@ -1097,9 +1104,12 @@ export default React.memo(function ClockInWidget({
                           });
                         }}
                         aria-label={`Schicht vom ${formattedDate} löschen`}
-                        className="p-2 text-[var(--danger)] hover:bg-[var(--danger-bg)] rounded-lg cursor-pointer active:scale-90 transition-all flex-shrink-0"
+                        /* Gemessen 2026-09-07: 32 x 32 px. Zwei solche Tasten
+                           stehen in benachbarten Zeilen untereinander -- wer
+                           danebentippt, loescht die falsche Schicht. */
+                        className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--danger)] hover:bg-[var(--danger-bg)] rounded-lg cursor-pointer active:scale-90 transition-all flex-shrink-0 focus-visible:ring-4"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" aria-hidden="true" />
                       </button>
                     </div>
                   );
