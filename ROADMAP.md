@@ -747,6 +747,46 @@ dauerhaft.
 
 ---
 
+## 0.9.23 — Eine Schicht war 36 Sekunden zu lang — ERLEDIGT (2026-09-07)
+
+Ergebnis der Frage „funktioniert wirklich alles?" -- durchgespielt wurden die
+Abläufe, die zwar geändert, aber nie ausgeführt worden waren.
+
+**Der Excel-Inhalt ist zum ersten Mal auf Zellenebene geprüft.** 15
+Zählerfelder mit paarweise verschiedenen Werten belegt, exportiert, die Datei
+wieder aufgemacht: alle in ihren Zellen, D3 im geforderten MM/JJJJ, D4 und B28
+korrekt, **D10 behält seine Formel** `SUM(D6:D9)`, drei Blätter mit den
+richtigen Namen.
+
+**Der Fund:** 08:00 bis 16:30 mit 45 Minuten Pause sind 7,75 Stunden -- die App
+verbuchte 7,76. Beide Hälften der Aufteilung wurden unabhängig gerundet und die
+Dauer der Schicht aus ihrer Summe gebildet statt aus der Netto-Zeit. Klein
+(36 Sekunden), aber immer in dieselbe Richtung, im Normalfall auftretend und
+als Arbeitszeit im Bericht an die Vertriebsleitung. Behoben über eine reine
+Funktion `teileArbeitszeit`: eine Hälfte runden, die andere als Rest.
+Prüfungen **148 → 152**.
+
+### Benannt, nicht geändert: die Schichtliste liegt hinter einem Einklapper
+
+`isLogsCollapsed` steht auf `true` -- das Protokoll der eigenen Arbeitszeit ist
+standardmäßig verborgen. Die ROADMAP hält unter „Bewusst NICHT geplant" das
+Gegenteil fest, und `CLAUDE.md` schärft nach, die Regel gewinne gegen
+etablierte UI-Muster.
+
+Ob der Fall darunterfällt, ist eine **Produktentscheidung**: Die Schichtliste
+ist kein Formularbereich, der Umschalter ist eine echte Taste mit
+`aria-expanded`, und als Disclosure ist das Muster nach WCAG zulässig. Der in
+der Regel genannte Grund -- „für Screenreader-Nutzer nicht erreichbar" --
+trifft hier so nicht zu. Der Widerspruch zur eigenen Regel bleibt trotzdem
+stehen und gehört dem Projektinhaber.
+
+### Nicht über die Oberfläche geprüft
+
+Das Löschen einer Schicht und damit die Umkehrbarkeit der Verrechnung. Über die
+reinen Prüfungen zu `verrechneSchicht` abgedeckt, über die Oberfläche **nicht**.
+
+---
+
 ## 1.0 — Abnahmefähig
 
 Ab hier hängt alles an Menschen und Geräten. Kein Werkzeug ersetzt das.

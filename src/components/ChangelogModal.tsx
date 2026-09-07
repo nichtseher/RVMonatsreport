@@ -44,6 +44,17 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.23: Arbeitszeit auf die Minute genau</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Schichten wurden minimal zu lang verbucht.</strong> Eine Schicht von 8:00 bis 16:30 mit 45 Minuten Pause sind 7,75 Stunden – eingetragen wurden 7,76. Der Grund: Büro- und Außendienstanteil wurden getrennt gerundet und die Gesamtdauer aus beiden zusammengezählt, wodurch beide Hälften aufgerundet wurden. Der Fehler betraf jede halbe-halbe-Aufteilung einer ungeraden Viertelstunde und ging immer nach oben. Jetzt stimmt die Summe auf die Minute.</li>
+            <li><strong>Der Excel-Export wurde erstmals Zelle für Zelle überprüft.</strong> Alle 15 Werte landen in den vorgesehenen Feldern der Firmenvorlage, Monat und Name stehen im richtigen Format, der Kommentar an der richtigen Stelle, und die Summenformel der Vorlage bleibt erhalten. Es gab nichts zu korrigieren – aber geprüft war es vorher nicht.</li>
+          </ul>
+        </div>
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.22: Größere Tasten, sichtbare Schaltflächen, sichere Daten</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>

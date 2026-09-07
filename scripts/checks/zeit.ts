@@ -1,6 +1,6 @@
 import { gruppe, pruefe, gleich } from "../helfer";
 import { ERWARTETE_ZEITZONE } from "../zeitzone";
-import { berechneNettoStunden } from "../../src/utils/timeUtils";
+import { berechneNettoStunden, teileArbeitszeit } from "../../src/utils/timeUtils";
 import { formatMonthGerman } from "../../src/utils/dateUtils";
 
 gruppe("Arbeitszeit");
@@ -104,3 +104,49 @@ pruefe("gibt unbrauchbare Eingaben unverändert zurück", () => {
   gleich(formatMonthGerman("2026"), "2026");
   gleich(formatMonthGerman("2026-13"), "2026-13");
 });
+
+/*
+  AUFTEILUNG AUF BUERO UND AUSSENDIENST
+
+  Bis 0.9.22 rundete `ClockInWidget` beide Haelften unabhaengig und bildete die
+  Dauer der Schicht aus ihrer Summe. Gemessen an der laufenden App am
+  2026-09-07: 08:00 bis 16:30 mit 45 Minuten Pause sind 7,75 Stunden, verbucht
+  wurden 3,88 + 3,88 = 7,76. Die Abweichung ging immer nach oben und landete
+  als Arbeitszeit im Bericht an die Vertriebsleitung.
+
+  Die Pruefung dreht sich deshalb um EINE Zusicherung: Die beiden Teile
+  ergeben zusammen exakt die Netto-Zeit -- bei jedem Anteil.
+*/
+gruppe("Arbeitszeit aufteilen");
+
+  pruefe("halbe-halbe bei 7,75 Stunden ergibt wieder 7,75", () => {
+    const t = teileArbeitszeit(7.75, 0.5);
+    gleich(t.buero, 3.88);
+    gleich(t.aussendienst, 3.87);
+    gleich(Math.round((t.buero + t.aussendienst) * 100) / 100, 7.75, "Summe weicht ab");
+  });
+
+  pruefe("die Summe stimmt bei jedem Anteil und jeder Viertelstunde", () => {
+    for (let viertel = 1; viertel <= 40; viertel++) {
+      const netto = viertel * 0.25;
+      for (let prozent = 0; prozent <= 100; prozent += 5) {
+        const t = teileArbeitszeit(netto, prozent / 100);
+        const summe = Math.round((t.buero + t.aussendienst) * 100) / 100;
+        gleich(summe, netto, `Anteil ${prozent} % bei ${netto} h`);
+      }
+    }
+  });
+
+  pruefe("Randfaelle: ganz Buero, ganz Aussendienst, nichts", () => {
+    gleich(teileArbeitszeit(7.75, 1), { buero: 7.75, aussendienst: 0 });
+    gleich(teileArbeitszeit(7.75, 0), { buero: 0, aussendienst: 7.75 });
+    gleich(teileArbeitszeit(0, 0.5), { buero: 0, aussendienst: 0 });
+    gleich(teileArbeitszeit(-3, 0.5), { buero: 0, aussendienst: 0 });
+    gleich(teileArbeitszeit(NaN, 0.5), { buero: 0, aussendienst: 0 });
+  });
+
+  pruefe("unbrauchbarer Anteil gilt als halbe-halbe", () => {
+    gleich(teileArbeitszeit(8, NaN), { buero: 4, aussendienst: 4 });
+    gleich(teileArbeitszeit(8, 5), { buero: 8, aussendienst: 0 }, "ueber 1 wird gekappt");
+    gleich(teileArbeitszeit(8, -2), { buero: 0, aussendienst: 8 }, "unter 0 wird gekappt");
+  });

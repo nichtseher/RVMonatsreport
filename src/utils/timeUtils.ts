@@ -101,3 +101,48 @@ export function berechneNettoStunden(
   const nettoMinuten = Math.max(0, bisKorrigiert - von - pause);
   return Math.round((nettoMinuten / 60) * 100) / 100;
 }
+
+/**
+ * Netto-Stunden auf Büro und Außendienst aufteilen.
+ *
+ * WARUM DAS EINE EIGENE FUNKTION IST UND NICHT ZWEI ZEILEN IN DER KOMPONENTE
+ *
+ * Bis 0.9.22 stand die Aufteilung zweimal in `ClockInWidget.tsx` -- einmal
+ * beim Ausstempeln, einmal beim Nachtragen -- und beide Male so:
+ *
+ *   const officeHrs = Math.round(netto * anteil * 100) / 100;
+ *   const fieldHrs  = Math.round(netto * (1 - anteil) * 100) / 100;
+ *   const dauer     = round(officeHrs + fieldHrs);
+ *
+ * Beide Hälften wurden unabhängig gerundet, und die Dauer der Schicht wurde
+ * aus ihrer Summe gebildet statt aus der berechneten Netto-Zeit. Bei einer
+ * halbe-halbe-Aufteilung einer ungeraden Viertelstunde runden beide Hälften
+ * auf, und die Schicht wird länger, als sie war.
+ *
+ * Nachgemessen am 2026-09-07 an der laufenden App: 08:00 bis 16:30 mit 45
+ * Minuten Pause sind 7,75 Stunden. Verbucht wurden 3,88 + 3,88 = **7,76** --
+ * auch in der Vorschau auf dem Bildschirm. Die Abweichung ist klein
+ * (36 Sekunden je Schicht), aber sie geht immer in dieselbe Richtung und
+ * landet als Arbeitszeit im Bericht an die Vertriebsleitung.
+ *
+ * Die Lösung ist nicht feineres Runden, sondern eine Reihenfolge: Eine Hälfte
+ * wird gerundet, die andere ergibt sich als Rest. Damit ist die Summe der
+ * beiden Teile **immer exakt** die Netto-Zeit -- unabhängig vom Anteil.
+ *
+ * Betroffen sind auch die Randfälle: Bei Anteil 1,0 bleibt der Außendienst
+ * genau 0, bei 0,0 das Büro.
+ */
+export function teileArbeitszeit(
+  nettoStunden: number,
+  anteilBuero: number,
+): { buero: number; aussendienst: number } {
+  if (!Number.isFinite(nettoStunden) || nettoStunden <= 0) {
+    return { buero: 0, aussendienst: 0 };
+  }
+  const anteil = Number.isFinite(anteilBuero) ? Math.min(1, Math.max(0, anteilBuero)) : 0.5;
+  const netto = Math.round(nettoStunden * 100) / 100;
+  const buero = Math.round(netto * anteil * 100) / 100;
+  // Rest statt zweiter Rundung -- das ist der ganze Punkt.
+  const aussendienst = Math.round((netto - buero) * 100) / 100;
+  return { buero, aussendienst };
+}

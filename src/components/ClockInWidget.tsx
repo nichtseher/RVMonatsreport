@@ -14,7 +14,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { TimeLog } from "../types";
-import { berechneNettoStunden } from "../utils/timeUtils";
+import { berechneNettoStunden, teileArbeitszeit } from "../utils/timeUtils";
 import ConfirmDialog, { ConfirmRequest } from "./ConfirmDialog";
 
 interface ClockInWidgetProps {
@@ -188,8 +188,10 @@ export default React.memo(function ClockInWidget({
     if (preset === "half") ratio = 0.5;
     if (preset === "custom") ratio = customRatio / 100;
 
-    const officeHrs = Math.round(roundedNet * ratio * 100) / 100;
-    const fieldHrs = Math.round(roundedNet * (1 - ratio) * 100) / 100;
+    // Aufteilung ueber die reine Funktion: Eine Haelfte wird gerundet, die
+    // andere ergibt sich als Rest. Zwei unabhaengige Rundungen machten die
+    // Schicht laenger, als sie war (gemessen 7,76 statt 7,75 Stunden).
+    const { buero: officeHrs, aussendienst: fieldHrs } = teileArbeitszeit(roundedNet, ratio);
 
     return { netHours: roundedNet, officeHrs, fieldHrs };
   };
@@ -292,8 +294,8 @@ export default React.memo(function ClockInWidget({
     if (manualPreset === "half") ratio = 0.5;
     if (manualPreset === "custom") ratio = manualCustomRatio / 100;
 
-    const officeHrs = Math.round(netHours * ratio * 100) / 100;
-    const fieldHrs = Math.round(netHours * (1 - ratio) * 100) / 100;
+    // Siehe Ausstempeln: Rest statt zweiter Rundung.
+    const { buero: officeHrs, aussendienst: fieldHrs } = teileArbeitszeit(netHours, ratio);
 
     return { netHours, officeHrs, fieldHrs };
   };

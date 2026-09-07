@@ -10,6 +10,119 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-07 — v0.9.23: Eine Schicht war 36 Sekunden zu lang
+
+Auf die Frage „funktioniert wirklich alles?" habe ich die Abläufe durchgespielt,
+die ich zwar geändert, aber nie ausgeführt hatte. Der Excel-Export war der erste
+Punkt der Liste, die Stempeluhr der zweite. Der zweite hat etwas ergeben.
+
+### Der Excel-Inhalt — zum ersten Mal auf Zellenebene geprüft
+
+Bisher war belegt, dass eine echte `.xlsx` entsteht. Ob die Zahlen in den
+**richtigen** Zellen landen, war nie geprüft — dabei ist genau das die Datei,
+die bei der Vertriebsleitung ankommt.
+
+15 Zählerfelder mit paarweise verschiedenen Werten belegt (11, 17, 23, 29, 31,
+37, 41, 43, 19, 42,5, 53, 59, 61, 67, 71 — zwei vertauschte Zellen wären damit
+sichtbar), exportiert, die Datei mit ExcelJS wieder aufgemacht:
+
+| Prüfung | Ergebnis |
+|---|---|
+| 15 Zählerfelder in ihren Zellen (D6–D25) | **alle korrekt**, inklusive des Dezimalwerts 42,5 |
+| D3 Monat | `09/2026` — das von der Vorlage geforderte MM/JJJJ |
+| D4 Name, B28 Kommentar | korrekt |
+| **D10** | Formel `SUM(D6:D9)` **erhalten**, nicht überschrieben |
+| Blätter | `Monatsinfo` \| `RV Mobil - Zusatzangaben` \| `RV Mobil - Arbeitszeiten` |
+| Konsolenfehler | 0 |
+
+### Der Fund: doppelte Rundung in der Arbeitszeit
+
+08:00 bis 16:30 mit 45 Minuten Pause sind **7,75 Stunden**. Die App verbuchte
+**7,76** — und zeigte das auch in der Vorschau an.
+
+Die Ursache stand zweimal im Quelltext, beim Ausstempeln und beim Nachtragen:
+
+```
+const officeHrs = Math.round(netto * anteil * 100) / 100;      // 3,875 -> 3,88
+const fieldHrs  = Math.round(netto * (1 - anteil) * 100) / 100; // 3,875 -> 3,88
+const dauer     = round(officeHrs + fieldHrs);                  // 7,76
+```
+
+Beide Hälften werden unabhängig gerundet, und die **Dauer der Schicht wird aus
+ihrer Summe gebildet** statt aus der berechneten Netto-Zeit. `netHours` = 7,75
+wird berechnet und dann verworfen.
+
+Die Abweichung ist klein — 36 Sekunden je Schicht —, aber sie hat drei
+Eigenschaften, die sie zu einem Fehler und nicht zu einer Ungenauigkeit machen:
+
+1. **Sie geht immer in dieselbe Richtung.** Bei halbe-halbe runden beide
+   Hälften auf; nach unten kann es nicht gehen.
+2. **Sie trifft den Normalfall.** Jede ungerade Viertelstunde bei 50/50 ist
+   betroffen: 7,25, 7,75, 8,25 …
+3. **Sie landet als Arbeitszeit im Bericht an die Vertriebsleitung.**
+
+Behoben nicht durch feineres Runden, sondern durch eine Reihenfolge: Eine
+Hälfte wird gerundet, die andere ergibt sich als **Rest**. Damit ist die Summe
+der Teile immer exakt die Netto-Zeit.
+
+Die Rechnung liegt jetzt als reine Funktion `teileArbeitszeit` in
+`utils/timeUtils.ts` statt zweimal in einer 1130-Zeilen-Komponente — dasselbe
+Muster, das 0.9.14/0.9.15 schon einmal einen echten Rundungsfehler ans Licht
+gebracht hat. Prüfungen **148 → 152**, darunter eine, die für **jede
+Viertelstunde bis 10 Stunden × jeden 5-Prozent-Anteil** nachweist, dass die
+Summe exakt stimmt (840 Kombinationen).
+
+Nachgemessen in der laufenden App, vorher und nachher:
+
+| | vorher | nachher |
+|---|---|---|
+| Vorschau auf dem Bildschirm | 7.76h | **7.75h** |
+| `duration` der Schicht | 7,76 | **7,75** |
+| Büro / Außendienst | 3,88 / 3,88 | 3,88 / **3,87** |
+| Summe | 7,76 | **7,75** |
+
+### Was dabei sonst noch auffiel
+
+**Die Schichtliste liegt hinter einem Einklapper.** `isLogsCollapsed` steht auf
+`true`, das Protokoll der eigenen Arbeitszeit ist also standardmäßig verborgen
+(`ClockInWidget.tsx:49`, Umschalter mit `aria-expanded` bei `:1038`).
+
+Das ist zu melden, weil die ROADMAP unter „Bewusst NICHT geplant" das Gegenteil
+festhält: *„Einklappbare Formularbereiche. Eingeklappter Inhalt ist für
+Screenreader-Nutzer nicht erreichbar, und die Suchfunktion liefe ins Leere."*
+`CLAUDE.md` schärft nach, diese Regel gewinne **gegen etablierte UI-Muster**.
+
+Ob der Fall darunterfällt, ist eine Produktentscheidung und keine technische:
+Die Schichtliste ist kein Formularbereich, der Umschalter ist eine echte Taste
+mit Zustand, und das Muster ist als Disclosure nach WCAG zulässig. Der Grund
+der Projektregel — nicht erreichbar — trifft hier so nicht zu. Der Widerspruch
+zur eigenen Regel bleibt trotzdem, und er gehört dem Projektinhaber, nicht mir.
+**Nicht geändert, nur benannt.**
+
+### Was ich nicht ausgeführt habe
+
+Das Löschen einer Schicht über die Oberfläche und damit die Umkehrbarkeit der
+Verrechnung. Drei Anläufe sind an der Bedienelement-Suche gescheitert (die
+Liste liegt hinter dem Einklapper), und weiterzusuchen wäre Hartnäckigkeit ohne
+Ertrag gewesen: Die Eigenschaft ist über die reinen Prüfungen zu
+`verrechneSchicht` abgedeckt, deren Kopfkommentar genau diesen Rundungsfall
+beschreibt. Als über die Oberfläche geprüft gilt sie damit **nicht**.
+
+### Eine Bemerkung zum Verfahren
+
+Bei diesen Durchläufen waren **fünf von sechs ersten Fehlermeldungen meine
+eigenen Messfehler**, nicht Fehler der App: ein Mausziehen gegen
+`trackMouse: false`, eine Trendkurve, die erst ab zwei Monaten zeichnet, ein
+nicht geleerter Speicher, ein nie abgeschicktes Verbuchungsformular, ein
+Download-Zuhörer, der zu spät gesetzt war. Jedes Mal sah es zuerst nach einem
+Defekt aus.
+
+Das ist der Grund, warum in diesem Projekt nichts als Befund gilt, bevor der
+Auslöser konstruiert und die Gegenprobe gelaufen ist — und warum der eine echte
+Fund (7,76 statt 7,75) erst nach dieser Aussortierung übrig blieb.
+
+---
+
 ## 2026-09-07 — v0.9.22: Plausibilitätsprüfung der ganzen Codebasis
 
 Auftrag: den gesamten Code auf Plausibilität prüfen, **alles verifizieren und
