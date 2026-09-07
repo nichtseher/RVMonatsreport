@@ -280,6 +280,44 @@ Punkt, an dem das Band wieder sichtbar werden kann.
   liefert den Status von `tail`. Wer den Rückgabewert auswertet, darf nicht
   durch `tail` leiten.
 
+### Nachtrag nach dem Push: Das Tor war seit fünf Tagen rot
+
+Der Push von 0.9.22 hat einen Befund aufgedeckt, der älter ist als dieser
+Stand. Die Deployment-Historie sagt:
+
+| Commit | Datum | Deployment |
+|---|---|---|
+| `497fef3` | 2026-09-02 | **success** — das war live |
+| `f8ae712` | 2026-09-02 | failure |
+| `e638f68` | 2026-09-02 | failure |
+
+**Die beiden letzten Commits von 0.9.20 haben die Produktion nie erreicht.**
+Fünf Tage lang lief bei den Kollegen ein Stand, dem die 320-px-Korrekturen und
+die Prüfmatrix-Erweiterung fehlten — und niemandem ist es aufgefallen, weil ein
+Push aussieht wie eine Veröffentlichung.
+
+Das Läufer-Protokoll (über die Anmeldedaten des Pushes abgerufen, Logs sind
+ohne Anmeldung mit 403 gesperrt) nennt für beide dieselbe Ursache:
+
+```
+Error: Formular: per Tabulator nicht erreichbar — BUTTON"RV Archiv" | BUTTON"Optionen"
+```
+
+**Das ist wörtlich derselbe Fehlschlag, den ich heute für eine Folge des
+±5-Umbaus gehalten hatte.** Er ist keine. Er stand schon vorher da, und die
+40-ms-Wartezeit im Tabulator-Durchlauf behebt ihn — der geladene CI-Läufer
+legt den Wettlauf zwischen Tabulatorschritt und Rendern offen, dieser Rechner
+nicht.
+
+Zwei Lehren, beide in `CLAUDE.md` nachgetragen:
+
+- **„Der Lauf existiert" ist nicht „der Lauf war erfolgreich."** Die bisherige
+  Regel verlangte nur, die Existenz eines Laufs zu bestätigen. Hier gab es
+  Läufe, Deployments *und* den Status `failure`.
+- **Ein grünes lokales Tor ist kein grünes Deploy-Tor.** Der DEVLOG-Eintrag zu
+  `e638f68` meldet „190 Oberflaechenpruefungen bestanden", und das stimmte —
+  lokal. Auf dem Läufer stimmte es nicht.
+
 ### Was offen bleibt
 
 NVDA, VoiceOver und ein echtes iPhone. Ein grünes Prüfgate ist kein

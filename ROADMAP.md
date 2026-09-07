@@ -672,6 +672,29 @@ Lesefehler beim Start, WCAG 2.5.3 über alle Ansichten, die Ansicht `manage`,
 und die Schichten im Sync-Paket. Prüfungen **144 → 148** und die
 Oberflächenprüfung entsprechend gewachsen.
 
+### Das Deploy-Tor war fünf Tage rot, ohne dass es auffiel
+
+Aufgedeckt beim Push von 0.9.22. Live war seit dem 2026-09-02 `497fef3`; die
+beiden Commits danach (`f8ae712`, `e638f68`) haben Deployment-Status
+`failure`. Den Kollegen fehlten also fünf Tage lang die 320-px-Korrekturen und
+die erweiterte Prüfmatrix.
+
+Ursache in beiden Fällen derselbe Fehlschlag in `check:ui` — der Tabulator-
+Durchlauf im Formular, den der geladene Läufer als Wettlauf offenlegt und
+dieser Rechner nicht. Mit der Wartezeit von 40 ms je Schritt ist er behoben.
+
+**Was daran strukturell ist und nicht am Einzelfall hängt:** Die Regel in
+`CLAUDE.md` verlangte bis heute nur, zu bestätigen, dass ein Workflow-Lauf
+*existiert*. Hier existierten Läufe, es gab Deployment-Einträge — und den
+Status `failure`. Beide Sätze stehen jetzt dort, samt der beiden
+API-Aufrufe, die die Frage „was ist live?" wirklich beantworten.
+
+Offene Frage an den Projektinhaber: Ein roter Deploy fällt derzeit niemandem
+auf. Eine Benachrichtigung bei fehlgeschlagenem Workflow (GitHub schickt sie
+auf Wunsch per E-Mail an den Commit-Autor) wäre der billigste Weg, das nicht
+wieder fünf Tage laufen zu lassen — sie ist offenbar aus, sonst wäre es
+aufgefallen.
+
 ### Zerbrechlich, gemessen, benannt
 
 **Die Hauptnavigation ist aus dem Dokument, solange ein Zählerfeld den Fokus
