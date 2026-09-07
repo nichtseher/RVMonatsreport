@@ -2214,6 +2214,25 @@ const ZUSTAENDE_MIT_SCHRIFT: Array<{ name: string; oeffne: (p: Page) => Promise<
     name: z.name,
     oeffne: (p: Page) => oeffneArchiv(p, z.zustand),
   })),
+  /*
+    Die fünf Schritte des Ersteinstiegs.
+
+    Sie fehlten hier bis unmittelbar nach 0.9.27 -- also in genau der Fassung,
+    die diese Liste eingeführt und dazugeschrieben hat: „Wer einen neuen
+    Zustandsblock anlegt, trägt ihn hier nach." Der Block wurde angelegt, der
+    Nachtrag vergessen, und der Lauf blieb grün, weil die Lücke nichts meldet.
+
+    Das ist kein Argument gegen die Liste, sondern der Beleg dafür, dass eine
+    Liste allein nicht trägt -- deshalb gibt es seit derselben Fassung den
+    Zähler in `scripts/checks/zustandsdeckung.ts`. Der hätte hier allerdings
+    auch nicht angeschlagen: Der Assistent hat keinen neuen `useState`
+    bekommen, er war immer schon da. Gefunden wurde die Lücke beim Nachsehen
+    von Hand, kurz vor dem Deploy.
+  */
+  ...EINSTIEG_SCHRITTE.map((titel, i) => ({
+    name: `Einstieg ${i + 1}: ${titel}`,
+    oeffne: (p: Page) => oeffneEinstieg(p, i),
+  })),
 ];
 
 test.describe("Zustände mit breiter Schrift", () => {
