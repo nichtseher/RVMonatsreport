@@ -44,6 +44,18 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.28: Eigene Kategorien überleben den Blick ins Archiv</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Eine selbst angelegte Kategorie konnte spurlos verschwinden.</strong> Und zwar so: Sie legen zu Monatsbeginn eine eigene Kategorie an, haben aber noch nichts eingetragen – dann schauen Sie im RV Archiv kurz im Vormonat nach. Nach der Rückkehr war Ihre Kategorie weg, ohne Meldung und ohne Weg zurück.</li>
+            <li><strong>Der Grund war eine Lücke, keine Absicht.</strong> Beim Öffnen eines Archivmonats stellt die App die Kategorien so ein, wie sie damals waren – das muss auch so sein, sonst stünden die alten Zahlen unter falschen Überschriften. Ihr eigener Stand wurde dabei aber nur dann gesichert, wenn der laufende Monat schon Zahlen, Notizen oder Schichten enthielt. Eine frisch angelegte Kategorie zählt für diese Prüfung nicht als „Inhalt".</li>
+            <li><strong>Jetzt wird Ihr Kategorien-Stand pro Monat gemerkt</strong> und beim Zurückwechseln wiederhergestellt. Im Archivmonat sehen Sie unverändert die Kategorien von damals.</li>
+          </ul>
+        </div>
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.27: Nichts Sichtbares – die Prüfung selbst</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>

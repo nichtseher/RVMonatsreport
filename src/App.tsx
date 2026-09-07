@@ -109,6 +109,33 @@ import { ChangelogModal } from "./components/ChangelogModal";
 const ONBOARDING_KEY = "aussendienst_pwa_onboarding_v1";
 
 /**
+ * Feldstand je Monat, für Monate ohne Archiveintrag.
+ *
+ * Warum es das gibt, steht ausführlich an der Stelle, die schreibt
+ * (`handleMonthChange`, Abschnitt 1b). Kurz: Ein Monat ohne Zählerwerte,
+ * Notizen und Schichten wandert nicht ins Archiv und hinterlässt deshalb
+ * keinen `fieldsSnapshot` -- eine dort angelegte eigene Kategorie ging beim
+ * Blick in einen Archivmonat verloren. Gemessen am 2026-09-07.
+ *
+ * Bewusst `localStorage` und nicht IndexedDB: Es gehört zu den Einstellungen,
+ * nicht zu den Berichtsdaten, und liegt damit neben
+ * `aussendienst_pwa_fields`, dessen Lücke es schließt.
+ */
+const MONATSFELDER_SCHLUESSEL = "aussendienst_pwa_monatsfelder_v1";
+
+/** Abgelegte Feldstände lesen. Unlesbares gilt als "nichts abgelegt". */
+function leseMonatsfelder(): Record<string, SectionsConfig> {
+  try {
+    const roh = localStorage.getItem(MONATSFELDER_SCHLUESSEL);
+    if (!roh) return {};
+    const wert = JSON.parse(roh);
+    return wert && typeof wert === "object" ? (wert as Record<string, SectionsConfig>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
  * Die Felder, mit denen die App ausgeliefert wird.
  *
  * Hier stand bis 0.9.22 die Beschreibung von `monthHasContent` -- einer
@@ -835,6 +862,35 @@ export default function App() {
       persistHistory(updatedHistory, handleHistoryPersistFailure, "month-change");
     }
 
+    /*
+      1b. Feldstand des verlassenen Monats sichern -- aber nur, wenn er NICHT
+      ins Archiv gewandert ist.
+
+      Gemessen am 2026-09-07: Wer in einem noch leeren Monat eine eigene
+      Kategorie anlegt und dann in einen Archivmonat schaut, hatte sie danach
+      nicht mehr. Die Kette: `monthHasContent()` kennt Notizen, Zählerwerte und
+      Schichten, aber keine Feldkonfiguration -- der leere Monat wandert also
+      nicht ins Archiv und hinterlässt keinen `fieldsSnapshot`. Gleich darauf
+      ersetzt `setAppFields(savedRecord.fieldsSnapshot)` die Konfiguration, und
+      der useEffect in `useEinstellungen.ts` schreibt sie sofort nach
+      `localStorage`. Damit war die eigene Kategorie endgültig weg.
+
+      Den Schnappschuss beim Öffnen NICHT anzuwenden wäre die falsche Abhilfe:
+      Dann stünden die alten Zahlen unter Kategorien, die es damals nicht gab.
+      Kaputt ist nur, dass der eigene Stand dabei verlorengeht -- also wird er
+      hier abgelegt und beim Zurückwechseln wieder geholt.
+
+      Selbstaufräumend: Ist der Monat archiviert, trägt der Archiveintrag den
+      Schnappschuss, und der Eintrag hier wird gelöscht. Es sammeln sich also
+      nur die wenigen Monate an, die nie Inhalt bekommen haben.
+    */
+    if (currentMonth && currentMonth !== newMonth) {
+      const abgelegt = leseMonatsfelder();
+      if (hasData) delete abgelegt[currentMonth];
+      else abgelegt[currentMonth] = appFields;
+      safeSetItem(MONATSFELDER_SCHLUESSEL, JSON.stringify(abgelegt));
+    }
+
     // 2. Load the target month state from history or start fresh
     const savedRecord = updatedHistory[newMonth];
     if (savedRecord) {
@@ -870,6 +926,10 @@ export default function App() {
         values: {},
         timeLogs: [],
       });
+      // Kein Archiveintrag -- also den zuletzt abgelegten Feldstand dieses
+      // Monats zurückholen, falls es einen gibt (siehe 1b).
+      const abgelegt = leseMonatsfelder()[newMonth];
+      if (abgelegt) setAppFields(abgelegt);
       triggerToast(
         `Neues Formular für ${formatMonthGerman(newMonth)} gestartet!`,
       );

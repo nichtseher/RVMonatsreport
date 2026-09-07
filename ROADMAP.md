@@ -740,6 +740,27 @@ Excel-Export. Ein solcher Umbau gehört in eine eigene Fassung mit eigenen
 Messungen und nicht an das Ende eines ohnehin großen Standes. Er ist damit
 benannt, nicht vergessen.
 
+> **Nachtrag 0.9.28 (2026-09-07): behoben — aber anders als hier vorgesehen.**
+> Die Trennung in zwei Zustände wäre der saubere Entwurf und berührt **38
+> Verwendungsstellen** in `App.tsx`, von denen jede einzeln zu entscheiden
+> wäre. Der Schaden hängt aber nicht an der geteilten Variablen, sondern an
+> einer Lücke: Ein Monat **ohne** Zählerwerte, Notizen und Schichten wandert
+> nicht ins Archiv (`monthHasContent`) und hinterlässt deshalb keinen
+> `fieldsSnapshot`, aus dem der eigene Stand zurückkäme. Genau dieser Fall —
+> eigene Kategorie im noch leeren Monat angelegt — ist gemessen worden und
+> verlor die Kategorie endgültig.
+>
+> Behoben mit zwei Berührungspunkten in `handleMonthChange`: Feldstand des
+> verlassenen Monats ablegen, wenn er **nicht** archiviert wurde; beim
+> Betreten eines Monats **ohne** Archiveintrag von dort holen.
+> Selbstaufräumend. Beide Richtungen als Prüffall — die eigene Kategorie
+> überlebt, und im Archivmonat gilt weiterhin dessen Schnappschuss.
+>
+> Was die Herleitung oben zu grob fasste: „Sie kehrt nur zurück, wenn der
+> September selbst archiviert ist" — richtig, und genau darin lag der Hebel.
+> Der Umbau in zwei Zustände bleibt der bessere Entwurf und bleibt offen; er
+> ist jetzt aber kein Datenverlust mehr, sondern eine Aufräumarbeit.
+
 **Zwei Prüfungen verteidigten einen Fehler, statt ihn zu finden** — sie suchten
 ein Bedienelement über genau das `aria-label`, das den Verstoß ausmachte. Wer
 eine Prüfung schreibt, die einen Fehler zur Voraussetzung macht, macht ihn

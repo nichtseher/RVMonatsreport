@@ -2180,6 +2180,160 @@ test.describe("Zustände der Formularansicht", () => {
 });
 
 /**
+ * Was das Öffnen eines Archivmonats mit der eigenen Feldkonfiguration macht.
+ *
+ * Der Verdacht, aus dem Quelltext hergeleitet: `handleMonthChange` archiviert
+ * den verlassenen Monat nur, wenn `monthHasContent()` wahr ist — und das kennt
+ * nur Notizen, Zählerwerte und Schichten, nicht die Feldkonfiguration. Danach
+ * setzt es `setAppFields(fieldsSnapshot)`, und ein `useEffect` in
+ * `useEinstellungen.ts` schreibt jede Änderung an `appFields` sofort nach
+ * `localStorage`.
+ *
+ * Daraus folgt ein Verlustfall: Wer in einem noch leeren Monat eine eigene
+ * Kategorie anlegt und dann in einen Archivmonat schaut, hätte sie danach
+ * nicht mehr — der leere Monat wird nicht archiviert, hinterlässt also keinen
+ * Schnappschuss, aus dem sie zurückkäme.
+ *
+ * Diese Prüfung misst das, statt es zu behaupten. Sie ist bewusst so gebaut,
+ * dass sie in BEIDE Richtungen aussagekräftig ist: Kommt die Kategorie zurück,
+ * war die Herleitung falsch.
+ */
+const EIGENE_KATEGORIE = { id: "s1_eigen_pruef", label: "Eigene Prüfkategorie", icon: "", step: 1 };
+
+async function legeFeldstandAn(page: Page) {
+  await page.route("**/leerseite-fuer-feldpruefung", (route) =>
+    route.fulfill({ contentType: "text/html", body: "<!doctype html><title>leer</title>" }),
+  );
+  await page.goto("/leerseite-fuer-feldpruefung");
+
+  // Archiv: August 2026 mit Inhalt, dessen Schnappschuss die eigene
+  // Kategorie NICHT kennt (sie wurde ja erst im September angelegt).
+  await page.evaluate(async (eigene) => {
+    const db = await new Promise<IDBDatabase>((res, rej) => {
+      const r = indexedDB.open("keyval-store", 1);
+      r.onupgradeneeded = () => {
+        if (!r.result.objectStoreNames.contains("keyval")) r.result.createObjectStore("keyval");
+      };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+    const schreibe = (k: string, v: unknown) =>
+      new Promise<void>((res, rej) => {
+        const t = db.transaction("keyval", "readwrite");
+        t.objectStore("keyval").put(v, k);
+        t.oncomplete = () => res();
+        t.onerror = () => rej(t.error);
+      });
+
+    const grundfelder = { s1: [], s2: [], s3: [], s4: [] };
+    await schreibe("aussendienst_pwa_history", {
+      "2026-08": {
+        month: "2026-08",
+        name: "Marc",
+        notes: "August hatte Inhalt",
+        values: { s1_1: 5 },
+        valuesUpdatedAt: { s1_1: "2026-08-31T10:00:00.000Z" },
+        fieldsSnapshot: grundfelder,
+        savedAt: "2026-08-31T10:00:00.000Z",
+        timeLogs: [],
+      },
+    });
+    // September: LEER. Genau darum geht es -- er wird nicht archiviert.
+    await schreibe("aussendienst_pwa_data", {
+      month: "2026-09",
+      name: "Marc",
+      notes: "",
+      values: {},
+      valuesUpdatedAt: {},
+      timeLogs: [],
+    });
+    void eigene;
+  }, EIGENE_KATEGORIE);
+}
+
+test.describe("Feldkonfiguration beim Blick ins Archiv", () => {
+  test("eine eigene Kategorie überlebt das Öffnen eines Archivmonats", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Zustandslogik haengt nicht am Geraeteprofil");
+
+    await legeFeldstandAn(page);
+
+    // Feldkonfiguration mit eigener Kategorie -- so, wie sie nach dem Anlegen
+    // im Formular in `localStorage` steht.
+    await page.addInitScript((eigene) => {
+      localStorage.setItem("aussendienst_pwa_onboarding_v1", "1");
+      const roh = localStorage.getItem("aussendienst_pwa_fields");
+      const felder = roh ? JSON.parse(roh) : { s1: [], s2: [], s3: [], s4: [] };
+      felder.s1 = [...(felder.s1 || []), eigene];
+      localStorage.setItem("aussendienst_pwa_fields", JSON.stringify(felder));
+    }, EIGENE_KATEGORIE);
+
+    await page.goto("/?tab=history", { waitUntil: "domcontentloaded" });
+    await page.getByRole("button", { name: /August 2026/ }).first().waitFor({ timeout: 15_000 });
+
+    const vorher = await page.evaluate(
+      (id) => (localStorage.getItem("aussendienst_pwa_fields") || "").includes(id),
+      EIGENE_KATEGORIE.id,
+    );
+    expect(vorher, "Vorbedingung: die eigene Kategorie steht im Speicher").toBe(true);
+
+    // Archivmonat öffnen -- der Weg, den ein Nutzer geht, um alte Zahlen
+    // nachzusehen.
+    await page.getByRole("button", { name: /August 2026/ }).first().click();
+    await page.getByRole("button", { name: /Laden \/ Editieren/ }).first().click();
+    await page.waitForTimeout(800);
+
+    // Zurück auf den eigenen Monat, so wie man es über die Kopfzeile täte.
+    await page.locator("#meta-month-input").fill("2026-09");
+    await page.waitForTimeout(800);
+
+    const nachher = await page.evaluate(
+      (id) => (localStorage.getItem("aussendienst_pwa_fields") || "").includes(id),
+      EIGENE_KATEGORIE.id,
+    );
+    expect(
+      nachher,
+      "Die eigene Kategorie ist nach einem Blick ins Archiv aus der Feldkonfiguration verschwunden",
+    ).toBe(true);
+  });
+
+  /*
+    Die Gegenrichtung, und sie ist genauso wichtig.
+
+    Der Schnappschuss eines Archivmonats MUSS beim Öffnen greifen -- sonst
+    stünden dessen Zahlen unter Kategorien, die es damals nicht gab, oder unter
+    gar keinen. Eine Abhilfe, die den eigenen Feldstand rettet, indem sie den
+    Schnappschuss ignoriert, wäre schlimmer als der Fehler.
+  */
+  test("im Archivmonat gilt dessen eigener Feldstand", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Zustandslogik haengt nicht am Geraeteprofil");
+
+    await legeFeldstandAn(page);
+    await page.addInitScript((eigene) => {
+      localStorage.setItem("aussendienst_pwa_onboarding_v1", "1");
+      const roh = localStorage.getItem("aussendienst_pwa_fields");
+      const felder = roh ? JSON.parse(roh) : { s1: [], s2: [], s3: [], s4: [] };
+      felder.s1 = [...(felder.s1 || []), eigene];
+      localStorage.setItem("aussendienst_pwa_fields", JSON.stringify(felder));
+    }, EIGENE_KATEGORIE);
+
+    await page.goto("/?tab=history", { waitUntil: "domcontentloaded" });
+    await page.getByRole("button", { name: /August 2026/ }).first().click();
+    await page.getByRole("button", { name: /Laden \/ Editieren/ }).first().click();
+    await page.waitForTimeout(800);
+
+    const imArchivmonat = await page.evaluate(
+      (id) => (localStorage.getItem("aussendienst_pwa_fields") || "").includes(id),
+      EIGENE_KATEGORIE.id,
+    );
+    expect(
+      imArchivmonat,
+      "Im August wird eine Kategorie angezeigt, die es im August noch nicht gab — " +
+        "der Schnappschuss des Archivmonats greift nicht mehr",
+    ).toBe(false);
+  });
+});
+
+/**
  * Zustände mit breiter Schrift.
  *
  * Warum es das gibt: Der Block „Breitere Schrift als hier installiert" läuft

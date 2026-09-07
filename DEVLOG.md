@@ -10,6 +10,76 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-07 — v0.9.28: Eine eigene Kategorie ging beim Blick ins Archiv verloren
+
+Erster Punkt aus der Liste „bekannt offen, bewusst nicht behoben" — und der
+einzige darin, der Daten betrifft. Er stand seit 0.9.22 in der ROADMAP als
+„belegt, nicht behoben".
+
+### Erst hergeleitet, dann gemessen
+
+Aus dem Quelltext ergab sich eine Kette:
+
+1. `handleMonthChange` archiviert den verlassenen Monat nur, wenn
+   `monthHasContent()` wahr ist.
+2. `monthHasContent()` kennt Notizen, Zählerwerte und Schichten — **keine
+   Feldkonfiguration**.
+3. Gleich darauf setzt `setAppFields(savedRecord.fieldsSnapshot)`.
+4. Der `useEffect` in `useEinstellungen.ts:129` schreibt jede Änderung an
+   `appFields` sofort nach `localStorage`.
+
+Daraus folgt: Wer in einem noch leeren Monat eine eigene Kategorie anlegt und
+dann in einen Archivmonat schaut, hat sie danach nicht mehr — der leere Monat
+hinterlässt keinen Schnappschuss, aus dem sie zurückkäme.
+
+**Das ist eine Herleitung, kein Befund.** Also gemessen, mit einer Prüfung, die
+in beide Richtungen aussagekräftig ist und ihre eigenen Vorbedingungen
+mitprüft (steht die Kategorie vorher wirklich im Speicher? ist der Archivmonat
+überhaupt da?).
+
+Ergebnis: `Erwartet true, erhalten false`. Die Kategorie war weg.
+
+### Die naheliegende Abhilfe wäre falsch gewesen
+
+Den Schnappschuss beim Öffnen eines Archivmonats **nicht** anzuwenden, hätte
+die alten Zahlen unter Kategorien gestellt, die es damals nicht gab — oder
+unter gar keinen. Der Schnappschuss ist richtig; kaputt ist nur, dass der
+eigene Stand dabei verlorengeht.
+
+Ein Aufspalten von `appFields` in „Konfiguration" und „angezeigte Felder"
+wäre der saubere Entwurf, berührt aber **38 Verwendungsstellen** in `App.tsx`,
+von denen jede einzeln entschieden werden müsste (der Export braucht den
+Schnappschuss, die Feldverwaltung die Konfiguration). Das Risiko steht nicht
+im Verhältnis.
+
+Stattdessen zwei Berührungspunkte in `handleMonthChange`: Beim Verlassen wird
+der Feldstand unter dem Monat abgelegt — aber **nur**, wenn der Monat nicht
+ins Archiv gewandert ist; beim Betreten eines Monats **ohne** Archiveintrag
+wird er von dort geholt. Selbstaufräumend: Sobald ein Monat Inhalt bekommt,
+trägt sein Archiveintrag den Schnappschuss und der Ablageeintrag wird
+gelöscht. Es sammeln sich nur die wenigen Monate an, die nie Inhalt bekamen.
+
+### Gemessen
+
+| | vorher | nachher |
+|---|---|---|
+| Kategorie im leeren Monat, Archivmonat geöffnet, zurückgewechselt | **weg** | **da** |
+| Im Archivmonat gilt dessen Schnappschuss | ja | **ja** (unverändert) |
+
+Die zweite Zeile ist keine Formsache: Eine Abhilfe, die den eigenen Feldstand
+rettet, indem sie den Schnappschuss ignoriert, wäre schlimmer als der Fehler.
+Beide Richtungen stehen als Prüffall in `tests/oberflaeche.spec.ts`.
+
+### Ein Verfahrensfehler bei mir, klein aber erwähnenswert
+
+Beim Einbauen habe ich kurzzeitig ein `void MONATSFELDER_SCHLUESSEL;` in den
+Initialisierer von `useState` geschrieben, um einen Namen früher verfügbar zu
+machen. Das ist ein Griff, der ein Symptom stillstellt statt die Ursache zu
+beheben — Schlüssel und Leser gehören auf Modulebene. Zurückgenommen und
+richtig gemacht, bevor irgendetwas davon in einen Lauf ging.
+
+---
+
 ## 2026-09-07 — v0.9.27: Vier Punkte aus der kritischen Bilanz
 
 Auf die Frage „ist jetzt alles perfekt?" lautete die Antwort nein, mit fünf
