@@ -705,7 +705,12 @@ export default function DeviceSyncModal({
           maximalem Kontrast zum schwarzen Muster, sonst erkennt ihn die Kamera
           des anderen Geraets nicht. Gilt auch in den Hochkontrast-Themes. */}
       <div className="bg-white p-4 rounded-xl shadow-sm mb-4">
-        <QRCodeSVG value={chunks[currentChunk]} size={230} marginSize={1} />
+        <QRCodeSVG
+          value={chunks[currentChunk]}
+          size={230}
+          marginSize={1}
+          aria-hidden="true"
+        />
       </div>
 
       {chunks.length > 1 && (
@@ -871,10 +876,19 @@ export default function DeviceSyncModal({
     <div className="flex flex-col items-center justify-center">
       {renderEinfuegeBlock()}
 
+      {/*
+        aria-hidden statt aria-label: Ein `aria-label` auf einem <div> OHNE
+        Rolle ist unzulässig -- axe meldet `aria-prohibited-attr`, und zwar zu
+        Recht. Die Kameravorschau trägt für einen Screenreader-Nutzer auch
+        nichts bei: Sie zeigt ein Livebild, und ein Kamerabild auszurichten ist
+        genau der Weg, den diese Zielgruppe nicht gehen kann. Die Auskunft
+        steht als sichtbarer Text darüber (der `hint` dieser Ansicht), und der
+        zugängliche Weg -- das Einfügefeld -- steht seit 0.9.17 bewusst DAVOR.
+      */}
       <div
         id="reader"
+        aria-hidden="true"
         className="w-full max-w-[300px] overflow-hidden rounded-xl border-2 border-[var(--accent)] mb-4 bg-black"
-        aria-label="Kamera-Vorschau für QR-Code-Scan"
       />
 
       {expectedTotal > 1 && (
@@ -906,7 +920,7 @@ export default function DeviceSyncModal({
 
       <button
         onClick={cancelPairing}
-        className="text-sm text-[var(--accent)] font-bold hover:underline cursor-pointer"
+        className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-3 text-sm text-[var(--accent)] font-bold hover:underline cursor-pointer"
       >
         Abbrechen
       </button>
@@ -1112,7 +1126,7 @@ export default function DeviceSyncModal({
               <div className="flex justify-center">
                 <button
                   onClick={resetView}
-                  className="mt-4 text-sm text-[var(--accent)] font-bold hover:underline cursor-pointer"
+                  className="mt-4 inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-3 text-sm text-[var(--accent)] font-bold hover:underline cursor-pointer"
                 >
                   Abbrechen
                 </button>
@@ -1164,7 +1178,7 @@ export default function DeviceSyncModal({
 
               <button
                 onClick={resetView}
-                className="w-full text-sm text-[var(--text-muted)] font-bold hover:underline cursor-pointer"
+                className="w-full min-h-[44px] px-3 text-sm text-[var(--text-muted)] font-bold hover:underline cursor-pointer"
               >
                 Verwerfen und zurück
               </button>
@@ -1190,7 +1204,7 @@ export default function DeviceSyncModal({
                       </button>
                       <button
                         onClick={cancelPairing}
-                        className="w-full text-sm text-[var(--text-muted)] font-bold hover:underline cursor-pointer"
+                        className="w-full min-h-[44px] px-3 text-sm text-[var(--text-muted)] font-bold hover:underline cursor-pointer"
                       >
                         Abbrechen
                       </button>
@@ -1224,7 +1238,7 @@ export default function DeviceSyncModal({
                         </button>
                         <button
                           onClick={cancelPairing}
-                          className="w-full text-sm text-[var(--text-muted)] font-bold hover:underline cursor-pointer"
+                          className="w-full min-h-[44px] px-3 text-sm text-[var(--text-muted)] font-bold hover:underline cursor-pointer"
                         >
                           Abbrechen
                         </button>

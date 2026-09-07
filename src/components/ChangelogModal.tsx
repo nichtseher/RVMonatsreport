@@ -44,6 +44,22 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.24: Die Zeiterfassung ist bedienbar geworden</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Die GPS-Funktion ist entfernt.</strong> In den Formularen der Stempeluhr gab es einen Knopf, der Ihren Standort ermittelt und als Koordinaten in die Notiz der Schicht geschrieben hat – und Notizen landen im Excel-Bericht an die Vertriebsleitung. Das war nirgends erklärt und in keiner Anleitung erwähnt. Der Knopf ist weg.</li>
+            <li><strong>Elf Bedienelemente im Formular „Arbeitszeit verbuchen" waren zu klein.</strong> Die Tasten für die Pause, die vier Vorwahl-Schaltflächen, die Felder für Datum, Uhrzeit und Stunden – alle unter der Mindestgröße von 44 Pixeln, die diese App sonst überall einhält. Ausgerechnet dort, wo Sie Ihre Arbeitszeit eintragen. Jetzt sind alle groß genug.</li>
+            <li><strong>Bei „Extra groß" lief dieses Formular seitlich aus dem Bild.</strong> An drei verschiedenen Stellen: der Zeile mit den Absende-Tasten, der Überschrift des Formulars und der Kopfzeile der Stempeluhr – letztere nur, während eine Schicht lief. Alle drei brechen jetzt sauber um.</li>
+            <li><strong>Das Abzeichen „Aufnahme läuft" war schlecht lesbar.</strong> Es pulsierte als Ganzes, wodurch auch die Schrift regelmäßig blasser wurde. Jetzt pulsiert nur noch der Punkt davor, die Schrift bleibt stehen.</li>
+            <li><strong>Die Pausen-Tasten hießen für die Sprachsteuerung anders, als sie beschriftet sind.</strong> Wer „Klick plus fünfzehn" sagte, traf nichts. Behoben.</li>
+            <li><strong>Im Geräte-Sync war „Abbrechen" zu klein zum Treffen.</strong> 77 × 24 Pixel – und das ist die Taste, mit der Sie aus <em>jedem</em> Schritt des Syncs wieder herauskommen. Jetzt hat sie die volle Größe.</li>
+            <li><strong>Der QR-Code und die Kameravorschau störten die Sprachausgabe.</strong> Beide tauchten als namenlose Elemente auf, die vorgelesen wurden, ohne etwas zu sagen. Sie sind jetzt übersprungen – der Weg über den eingefügten Textcode, der ohnehin davor steht, bleibt unverändert.</li>
+          </ul>
+        </div>
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.23: Arbeitszeit auf die Minute genau</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>

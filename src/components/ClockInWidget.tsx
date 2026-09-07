@@ -11,7 +11,6 @@ import {
   HelpCircle,
   FileSpreadsheet,
   Plus,
-  MapPin,
 } from "lucide-react";
 import { TimeLog } from "../types";
 import { berechneNettoStunden, teileArbeitszeit } from "../utils/timeUtils";
@@ -246,35 +245,16 @@ export default React.memo(function ClockInWidget({
     setTypedFieldHours("");
   };
 
-  const handleGetLocation = (isManual: boolean) => {
-    if (!navigator.geolocation) {
-      alert("GPS wird von diesem Browser nicht unterstützt.");
-      return;
-    }
-    
-    announceToAriaAndSpeech("Standort wird ermittelt...");
-    
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        // Construct a Google Maps link or just simple coordinates as placeholder
-        // Since we don't have a reverse geocoding API, we'll just write the coords
-        const locationStr = `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-        if (isManual) {
-          setManualNotes((prev) => prev ? `${prev} | ${locationStr}` : locationStr);
-        } else {
-          setNotes((prev) => prev ? `${prev} | ${locationStr}` : locationStr);
-        }
-        announceToAriaAndSpeech("Standort erfolgreich hinzugefügt.");
-      },
-      (error) => {
-        console.error("Error getting location", error);
-        alert("Standort konnte nicht ermittelt werden. Bitte Berechtigungen prüfen.");
-        announceToAriaAndSpeech("Fehler bei der Standortermittlung.");
-      },
-      { timeout: 10000, maximumAge: 60000 }
-    );
-  };
+  /* Hier stand bis 0.9.24 `handleGetLocation` -- ein Abruf von
+     `navigator.geolocation`, dessen Koordinaten in die Schichtnotiz und damit
+     ueber den Excel-Export zur Vertriebsleitung wanderten.
+
+     Entfernt auf Anweisung des Projektinhabers. Was zu der Frage gefuehrt hat,
+     steht im DEVLOG zum 2026-09-07: Die Funktion kam in keinem Dokument des
+     Projekts vor -- nicht im README, nicht in CLAUDE.md, nicht in der ROADMAP,
+     nicht im Konformitaetsbericht, nicht in der Hilfe --, `server.ts` verbietet
+     sie per `Permissions-Policy: geolocation=()`, und Standortdaten von
+     Beschaeftigten sind eine andere Kategorie als Arbeitszeiten. */
 
   const getCalculatedManualShiftValues = () => {
     // Rechnung liegt in utils/timeUtils.ts, damit sie prüfbar ist
@@ -350,14 +330,24 @@ export default React.memo(function ClockInWidget({
   return (
     <div className="p-4 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)] shadow-xs space-y-4">
       {/* Title */}
-      <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-2.5">
-        <h3 className="text-xs font-black uppercase tracking-wider text-[var(--text-color)] flex items-center gap-2">
-          <Clock className="w-4 h-4 text-[var(--accent)]" />
-          <span>⏱️ Echtzeit-Stempeluhr</span>
+      {/* flex-wrap plus min-w-0: Diese Zeile ist nur breit, WAEHREND eine
+          Schicht laeuft -- dann steht das Abzeichen "Aufnahme laeuft" neben der
+          Ueberschrift. Genau deshalb hat sie bis 0.9.23 keine Pruefung gesehen.
+          Gemessen bei 360 px und "Extra gross": 415 px Inhalt, ohne diese Zeile
+          exakt 360. Elfter Fall der Klasse "min-width: auto an Flex-Elementen". */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-color)] pb-2.5">
+        <h3 className="text-xs font-black uppercase tracking-wider text-[var(--text-color)] flex items-center gap-2 min-w-0">
+          <Clock className="w-4 h-4 text-[var(--accent)] flex-shrink-0" />
+          <span className="min-w-0 [overflow-wrap:anywhere]">⏱️ Echtzeit-Stempeluhr</span>
         </h3>
         {clockInTime && (
-          <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--danger-bg)] text-[var(--danger-text)] border border-[var(--danger-border)] text-[0.6875rem] font-black tracking-wide uppercase animate-pulse">
-            ● Aufnahme läuft
+          <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--danger-bg)] text-[var(--danger-text)] border border-[var(--danger-border)] text-[0.6875rem] font-black tracking-wide uppercase flex-shrink-0">
+            {/* Nur der Punkt pulsiert, nicht die Schrift. Mit `animate-pulse`
+                am ganzen Abzeichen sinkt die Deckkraft des TEXTES mit --
+                gemessen 2,82:1 gegen die geforderten 4,5:1 (WCAG 1.4.3).
+                Dasselbe Muster wie beim Abzeichen "Live verbunden". */}
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--danger)] animate-pulse" aria-hidden="true" />
+            Aufnahme läuft
           </span>
         )}
       </div>
@@ -433,14 +423,14 @@ export default React.memo(function ClockInWidget({
                   >
                     Pause abziehen (Minuten):
                   </label>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() =>
                         setBreakMinutes((prev) => Math.max(0, prev - 15))
                       }
-                      className="px-2.5 py-1.5 rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--border-color)] active:scale-90"
-                      aria-label="Pause um 15 Minuten verringern"
+                      className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--border-color)] active:scale-90"
+                      aria-label="-15: Pause um 15 Minuten verringern"
                     >
                       -15
                     </button>
@@ -456,15 +446,15 @@ export default React.memo(function ClockInWidget({
                           Math.max(0, parseInt(e.target.value) || 0),
                         )
                       }
-                      className="flex-1 p-1.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded text-center outline-none"
+                      className="flex-1 min-w-[64px] min-h-[44px] p-1.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded text-center outline-none"
                     />
                     <button
                       type="button"
                       onClick={() =>
                         setBreakMinutes((prev) => Math.min(240, prev + 15))
                       }
-                      className="px-2.5 py-1.5 rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--border-color)] active:scale-90"
-                      aria-label="Pause um 15 Minuten erhöhen"
+                      className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--border-color)] active:scale-90"
+                      aria-label="+15: Pause um 15 Minuten erhöhen"
                     >
                       +15
                     </button>
@@ -503,7 +493,7 @@ export default React.memo(function ClockInWidget({
                             if (p.id === "field") setOfficeRatio(0.0);
                             if (p.id === "half") setOfficeRatio(0.5);
                           }}
-                          className={`p-1.5 rounded border text-[0.75rem] font-black cursor-pointer transition-all ${
+                          className={`p-1.5 min-h-[44px] inline-flex items-center justify-center rounded border text-[0.75rem] font-black cursor-pointer transition-all ${
                             isActive
                               ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-text)]"
                               : "bg-[var(--card-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
@@ -573,7 +563,7 @@ export default React.memo(function ClockInWidget({
                   Tragen Sie die Stunden bei Bedarf direkt manuell ein (mit 2
                   Nachkommastellen):
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label
                       htmlFor="typed-office-hours"
@@ -589,7 +579,7 @@ export default React.memo(function ClockInWidget({
                       placeholder={calculatedOfficeHrs.toFixed(2)}
                       value={typedOfficeHours}
                       onChange={(e) => setTypedOfficeHours(e.target.value)}
-                      className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
+                      className="w-full min-w-0 min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
                     />
                   </div>
                   <div className="space-y-1">
@@ -607,7 +597,7 @@ export default React.memo(function ClockInWidget({
                       placeholder={calculatedFieldHrs.toFixed(2)}
                       value={typedFieldHours}
                       onChange={(e) => setTypedFieldHours(e.target.value)}
-                      className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
+                      className="w-full min-w-0 min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
                     />
                   </div>
                 </div>
@@ -632,23 +622,15 @@ export default React.memo(function ClockInWidget({
                 >
                   Kurzkommentar / besuchte Schule / Ort (optional):
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <input
                     id="shift-notes"
                     type="text"
                     placeholder="z.B. Schulung an blindenschule Hannover, wewalk vorführung..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="flex-1 p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
+                    className="flex-1 min-w-[64px] min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
                   />
-                  <button
-                    type="button"
-                    onClick={() => handleGetLocation(false)}
-                    aria-label="Aktuellen GPS-Standort abrufen und einfügen"
-                    className="px-3 border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] rounded hover:border-[var(--border-focus)] active:scale-95 transition-all flex items-center justify-center"
-                  >
-                    <MapPin className="w-4 h-4 text-[var(--accent)]" aria-hidden="true" />
-                  </button>
                 </div>
               </div>
 
@@ -657,15 +639,15 @@ export default React.memo(function ClockInWidget({
                 <button
                   type="button"
                   onClick={() => setIsFormOpen(false)}
-                  className="flex-1 py-2 px-3 border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg cursor-pointer hover:bg-[var(--bg-color)]"
+                  className="flex-1 min-w-0 min-h-[44px] py-2 px-3 border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg cursor-pointer hover:bg-[var(--bg-color)] [overflow-wrap:anywhere]"
                 >
                   Abbrechen
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 px-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] text-xs font-black rounded-lg cursor-pointer flex items-center justify-center gap-1"
+                  className="flex-1 min-w-0 min-h-[44px] py-2 px-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] text-xs font-black rounded-lg cursor-pointer flex items-center justify-center gap-1 [&>span]:min-w-0 [&>span]:[overflow-wrap:anywhere]"
                 >
-                  <Check className="w-3.5 h-3.5" />
+                  <Check className="w-3.5 h-3.5 flex-shrink-0" />
                   <span>Schicht verbuchen</span>
                 </button>
               </div>
@@ -707,12 +689,17 @@ export default React.memo(function ClockInWidget({
           onSubmit={handleSaveManualShift}
           className="p-4 rounded-xl border-2 border-dashed border-[var(--accent)] bg-[var(--bg-color)] space-y-4 animate-slide-up"
         >
-          <div className="flex items-center justify-between">
-            <h4 className="text-xs font-black uppercase text-[var(--accent)] tracking-wider flex items-center gap-1.5">
-              <Plus className="w-4 h-4" />
-              <span>Schicht manuell nachtragen</span>
+          {/* min-w-0 an Ueberschrift und Text, flex-shrink-0 am Symbol und am
+              Abzeichen: Ohne das gab die Ueberschrift als Flex-Kind ihre Breite
+              nicht unter den Inhalt preis. Gemessen bei 360 px und "Extra
+              gross": ohne diese Zeile fiel die Seite von 407 auf 360 px.
+              Zehnter Fall dieser Klasse in diesem Projekt. */}
+          <div className="flex items-center justify-between gap-2">
+            <h4 className="text-xs font-black uppercase text-[var(--accent)] tracking-wider flex items-center gap-1.5 min-w-0">
+              <Plus className="w-4 h-4 flex-shrink-0" />
+              <span className="min-w-0 [overflow-wrap:anywhere]">Schicht manuell nachtragen</span>
             </h4>
-            <span className="text-[0.75rem] bg-[var(--success-bg)] text-[var(--success-text)] px-2 py-0.5 rounded-full font-black uppercase">
+            <span className="text-[0.75rem] bg-[var(--success-bg)] text-[var(--success-text)] px-2 py-0.5 rounded-full font-black uppercase flex-shrink-0">
               Manuell
             </span>
           </div>
@@ -733,7 +720,7 @@ export default React.memo(function ClockInWidget({
                 max={maxDate}
                 value={manualDate}
                 onChange={(e) => setManualDate(e.target.value)}
-                className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)] cursor-pointer"
+                className="w-full min-w-0 min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)] cursor-pointer"
                 required
               />
             </div>
@@ -751,7 +738,7 @@ export default React.memo(function ClockInWidget({
                 type="time"
                 value={manualClockIn}
                 onChange={(e) => setManualClockIn(e.target.value)}
-                className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)] cursor-pointer"
+                className="w-full min-w-0 min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)] cursor-pointer"
                 required
               />
             </div>
@@ -769,7 +756,7 @@ export default React.memo(function ClockInWidget({
                 type="time"
                 value={manualClockOut}
                 onChange={(e) => setManualClockOut(e.target.value)}
-                className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)] cursor-pointer"
+                className="w-full min-w-0 min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)] cursor-pointer"
                 required
               />
             </div>
@@ -784,14 +771,14 @@ export default React.memo(function ClockInWidget({
               >
                 Pause abziehen (Minuten):
               </label>
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() =>
                     setManualBreakMinutes((prev) => Math.max(0, prev - 15))
                   }
-                  className="px-2.5 py-1.5 rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--border-color)] active:scale-90"
-                  aria-label="Pause um 15 Minuten verringern"
+                  className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--border-color)] active:scale-90"
+                  aria-label="-15: Pause um 15 Minuten verringern"
                 >
                   -15
                 </button>
@@ -807,15 +794,15 @@ export default React.memo(function ClockInWidget({
                       Math.max(0, parseInt(e.target.value) || 0),
                     )
                   }
-                  className="flex-1 p-1.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded text-center outline-none"
+                  className="flex-1 min-w-[64px] min-h-[44px] p-1.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded text-center outline-none"
                 />
                 <button
                   type="button"
                   onClick={() =>
                     setManualBreakMinutes((prev) => Math.min(240, prev + 15))
                   }
-                  className="px-2.5 py-1.5 rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--border-color)] active:scale-90"
-                  aria-label="Pause um 15 Minuten erhöhen"
+                  className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--border-color)] active:scale-90"
+                  aria-label="+15: Pause um 15 Minuten erhöhen"
                 >
                   +15
                 </button>
@@ -851,7 +838,7 @@ export default React.memo(function ClockInWidget({
                         if (p.id === "field") setManualOfficeRatio(0.0);
                         if (p.id === "half") setManualOfficeRatio(0.5);
                       }}
-                      className={`p-1.5 rounded border text-[0.75rem] font-black cursor-pointer transition-all ${
+                      className={`p-1.5 min-h-[44px] inline-flex items-center justify-center rounded border text-[0.75rem] font-black cursor-pointer transition-all ${
                         isActive
                           ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-text)]"
                           : "bg-[var(--card-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
@@ -922,7 +909,7 @@ export default React.memo(function ClockInWidget({
               Tragen Sie die Stunden bei Bedarf direkt manuell ein (mit 2
               Nachkommastellen):
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label
                   htmlFor="typed-manual-office-hours"
@@ -938,7 +925,7 @@ export default React.memo(function ClockInWidget({
                   placeholder={calculatedManualOfficeHrs.toFixed(2)}
                   value={typedManualOfficeHours}
                   onChange={(e) => setTypedManualOfficeHours(e.target.value)}
-                  className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
+                  className="w-full min-w-0 min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
                 />
               </div>
               <div className="space-y-1">
@@ -956,7 +943,7 @@ export default React.memo(function ClockInWidget({
                   placeholder={calculatedManualFieldHrs.toFixed(2)}
                   value={typedManualFieldHours}
                   onChange={(e) => setTypedManualFieldHours(e.target.value)}
-                  className="w-full p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
+                  className="w-full min-w-0 min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
                 />
               </div>
             </div>
@@ -981,23 +968,15 @@ export default React.memo(function ClockInWidget({
             >
               Kurzkommentar / besuchte Schule / Ort (optional):
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <input
                 id="manual-shift-notes"
                 type="text"
                 placeholder="z.B. Schulung an blindenschule Hannover, wewalk vorführung..."
                 value={manualNotes}
                 onChange={(e) => setManualNotes(e.target.value)}
-                className="flex-1 p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
+                className="flex-1 min-w-[64px] min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
               />
-              <button
-                type="button"
-                onClick={() => handleGetLocation(true)}
-                aria-label="Aktuellen GPS-Standort abrufen und einfügen"
-                className="px-3 border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] rounded hover:border-[var(--border-focus)] active:scale-95 transition-all flex items-center justify-center"
-              >
-                <MapPin className="w-4 h-4 text-[var(--accent)]" aria-hidden="true" />
-              </button>
             </div>
           </div>
 
@@ -1006,15 +985,15 @@ export default React.memo(function ClockInWidget({
             <button
               type="button"
               onClick={() => setIsManualOpen(false)}
-              className="flex-1 py-2 px-3 border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg cursor-pointer hover:bg-[var(--bg-color)]"
+              className="flex-1 min-w-0 min-h-[44px] py-2 px-3 border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg cursor-pointer hover:bg-[var(--bg-color)] [overflow-wrap:anywhere]"
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              className="flex-1 py-2 px-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] text-xs font-black rounded-lg cursor-pointer flex items-center justify-center gap-1"
+              className="flex-1 min-w-0 min-h-[44px] py-2 px-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] text-xs font-black rounded-lg cursor-pointer flex items-center justify-center gap-1 [&>span]:min-w-0 [&>span]:[overflow-wrap:anywhere]"
             >
-              <Check className="w-3.5 h-3.5" />
+              <Check className="w-3.5 h-3.5 flex-shrink-0" />
               <span>Schicht manuell verbuchen</span>
             </button>
           </div>

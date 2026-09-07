@@ -10,6 +10,173 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-07 — v0.9.24: Die Formulare der Stempeluhr, und GPS ist raus
+
+Dritter Punkt der Liste: `ClockInWidget` durcharbeiten. Der Ertrag war
+größer als bei den ersten beiden Punkten zusammen.
+
+### Zwei Formulare, die keine Prüfung je gesehen hatte
+
+„Arbeitszeit verbuchen" erscheint erst nach dem Ausstempeln, „Schicht manuell
+nachtragen" hinter einem eigenen Knopf. Über `EINSTIEGE` sind sie nicht
+erreichbar, weil dort auf `activeTab` gezielt wird und beide **Zustände
+innerhalb** der Zeit-Ansicht sind. Dieselbe Lücke wie bei `manage` — nur eine
+Ebene tiefer.
+
+Erster echter Lauf: **neun Fehlschläge, vier Fehlerklassen.**
+
+**Elf Bedienelemente unter 44 px** — in dem Formular, mit dem Arbeitszeit
+erfasst wird:
+
+| Bedienelement | gemessen |
+|---|---|
+| Pause `−15` / `+15` | 46 × **38**, 50 × **38** |
+| Pausenfeld | 86 × **38** |
+| vier Vorwahltasten | 95 × **38** |
+| Datum / Von / Bis | 192 × **42** |
+| Stundenfelder, Notizfeld | 78 × **42**, 199 × **42** |
+| GPS-Knopf | **42 × 42** |
+
+**Reflow bei „Extra groß": 495 px Inhalt in einem 360-px-Fenster** — drei
+verschiedene Ursachen, jede einzeln durch Ausblenden bisektiert:
+
+| Auslöser | Wirkung |
+|---|---|
+| Absendezeile („Abbrechen" / „Schicht manuell verbuchen") | 463 → 407 px |
+| Formularüberschrift mit Abzeichen „Manuell" | 407 → 360 px |
+| Kopfzeile der Karte mit „Aufnahme läuft" | 415 → 360 px |
+
+Alle drei sind derselbe Fall: `min-width: auto` an Flex-Elementen, Fall zehn
+und elf in diesem Projekt. Bei der Absendezeile half `flex-wrap` **nicht** —
+beide Geschwister tragen `flex-1`, also die in `CLAUDE.md` festgehaltene
+Einschränkung. Die Kopfzeile ist nur breit, **während eine Schicht läuft**;
+genau deshalb hat sie nie jemand gemessen.
+
+**Kontrast 2,82:1 statt 4,5:1.** Ursache war `animate-pulse` auf dem **Text**
+des Abzeichens „Aufnahme läuft": Die Animation senkt die Deckkraft, axe misst
+mitten im Puls `#bc8989` auf `#fef8f8`. Jetzt pulsiert nur ein Punkt — das
+Muster, das die App beim Abzeichen „Live verbunden" schon verwendet.
+
+**WCAG 2.5.3:** `+15` hieß zugänglich „Pause um 15 Minuten erhöhen". Wer per
+Sprachsteuerung sagt, was er liest, traf nichts.
+
+**Ein Nebeneffekt der eigenen Korrektur, und das gehört dazu:** Mit `min-w-0`
+durften die Felder schrumpfen — und schrumpften bei „Extra groß" auf 20 px
+(Pausenfeld), 28 px (Stundenfelder), 38 px (Notizfeld). Die Lösung war nicht,
+`min-w-0` zurückzunehmen, sondern zu **stapeln**: Das feste Zweispaltenraster
+der Stundenfelder bekommt einen Umbruchpunkt, Pausen- und Notizzeile dürfen
+umbrechen, und beide Felder behalten einen Boden von 64 px.
+
+### GPS ist entfernt
+
+Die App hatte zwei Knöpfe „Aktuellen GPS-Standort abrufen und einfügen" — in
+beiden Formularen, unbedingt sichtbar. Auf Anweisung des Projektinhabers
+entfernt: zwei Knöpfe, die Funktion `handleGetLocation`, der Import.
+
+Was zu der Frage geführt hat, in der Reihenfolge, in der es auffiel:
+
+1. **Die Funktion kam in keinem Dokument des Projekts vor.** Nicht im README,
+   nicht in `CLAUDE.md`, nicht in der ROADMAP, nicht im Konformitätsbericht,
+   nicht in der Hilfe, nicht im Changelog. Geprüft mit einer Suche über alle
+   sechs Dateien: null Treffer.
+2. **Die Koordinaten verließen das Gerät nicht nur theoretisch.** Sie wurden
+   an die Schichtnotiz angehängt, und Schichtnotizen gehen über
+   `vorlageExport.ts:219` in den Excel-Export — also an die Vertriebsleitung.
+   Die Kette ist vollständig belegt, nicht vermutet.
+3. **`server.ts:20` verbietet die Funktion ausdrücklich:**
+   `Permissions-Policy: camera=(self), microphone=(), geolocation=()`. Die App
+   nutzte eine Schnittstelle, die ihre eigene Sicherheitsrichtlinie sperrt.
+4. **Standortdaten von Beschäftigten sind eine andere Kategorie als
+   Arbeitszeiten.** Die ROADMAP führt den Betriebsrat bereits als offene
+   Frage — ausdrücklich wegen der *Stempeluhr*. Ortsdaten sind ein eigener,
+   schärferer Sachverhalt, und den hatte niemand auf dem Zettel. Das ist keine
+   Rechtsauskunft, sondern der Grund, warum die Frage gestellt gehörte.
+
+### Ein zweiter Befund aus derselben Spur: die Sicherheits-Header sind wirkungslos
+
+Beim Nachsehen zu Punkt 3 oben: **Die laufende Seite sendet keinen einzigen
+der in `server.ts` gesetzten Header.** Nachgemessen mit `curl -I` gegen
+`nichtseher.github.io` — weder `Permissions-Policy` noch
+`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` noch die strikte
+`Content-Security-Policy` aus dem Produktionszweig.
+
+Der Grund ist strukturell: `server.ts` ist nicht der Produktionsserver. Was
+ausliefert, ist GitHub Pages, und Pages setzt keine eigenen Header. Die
+gesamte Header-Konfiguration wirkt ausschließlich lokal.
+
+**Nicht geändert.** Eine `Content-Security-Policy` ließe sich als
+`<meta http-equiv>` in die `index.html` legen und würde dort auch greifen —
+aber eine falsch gefasste CSP legt die App still lahm, und die Entscheidung
+über Fremdquellen gehört zum Sicherheitskonzept, nicht in einen Nachtrag.
+Benannt, mit dem Messweg dabei.
+
+### Und dieselbe Lücke ein drittes Mal: die Zustände des Geräte-Syncs
+
+`mode` in `DeviceSyncModal` kennt **sechs** Werte. Über `EINSTIEGE` wird immer
+nur `select` erreicht — das Startmenü. Alles dahinter hatte bis 0.9.24 keine
+Prüfung gesehen. Vier Zustände sind ohne zweites Gerät erreichbar; sie sind
+jetzt drin.
+
+| Befund | Wirkung |
+|---|---|
+| **„Abbrechen" 77 × 24 px** (bei „Extra groß" 115 × 36) | Es ist die Ausstiegstaste aus **jedem** Sync-Zustand — als Textlink gebaut, ohne Polsterung |
+| **QR-Code ohne zugänglichen Namen** | `svg-img-alt`: ein `<svg>` ohne Rolle und ohne Namen steht als namenloses Element im Baum der Hilfstechnik |
+| **Kameravorschau mit unzulässigem `aria-label`** | `aria-prohibited-attr`: `aria-label` auf einem `<div>` ohne Rolle |
+
+Bei den letzten beiden ist die Antwort nicht ein Alternativtext, sondern
+`aria-hidden`: Ein QR-Muster liest niemand vor, und ein Kamerabild
+auszurichten ist genau der Weg, den diese Zielgruppe nicht gehen kann. Der
+zugängliche Weg steht daneben und seit 0.9.17 bewusst **davor** — das
+Einfügefeld für den Textcode.
+
+**Was der Code selbst hergab: nichts.** `DeviceSyncModal` ist merklich
+sorgfältiger gebaut als `ClockInWidget` — `pruefeSyncPaket()` läuft vor jedem
+Angebot an den Nutzer, das Ersetzen fragt mit konkreten Zahlen zurück, jeder
+Fehlerfall des Einfüge-Wegs hat eine eigene deutsche Meldung, und die
+Statusmeldungen liegen in einem **dauerhaft vorhandenen** `role="status"`-
+Bereich. Der Fokus-Trap ist hier richtig, weil dieses Fenster ein echtes
+Overlay ist. Das passt zur Historie: Der Bereich wurde in 0.9.5 geprüft und in
+0.9.17 überarbeitet. Die Defekte lagen ausschließlich dort, wo nie jemand
+hingesehen hat.
+
+### Ein Verfahrensfehler, der drei Runden gekostet hat
+
+Nach den ersten Korrekturen an `DeviceSyncModal` meldete die Prüfung
+unverändert `77 × 24`. Die alten Klassen standen nicht mehr in der Datei,
+`tsc` war sauber, keine andere Datei enthielt sie — und der Browser zeigte sie
+trotzdem. **Der Entwicklungsserver lieferte ein veraltetes Modul.**
+
+Die Gegenprobe ist eine Zeile: die tatsächliche `className` in der Seite
+auslesen und mit der Datei vergleichen. Weichen sie ab, gehört der Server auf
+Port 3000 gestoppt. In `CLAUDE.md` nachgetragen — als Spiegelbild der schon
+vorhandenen Regel „nicht während eines Laufs editieren": Nicht nur der Lauf
+geht schief, auch der Server danach.
+
+### Stand der Prüfung
+
+`check:ui` deckt jetzt auch die beiden Formulare der Stempeluhr und vier der
+sechs Sync-Zustände ab: Trefferflächen und Reflow bei „normal" und „Extra
+groß", WCAG 2.5.3, axe. Gezählt im Lauf: **24** Prüfungen für die Formulare,
+**48** für die Sync-Zustände, jeweils über die drei Geräteprofile.
+
+Voller Lauf am 2026-09-07: `tsc --noEmit` sauber, 152 Funktionsprüfungen
+bestanden, 459 Oberflächenprüfungen angemeldet, davon **262 ausgeführt und
+bestanden**, 197 durch Profil- und Schemafilter übersprungen, 7,8 min, Exit 0.
+
+Ein Vorlauf desselben Standes hatte einen einzelnen Fehlschlag gemeldet —
+„Analyse: jedes Bedienelement per Tabulator erreichbar", derselbe Fall, der
+schon vorher sporadisch umfiel. Einzeln dreimal nicht reproduzierbar, im
+Wiederholungslauf grün. Er wird als **sporadisch** geführt, nicht als behoben.
+
+### Was weiterhin offen ist
+
+Zwei Sync-Zustände (`confirm` und die aufgebaute Live-Verbindung) brauchen ein
+zweites Gerät und sind deshalb weiterhin ungeprüft. Dazu die
+Archivbearbeitung, die Schnell-Erfassung und der Ersteinstieg mit wirklich
+leerem Speicher.
+
+---
+
 ## 2026-09-07 — v0.9.23: Eine Schicht war 36 Sekunden zu lang
 
 Auf die Frage „funktioniert wirklich alles?" habe ich die Abläufe durchgespielt,

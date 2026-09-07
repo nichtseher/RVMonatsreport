@@ -747,6 +747,62 @@ dauerhaft.
 
 ---
 
+## 0.9.24 — Die Formulare der Stempeluhr, und GPS ist raus — ERLEDIGT (2026-09-07)
+
+**GPS ist entfernt** (Anweisung des Projektinhabers). Zwei Knöpfe „Aktuellen
+GPS-Standort abrufen und einfügen", die Funktion, der Import. Was zur Frage
+führte: Die Funktion kam in **keinem** Dokument des Projekts vor; ihre
+Koordinaten wanderten über die Schichtnotiz in den Excel-Export zur
+Vertriebsleitung; `server.ts` verbietet sie per
+`Permissions-Policy: geolocation=()`; und Ortsdaten von Beschäftigten sind ein
+anderer Sachverhalt als Arbeitszeiten — die offene Frage zum Betriebsrat in
+dieser Datei nennt ausdrücklich nur die Stempeluhr.
+
+**Zwei Formulare, die keine Prüfung je gesehen hatte.** „Arbeitszeit
+verbuchen" und „Schicht manuell nachtragen" sind Zustände *innerhalb* der
+Zeit-Ansicht, nicht eigene `activeTab`-Werte — über `EINSTIEGE` also nicht
+erreichbar. Erster echter Lauf: neun Fehlschläge.
+
+| Klasse | Befund |
+|---|---|
+| Trefferflächen | **elf** Bedienelemente unter 44 px, das kleinste 38 px hoch |
+| Reflow | 495 px Inhalt in 360 px, **drei** getrennte Ursachen (Absendezeile, Formularüberschrift, Kartenkopf) |
+| Kontrast | 2,82:1 — `animate-pulse` senkt die Deckkraft des Textes |
+| WCAG 2.5.3 | `+15` hieß zugänglich „Pause um 15 Minuten erhöhen" |
+
+Die Kartenkopfzeile ist nur breit, **während eine Schicht läuft** — deshalb
+hatte sie nie jemand gemessen.
+
+### Dieselbe Lücke ein drittes Mal: die Zustände des Geräte-Syncs
+
+`mode` kennt sechs Werte, das Prüfnetz erreichte nur `select`. Vier davon
+sind ohne zweites Gerät erreichbar und jetzt abgedeckt. Befunde:
+**„Abbrechen" mit 77 × 24 px** — die Ausstiegstaste aus jedem Sync-Schritt —,
+ein QR-Code ohne zugänglichen Namen und eine Kameravorschau mit unzulässigem
+`aria-label`. Die beiden letzten sind mit `aria-hidden` gelöst, nicht mit
+einem Alternativtext: Ein QR-Muster liest niemand vor.
+
+**Der Code selbst gab nichts her.** `DeviceSyncModal` ist deutlich sorgfältiger
+gebaut als `ClockInWidget`; die Defekte lagen ausschließlich in den Zuständen,
+die nie jemand angesehen hat. `confirm` bleibt ungeprüft — er verlangt ein
+gültiges eingegangenes Paket und damit ein zweites Gerät.
+
+### Benannt, nicht geändert: die Sicherheits-Header wirken nicht
+
+Die laufende Seite sendet **keinen** der in `server.ts` gesetzten Header —
+nachgemessen mit `curl -I`: weder `Permissions-Policy` noch
+`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` noch die
+strikte `Content-Security-Policy`. Der Grund ist strukturell: `server.ts` ist
+nicht der Produktionsserver, ausgeliefert wird von GitHub Pages, und Pages
+setzt keine eigenen Header.
+
+Eine CSP ließe sich als `<meta http-equiv>` in die `index.html` legen und
+würde dort greifen. Das ist aber eine Entscheidung des Sicherheitskonzepts —
+eine falsch gefasste CSP legt die App still lahm —, und sie gehört nicht in
+einen Nachtrag.
+
+---
+
 ## 0.9.23 — Eine Schicht war 36 Sekunden zu lang — ERLEDIGT (2026-09-07)
 
 Ergebnis der Frage „funktioniert wirklich alles?" -- durchgespielt wurden die

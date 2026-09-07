@@ -1540,3 +1540,158 @@ test.describe("WCAG 2.5.3: Name enthält die sichtbare Beschriftung", () => {
     });
   }
 });
+
+/**
+ * Die beiden Formulare der Stempeluhr.
+ *
+ * Warum es das gibt: Sie erscheinen erst nach einer Handlung -- „Ausstempeln"
+ * öffnet „Arbeitszeit verbuchen", ein eigener Knopf öffnet „Schicht manuell
+ * nachtragen". Über `EINSTIEGE` sind sie nicht erreichbar, weil der Eintrag
+ * dort auf `activeTab` zielt und diese Formulare ein Zustand *innerhalb* der
+ * Zeit-Ansicht sind. Bis 0.9.23 hat sie deshalb **keine** Prüfung je gesehen.
+ *
+ * Was darin steckt: Pausen-Tasten, vier Vorwahl-Schaltflächen, ein
+ * Schieberegler, zwei Zahlenfelder, ein Notizfeld, der GPS-Knopf und der
+ * Absender. Dieselbe Lage wie bei `manage` — und dort waren es beim ersten
+ * echten Lauf fünf Defekte.
+ *
+ * Das Einstempeln schreibt einen Zeitstempel nach `localStorage`; der Test
+ * räumt ihn zu Beginn weg, damit er nicht auf dem Stand eines früheren Laufs
+ * aufsetzt.
+ */
+const ZEIT_FORMULARE = [
+  {
+    name: "Arbeitszeit verbuchen",
+    oeffne: async (page: Page) => {
+      await oeffne(page, "time");
+      await page.getByRole("button", { name: /Jetzt Einstempeln/ }).first().click();
+      await page.waitForTimeout(400);
+      await page.getByRole("button", { name: /Ausstempeln/ }).first().click();
+      await page.getByRole("heading", { name: /Arbeitszeit verbuchen/ }).first()
+        .waitFor({ state: "visible", timeout: 15_000 });
+      await page.waitForTimeout(300);
+    },
+  },
+  {
+    name: "Schicht nachtragen",
+    oeffne: async (page: Page) => {
+      await oeffne(page, "time");
+      await page.getByRole("button", { name: /Schicht manuell nachtragen|Vergessene Schicht/ }).first().click();
+      await page.getByRole("heading", { name: /Schicht manuell nachtragen/ }).first()
+        .waitFor({ state: "visible", timeout: 15_000 });
+      await page.waitForTimeout(300);
+    },
+  },
+] as const;
+
+test.describe("Formulare der Stempeluhr", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.removeItem("aussendienst_pwa_clockin");
+    });
+  });
+
+  for (const formular of ZEIT_FORMULARE) {
+    for (const groesse of ["normal", "extra-large"] as const) {
+      test(`${formular.name} bei ${groesse}`, async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name === "handy-webkit", "Geometrie haengt nicht am Motor");
+        await formular.oeffne(page);
+        await setzeSchriftgroesse(page, groesse);
+        await warteAufRuhigesLayout(page);
+        await pruefeGeometrie(page, `${formular.name} / ${groesse}`);
+      });
+    }
+
+    test(`${formular.name}: kein Name ersetzt die Beschriftung`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "Namen haengen nicht am Geraeteprofil");
+      await formular.oeffne(page);
+      const verstoesse = await findeNamensverstoesse(page);
+      expect(verstoesse, `${formular.name}: ${verstoesse.join(" | ")}`).toEqual([]);
+    });
+
+    test(`${formular.name} ohne schwere Verstöße`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "axe haengt nicht am Motor");
+      await formular.oeffne(page);
+      const ergebnis = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+        .analyze();
+      const befunde = ergebnis.violations
+        .filter((v) => v.impact === "critical" || v.impact === "serious")
+        .flatMap((v) => v.nodes.map((n) => `${v.id} @ ${n.target.join(" ")} — ${n.failureSummary?.replace(/\s+/g, " ").trim()}`));
+      expect(befunde, `${formular.name}`).toEqual([]);
+    });
+  }
+});
+
+/**
+ * Die Zustände des Geräte-Syncs.
+ *
+ * Warum es das gibt: `mode` in `DeviceSyncModal` kennt **sechs** Werte —
+ * `select`, `send`, `receive`, `confirm`, `live-host`, `live-join`. Über
+ * `EINSTIEGE` wird immer nur `select` erreicht, also das Startmenü. Alles
+ * dahinter — der QR-Code mit dem Textcode daneben, der Empfangsbildschirm mit
+ * dem Einfügefeld, die beiden Kopplungsschritte — hat bis 0.9.24 keine
+ * Prüfung gesehen. Dieselbe Klasse wie bei `manage` (fünf Defekte) und den
+ * Formularen der Stempeluhr (vier Fehlerklassen).
+ *
+ * Verankert wird über das Verschwinden des Startmenüs, weil diese Zustände
+ * keine eigene Überschrift tragen. Die Kamera fehlt im Prüfbrowser — das ist
+ * kein Mangel des Tests, sondern genau die Lage eines PCs ohne Webcam, und
+ * für diese Zielgruppe der Normalfall.
+ *
+ * `confirm` bleibt ungeprüft: Dieser Zustand verlangt ein gültiges
+ * eingegangenes Paket, und das lässt sich ohne zweites Gerät nicht herstellen.
+ * Ausdrücklich benannt statt stillschweigend übergangen.
+ */
+const SYNC_ZUSTAENDE = [
+  { name: "Sync: senden", einstieg: /Daten an anderes Gerät senden/ },
+  { name: "Sync: empfangen", einstieg: /Daten von anderem Gerät übernehmen/ },
+  { name: "Sync: Live starten", einstieg: /Live-Verbindung starten/ },
+  { name: "Sync: Live beitreten", einstieg: /Live-Verbindung beitreten/ },
+] as const;
+
+async function oeffneSyncZustand(page: Page, eintrag: (typeof SYNC_ZUSTAENDE)[number]) {
+  await oeffne(page, "options");
+  await page.getByRole("button", { name: /Geräte-Sync/ }).first().click();
+  await page.getByRole("heading", { name: /Geräte-Synchronisation/ }).first()
+    .waitFor({ state: "visible", timeout: 15_000 });
+  const start = page.getByRole("button", { name: eintrag.einstieg });
+  await start.first().click();
+  // Das Startmenü verschwindet, sobald der Zustand gewechselt hat.
+  await page.getByRole("button", { name: /Daten an anderes Gerät senden/ })
+    .waitFor({ state: "detached", timeout: 15_000 });
+  await page.waitForTimeout(700);
+}
+
+test.describe("Zustände des Geräte-Syncs", () => {
+  for (const zustand of SYNC_ZUSTAENDE) {
+    for (const groesse of ["normal", "extra-large"] as const) {
+      test(`${zustand.name} bei ${groesse}`, async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name === "handy-webkit", "Geometrie haengt nicht am Motor");
+        await oeffneSyncZustand(page, zustand);
+        await setzeSchriftgroesse(page, groesse);
+        await warteAufRuhigesLayout(page);
+        await pruefeGeometrie(page, `${zustand.name} / ${groesse}`);
+      });
+    }
+
+    test(`${zustand.name}: kein Name ersetzt die Beschriftung`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "Namen haengen nicht am Geraeteprofil");
+      await oeffneSyncZustand(page, zustand);
+      const verstoesse = await findeNamensverstoesse(page);
+      expect(verstoesse, `${zustand.name}: ${verstoesse.join(" | ")}`).toEqual([]);
+    });
+
+    test(`${zustand.name} ohne schwere Verstöße`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "axe haengt nicht am Motor");
+      await oeffneSyncZustand(page, zustand);
+      const ergebnis = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+        .analyze();
+      const befunde = ergebnis.violations
+        .filter((v) => v.impact === "critical" || v.impact === "serious")
+        .flatMap((v) => v.nodes.map((n) => `${v.id} @ ${n.target.join(" ")} — ${n.failureSummary?.replace(/\s+/g, " ").trim()}`));
+      expect(befunde, `${zustand.name}`).toEqual([]);
+    });
+  }
+});
