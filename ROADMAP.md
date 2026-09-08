@@ -910,6 +910,32 @@ gebaut als `ClockInWidget`; die Defekte lagen ausschließlich in den Zuständen,
 die nie jemand angesehen hat. `confirm` bleibt ungeprüft — er verlangt ein
 gültiges eingegangenes Paket und damit ein zweites Gerät.
 
+> **Nachtrag 0.9.30 (2026-09-08): `confirm` ist geprüft — die Begründung oben
+> war falsch.** „Ein gültiges eingegangenes Paket und damit ein zweites Gerät"
+> wirft zwei Dinge zusammen, die nichts miteinander zu tun haben. Playwright
+> öffnet zwei unabhängige Browserkontexte — das *sind* zwei Geräte, mit
+> getrennten Speichern —, und der kameralose Weg über den Textcode ist seit
+> 0.9.17 der bewusst vorgezogene. Was wirklich fehlt, ist eine **Kamera**,
+> nicht ein zweites Gerät.
+>
+> Der ganze Ablauf läuft jetzt im Prüfnetz: Code auf A bauen und kopieren, auf
+> B einfügen, `confirm` erreichen, zusammenführen — und danach im Speicher von
+> B nachsehen, ob **beide** Stände da sind.
+>
+> **Der erste Lauf hat einen Datenfehler gefunden**, den sechs Versionen lang
+> niemand gesehen hat: `mergeSyncPayload` spiegelte den aktiven Monat des
+> Senders auch dann ins Archiv des Empfängers, wenn er **leer** war. Wer sich
+> am Monatsanfang abgleicht, bekam bei jedem Abgleich einen Eintrag
+> „Zähler: 0" — genau das Symptom, gegen das `monthHasContent` schon
+> existiert; der Monatswechsel war abgesichert, das Spiegeln beim Sync nicht.
+> Behoben mit einer Bedingung, drei Prüffällen und der Gegenprobe, dass beide
+> Tore ohne die Korrektur wirklich rot werden.
+>
+> Offen bleiben der QR-Weg (braucht eine Kamera) und die aufgebaute
+> Live-Verbindung. Die neue Prüfung läuft nur im Chromium-Profil — zwei
+> Kontexte plus Zwischenablage sind in WebKit nicht auf demselben Weg zu
+> bekommen; das ist eine Grenze des Werkzeugs, kein Befund über die App.
+
 ### Benannt, nicht geändert: die Sicherheits-Header wirken nicht
 
 Die laufende Seite sendet **keinen** der in `server.ts` gesetzten Header —

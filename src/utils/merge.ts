@@ -6,6 +6,7 @@ import {
   ReportData,
   ValueTimestamps,
 } from "../types";
+import { monthHasContent } from "./monatInhalt";
 
 /**
  * Zusammenführen zweier Datenstände (statt Überschreiben).
@@ -192,8 +193,26 @@ export function mergeSyncPayload(
   // Fallback für ältere Datenstände, in denen der aktive Monat des Senders
   // noch nicht im Archiv gespiegelt war: als "ältesten" Stand einreihen,
   // damit er nur greift, wenn lokal nichts existiert.
+  /*
+    ...aber nur, wenn dieser Monat ueberhaupt etwas enthaelt.
+
+    Ohne die Inhaltspruefung spiegelt jeder Sync den aktiven Monat des Senders
+    ins Archiv des Empfaengers -- auch einen vollstaendig leeren. Gemessen am
+    2026-09-07 mit zwei gekoppelten Browserkontexten: Nach dem Zusammenfuehren
+    stand im Archiv des Empfaengers ein Eintrag "2026-09" mit leeren `values`,
+    leeren Notizen und ohne Schichten.
+
+    Genau dieses Symptom beschreibt `monatInhalt.ts` als Grund fuer
+    `monthHasContent`: "Die Liste fuellte sich mit Eintraegen 'Zaehler: 0'".
+    Wer am Monatsanfang synchronisiert -- also bevor die erste Zahl steht --
+    handelte sich das bei jedem Abgleich neu ein.
+
+    Die Absicht des Spiegelns bleibt unangetastet: Ein Sender, dessen
+    Arbeitsstand noch nicht im Archiv liegt, soll ihn nicht verlieren. Nur
+    gibt es an einem leeren Monat nichts zu verlieren.
+  */
   const remoteReport = remote.reportData;
-  if (remoteReport?.month && !remoteHistory[remoteReport.month]) {
+  if (remoteReport?.month && !remoteHistory[remoteReport.month] && monthHasContent(remoteReport)) {
     remoteHistory[remoteReport.month] = {
       month: remoteReport.month,
       name: remoteReport.name || "",

@@ -2466,6 +2466,190 @@ test.describe("Zeit-Ansicht mit Schichten", () => {
 });
 
 /**
+ * Zwei Geräte, echt gekoppelt.
+ *
+ * Diese beiden Zustände standen bis 0.9.29 als „braucht ein zweites Gerät,
+ * deshalb nicht prüfbar" in DEVLOG und ROADMAP. Das war zu schnell
+ * geschlossen: Playwright kann zwei unabhängige Browserkontexte öffnen, und
+ * der kameralose Weg über den Textcode ist vollständig automatisierbar. Was
+ * wirklich fehlt, ist eine Kamera — nicht ein zweites Gerät.
+ *
+ * Geprüft wird damit:
+ *
+ * - **`confirm`**: Gerät A baut einen Datencode, Gerät B fügt ihn ein und
+ *   landet in der Rückfrage „Zusammenführen oder Ersetzen". Dieser Zustand
+ *   trägt die folgenreichste Entscheidung der ganzen App — „Alles ersetzen"
+ *   überschreibt das Archiv des empfangenden Geräts.
+ * - **Das Zusammenführen selbst**: Nach „Zusammenführen" müssen BEIDE Stände
+ *   da sein. Die reinen Prüfungen zu `mergeSyncPayload` decken die Rechnung
+ *   ab, nicht aber den Weg durch die Oberfläche.
+ *
+ * Die Zwischenablage braucht in Chromium eine Berechtigung; sie wird dem
+ * Kontext hier ausdrücklich erteilt. Im WebKit-Profil läuft das nicht und die
+ * Prüfung wird dort übersprungen — das ist eine Grenze des Prüfwerkzeugs, kein
+ * Befund über die App.
+ */
+async function oeffneSyncMitBestand(
+  page: Page,
+  monate: Record<string, unknown>,
+  laufenderMonat: Record<string, unknown>,
+) {
+  await page.route("**/leerseite-fuer-zweigeraet", (route) =>
+    route.fulfill({ contentType: "text/html", body: "<!doctype html><title>leer</title>" }),
+  );
+  await page.goto("/leerseite-fuer-zweigeraet");
+  await page.evaluate(
+    async ({ archiv, bericht }) => {
+      const db = await new Promise<IDBDatabase>((res, rej) => {
+        const r = indexedDB.open("keyval-store", 1);
+        r.onupgradeneeded = () => {
+          if (!r.result.objectStoreNames.contains("keyval")) r.result.createObjectStore("keyval");
+        };
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+      });
+      const schreibe = (k: string, v: unknown) =>
+        new Promise<void>((res, rej) => {
+          const t = db.transaction("keyval", "readwrite");
+          t.objectStore("keyval").put(v, k);
+          t.oncomplete = () => res();
+          t.onerror = () => rej(t.error);
+        });
+      await schreibe("aussendienst_pwa_history", archiv);
+      await schreibe("aussendienst_pwa_data", bericht);
+    },
+    { archiv: monate, bericht: laufenderMonat },
+  );
+
+  await page.addInitScript(() => {
+    localStorage.setItem("aussendienst_pwa_onboarding_v1", "1");
+  });
+  await page.goto("/?tab=options", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: /Geräte-Sync/ }).first().click();
+  await page
+    .getByRole("heading", { name: /Geräte-Synchronisation/ })
+    .first()
+    .waitFor({ state: "visible", timeout: 20_000 });
+}
+
+function monat(m: string, feld: string, wert: number) {
+  return {
+    month: m,
+    name: "Marc Petry",
+    notes: "",
+    values: { [feld]: wert },
+    valuesUpdatedAt: { [feld]: `${m}-15T10:00:00.000Z` },
+    fieldsSnapshot: {},
+    savedAt: `${m}-28T10:00:00.000Z`,
+    timeLogs: [],
+  };
+}
+
+test.describe("Zwei Geräte über den Textcode", () => {
+  test("Empfangen führt in die Rückfrage und das Zusammenführen erhält beide Stände", async ({
+    browser,
+    baseURL,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "handy",
+      "Zwei Kontexte plus Zwischenablage laufen nur im Chromium-Profil",
+    );
+    test.setTimeout(120_000);
+
+    // baseURL steht im obersten `use` der Konfiguration, nicht je Profil --
+    // `testInfo.project.use.baseURL` waere hier undefined. Playwright reicht
+    // es als Fixture durch, und das ist der verlaessliche Weg.
+    const basis = baseURL as string;
+    const kontextA = await browser.newContext({
+      baseURL: basis,
+      permissions: ["clipboard-read", "clipboard-write"],
+    });
+    const kontextB = await browser.newContext({
+      baseURL: basis,
+      permissions: ["clipboard-read", "clipboard-write"],
+    });
+
+    try {
+      const a = await kontextA.newPage();
+      const b = await kontextB.newPage();
+
+      // Gerät A kennt den Juni, Gerät B den Juli. Nach dem Zusammenführen
+      // müssen auf B BEIDE Monate stehen -- das ist der Unterschied zwischen
+      // „zusammenführen" und „ersetzen", und er ist in dieser App schon einmal
+      // schiefgegangen (bis 0.9.0 gewann schlicht der jüngere Stand).
+      await oeffneSyncMitBestand(a, { "2026-06": monat("2026-06", "s1_1", 7) }, {
+        month: "2026-09", name: "Marc Petry", notes: "", values: {}, valuesUpdatedAt: {}, timeLogs: [],
+      });
+      await oeffneSyncMitBestand(b, { "2026-07": monat("2026-07", "s1_1", 4) }, {
+        month: "2026-09", name: "Marc Petry", notes: "", values: {}, valuesUpdatedAt: {}, timeLogs: [],
+      });
+
+      // A: senden -> Code kopieren
+      await a.getByRole("button", { name: /Daten an anderes Gerät senden/ }).click();
+      const kopieren = a.getByRole("button", { name: /Code kopieren/ });
+      await kopieren.waitFor({ state: "visible", timeout: 20_000 });
+      await kopieren.click();
+      await a.waitForTimeout(600);
+      const code = await a.evaluate(() => navigator.clipboard.readText());
+      expect(code.startsWith("RVC1:"), `Kopierter Code beginnt nicht mit RVC1: (${code.slice(0, 20)})`).toBe(true);
+
+      // B: empfangen -> Code einfügen -> übernehmen
+      await b.getByRole("button", { name: /Daten von anderem Gerät übernehmen/ }).click();
+      await b.locator("#paste-code-input").waitFor({ state: "visible", timeout: 20_000 });
+      await b.locator("#paste-code-input").fill(code);
+      await b.getByRole("button", { name: /Code übernehmen/ }).click();
+
+      // Das ist `confirm` -- der Zustand, der bis hierher nie gemessen wurde.
+      const zusammenfuehren = b.getByRole("button", { name: /Zusammenführen/ });
+      await zusammenfuehren.waitFor({ state: "visible", timeout: 20_000 });
+
+      // „Alles ersetzen" verwirft das lokale Archiv -- die Rückfrage muss
+      // deshalb beziffern, WAS dabei verlorenginge. Gerät B hat genau einen
+      // Monat archiviert, die Zeile muss ihn also benennen.
+      //
+      // Hier stand zuerst `/\d/` auf dem gesamten Seitentext. Das ist keine
+      // Prüfung, sondern eine Formalie: Es trifft jede Versionsnummer und
+      // jede Monatsangabe und bliebe selbst dann grün, wenn die Zahl aus der
+      // Rückfrage verschwindet -- also genau im Schadensfall.
+      const ersetzenHinweis = b.locator("p", { hasText: /Überschreibt/ }).first();
+      await expect(
+        ersetzenHinweis,
+        "Die Rückfrage beziffert nicht, was ein Ersetzen verwerfen würde",
+      ).toContainText("1 Monat im Archiv");
+
+      await zusammenfuehren.click();
+      await b.waitForTimeout(2500);
+
+      const monateAufB = await b.evaluate(async () => {
+        const db = await new Promise<IDBDatabase>((res, rej) => {
+          const r = indexedDB.open("keyval-store", 1);
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => rej(r.error);
+        });
+        const wert = await new Promise<any>((res, rej) => {
+          const t = db.transaction("keyval", "readonly");
+          const q = t.objectStore("keyval").get("aussendienst_pwa_history");
+          q.onsuccess = () => res(q.result);
+          q.onerror = () => rej(t.error);
+        });
+        return Object.keys(wert || {}).sort();
+      });
+
+      expect(
+        monateAufB,
+        "Erwartet werden GENAU die beiden Archivmonate. Fehlt einer, ist es der " +
+          "Datenverlust, den die Zeitstempel je Feld seit 0.9.0 verhindern sollen. " +
+          "Steht ein dritter da, ist es der leere aktive Monat des Senders — siehe " +
+          "monthHasContent in mergeSyncPayload (0.9.30).",
+      ).toEqual(["2026-06", "2026-07"]);
+    } finally {
+      await kontextA.close();
+      await kontextB.close();
+    }
+  });
+});
+
+/**
  * Zustände mit breiter Schrift.
  *
  * Warum es das gibt: Der Block „Breitere Schrift als hier installiert" läuft

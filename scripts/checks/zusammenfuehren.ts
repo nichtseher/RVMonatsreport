@@ -131,6 +131,59 @@ pruefe("beide Geräte kommen auf denselben Stand", () => {
   gleich(seiteB.reportData?.values, seiteA.reportData?.values);
 });
 
+gruppe("Spiegeln des aktiven Monats");
+
+/*
+  Der Sender spiegelt seinen aktiven Monat ins Archiv des Empfaengers, falls
+  der dort fehlt -- als "aeltester" Stand, damit er nur greift, wenn lokal
+  nichts existiert. Richtig und gewollt.
+
+  Bis 0.9.30 geschah das aber unabhaengig vom Inhalt. Gemessen am 2026-09-07
+  mit zwei gekoppelten Browserkontexten: Nach dem Zusammenfuehren stand im
+  Archiv des Empfaengers ein Eintrag "2026-09" mit leeren Werten, leerer Notiz
+  und ohne Schichten -- genau das Symptom, das `monthHasContent` verhindern
+  soll ("Die Liste fuellte sich mit Eintraegen 'Zaehler: 0'").
+*/
+
+const leererBericht: ReportData = {
+  month: "2026-09", name: "M", notes: "", values: {}, valuesUpdatedAt: {}, timeLogs: [],
+};
+
+pruefe("ein leerer aktiver Monat wandert NICHT ins Archiv", () => {
+  const ergebnis = mergeSyncPayload(
+    { appFields: felder, history: {}, carryover: uebertrag, reportData: null },
+    { appFields: felder, history: {}, carryover: uebertrag, reportData: leererBericht },
+  );
+  gleich(Object.keys(ergebnis.history), []);
+});
+
+pruefe("ein aktiver Monat mit Zahlen wandert weiterhin ins Archiv", () => {
+  const ergebnis = mergeSyncPayload(
+    { appFields: felder, history: {}, carryover: uebertrag, reportData: null },
+    {
+      appFields: felder,
+      history: {},
+      carryover: uebertrag,
+      reportData: { ...leererBericht, values: { vf_schule: 3 } },
+    },
+  );
+  gleich(Object.keys(ergebnis.history), ["2026-09"]);
+  gleich(ergebnis.history["2026-09"]?.values, { vf_schule: 3 });
+});
+
+pruefe("ein aktiver Monat mit nur einer Notiz wandert ebenfalls ins Archiv", () => {
+  const ergebnis = mergeSyncPayload(
+    { appFields: felder, history: {}, carryover: uebertrag, reportData: null },
+    {
+      appFields: felder,
+      history: {},
+      carryover: uebertrag,
+      reportData: { ...leererBericht, notes: "Messewoche" },
+    },
+  );
+  gleich(Object.keys(ergebnis.history), ["2026-09"]);
+});
+
 gruppe("Stabile Textform");
 
 pruefe("Schlüsselreihenfolge ändert das Ergebnis nicht", () => {

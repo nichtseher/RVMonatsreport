@@ -10,6 +10,139 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-08 — v0.9.30: Der Sync füllte das Archiv mit leeren Monaten
+
+Der Anlass war kein Fehlerbericht, sondern ein Satz aus dem eigenen Protokoll.
+0.9.24 führte zwei Sync-Zustände als „brauchen ein zweites Gerät und sind
+deshalb weiterhin ungeprüft", die ROADMAP wiederholte es für `confirm`. Der
+Satz stimmt nicht — und hinter ihm lag ein echter Datenfehler.
+
+### Was wirklich fehlt, ist eine Kamera — nicht ein zweites Gerät
+
+Playwright öffnet zwei unabhängige Browserkontexte. Zwei Kontexte *sind* zwei
+Geräte: getrennte Speicher, getrennte Zwischenablage, getrennter Zustand. Und
+der kameralose Weg über den Textcode ist seit 0.9.17 nicht nur vorhanden,
+sondern steht bewusst **vor** dem QR-Weg — er ist vollständig automatisierbar.
+
+Die alte Annahme hatte zwei Dinge zusammengeworfen, die nichts miteinander zu
+tun haben: „zweites Gerät" und „Kamera". Nur das Zweite ist ein echtes
+Hindernis für ein Prüfnetz. Der Rest war ein Schluss, der nie nachgerechnet
+wurde — und er hat einen Fehler sechs Versionen lang gedeckt.
+
+**Die richtige Einsicht lag die ganze Zeit im Haus.** Dieselbe Sache steht in
+drei Dokumenten, und eines hatte sie von Anfang an präzise:
+`KONFORMITAET.md` nennt „die **Kamerawege** des Geräteabgleichs — sie setzen
+einen Zustand oder ein Gerät voraus, das der Prüflauf nicht herstellt". Genau
+die Unterscheidung, um die es geht. DEVLOG und ROADMAP schrieben stattdessen
+„zweites Gerät" — und weil die Prüfarbeit aus diesen beiden geplant wird,
+nicht aus dem Konformitätsbericht, hat die unschärfere Fassung gewonnen. Es
+war also keine Wissenslücke, sondern eine Ablageschwäche.
+
+Der Ablauf läuft jetzt vollständig durch: Gerät A baut einen Datencode und
+kopiert ihn, Gerät B fügt ihn ein und landet in der Rückfrage `confirm` — dem
+Zustand mit der folgenreichsten Entscheidung der ganzen App, weil „Alles
+ersetzen" das Archiv des empfangenden Geräts überschreibt. Nach
+„Zusammenführen" wird der Speicher von B ausgelesen: **beide** Stände müssen
+da sein. Genau dieser Unterschied ist hier schon einmal schiefgegangen — bis
+0.9.0 gewann schlicht der jüngere Datenstand, und die Arbeit des anderen
+Geräts verschwand.
+
+### Und der erste Lauf hat sofort etwas gefunden
+
+Im Archiv des Empfängers stand nach dem Zusammenführen ein dritter Monat:
+`2026-09`, mit leeren Werten, leerer Notiz, ohne Schichten.
+
+Die Ursache steht in `mergeSyncPayload` und ist für sich genommen richtig: Der
+aktive Monat des Senders wird ins Archiv des Empfängers gespiegelt, falls er
+dort fehlt — sonst verlöre ein Sender seinen Arbeitsstand, der noch nirgends
+archiviert ist. Nur geschah das **unabhängig vom Inhalt**, also auch bei einem
+vollständig leeren Monat.
+
+Damit war es exakt das Symptom, gegen das `monthHasContent` schon existiert.
+Der Kommentar in `monatInhalt.ts` beschreibt es wörtlich: „Die Liste füllte
+sich mit Einträgen 'Zähler: 0'". Dieselbe Falle, über einen anderen Weg — der
+Monatswechsel war abgesichert, das Spiegeln beim Sync nicht. Wer sich am
+Monatsanfang abgleicht, also bevor die erste Zahl steht, handelte sich bei
+**jedem** Abgleich einen leeren Archiveintrag ein.
+
+Die Korrektur ist eine Bedingung: gespiegelt wird nur, was Inhalt hat. Die
+Absicht bleibt unangetastet — an einem leeren Monat gibt es nichts zu
+verlieren.
+
+### Die Gegenprobe: prüft die Prüfung überhaupt?
+
+Eine neue Prüfung, die grün ist, beweist nichts — sie kann auch am Fehler
+vorbeigreifen. Also wurde die Bedingung testweise wieder entfernt und beides
+noch einmal ausgeführt:
+
+| | mit Korrektur | ohne Korrektur |
+|---|---|---|
+| `npm run check` | 158 bestanden | **1 Fehlschlag** („ein leerer aktiver Monat wandert NICHT ins Archiv") |
+| Oberflächenprüfung, zwei Geräte | bestanden | **Fehlschlag**: `["2026-06", "2026-07", "2026-09"]` statt zwei Monaten |
+
+Beide Tore greifen also wirklich, und sie greifen an verschiedenen Stellen:
+das eine an der Rechnung, das andere am Weg durch die Oberfläche. Danach
+wurde der Stand zurückgeschrieben und erneut geprüft.
+
+Drei Fälle sind zu `zusammenfuehren.ts` dazugekommen (155 → 158): ein leerer
+aktiver Monat wandert nicht ins Archiv, einer mit Zahlen weiterhin schon, und
+einer mit **nur einer Notiz** ebenfalls — der Fall, an dem sich zeigt, dass
+hier `monthHasContent` gefragt wird und nicht bloß die Zählerwerte.
+
+### Und dieselbe Frage an die eigene neue Prüfung
+
+Der erste Entwurf der Zwei-Geräte-Prüfung enthielt eine Zusicherung, die wie
+eine Prüfung aussah und keine war:
+
+```ts
+const text = await b.locator("body").innerText();
+expect(text, "Die Rückfrage nennt keine Zahlen").toMatch(/\d/);
+```
+
+Der Kommentar daneben behauptete, die Rückfrage müsse „beide Seiten
+beziffern". Geprüft wurde aber nur, ob **irgendwo** auf der Seite eine Ziffer
+steht. `renderSyncSteps` rendert im `confirm`-Modus die Labels „1. Wahl",
+„2. …", „3. …" — der Seitentext enthält also immer Ziffern, und die Zusicherung
+konnte gar nicht fehlschlagen.
+
+Ersetzt durch die Aussage, um die es geht: „Alles ersetzen" verwirft das lokale
+Archiv, also muss die Rückfrage beziffern, was dabei verlorenginge. Gerät B hat
+genau einen Monat archiviert.
+
+| Schaden: `"1 Monat"` → `"ein Monat"` in `DeviceSyncModal.tsx` | Ergebnis |
+|---|---|
+| alte Zusicherung `/\d/` auf `body` | wäre **grün** geblieben |
+| neue Zusicherung auf den Absatz | **rot** |
+
+Das ist derselbe Fehlertyp, den die ROADMAP zu 0.9.22 schon notiert hat — „zwei
+Prüfungen verteidigten einen Fehler, statt ihn zu finden". Hier wurde nichts
+verteidigt, aber es ist dieselbe Leerstelle: eine Zusicherung, die den Schadensfall nicht
+sehen kann, kostet Laufzeit und erzeugt das Gefühl von Deckung ohne die
+Deckung.
+
+### Grenzen dieser Prüfung, ausdrücklich
+
+- Sie läuft **nur im Chromium-Profil** (`handy`). Zwei Kontexte plus
+  Zwischenablage-Berechtigung sind in WebKit nicht auf demselben Weg zu
+  bekommen. Das ist eine Grenze des Werkzeugs, kein Befund über die App — der
+  WebKit-Lauf überspringt sie ausdrücklich.
+- Sie deckt den **Textcode** ab, nicht den QR-Weg und nicht die aufgebaute
+  Live-Verbindung. Der QR-Weg braucht weiterhin eine Kamera; die
+  Live-Verbindung braucht zwei Kontexte, die WebRTC ohne ICE-Server
+  zueinander finden. Beides bleibt offen.
+- Sie sagt nichts über die **Bedienbarkeit mit einem Screenreader** aus. Dass
+  `confirm` jetzt gemessen wird, heißt: Trefferflächen, Reflow und axe laufen
+  darüber. Ob ein blinder Nutzer die Rückfrage versteht, entscheidet weiterhin
+  der Durchlauf mit NVDA/VoiceOver.
+
+### Voller Lauf
+
+`tsc --noEmit` sauber. 158 Funktionsprüfungen bestanden. `npm run check:ui`:
+678 Prüfungen angemeldet, **357 ausgeführt und bestanden**, 321 durch Profil-
+und Schemafilter übersprungen, 10,8 min, Exit 0.
+
+---
+
 ## 2026-09-07 — v0.9.29: Die Einklappung, die die Projektregel verbietet
 
 Siebter Fall derselben Klasse — und diesmal einer, den die eigene ROADMAP
@@ -257,6 +390,10 @@ Unverändert und benannt: die aufgebaute Live-Verbindung und der Sync-Zustand
 Ersetzen der Feldkonfiguration beim Öffnen eines Archivmonats, die
 Schichtliste hinter einer Einklappung.
 
+> **Nachtrag 0.9.30 (2026-09-08):** „zweites Gerät nötig" war falsch — nötig
+> ist eine Kamera. `confirm` ist seit 0.9.30 geprüft, die Live-Verbindung
+> bleibt offen.
+
 ---
 
 ## 2026-09-07 — v0.9.26: Zwei blinde Flecken in der meistgeprüften Ansicht
@@ -498,6 +635,10 @@ Die Schnell-Erfassung, der Ersteinstieg mit wirklich leerem Speicher, die
 aufgebaute Live-Verbindung und der Sync-Zustand `confirm` (beide brauchen ein
 zweites Gerät).
 
+> **Nachtrag 0.9.30 (2026-09-08):** Die Klammer war falsch. `confirm` braucht
+> kein zweites Gerät, sondern nur einen Weg ohne Kamera — den Textcode. Seit
+> 0.9.30 geprüft; die Live-Verbindung bleibt offen.
+
 ---
 
 ## 2026-09-07 — v0.9.24: Die Formulare der Stempeluhr, und GPS ist raus
@@ -672,6 +813,13 @@ Zwei Sync-Zustände (`confirm` und die aufgebaute Live-Verbindung) brauchen ein
 zweites Gerät und sind deshalb weiterhin ungeprüft. Dazu die
 Archivbearbeitung, die Schnell-Erfassung und der Ersteinstieg mit wirklich
 leerem Speicher.
+
+> **Nachtrag 0.9.30 (2026-09-08): Der Satz oben ist falsch, und zwar der
+> begründende Teil.** `confirm` braucht kein zweites Gerät — Playwright öffnet
+> zwei Browserkontexte, und der Weg über den Textcode kommt ohne Kamera aus.
+> Nötig ist eine **Kamera**, nicht ein zweites Gerät; beides war hier
+> zusammengeworfen. Der Zustand ist seit 0.9.30 geprüft, und der erste Lauf hat
+> einen Datenfehler gefunden. Die Live-Verbindung bleibt offen.
 
 ---
 
