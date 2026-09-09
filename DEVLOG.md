@@ -10,6 +10,157 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-09 — v0.9.31: Das Abzeichen, das es nur mit Verbindung gibt
+
+Der Anlass ist derselbe wie bei 0.9.30 — ein Satz aus dem eigenen Protokoll —
+und es ist derselbe Fehlschluss, eine Version später. Der Eintrag zu 0.9.30
+führte auf, was offen bleibe: „der QR-Weg (braucht eine Kamera) und die
+aufgebaute Live-Verbindung … zwei Kontexte, die WebRTC ohne ICE-Server
+zueinander finden". Für den QR-Weg stimmt das. Für die Live-Verbindung nicht.
+
+### Die Messung, die die Annahme erledigt
+
+Eine Sonde außerhalb der App: zwei Playwright-Kontexte, `RTCPeerConnection`
+mit `iceServers: []`, Angebot und Antwort von Hand durchgereicht.
+
+```
+A: Kandidaten = 1
+    candidate:… udp … 9669bc97-….local 62181 typ host
+nach 306 ms:  A = open/connected   B = open/connected
+B empfangen: [ 'hallo von A' ]
+```
+
+**306 Millisekunden.** Der einzige Kandidat ist ein von Chromium per mDNS
+verschleierter Host-Kandidat — und beide Seiten lösen ihn auf, weil sie im
+selben Browser laufen. Ohne STUN, ohne TURN, ohne Netz nach außen; also genau
+unter den Bedingungen, unter denen die App arbeitet.
+
+Zwei Versionen hintereinander stand hier eine Behauptung, die niemand
+nachgerechnet hatte. 0.9.30 hat „braucht ein zweites Gerät" mit „braucht eine
+Kamera" verwechselt; 0.9.31 hat „braucht ein zweites Gerät" durch „findet ohne
+ICE-Server nicht zueinander" ersetzt. Der Fehler ist nicht das Wissen, sondern
+die Reihenfolge: Erst wurde geschlossen, dann nicht mehr gemessen. Für die
+Sonde waren es 40 Zeilen und eine Minute Laufzeit.
+
+*Beiläufig, aber es hat Zeit gekostet:* Die Sonde lief zuerst aus dem
+Temp-Verzeichnis und fand `@playwright/test` nicht. Genau der Fall, den
+`CLAUDE.md` beschreibt — Skripte müssen im Projektwurzelverzeichnis liegen,
+sonst greift die Modulauflösung ins Leere.
+
+### Was der erste Lauf gefunden hat
+
+Der Zustand „verbunden" hatte nie eine Messung gesehen. Er erzeugt im
+Kopfbereich des Formulars ein grünes Abzeichen „Live verbunden" — eine
+**Schaltfläche**, die zur Geräte-Synchronisation führt. Gemessen über den
+Layout-Kasten, mit erzwungener breiter Schrift:
+
+| | vor 0.9.31 | nach 0.9.31 |
+|---|---|---|
+| Höhe bei „Normal" | **42 px** | 44 px |
+| Seitenbreite, 360-px-Fenster, „Extra groß" | **385 px** | 360 px |
+| Seitenbreite, 320-px-Fenster, „Extra groß" | **384 px** | 320 px |
+| Zeile im Kopfbereich (Inhalt / Kasten) | **347 / 286 px** | 286 / 286 px |
+
+42 px gegen die bindenden 44 aus WCAG 2.5.5 — die Schwelle, zu der `CLAUDE.md`
+sagt, es gebe genau eine und keine Ausnahme. Und 25 px Überlauf im
+360-px-Fenster, 64 px im 320-px-Fenster: eine Verletzung von WCAG 1.4.10.
+
+**Die Ursache ist belegt, nicht zugeschrieben.** Statt aus dem Quelltext zu
+schließen, wurde das Abzeichen im laufenden Fenster auf `display: none`
+gesetzt und dieselbe Zahl erneut gelesen:
+
+| Fenster | mit Abzeichen | ohne Abzeichen |
+|---|---|---|
+| 360 px | 385 px | **360 px** |
+| 320 px | 384 px | **320 px** |
+
+Damit ist es der achte Fall von `min-width: auto` an einem Flex-Element in
+diesem Projekt — die Zeile im Kopfbereich gibt ihre Breite nicht unter den
+Inhalt preis, statt umzubrechen. Kein Geschwisterelement trägt hier `flex-1`,
+deshalb greift `flex-wrap` auch wirklich (die Einschränkung, die am 2026-09-02
+einen Deploy gekostet hat).
+
+Die Korrektur sind zwei Klassen: `flex-wrap` an der Zeile, `min-h-[44px]` mit
+etwas mehr Innenabstand am Abzeichen. Nebenbei wird das Abzeichen dadurch
+niedriger statt höher — bei „Extra groß" 62 → 44 px —, weil es vorher
+waagerecht gequetscht wurde und sein Text auf drei Zeilen umbrach.
+
+### Was jetzt dauerhaft geprüft wird
+
+`tests/oberflaeche.spec.ts` koppelt zwei Kontexte über den kameralosen Weg:
+Gerät A erzeugt den Verbindungscode, B fügt ihn ein und antwortet, A nimmt die
+Antwort an. Geprüft wird danach:
+
+- **Die Stille im Leerlauf.** `CLAUDE.md` verlangt das seit Langem — „Idle
+  should produce zero messages" —, und es stand bis hierher nur da. Gemessen
+  über einen Zähler, der `RTCDataChannel.prototype.send` vor dem Laden der App
+  umhüllt: **je zwei Nachrichten** pro Gerät (der eigene Stand, dann der
+  vereinigte), danach über vier Abgleich-Takte hinweg **null**. Ohne den
+  Textvergleich in `sendNow()` und `stableStringify` wären es alle drei
+  Sekunden zwei weitere, für immer, jedes Mal mit einem Schreibvorgang in
+  IndexedDB.
+- **Das Zusammenführen über den Live-Kanal in beide Richtungen** — beide
+  Archive tragen anschließend beide Monate, nicht zwei von drei und keinen
+  leeren dritten.
+- **Dass die Verbindung das Schließen des Sync-Fensters überlebt.** Das ist der
+  Zweck des Modul-Singletons in `liveSync.ts`, und es war nie nachgewiesen.
+- **Der Kopfbereich mit Abzeichen**, in drei Kombinationen aus Breite und
+  Schriftgröße, mit der breiten Schrift des CI-Läufers.
+
+### Die Gegenprobe, zweimal getrennt
+
+Eine neue Prüfung, die grün ist, beweist nichts. Beide Korrekturen wurden
+einzeln zurückgenommen, damit nicht die eine Zusicherung für die andere
+einspringt:
+
+| zurückgenommen | Ergebnis |
+|---|---|
+| beide | rot: `Trefferfläche unterschritten — BUTTON"Live verbunden" 106×42` |
+| nur `flex-wrap` | rot: `396 px Inhalt bei 360 px Fenster`, mit Nennung des Verursachers |
+| keine | grün |
+
+Der zweite Lauf war der wichtigere: Beim ersten bricht die Prüfung schon an
+der Trefferfläche ab, die Überlauf-Zusicherung kommt gar nicht zum Zug und
+wäre ungeprüft geblieben.
+
+### Benannt, nicht geändert
+
+**Das Abzeichen und das Warnband „Live-Verbindung unterbrochen" liegen beide
+innerhalb von `activeTab === "form"`** (`App.tsx:1588`). Auf den übrigen zehn
+Ansichten ist beides nicht vorhanden. Für das Warnband steht im Quelltext als
+Begründung, es gebe ihn, „weil sonst nur das grüne Abzeichen verschwindet und
+niemand es bemerkt" — auf zehn Ansichten passiert genau das.
+
+Nicht geändert, weil die Lage weniger schlimm ist, als der Satz vermuten
+lässt: Der Abbruch löst in `useGeraeteSync.ts:189` zusätzlich einen Toast
+**und** eine Ansage über `announceToAriaAndSpeech` aus, beides
+ansichtsunabhängig. Wer die App hört, erfährt es also in jedem Fall; wer sie
+sieht und gerade im Archiv steht, sieht nur den Toast vorbeiziehen. Das ist
+eine Verlagerung des Kopfbereichs oder ein ansichtsübergreifendes Band — ein
+eigener Umbau mit eigener Messung, nicht ein Anhang an diesen Stand.
+
+### Grenzen dieses Standes, ausdrücklich
+
+- **Nur Chromium.** Zwei Kontexte plus Zwischenablage sind in WebKit nicht auf
+  demselben Weg zu bekommen; der WebKit-Lauf überspringt die Prüfung.
+- **Nur der kameralose Weg.** Der QR-Weg braucht weiterhin eine Kamera und
+  bleibt offen — diesmal geprüft und nicht bloß behauptet: Der Lauf meldet
+  `NotFoundError: Requested device not found`.
+- **Zwei Kontexte auf einem Rechner sind keine zwei Geräte in einem WLAN.**
+  Die mDNS-Auflösung gelingt hier, weil derselbe Browser beide Seiten hält.
+  Ob zwei echte Geräte im Firmen-WLAN zueinanderfinden, entscheidet weiterhin
+  ein Durchlauf mit zwei Telefonen.
+- **Keine Aussage über den Screenreader.** Dass der verbundene Zustand jetzt
+  gemessen wird, heißt: Trefferflächen und Reflow. Ob die Kopplung mit NVDA
+  oder VoiceOver bedienbar ist, entscheidet der Durchlauf mit den Kollegen —
+  und für den Sync-Umbau aus 0.9.17 steht der weiterhin aus.
+
+### Voller Lauf
+
+`tsc --noEmit` sauber. 158 Funktionsprüfungen bestanden.
+
+---
+
 ## 2026-09-08 — v0.9.30: Der Sync füllte das Archiv mit leeren Monaten
 
 Der Anlass war kein Fehlerbericht, sondern ein Satz aus dem eigenen Protokoll.

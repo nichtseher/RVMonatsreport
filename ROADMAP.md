@@ -936,6 +936,36 @@ gültiges eingegangenes Paket und damit ein zweites Gerät.
 > Kontexte plus Zwischenablage sind in WebKit nicht auf demselben Weg zu
 > bekommen; das ist eine Grenze des Werkzeugs, kein Befund über die App.
 
+> **Nachtrag 0.9.31 (2026-09-09): die Live-Verbindung war es auch nicht —
+> derselbe Fehlschluss, eine Version später.** Der Absatz direkt darüber
+> korrigiert „braucht ein zweites Gerät" und stellt im selben Atemzug die
+> Live-Verbindung als weiterhin unerreichbar hin, weil sie „zwei Kontexte
+> braucht, die WebRTC ohne ICE-Server zueinander finden". Nachgemessen mit
+> einer Sonde von 40 Zeilen: **306 ms**, ein einziger Kandidat, ein von
+> Chromium per mDNS verschleierter Host-Kandidat, den beide Seiten auflösen,
+> weil sie im selben Browser laufen. Ohne STUN, ohne TURN.
+>
+> Der Zustand „verbunden" hatte damit nie eine Messung gesehen, und der erste
+> Lauf fand zwei Fehler im grünen Abzeichen des Kopfbereichs: **42 px Höhe**
+> gegen die bindenden 44, und **25 px waagerechter Überlauf** bei „Extra groß"
+> mit breiter Schrift (64 px im 320-px-Fenster). Ursache belegt statt
+> zugeschrieben — Abzeichen im laufenden Fenster ausgeblendet: 385 → 360 px
+> bzw. 384 → 320 px. Achter Fall von `min-width: auto` an einem Flex-Element.
+>
+> Mitgeprüft wird seither, was `CLAUDE.md` seit Langem verlangt und was bis
+> hierher nur dastand: **eine ruhende Verbindung sendet nichts.** Je zwei
+> Nachrichten pro Gerät, danach über vier Abgleich-Takte hinweg null.
+>
+> Was hier zweimal schiefging, ist nicht fehlendes Wissen, sondern die
+> Reihenfolge: erst geschlossen, dann nicht mehr gemessen. Wer diese Liste
+> fortschreibt, sollte jeden Satz der Form „X ist nicht prüfbar, weil Y" als
+> **Vermutung** lesen, bis eine Sonde daneben steht.
+>
+> Weiterhin offen und diesmal gemessen statt behauptet: der QR-Weg. Der Lauf
+> meldet `NotFoundError: Requested device not found` — es fehlt die Kamera,
+> sonst nichts. Und zwei Kontexte auf einem Rechner sind keine zwei Geräte in
+> einem WLAN; das entscheidet ein Durchlauf mit zwei Telefonen.
+
 ### Benannt, nicht geändert: die Sicherheits-Header wirken nicht
 
 Die laufende Seite sendet **keinen** der in `server.ts` gesetzten Header —

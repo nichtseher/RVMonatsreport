@@ -1603,7 +1603,12 @@ export default function App() {
           </div>
 
           {/* Offline Auto-Save live status feedback */}
-          <div className="flex items-center gap-1.5 text-[0.75rem] font-bold text-[var(--text-muted)] uppercase tracking-wider pt-1">
+          {/* flex-wrap, weil das Live-Abzeichen dazukommen KANN: ohne Umbruch
+              sprengte die Zeile bei "Extra groß" und breiter Schrift das
+              Fenster (gemessen 2026-09-09: 385 px in 360, 384 px in 320 --
+              ohne Abzeichen jeweils genau die Fensterbreite). Kein Geschwister
+              traegt hier flex-1, deshalb greift der Umbruch auch wirklich. */}
+          <div className="flex flex-wrap items-center gap-1.5 text-[0.75rem] font-bold text-[var(--text-muted)] uppercase tracking-wider pt-1">
             {saveStatus === "saving" ? (
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--warning-border)] animate-pulse"></span>
@@ -1625,7 +1630,7 @@ export default function App() {
                 type="button"
                 onClick={() => setActiveTab("sync")}
                 aria-label={`Live verbunden. Die Live-Verbindung mit dem anderen Gerät ist aktiv.${liveSync.lastSyncTime ? ` Letzter Abgleich um ${liveSync.lastSyncTime} Uhr.` : ""} Antippen zum Verwalten.`}
-                className="ml-2 flex items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[var(--success-text)] cursor-pointer hover:brightness-110 transition-colors"
+                className="ml-2 flex min-h-[44px] items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-3 py-1 text-[var(--success-text)] cursor-pointer hover:brightness-110 transition-colors"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" aria-hidden="true"></span>
                 <span>Live verbunden</span>

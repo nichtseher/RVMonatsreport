@@ -2650,6 +2650,229 @@ test.describe("Zwei Geräte über den Textcode", () => {
 });
 
 /**
+ * Zwei Geräte über die LIVE-VERBINDUNG (WebRTC, ohne ICE-Server).
+ *
+ * Warum das hier steht, obwohl DEVLOG und ROADMAP bis 0.9.30 das Gegenteil
+ * behaupteten: Der Eintrag zu 0.9.30 führte die Live-Verbindung als weiterhin
+ * ungeprüft, weil sie „zwei Kontexte braucht, die WebRTC ohne ICE-Server
+ * zueinander finden". Nachgemessen am 2026-09-09: Zwei Playwright-Kontexte
+ * verbinden sich in 306 ms. Der einzige Kandidat ist ein mDNS-verschleierter
+ * Host-Kandidat, und beide Seiten lösen ihn auf, weil sie im selben Browser
+ * laufen. Es war derselbe Fehlschluss wie zuvor bei „braucht ein zweites
+ * Gerät": eine Annahme, die nie nachgerechnet wurde.
+ *
+ * Geprüft wird, was ohne zwei Gegenstellen gar nicht existiert:
+ *
+ * - **Die Kopplung über den kameralosen Weg** — Verbindungscode, Antwortcode,
+ *   beides über die Zwischenablage, so wie ein Nutzer ohne Kamera es tut.
+ * - **Die Stille im Leerlauf.** `sendNow()` überträgt nur, wenn sich der Text
+ *   des Standes geändert hat. Ohne diese Bedingung senden zwei gekoppelte
+ *   Geräte alle 3 Sekunden den vollen Stand und schreiben ihn nach IndexedDB —
+ *   für immer, weil das Zusammenführen neue Objekte mit anderer
+ *   Schlüsselreihenfolge erzeugt (dagegen steht `stableStringify`).
+ *   `CLAUDE.md` verlangt dafür seit Langem eine Messung: „Idle should produce
+ *   zero messages." Sie stand bis hierher nur da.
+ * - **Das Zusammenführen in beide Richtungen** über den Live-Kanal, nicht nur
+ *   über den einmaligen Textcode.
+ * - **Dass die Verbindung das Schließen des Fensters überlebt.** Das ist der
+ *   ganze Zweck von `liveSync.ts` als Modul-Singleton: Zum Eintragen von
+ *   Zahlen muss man dieses Fenster verlassen.
+ * - **Der Kopfbereich MIT dem grünen Abzeichen.** Dieser Zustand war nie
+ *   gerendert worden, und genau dort steckten zwei Fehler (0.9.31): 42 px
+ *   Höhe gegen die bindenden 44, und 25 px waagerechter Überlauf bei „Extra
+ *   groß" mit breiter Schrift.
+ *
+ * Grenzen, ausdrücklich: nur Chromium (zwei Kontexte plus Zwischenablage sind
+ * in WebKit nicht auf demselben Weg zu bekommen), nur der kameralose Weg, und
+ * keine Aussage über die Bedienbarkeit mit einem Screenreader.
+ *
+ * Die breite Schrift steckt hier IM Test statt in `ZUSTAENDE_MIT_SCHRIFT`:
+ * Jene Liste arbeitet mit der `page`-Vorrichtung, dieser Zustand braucht zwei
+ * Kontexte. Deshalb wird Gerät A von Anfang an mit Verdana geladen.
+ */
+type SendeZaehler = { __sends?: number[] };
+
+async function zaehleNachrichten(page: Page) {
+  await page.addInitScript(() => {
+    (window as SendeZaehler).__sends = [];
+    // `send` ist mehrfach überladen (string, Blob, ArrayBuffer, View). Der
+    // Zähler interessiert sich nur für die Länge, die Weitergabe bleibt
+    // unverändert -- deshalb eine schmale Signatur und die Rückgabe an das
+    // Original, mit dem Typ des Originals wieder eingesetzt.
+    const orig = RTCDataChannel.prototype.send as (this: RTCDataChannel, d: unknown) => void;
+    RTCDataChannel.prototype.send = function (this: RTCDataChannel, daten: unknown) {
+      (window as SendeZaehler).__sends?.push(typeof daten === "string" ? daten.length : -1);
+      return orig.call(this, daten);
+    } as typeof RTCDataChannel.prototype.send;
+  });
+}
+
+const nachrichten = (page: Page) =>
+  page.evaluate(() => (window as SendeZaehler).__sends?.length ?? -1);
+
+async function archivMonate(page: Page) {
+  return page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((res, rej) => {
+      const r = indexedDB.open("keyval-store", 1);
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+    const wert = await new Promise<Record<string, unknown>>((res, rej) => {
+      const t = db.transaction("keyval", "readonly");
+      const q = t.objectStore("keyval").get("aussendienst_pwa_history");
+      q.onsuccess = () => res(q.result);
+      q.onerror = () => rej(t.error);
+    });
+    return Object.keys(wert || {}).sort();
+  });
+}
+
+test.describe("Zwei Geräte über die Live-Verbindung", () => {
+  test("Kopplung, Stille im Leerlauf, und das Abzeichen im Kopfbereich", async ({
+    browser,
+    baseURL,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "handy",
+      "Zwei Kontexte plus Zwischenablage laufen nur im Chromium-Profil",
+    );
+    test.setTimeout(180_000);
+
+    const basis = baseURL as string;
+    const kontextA = await browser.newContext({
+      baseURL: basis,
+      permissions: ["clipboard-read", "clipboard-write"],
+    });
+    const kontextB = await browser.newContext({
+      baseURL: basis,
+      permissions: ["clipboard-read", "clipboard-write"],
+    });
+
+    try {
+      const a = await kontextA.newPage();
+      const b = await kontextB.newPage();
+      await zaehleNachrichten(a);
+      await zaehleNachrichten(b);
+      // Gerät A trägt die Messung des Kopfbereichs -- deshalb von Anfang an
+      // mit der breiten Schrift, die der CI-Läufer einsetzt.
+      await erzwingeBreiteSchrift(a);
+
+      const leererMonat = {
+        month: "2026-09",
+        name: "Marc Petry",
+        notes: "",
+        values: {},
+        valuesUpdatedAt: {},
+        timeLogs: [],
+      };
+      await oeffneSyncMitBestand(a, { "2026-06": monat("2026-06", "s1_1", 7) }, leererMonat);
+      await oeffneSyncMitBestand(b, { "2026-07": monat("2026-07", "s1_1", 4) }, leererMonat);
+
+      // --- Kopplung, Schritt 1: A bietet an ---
+      await a.getByRole("button", { name: /Live-Verbindung starten/ }).click();
+      const kopierenA = a.getByRole("button", { name: /Code kopieren/ });
+      await kopierenA.waitFor({ state: "visible", timeout: 30_000 });
+      await kopierenA.click();
+      await a.waitForTimeout(500);
+      const verbindungscode = await a.evaluate(() => navigator.clipboard.readText());
+      expect(
+        verbindungscode.startsWith("RVC1:"),
+        `Der Verbindungscode beginnt nicht mit RVC1: (${verbindungscode.slice(0, 20)})`,
+      ).toBe(true);
+
+      // --- Schritt 2: B tritt bei und antwortet ---
+      await b.getByRole("button", { name: /Live-Verbindung beitreten/ }).click();
+      await b.locator("#paste-code-input").waitFor({ state: "visible", timeout: 30_000 });
+      await b.locator("#paste-code-input").fill(verbindungscode);
+      await b.getByRole("button", { name: /Code übernehmen/ }).click();
+      const kopierenB = b.getByRole("button", { name: /Code kopieren/ });
+      await kopierenB.waitFor({ state: "visible", timeout: 30_000 });
+      await kopierenB.click();
+      await b.waitForTimeout(500);
+      const antwortcode = await b.evaluate(() => navigator.clipboard.readText());
+      expect(
+        antwortcode.startsWith("RVC1:"),
+        `Der Antwortcode beginnt nicht mit RVC1: (${antwortcode.slice(0, 20)})`,
+      ).toBe(true);
+
+      // --- Schritt 3: A nimmt die Antwort an ---
+      await a.getByRole("button", { name: /Antwort-Code empfangen/ }).click();
+      await a.locator("#paste-code-input").waitFor({ state: "visible", timeout: 30_000 });
+      await a.locator("#paste-code-input").fill(antwortcode);
+      await a.getByRole("button", { name: /Code übernehmen/ }).click();
+
+      // „Verbindung trennen" erscheint nur in `renderConnectedView` -- es ist
+      // damit der Beleg, dass der Datenkanal offen ist, nicht bloß ein Text.
+      await a
+        .getByRole("button", { name: /Verbindung trennen/ })
+        .waitFor({ state: "visible", timeout: 60_000 });
+
+      // --- Die Stille im Leerlauf ---
+      // Nach dem Öffnen sendet jede Seite ihren Stand und, nach dem
+      // Zusammenführen des fremden Standes, den vereinigten. Danach ist der
+      // Text identisch und es darf NICHTS mehr fließen.
+      await a.waitForTimeout(9000);
+      const ruheA = await nachrichten(a);
+      const ruheB = await nachrichten(b);
+      expect(ruheA, "Gerät A hat gar nicht gesendet").toBeGreaterThan(0);
+      expect(ruheB, "Gerät B hat gar nicht gesendet").toBeGreaterThan(0);
+
+      // Vier Abgleich-Takte (LIVE_SEND_INTERVAL_MS = 3000) ohne jede Eingabe.
+      await a.waitForTimeout(13_000);
+      expect(
+        [await nachrichten(a), await nachrichten(b)],
+        `Eine ruhende Verbindung hat weiter gesendet (vorher ${ruheA}/${ruheB}). ` +
+          "Genau das verhindert der Textvergleich in sendNow() zusammen mit " +
+          "stableStringify -- ohne beides schreiben zwei gekoppelte Geräte alle " +
+          "3 Sekunden den vollen Stand nach IndexedDB, ohne Ende.",
+      ).toEqual([ruheA, ruheB]);
+
+      // --- Zusammengeführt, in beide Richtungen ---
+      for (const [name, seite] of [
+        ["A", a],
+        ["B", b],
+      ] as const) {
+        expect(
+          await archivMonate(seite),
+          `Gerät ${name} hat nach dem Live-Abgleich nicht beide Monate. Fehlt ` +
+            "einer, greifen die Zeitstempel je Feld nicht; steht ein dritter " +
+            "da, wandert wieder ein leerer Monat mit (0.9.30).",
+        ).toEqual(["2026-06", "2026-07"]);
+      }
+
+      // --- Überlebt die Verbindung das Schließen des Fensters? ---
+      // Das ist der Zweck des Modul-Singletons: Zahlen eintragen heißt,
+      // dieses Fenster zu verlassen.
+      await a.getByRole("button", { name: /Zurück zu den Optionen/ }).click({ timeout: 20_000 });
+      await a.waitForTimeout(800);
+      // Die untere Navigation trägt role="tab", nicht role="button" -- eine
+      // Suche über die Rolle „button" findet sie nicht.
+      await a.locator('button:has-text("RV Report")').first().click({ timeout: 20_000 });
+      await expect(
+        a.getByRole("button", { name: /^Live verbunden/ }),
+        "Nach dem Schließen des Sync-Fensters ist die Live-Verbindung weg. Sie " +
+          "soll bestehen bleiben (liveSync.ts, abortPairingOnly).",
+      ).toBeVisible({ timeout: 20_000 });
+
+      // --- Der Kopfbereich MIT Abzeichen, in der Breite und in der Höhe ---
+      for (const [breite, groesse] of [
+        [360, "normal"],
+        [360, "extra-large"],
+        [320, "extra-large"],
+      ] as const) {
+        await a.setViewportSize({ width: breite, height: 780 });
+        await setzeSchriftgroesse(a, groesse);
+        await warteAufRuhigesLayout(a);
+        await pruefeGeometrie(a, `Live verbunden / ${breite} px / ${groesse} / breit`);
+      }
+    } finally {
+      await kontextA.close();
+      await kontextB.close();
+    }
+  });
+});
+
+/**
  * Zustände mit breiter Schrift.
  *
  * Warum es das gibt: Der Block „Breitere Schrift als hier installiert" läuft
