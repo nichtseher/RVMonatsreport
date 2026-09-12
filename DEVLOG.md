@@ -10,6 +10,174 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-12 — Nachtrag zu 0.9.32: der rote Deploy, und der QR-Weg ist doch prüfbar
+
+### Der Deploy von 0.9.32 ist fehlgeschlagen
+
+Push `9ac8e5b`, Lauf vorhanden, Status **`failure`** nach 17 Minuten. Produktion
+blieb auf 0.9.31. Aufgefallen ist es, weil die Prüfung nach dem Push nicht am
+API-Status hing, sondern daran, **was ausgeliefert wird**: 22 Minuten lang
+lieferte die öffentliche Adresse weiter `index-DKTWnq7E.js` ohne den Marker.
+
+Genau der Fall, den `CLAUDE.md` seit dem 2026-09-07 führt — „es existiert ein
+Lauf" ist nicht „es ist live". Diesmal hat der Satz getragen.
+
+**Gescheitert ist Schritt 8, `npm run check:ui`, mit genau einer Prüfung:**
+
+```
+✘ Zustände der Rückfragen › Rückfrage: Monat abschließen ohne schwere Verstöße
+  target-size @ .hover\:bg-\[var\(--bg-color\)\]….inline-flex:nth-child(3)
+  — Target has insufficient size because it is partially obscured
+    (smallest space is 217.2px by 17.5px, should be at least 24px by 24px)
+```
+
+Gemeldet wurde eine **Notiz-Vorlagentaste im Formular dahinter**, nicht der
+Dialog. Die Taste trägt `min-h-[44px]` und misst auch 44 px — axe meldet ihre
+**unverdeckte** Fläche. Der abdunkelnde Grund ist halbdurchsichtig und zählt
+für axe nicht als Verdeckung; die deckende Dialogkarte darüber schon. Wo deren
+Kante eine Tastenzeile schneidet, bleibt ein Streifen übrig. Welche Zeile das
+trifft, hängt am Umbruch und damit an der Schrift.
+
+**Lokal nicht reproduzierbar, auch nicht mit erzwungenem Verdana** — gemessen:
+die vier Tasten stehen bei `oben=1..95`, alle 44 px hoch, axe meldet in beiden
+Schriften nichts. Die Vermutung „sie ragt unter die Sichtkante" war ebenfalls
+falsch (Sichtkante 780, Tasten bei 95). Der Läufer kommt auf eine andere
+Zeilenaufteilung, und dort schneidet die Karte.
+
+Ein Befund über eine Taste, die man gerade gar nicht bedienen kann, ist keine
+Aussage über die Rückfrage. Die axe-Messung der Rückfragen ist deshalb auf
+`[role="alertdialog"]` eingegrenzt. Der Hintergrund wird weiterhin in seinem
+eigenen Zustand gemessen — dafür gibt es `ANSICHTEN` und `FORMULAR_ZUSTAENDE`.
+
+### Und dabei eine Lücke gefunden, die älter ist als der Fehler
+
+Beim Gegenprüfen der Eingrenzung — *fängt die eingegrenzte Messung überhaupt
+noch etwas?* — wurde der Kontrast der Abbrechen-Taste absichtlich zerstört
+(`text-[var(--bg-color)]` auf `bg-[var(--bg-color)]`, also 1,00:1). Die
+Prüfung blieb **grün**.
+
+Der Grund liegt nicht an der Eingrenzung. Gemessen über beide Varianten:
+
+| Messung | Verstöße | unvollständig |
+|---|---|---|
+| ganze Seite | keine | `color-contrast` @ drei Elemente im Dialog |
+| nur `[role="alertdialog"]` | keine | dieselben drei |
+
+**axe enthält sich.** Durch den halbdurchsichtigen Grund hindurch kann es den
+wirksamen Hintergrund nicht bestimmen und meldet `incomplete` statt
+`violation`. Die Prüfung „Kontrast in allen Farbschemata" wertet nur
+`violations` aus — sie war für Rückfragen also **blind, und zwar von Anfang
+an**.
+
+Das ist nicht irgendeine Ecke. Genau dort saß der Fehler aus 0.9.22: `text-white`
+auf `--danger-solid`, und diese Variable ist in „Weiß auf Schwarz" selbst
+`#ffffff`, in „Gelb auf Schwarz" `#ffff00` — 1,00:1 und 1,07:1, in allen vier
+zerstörenden Rückfragen. Gefunden wurde er damals **von Hand**. Jetzt ist klar,
+warum: Das Werkzeug konnte ihn gar nicht sehen.
+
+**Neu ist deshalb eine eigene Kontrastrechnung** für die Rückfragen: Für jeden
+Text wird der wirksame Hintergrund gesucht — halbdurchsichtige Schichten werden
+über den ersten deckenden Vorfahren gerechnet — und das Verhältnis nach
+WCAG 1.4.3 gebildet (4,5:1; 3:1 bei großer Schrift).
+
+Zwei Rückfragen in vier Schemata genügen, und das ist eine Aussage, keine
+Abkürzung: Die Farben im Dialog hängen an genau einer Verzweigung,
+`tone === "danger"`. Je ein Vertreter deckt beide Zweige ab.
+
+Gegenprobe mit dem zerstörten Kontrast — **alle acht rot**, mit Zahlen:
+
+```
+Monat abschließen / Standard:        1.00:1 (nötig 4.5:1)
+Monat abschließen / Kontrast gelb:   1.00:1
+Kategorie löschen / Kontrast dunkel: 1.00:1
+…
+```
+
+### Der QR-Weg ist prüfbar — es fehlte eine Kommandozeilen-Flagge
+
+Seit 0.9.30 stand er als offen, „weil eine Kamera fehlt". Belegt war davon
+genau ein Satz: `NotFoundError: Requested device not found`. Der sagt, dass
+**diese Umgebung** keine Kamera hat — nicht, dass man keine stellen kann. Es
+ist dieselbe Form von Schluss, die schon zweimal falsch war.
+
+Chromium kann eine Kamera aus einer Y4M-Datei speisen. Die Prüfung nimmt die
+QR-Codes **aus dem laufenden Sende-Bildschirm** auf (also die echten, nicht
+nachgebaute), schreibt daraus ein Video und hält es dem zweiten Gerät vor die
+Linse.
+
+**Zwei Dinge haben Zeit gekostet, und beide stehen jetzt im Quelltext:**
+
+1. `--use-file-for-fake-video-capture` allein legt **kein Gerät an**. Ohne
+   `--use-fake-device-for-media-stream` daneben bleibt es bei `NotFoundError`
+   — also bei genau der Meldung, die bisher als Beleg für „nicht prüfbar" galt.
+   Gemessen:
+
+   | Flaggen | `getUserMedia` |
+   |---|---|
+   | nur `--use-file-for-fake-video-capture` | `NotFoundError` |
+   | plus `--use-fake-device-for-media-stream` | OK, Gerätename = Dateipfad |
+
+2. **Die Auflösung entscheidet.** Bei 640 × 480 mit 240 px QR kam nur **ein**
+   Teilstück an. Einzeln nachgemessen:
+
+   | einzeln eingespielt | gelesen |
+   |---|---|
+   | Teil 1 (450 Zeichen) | nein |
+   | Teil 2 (450 Zeichen) | nein |
+   | Teil 3 (Rest, kürzer) | **ja** |
+
+   Das kurze Reststück hat weniger Module, also größere Module. Die vollen
+   Teile brauchen mehr Bildpunkte:
+
+   | Bild | QR | Ergebnis |
+   |---|---|---|
+   | 640 × 480 | 240 px | 1 von 3 |
+   | 800 × 600 | 460 px | **3 von 3** |
+   | 1280 × 960 | 640 px | 3 von 3 |
+
+   Das ist eine Eigenschaft der Simulation, kein Befund über die App — die
+   Telefone der Kollegen filmen weit über 800 × 600. Es sagt aber etwas über
+   den Spielraum: Wer `CHUNK_SIZE` erhöht, verkleinert die Module und
+   verbraucht genau diese Reserve.
+
+Zwischendurch zwei eigene Messfehler, die hierher gehören, weil sie Zeit
+gekostet haben: Der Selektor `svg[width][height]` traf die **Lucide-Symbole**
+statt des QR-Codes (sie stehen früher im Dokument) — die Kamera lief dann
+korrekt und fand nur nichts. Und drei Teilstücke „der Reihe nach" zu lesen,
+während der Sender von selbst rotiert, erwischt eines doppelt und eines nie;
+gesammelt wird jetzt nach der Nummer aus der Anzeige.
+
+**Die Prüfung läuft in 17,7 s** und endet nicht bei der Rückfrage, sondern
+führt zusammen: Danach müssen auf Gerät B **beide** Archivmonate stehen.
+Gegenprobe durch Entfernen der entscheidenden Flagge — rot, mit der Meldung,
+die auf die Auflösungstabelle verweist.
+
+### Was das für den Konformitätsbericht heißt
+
+`KONFORMITAET.md` führt als Lücke Nr. 2: „Der Einrichtungsassistent, die
+Bestätigungsdialoge und die **Kamerawege** sind automatisiert nicht abgedeckt."
+Alle drei sind jetzt abgedeckt — der Assistent seit 0.9.27, die Rückfragen und
+die Kamerawege mit diesem Stand. Der Bericht ist für 0.9.19 geschrieben und
+gehört neu erhoben; das ist der nächste Schritt und nicht Teil dieses Standes.
+
+### Grenzen, ausdrücklich
+
+- **Ein gestelltes Video ist keine Kamera.** Kein Rauschen, keine Unschärfe,
+  kein Schräghalten, keine Reflexion auf dem Bildschirm. Die Prüfung sagt:
+  Der Weg funktioniert und die Teilstücke setzen sich richtig zusammen. Sie
+  sagt nicht, wie gut sich das im Sitzungszimmer bedienen lässt.
+- **Nur Chromium.** WebKit kennt die Flaggen nicht.
+- **Der Kontrast wird für zwei Rückfragen gemessen, nicht für sechs.** Die
+  Begründung steht oben und hängt an `tone`; wer eine dritte Farbverzweigung
+  einführt, muss die Liste erweitern.
+- **Weiterhin keine Aussage über den Screenreader.**
+
+### Voller Lauf
+
+`tsc --noEmit` sauber. 162 Funktionsprüfungen bestanden.
+
+---
+
 ## 2026-09-12 — v0.9.32: Die Rückfragen, die nie eine Messung gesehen haben
 
 Achter Fall derselben Klasse — und der unangenehmste. Hinter jeder Rückfrage

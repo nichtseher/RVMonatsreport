@@ -1098,6 +1098,44 @@ mit Grund in einer Ausnahmeliste stehen.
 Inline-Funktion aus `App.tsx` hängen. Behoben sind die fünf mit
 Fokus-Wiederherstellung — das sind die, bei denen es sichtbare Folgen hat.
 
+### Nachtrag: der Deploy war rot, und der QR-Weg ist doch prüfbar
+
+**Der erste Push von 0.9.32 ist am Prüftor gescheitert** (`failure`, Schritt
+`check:ui`). Aufgefallen ist es nicht am API-Status, sondern daran, dass die
+öffentliche Adresse 22 Minuten lang weiter das alte Bündel auslieferte.
+Gemeldet wurde `target-size` für eine Taste **hinter** der Rückfrage: Der
+abdunkelnde Grund ist halbdurchsichtig und zählt für axe nicht als Verdeckung,
+die Dialogkarte darüber schon — wo deren Kante eine Tastenzeile schneidet,
+bleibt ein Streifen. Lokal nicht reproduzierbar, auch nicht mit erzwungener
+Breitschrift. Die axe-Messung der Rückfragen ist deshalb auf den Dialog
+eingegrenzt.
+
+**Beim Gegenprüfen dieser Eingrenzung kam eine ältere Lücke ans Licht:** axe
+kann den Kontrast **im** Dialog gar nicht bestimmen — durch die
+halbdurchsichtige Schicht hindurch meldet es `incomplete` statt `violation`.
+Die Prüfung „Kontrast in allen Farbschemata" wertet nur `violations` aus und
+war für Rückfragen damit von Anfang an blind. Genau dort saß der Fehler aus
+0.9.22, und genau deshalb musste er damals von Hand gefunden werden. Neu ist
+eine eigene Kontrastrechnung, die halbdurchsichtige Schichten über den ersten
+deckenden Vorfahren zusammensetzt.
+
+**Der QR-Weg ist abgedeckt — ihm fehlte eine Kommandozeilen-Flagge.** Er stand
+seit 0.9.30 als offen, „weil eine Kamera fehlt"; belegt war davon nur
+`NotFoundError`. Chromium speist eine Kamera aus einer Y4M-Datei, wenn
+`--use-fake-device-for-media-stream` **daneben** steht; ohne diese Flagge
+bleibt es bei genau der Meldung, die als Beleg für „nicht prüfbar" galt. Die
+Prüfung nimmt die echten QR-Codes aus dem Sende-Bildschirm auf und führt am
+Ende zusammen — beide Archivmonate stehen danach auf Gerät B. 17,7 s.
+
+Damit ist **die dritte** Behauptung der Form „X ist nicht prüfbar, weil Y" in
+vier Versionen widerlegt worden (0.9.30 „braucht ein zweites Gerät", 0.9.31
+„findet ohne ICE-Server nicht zueinander", jetzt „braucht eine Kamera"). Wer
+diese Liste fortschreibt, sollte jeden solchen Satz als **Vermutung** lesen.
+
+Nebenbefund, kein Befund über die App: Bei 640 × 480 kam nur das kurze letzte
+Teilstück durch, bei 800 × 600 alle drei. Die Telefone der Kollegen filmen weit
+darüber — aber wer `CHUNK_SIZE` erhöht, verbraucht genau diese Reserve.
+
 ---
 
 ## 1.0 — Abnahmefähig

@@ -1,5 +1,7 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect, Page, chromium } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+// Für den QR-Weg: Chromium bekommt eine Kamera aus einer Y4M-Datei gespeist.
+import { writeFileSync } from "node:fs";
 
 /**
  * Oberflächenprüfung: Geometrie und Barrierefreiheit.
@@ -2734,7 +2736,27 @@ test.describe("Zustände der Rückfragen", () => {
     test(`${rueckfrage.name} ohne schwere Verstöße`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== "handy", "axe haengt nicht am Motor");
       await oeffneRueckfrage(page, rueckfrage);
+      /*
+        Gemessen wird die RÜCKFRAGE, nicht die Seite dahinter -- und das ist
+        hier keine Bequemlichkeit, sondern die Korrektur eines Messfehlers.
+
+        Der erste Lauf auf dem CI-Läufer meldete `target-size` für eine
+        Notiz-Vorlagentaste im Formular DAHINTER: „smallest space is 217.2px
+        by 17.5px". Die Taste trägt `min-h-[44px]` und misst auch 44 px --
+        gemeldet wurde ihre UNVERDECKTE Fläche. Der abdunkelnde Grund ist
+        halbdurchsichtig und zählt für axe nicht als Verdeckung, die
+        Dialogkarte darüber schon; wo deren Kante eine Tastenzeile schneidet,
+        bleibt ein Streifen übrig. Welche Zeile das trifft, hängt am Umbruch
+        und damit an der Schrift -- lokal (auch mit erzwungenem Verdana) war
+        nichts zu sehen, auf dem Läufer riss es den Deploy von 0.9.32 auf.
+
+        Ein Befund über eine Taste, die man gerade gar nicht bedienen kann,
+        ist keine Aussage über die Rückfrage. Der Hintergrund wird in seinem
+        eigenen Zustand gemessen -- `ANSICHTEN` und `FORMULAR_ZUSTAENDE` tun
+        genau das.
+      */
       const ergebnis = await new AxeBuilder({ page })
+        .include('[role="alertdialog"]')
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
         .analyze();
       const befunde = ergebnis.violations
@@ -2822,6 +2844,133 @@ test.describe("Zustände der Rückfragen", () => {
           `statt zurück auf der auslösenden Taste`,
       ).toMatch(rueckfrage.ausloeser);
     });
+  }
+
+  /*
+    Kontrast in der Rückfrage — von Hand gerechnet, weil axe hier nicht kann.
+
+    Gemessen am 2026-09-12: axe meldet jeden Text im Dialog als
+    **„incomplete"**, nicht als Verstoß. Der Grund ist der abdunkelnde Grund
+    (`bg-black/60`): Durch eine halbdurchsichtige Schicht hindurch kann axe
+    den wirksamen Hintergrund nicht bestimmen und enthält sich. Die Prüfung
+    „Kontrast in allen Farbschemata" wertet nur `violations` aus -- sie war
+    für Rückfragen also blind, und zwar von Anfang an.
+
+    Das ist keine Kleinigkeit: Genau hier saß der Fehler aus 0.9.22. Die
+    bestätigende Taste stand mit `text-white` auf `--danger-solid`, und diese
+    Variable ist in „Weiß auf Schwarz" selbst `#ffffff`, in „Gelb auf Schwarz"
+    `#ffff00` -- Kontrast 1,00:1 und 1,07:1, in allen vier zerstörenden
+    Rückfragen. Gefunden wurde er damals von Hand.
+
+    Hier wird deshalb selbst gerechnet: Für jeden Text im Dialog wird der
+    wirksame Hintergrund gesucht (halbdurchsichtige Schichten werden über den
+    ersten deckenden Vorfahren gerechnet) und das Verhältnis nach WCAG 1.4.3
+    gebildet -- 4,5:1, für große Schrift 3:1.
+
+    Zwei Rückfragen genügen dafür, und das ist eine Aussage, keine Abkürzung:
+    Die Farben im Dialog hängen an genau einer Verzweigung, `tone === "danger"`.
+    Je ein Vertreter deckt beide Zweige ab; welche Aktion dahintersteht,
+    ändert an den Farben nichts.
+  */
+  for (const rueckfrage of RUECKFRAGEN.filter(
+    (r) => r.name === "Rückfrage: Kategorie löschen" || r.name === "Rückfrage: Monat abschließen",
+  )) {
+    for (const schema of [{ id: "standard", name: "Standard" }, ...FARBSCHEMATA]) {
+      test(`${rueckfrage.name}: Kontrast im Schema „${schema.name}"`, async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name !== "handy", "Kontrast folgt den CSS-Werten");
+
+        if (schema.id !== "standard") {
+          await page.addInitScript((s) => {
+            localStorage.setItem("aussendienst_pwa_a11y", JSON.stringify({ theme: s }));
+          }, schema.id);
+        }
+        await oeffneRueckfrage(page, rueckfrage);
+
+        if (schema.id !== "standard") {
+          // Ohne diesen Nachweis wäre ein grüner Lauf auch dann grün, wenn das
+          // Schema gar nicht anliegt.
+          expect(
+            await page.evaluate(() => document.documentElement.getAttribute("data-theme")),
+            `Schema ${schema.id} wurde nicht angewandt`,
+          ).toBe(schema.id);
+        }
+
+        const befunde = await page.evaluate(() => {
+          const zuRgb = (s: string): [number, number, number, number] => {
+            const m = s.match(/[\d.]+/g)?.map(Number) ?? [0, 0, 0, 0];
+            return [m[0] ?? 0, m[1] ?? 0, m[2] ?? 0, m[3] === undefined ? 1 : m[3]];
+          };
+          const leuchtkraft = (r: number, g: number, b: number) => {
+            const f = (v: number) => {
+              const x = v / 255;
+              return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+            };
+            return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+          };
+
+          /** Wirksamer Hintergrund: Schichten über den ersten deckenden Vorfahren rechnen. */
+          const hintergrund = (el: Element): [number, number, number] => {
+            const schichten: [number, number, number, number][] = [];
+            let p: Element | null = el;
+            while (p) {
+              const [r, g, b, a] = zuRgb(getComputedStyle(p).backgroundColor);
+              if (a > 0) {
+                schichten.push([r, g, b, a]);
+                if (a >= 1) break;
+              }
+              p = p.parentElement;
+            }
+            // Von unten (deckend) nach oben zusammensetzen.
+            let [er, eg, eb] = schichten.length ? schichten[schichten.length - 1].slice(0, 3) as [number, number, number] : [255, 255, 255];
+            for (let i = schichten.length - 2; i >= 0; i--) {
+              const [r, g, b, a] = schichten[i];
+              er = r * a + er * (1 - a);
+              eg = g * a + eg * (1 - a);
+              eb = b * a + eb * (1 - a);
+            }
+            return [er, eg, eb];
+          };
+
+          const dialog = document.querySelector('[role="alertdialog"]');
+          if (!dialog) return ["Kein Dialog im Dokument"];
+
+          const treffer: string[] = [];
+          for (const el of Array.from(dialog.querySelectorAll("*"))) {
+            const eigenerText = Array.from(el.childNodes).some(
+              (n) => n.nodeType === 3 && (n.textContent || "").trim().length > 0,
+            );
+            if (!eigenerText) continue;
+            const s = getComputedStyle(el);
+            if (s.visibility === "hidden" || s.display === "none") continue;
+
+            const [vr, vg, vb, va] = zuRgb(s.color);
+            if (va === 0) continue;
+            const [hr, hg, hb] = hintergrund(el);
+            const l1 = leuchtkraft(vr, vg, vb);
+            const l2 = leuchtkraft(hr, hg, hb);
+            const verhaeltnis = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+
+            const groesse = parseFloat(s.fontSize);
+            const fett = parseInt(s.fontWeight, 10) >= 700;
+            const gross = groesse >= 24 || (groesse >= 18.66 && fett);
+            const schwelle = gross ? 3 : 4.5;
+
+            if (verhaeltnis < schwelle) {
+              treffer.push(
+                `${el.tagName.toLowerCase()}"${(el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 24)}" ` +
+                  `${verhaeltnis.toFixed(2)}:1 (nötig ${schwelle}:1) — ${s.color} auf rgb(${Math.round(hr)}, ${Math.round(hg)}, ${Math.round(hb)})`,
+              );
+            }
+          }
+          return treffer;
+        });
+
+        expect(
+          befunde,
+          `${rueckfrage.name} / ${schema.name}: ${befunde.join(" | ")}`,
+        ).toEqual([]);
+      });
+    }
   }
 
   /*
@@ -3165,6 +3314,208 @@ async function archivMonate(page: Page) {
     return Object.keys(wert || {}).sort();
   });
 }
+
+/**
+ * Der QR-Weg — mit einer gestellten Kamera.
+ *
+ * Dieser Weg stand seit 0.9.30 in DEVLOG und ROADMAP als offen, weil „eine
+ * Kamera fehlt". Belegt war davon genau ein Satz: `NotFoundError: Requested
+ * device not found`. Der sagt, dass DIESE Umgebung keine Kamera hat — nicht,
+ * dass man keine stellen kann. Es ist dieselbe Form von Schluss, die schon
+ * zweimal falsch war („braucht ein zweites Gerät", 0.9.30; „findet ohne
+ * ICE-Server nicht zueinander", 0.9.31).
+ *
+ * Chromium kann eine Kamera aus einer Y4M-Datei speisen. Diese Prüfung baut
+ * daraus den rotierenden QR-Bildschirm des Senders nach und hält ihn dem
+ * Empfänger vor die Linse.
+ *
+ * **Zwei Dinge, die beim Bauen Zeit gekostet haben und hier stehen, damit sie
+ * es nicht noch einmal tun:**
+ *
+ * 1. `--use-file-for-fake-video-capture` allein legt **kein Gerät an**. Ohne
+ *    `--use-fake-device-for-media-stream` daneben bleibt es bei
+ *    `NotFoundError` — also bei genau der Meldung, die bisher als Beleg für
+ *    „nicht prüfbar" galt.
+ * 2. **Die Auflösung entscheidet.** Bei 640 × 480 mit 240 px QR wurde nur das
+ *    letzte Teilstück gelesen — das kurze Reststück mit weniger Modulen. Die
+ *    vollen 450-Zeichen-Teile brauchen mehr Bildpunkte je Modul. Gemessen:
+ *
+ *    | Bild | QR | Ergebnis |
+ *    |---|---|---|
+ *    | 640 × 480 | 240 px | nur 1 von 3 |
+ *    | 800 × 600 | 460 px | **3 von 3** |
+ *    | 1280 × 960 | 640 px | 3 von 3 |
+ *
+ *    Das ist eine Eigenschaft dieser Simulation, kein Befund über die App:
+ *    Die Telefone der Kollegen filmen weit über 800 × 600. Es sagt aber
+ *    etwas über den Spielraum — wer `CHUNK_SIZE` erhöht, verkleinert die
+ *    Module und verschlechtert genau diese Reserve.
+ */
+async function baueQrVideo(seite: Page, pfad: string): Promise<number> {
+  const BREITE = 800;
+  const HOEHE = 600;
+  const FPS = 25;
+  const KANTE = 460;
+  const BILDER_JE_TEIL = Math.round(1.2 * FPS);
+
+  const hinweis = await seite.locator("body").innerText();
+  const anzahl = Number(hinweis.match(/(\d+)\s+QR-Codes rotieren/)?.[1] ?? "1");
+  const weiter = seite.getByRole("button", { name: /Nächster QR-Code/ });
+
+  /*
+    Nach Nummer sammeln, nicht blind weiterklicken: Der Sender rotiert beim
+    Öffnen von selbst (CYCLE_MS). Ein Lauf, der einfach dreimal liest, kann
+    dasselbe Teilstück doppelt erwischen und ein anderes nie.
+  */
+  const nachNummer = new Map<number, number[]>();
+  for (let versuch = 0; versuch < anzahl * 4 && nachNummer.size < anzahl; versuch++) {
+    const nummer =
+      anzahl === 1
+        ? 1
+        : Number(
+            (
+              await seite.locator("p", { hasText: /^Code \d+ von \d+$/ }).first().innerText()
+            ).match(/Code (\d+) von/)?.[1] ?? "0",
+          );
+    if (nummer && !nachNummer.has(nummer)) {
+      nachNummer.set(
+        nummer,
+        await seite.evaluate(
+          async ({ b, h, kante }) => {
+            // Das GRÖSSTE <svg> ist der QR-Code. `svg[width][height]` traf die
+            // Lucide-Symbole — die stehen früher im Dokument.
+            const svg = Array.from(document.querySelectorAll("svg"))
+              .map((el) => ({ el, f: el.getBoundingClientRect().width * el.getBoundingClientRect().height }))
+              .sort((x, y) => y.f - x.f)[0]?.el;
+            if (!svg) throw new Error("Kein QR-<svg> gefunden");
+            if (svg.getBoundingClientRect().width < 100) throw new Error("Größtes <svg> ist kein QR-Code");
+            const bild = new Image();
+            bild.src =
+              "data:image/svg+xml;base64," +
+              btoa(unescape(encodeURIComponent(new XMLSerializer().serializeToString(svg))));
+            await new Promise((res, rej) => {
+              bild.onload = res;
+              bild.onerror = () => rej(new Error("SVG lud nicht"));
+            });
+            const c = document.createElement("canvas");
+            c.width = b;
+            c.height = h;
+            const ctx = c.getContext("2d")!;
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, b, h);
+            ctx.drawImage(bild, (b - kante) / 2, (h - kante) / 2, kante, kante);
+            const d = ctx.getImageData(0, 0, b, h).data;
+            const grau: number[] = [];
+            for (let i = 0; i < d.length; i += 4) {
+              grau.push((d[i] * 299 + d[i + 1] * 587 + d[i + 2] * 114) / 1000);
+            }
+            return grau;
+          },
+          { b: BREITE, h: HOEHE, kante: KANTE },
+        ),
+      );
+    }
+    if (anzahl > 1) {
+      await weiter.click();
+      await seite.waitForTimeout(300);
+    }
+  }
+
+  expect(
+    nachNummer.size,
+    `Nur ${nachNummer.size} von ${anzahl} Teilstücken aufgenommen — die Aufnahme ` +
+      `ist unvollständig, der Empfang könnte danach nicht gelingen.`,
+  ).toBe(anzahl);
+
+  const teile: Buffer[] = [Buffer.from(`YUV4MPEG2 W${BREITE} H${HOEHE} F${FPS}:1 Ip A1:1 C420\n`, "ascii")];
+  const neutral = Buffer.alloc((BREITE / 2) * (HOEHE / 2), 128);
+  for (let n = 1; n <= anzahl; n++) {
+    const grau = nachNummer.get(n)!;
+    const y = Buffer.alloc(BREITE * HOEHE);
+    for (let i = 0; i < y.length; i++) y[i] = Math.max(0, Math.min(255, Math.round(grau[i])));
+    for (let w = 0; w < BILDER_JE_TEIL; w++) {
+      teile.push(Buffer.from("FRAME\n", "ascii"), y, neutral, neutral);
+    }
+  }
+  writeFileSync(pfad, Buffer.concat(teile));
+  return anzahl;
+}
+
+test.describe("Zwei Geräte über den QR-Weg", () => {
+  test("Eine gestellte Kamera liest alle Teilstücke und führt zusammen", async ({
+    browser,
+    baseURL,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Eine Kamera genuegt, sie haengt nicht am Profil");
+    test.setTimeout(180_000);
+
+    const basis = baseURL as string;
+    const video = testInfo.outputPath("qr-kamera.y4m");
+
+    // --- Gerät A: zeigt die QR-Codes, wir nehmen sie auf ---
+    const kontextA = await browser.newContext({ baseURL: basis });
+    const a = await kontextA.newPage();
+    await oeffneSyncMitBestand(a, { "2026-06": monat("2026-06", "s1_1", 7) }, {
+      month: "2026-09", name: "Marc Petry", notes: "", values: {}, valuesUpdatedAt: {}, timeLogs: [],
+    });
+    await a.getByRole("button", { name: /Daten an anderes Gerät senden/ }).click();
+    await a.locator("svg").first().waitFor({ state: "visible", timeout: 20_000 });
+    await a.waitForTimeout(1200);
+    const teilstuecke = await baueQrVideo(a, video);
+    await kontextA.close();
+
+    // --- Gerät B: bekommt diese Datei als Kamera ---
+    const browserB = await chromium.launch({
+      args: [
+        "--use-fake-ui-for-media-stream",
+        // Diese Zeile ist der Unterschied zwischen „geht nicht" und „geht":
+        // ohne sie legt Chromium kein Gerät an, und der Lauf endet mit genau
+        // der Meldung, die bisher als Beleg für „nicht prüfbar" galt.
+        "--use-fake-device-for-media-stream",
+        `--use-file-for-fake-video-capture=${video}`,
+      ],
+    });
+    try {
+      const kontextB = await browserB.newContext({ baseURL: basis, permissions: ["camera"] });
+      const b = await kontextB.newPage();
+      await oeffneSyncMitBestand(b, { "2026-07": monat("2026-07", "s1_1", 4) }, {
+        month: "2026-09", name: "Marc Petry", notes: "", values: {}, valuesUpdatedAt: {}, timeLogs: [],
+      });
+
+      // `startReceive()` startet die Kamera von selbst.
+      await b.getByRole("button", { name: /Daten von anderem Gerät übernehmen/ }).click();
+
+      const zusammenfuehren = b.getByRole("button", { name: /Zusammenführen/ });
+      await zusammenfuehren.waitFor({ state: "visible", timeout: 90_000 }).catch(() => {});
+      const text = (await b.locator("body").innerText()).replace(/\s+/g, " ");
+      expect(
+        await zusammenfuehren.count(),
+        `Der Empfang ist nicht bis zur Rückfrage gekommen (${teilstuecke} Teilstücke ` +
+          `im Video). Letzte Meldung: „${text.match(/Teil \d+ von \d+|Kamera aktiv|Keine Kamera[^.]*/)?.[0] ?? "keine"}". ` +
+          `Häufigste Ursache ist die Auflösung: Zu kleine Module lassen nur das ` +
+          `kurze letzte Teilstück durch — siehe die Tabelle über dieser Prüfung.`,
+      ).toBeGreaterThan(0);
+
+      await zusammenfuehren.click();
+      await b.waitForTimeout(2500);
+
+      /*
+        Bis zur Rückfrage zu kommen heisst schon: Alle Teilstücke sind
+        angekommen, zusammengesetzt, entpackt und durch `pruefeSyncPaket`
+        gegangen. Trotzdem wird hier zusätzlich zusammengeführt -- die
+        Rückfrage beweist ein gültiges Paket, nicht das richtige.
+      */
+      expect(
+        await archivMonate(b),
+        "Nach dem Zusammenführen über die Kamera müssen BEIDE Monate auf Gerät B stehen.",
+      ).toEqual(["2026-06", "2026-07"]);
+
+      await kontextB.close();
+    } finally {
+      await browserB.close();
+    }
+  });
+});
 
 test.describe("Zwei Geräte über die Live-Verbindung", () => {
   test("Kopplung, Stille im Leerlauf, und das Abzeichen im Kopfbereich", async ({

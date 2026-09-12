@@ -17,7 +17,7 @@ npm install
 npm run dev        # tsx server.ts — dev server on http://localhost:3000 (Express + Vite middleware, HMR)
 npm run lint       # tsc --noEmit (covers src/, scripts/, tests/); no ESLint config
 npm run check      # tsx scripts/pruefen.ts — 162 checks, no test framework
-npm run check:ui   # playwright test — 798 UI/a11y checks over three profiles (409 run, 389 skipped by profile), ~14 min (starts the dev server itself)
+npm run check:ui   # playwright test — 825 UI/a11y checks over three profiles (418 run, 407 skipped by profile), ~15 min (starts the dev server itself)
 npm run build      # vite build (client) + esbuild bundles server.ts -> dist/server.cjs
 npm run start      # node dist/server.cjs — serve the production build
 ```
@@ -35,6 +35,12 @@ npm run start      # node dist/server.cjs — serve the production build
 **A container that scrolls sideways on purpose must say so** with `data-scroll-x="absicht"`; the overflow check treats every other `overflow-x: auto` as the accident it usually is.
 
 **axe-core finds a subset of WCAG failures, never all of them.** A green run is not a conformance claim; the NVDA/VoiceOver pass is still what decides 1.0.
+
+**And axe measures a page with a modal open in ways you will misread.** Two separate traps, both found on 2026-09-12 by the confirmation-dialog work:
+- **`target-size` fires for background elements.** The backdrop is `bg-black/60`; a translucent layer does not count as obscuring for axe, but the opaque dialog card does. Wherever the card's edge crosses a row of buttons behind it, axe reports the remaining strip (measured: `217.2px by 17.5px` for a button that is genuinely 44 px tall) — and which row that is depends on line wrapping, so it fires on the CI runner and not locally, *even with the forced wide font*. That broke the 0.9.32 deploy. Scope the confirmation's axe pass with `.include('[role="alertdialog"]')`; the background is measured in its own right by `ANSICHTEN` and `FORMULAR_ZUSTAENDE`.
+- **`color-contrast` is silently unavailable inside a modal.** Through the translucent backdrop axe cannot determine the effective background, so it reports `incomplete`, never `violation` — and `incomplete` is not what the contrast tests assert on. The dialogs were therefore never contrast-checked at all, which is exactly why the 0.9.22 bug (a confirm button at 1.00:1 in two schemes) had to be found by hand. Contrast inside a dialog needs its own computation that composites translucent layers over the first opaque ancestor; `tests/oberflaeche.spec.ts` has one.
+
+**A camera can be supplied — "no camera" was never the blocker.** `--use-file-for-fake-video-capture=<file.y4m>` feeds Chromium a video as a webcam, **but only with `--use-fake-device-for-media-stream` alongside it**; the file flag alone yields `NotFoundError: Requested device not found` — the very message this project cited for three versions as proof the QR path was untestable. Resolution decides whether it works: at 640×480 with a 240 px QR only the short final chunk decoded; 800×600 with 460 px reads all of them. That is a property of the simulation, not of the app — but it does say that raising `CHUNK_SIZE` spends that margin.
 
 The deploy workflow runs `lint`, `check`, `check:ui` and `npm audit` **before** building, so a failure leaves the previous version online. Anything not expressible in those (screen-reader behavior, real devices, camera flows) still has to be verified by hand — see below.
 
