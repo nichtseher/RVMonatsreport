@@ -2630,6 +2630,45 @@ const RUECKFRAGEN = [
       await oeffneSyncErsetzenAbfrage(p);
     },
   },
+  {
+    /*
+      Die siebte -- und sie hat 0.9.32 zunächst gefehlt.
+
+      Der erste Entwurf dieses Blocks führte „alle sechs Rückfragen" auf, und
+      das stand so in DEVLOG, ROADMAP, Konformitätsbericht und Changelog.
+      Gefunden hat den Fehler kein Prüflauf, sondern das Nachzählen der eigenen
+      Zusage: `setConfirmRequest`-Aufrufe im Quelltext gegen die Einträge in
+      dieser Liste. Es waren sieben gegen sechs.
+
+      Sie ist nicht zerstörend, aber folgenreich: Sie steht vor „Bericht an VL
+      senden" -- dem Vorgang, mit dem der Monatsbericht das Haus verlässt. Wer
+      hier „Trotzdem senden" wählt, schickt einen Bericht ab, den die App
+      gerade beanstandet hat.
+
+      Und sie ist die **einzige mit abweichender Abbrechen-Beschriftung**
+      („Erst korrigieren"). Die Zusicherung zum Startfokus verlangte wörtlich
+      „Abbrechen" -- sie hätte hier das Falsche geprüft, und zwar unbemerkt,
+      weil sie ohne diesen Eintrag nie auf den Fall getroffen wäre.
+    */
+    name: "Rückfrage: Monatsabschluss-Check",
+    ausloeser: /Bericht an VL senden/,
+    abbrechen: "Erst korrigieren",
+    oeffne: async (p: Page) => {
+      await legeBerichtAn(p, {
+        month: "2026-09",
+        name: "Marc Petry",
+        notes: "",
+        // Zählerstände vorhanden, aber KEINE Arbeitstage bei zwei
+        // Schichttagen -- das ist eine der Auffälligkeiten, die
+        // `pruefeMonatsabschluss` meldet.
+        values: { s1_1: 5, tage_arbeit: 0 },
+        valuesUpdatedAt: {},
+        timeLogs: SCHICHTEN_BESTAND,
+      });
+      await oeffne(p, "form");
+      await p.getByRole("button", { name: /Bericht an VL senden/ }).first().click();
+    },
+  },
 ] as const;
 
 /**
@@ -2782,8 +2821,16 @@ test.describe("Zustände der Rückfragen", () => {
       test.skip(testInfo.project.name !== "handy", "Tastatur haengt nicht am Geraeteprofil");
       await oeffneRueckfrage(page, rueckfrage);
 
-      // Startfokus: bewusst „Abbrechen", damit ein versehentliches Enter bei
-      // einer zerstörenden Aktion nichts auslöst.
+      /*
+        Startfokus: bewusst auf der abbrechenden Taste, damit ein
+        versehentliches Enter bei einer zerstörenden Aktion nichts auslöst.
+
+        Die Beschriftung ist NICHT immer „Abbrechen" -- `ConfirmRequest`
+        kennt `cancelLabel`, und der Monatsabschluss-Check nutzt das
+        („Erst korrigieren"). Eine fest verdrahtete Zeichenkette hätte dort
+        das Falsche geprüft.
+      */
+      const erwartet = (rueckfrage as { abbrechen?: string }).abbrechen ?? "Abbrechen";
       const start = await page.evaluate(() => {
         const a = document.activeElement as HTMLElement | null;
         const d = document.querySelector('[role="alertdialog"]');
@@ -2794,10 +2841,10 @@ test.describe("Zustände der Rückfragen", () => {
       });
       expect(
         start,
-        `${rueckfrage.name}: Der Startfokus liegt nicht auf „Abbrechen" im Dialog, ` +
+        `${rueckfrage.name}: Der Startfokus liegt nicht auf „${erwartet}" im Dialog, ` +
           `sondern auf „${start.name}". Wer nicht zeigen kann, steht damit ` +
-          `im Hintergrund, während vorn eine Löschabfrage steht.`,
-      ).toEqual({ imDialog: true, name: "Abbrechen" });
+          `im Hintergrund, während vorn eine Rückfrage steht.`,
+      ).toEqual({ imDialog: true, name: erwartet });
 
       // Zehnmal vorwärts, sechsmal rückwärts: Der Fokus darf den Dialog nie
       // verlassen. Zehn ist mehr als die zwei Tasten des Dialogs -- ein

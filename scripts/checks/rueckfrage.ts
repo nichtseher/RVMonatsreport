@@ -135,3 +135,68 @@ pruefe("jeder Tastatur-Zuhörer hat die Wache oder eine begründete Ausnahme", (
       `dahinter; im Geräte-Sync kostet das das bereits empfangene Paket.`,
   );
 });
+
+/*
+  ANLASS FÜR DIE NÄCHSTE PRÜFUNG (2026-09-12, nach 0.9.32)
+
+  Der erste Entwurf von 0.9.32 führte „alle sechs Rückfragen" auf -- in
+  DEVLOG, ROADMAP, Konformitätsbericht und Changelog. Es sind **sieben**. Die
+  siebte (`useExport.ts`, „Monatsabschluss-Check") steht vor dem Senden an die
+  Vertriebsleitung und war in keiner Messung.
+
+  Gefunden hat sie kein Prüflauf, sondern das Nachzählen der eigenen Zusage.
+  Genau das macht diese Prüfung jetzt bei jedem Lauf: Sie zählt die
+  `setConfirmRequest`-Aufrufe im Quelltext gegen die Einträge in `RUECKFRAGEN`
+  in `tests/oberflaeche.spec.ts`.
+
+  Warum hier und nicht im Oberflächen-Gate: Das Gate misst, was in seiner
+  Liste steht -- es kann per Bauart nicht bemerken, dass etwas fehlt. Eine
+  Liste, die jemand pflegen muss, hat in diesem Projekt schon dreimal versagt
+  (`EINSTIEGE` 0.9.21, `ZUSTAENDE_MIT_SCHRIFT` 0.9.27, `RUECKFRAGEN` jetzt).
+*/
+pruefe("jede Rückfrage im Quelltext steht auch im Oberflächen-Prüfnetz", () => {
+  const gefunden: string[] = [];
+  const gehe = (verzeichnis: string) => {
+    for (const eintrag of readdirSync(verzeichnis, { withFileTypes: true })) {
+      const pfad = join(verzeichnis, eintrag.name);
+      if (eintrag.isDirectory()) {
+        gehe(pfad);
+        continue;
+      }
+      if (!/\.tsx?$/.test(eintrag.name)) continue;
+      const inhalt = readFileSync(pfad, "utf8");
+      // setConfirmRequest({ ... title: "..." }) -- der Titel steht in den
+      // ersten Zeilen des Objekts.
+      const muster = /setConfirmRequest\(\{[\s\S]{0,140}?title:\s*(`[^`]*`|"[^"]*")/g;
+      let treffer: RegExpExecArray | null;
+      while ((treffer = muster.exec(inhalt))) {
+        gefunden.push(`${eintrag.name}: ${treffer[1].replace(/[`"]/g, "").trim()}`);
+      }
+    }
+  };
+  gehe(WURZEL);
+
+  wahr(
+    gefunden.length >= 5,
+    `Nur ${gefunden.length} Rückfrage(n) im Quelltext gefunden — das Muster ` +
+      `trifft nicht mehr, die Prüfung wäre ab hier wirkungslos.`,
+  );
+
+  const spec = readFileSync(
+    new URL("../../tests/oberflaeche.spec.ts", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"),
+    "utf8",
+  );
+  const ab = spec.indexOf("const RUECKFRAGEN");
+  wahr(ab >= 0, "In tests/oberflaeche.spec.ts gibt es keine Liste RUECKFRAGEN mehr.");
+  const block = spec.slice(ab, spec.indexOf("] as const;", ab));
+  const imNetz = (block.match(/name:\s*"Rückfrage: /g) || []).length;
+
+  wahr(
+    imNetz === gefunden.length,
+    `Im Quelltext stehen ${gefunden.length} Rückfragen, im Prüfnetz ${imNetz}.\n` +
+      `       Gefunden: ${gefunden.join(" | ")}\n` +
+      `       Wer eine Rückfrage hinzufügt, trägt sie in RUECKFRAGEN ein — ` +
+      `sonst wird sie nie gerendert und nie gemessen. Genau so ist die ` +
+      `siebte (Monatsabschluss-Check) bis 0.9.32 durchgerutscht.`,
+  );
+});

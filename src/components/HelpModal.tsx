@@ -218,7 +218,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   icon={<Keyboard className="text-[var(--info-border)]" />}
                   title="Tastenkürzel (besonders praktisch am PC)"
                 >
-                  <p>Diese Kürzel funktionieren überall in der App. Halten Sie <strong>Alt</strong> und <strong>Umschalt</strong> zusammen gedrückt und tippen Sie dann den Buchstaben:</p>
+                  <p>Diese Kürzel funktionieren in der ganzen App – nur nicht, solange eine Sicherheitsfrage offen steht; dann beantworten Sie erst diese. Halten Sie <strong>Alt</strong> und <strong>Umschalt</strong> zusammen gedrückt und tippen Sie dann den Buchstaben:</p>
                   <ul className="list-disc pl-4 space-y-1 mt-1">
                     <li><strong>Alt+Umschalt+M</strong> – zum Feld „Monat“ springen</li>
                     <li><strong>Alt+Umschalt+N</strong> – zum Feld „Mitarbeiter/in“ springen</li>

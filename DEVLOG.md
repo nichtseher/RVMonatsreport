@@ -172,9 +172,81 @@ gehört neu erhoben; das ist der nächste Schritt und nicht Teil dieses Standes.
   einführt, muss die Liste erweitern.
 - **Weiterhin keine Aussage über den Screenreader.**
 
+### Nachtrag am selben Tag: es waren sechs von sieben
+
+Bei einer Generalprüfung auf Bitte des Projektinhabers ist aufgefallen, dass
+der Satz oben falsch war. Dieser Stand führte „alle sechs Rückfragen" — in
+DEVLOG, ROADMAP, Konformitätsbericht und Changelog. **Es sind sieben.**
+
+Die siebte liegt in `useExport.ts` und heißt „Monatsabschluss-Check". Sie
+steht vor **„Bericht an VL senden"** — dem Vorgang, mit dem der Monatsbericht
+das Haus verlässt. Sie ist nicht zerstörend, aber folgenreich: Wer dort
+„Trotzdem senden" wählt, schickt einen Bericht ab, den die App gerade
+beanstandet hat.
+
+Zwei Dinge machen den Fall lehrreich:
+
+- **Sie ist die einzige mit abweichender Abbrechen-Beschriftung** („Erst
+  korrigieren" statt „Abbrechen"). Die neue Zusicherung zum Startfokus
+  verlangte wörtlich „Abbrechen". Sie hätte hier das Falsche geprüft — und
+  zwar unbemerkt, weil sie ohne diesen Eintrag nie auf den Fall getroffen
+  wäre. Die Zusicherung liest jetzt die tatsächliche Beschriftung.
+- **Gefunden hat sie kein Prüflauf.** Alle 418 Oberflächenprüfungen waren
+  grün, und sie wären es geblieben: Ein Prüfnetz misst, was in seiner Liste
+  steht, und kann per Bauart nicht bemerken, dass etwas fehlt. Gefunden hat
+  sie das Nachzählen der eigenen Zusage — `setConfirmRequest`-Aufrufe im
+  Quelltext gegen die Einträge in `RUECKFRAGEN`. Sieben gegen sechs.
+
+Gemessen, nachdem sie aufgenommen war: **ohne Befund** in allen sechs
+Prüfungen (Geometrie bei zwei Schriftgrößen, Trefferflächen, axe, WCAG 2.5.3,
+breite Schrift, Tastatur-Durchlauf). Der Fehler lag also nicht in der
+Rückfrage, sondern in der Behauptung über sie.
+
+**Die Gegenmaßnahme ist eine Prüfung, keine Notiz** (`npm run check`,
+162 → 163): Sie zählt bei jedem Lauf die `setConfirmRequest`-Aufrufe im
+Quelltext gegen die Einträge im Prüfnetz. Gegengeprobt durch Tarnen des
+siebten Eintrags:
+
+```
+FEHL Rückfrage-Wache: jede Rückfrage im Quelltext steht auch im
+     Oberflächen-Prüfnetz
+     Im Quelltext stehen 7 Rückfragen, im Prüfnetz 6.
+     Gefunden: App.tsx: Vorlage laden? | … | useExport.ts: Monatsabschluss-Check
+```
+
+Das ist der vierte Fall derselben Art in diesem Projekt: Eine Liste, die
+jemand von Hand pflegen muss, ist dreimal vergessen worden (`EINSTIEGE` in
+0.9.21, `ZUSTAENDE_MIT_SCHRIFT` in 0.9.27, jetzt `RUECKFRAGEN`). Jedes Mal
+blieb der Lauf grün. Zählprüfungen wie `zustandsdeckung.ts` sind die Antwort
+darauf, und es gibt jetzt eine zweite.
+
+**Ebenfalls bei dieser Generalprüfung berichtigt:**
+
+- Der Hilfetext sagte bei den Tastenkürzeln „Diese Kürzel funktionieren
+  **überall** in der App". Seit der Wache gegen den doppelten Abbruch ruhen
+  sie, solange eine Rückfrage offen steht. `CLAUDE.md` verlangt, die Hilfe in
+  derselben Änderung mitzuziehen — hier war es eine Änderung zu spät.
+- Die Bilanztabelle des Konformitätsberichts summierte sich auf 57 statt 59
+  Kriterien: 2.4.13 kam in keiner Zeile vor, und 2.4.12 stand nur in einer
+  Fußnote. Beide stehen jetzt in einer eigenen Zeile „außerhalb des Maßstabs
+  (AAA)".
+
+**Was diese Generalprüfung sonst ergeben hat — ohne Befund, aber gemessen:**
+
+| Prüfung | Ergebnis |
+|---|---|
+| Alle sechs absichtlich eingebauten Defekte der Gegenproben | einzeln im committeten Stand als zurückgenommen nachgewiesen |
+| Live-Bündel gegen `npm ci` + Build | **byteidentisch** (JS 572 961 B, CSS 59 442 B, gleicher SHA-256) |
+| `index.html` live gegen lokal | inhaltlich identisch; die 248 Byte Unterschied sind CR-Zeichen aus `core.autocrlf=true`, der Blob im Repository ist reines LF |
+| `public/sw.js` | seit 0.9.22 unberührt — **kein erzwungenes Update** bei installierten Nutzern |
+| Kodierung `src/` (50 Dateien) | 0 BOMs, eine absichtliche Stelle (Beispiel im Changelog) |
+| Tastenkürzel Hilfe gegen Quelltext | alle sieben stimmen überein |
+
 ### Voller Lauf
 
-`tsc --noEmit` sauber. 162 Funktionsprüfungen bestanden.
+`tsc --noEmit` sauber. **163 Funktionsprüfungen bestanden.**
+`npm run check:ui`: 843 Prüfungen angemeldet, **426 ausgeführt und bestanden**,
+417 durch Profil- und Schemafilter übersprungen, 14,6 min, kein Fehlschlag.
 
 ---
 
@@ -192,7 +264,7 @@ Rückfrage öffnete". Der Satz stand da, die Lücke blieb zehn Versionen offen.
 
 ### Was die Geometrie gefunden hat: nichts
 
-36 Kombinationen aus sechs Rückfragen, zwei Fenstergrößen (360/320 px), zwei
+42 Kombinationen aus sieben Rückfragen, zwei Fenstergrößen (360/320 px), zwei
 Schriftgrößen und erzwungener Breitschrift. Kein Überlauf, keine Trefferfläche
 unter 44 px, kein verstecktes Seitwärtsscrollen, axe ohne schweren Befund.
 
@@ -311,7 +383,7 @@ grün.
 
 ### Was jetzt dauerhaft geprüft wird
 
-**39 neue Prüfungen im Oberflächen-Gate**, über sechs Rückfragen: Geometrie
+**45 neue Prüfungen im Oberflächen-Gate**, über sieben Rückfragen: Geometrie
 bei „Normal" und „Extra groß", Trefferflächen, verstecktes Seitwärtsscrollen,
 axe, WCAG 2.5.3, breite Schrift — und je Rückfrage ein Tastatur-Durchlauf, der
 misst, wo der Fokus landet, ob er bleibt und wohin er zurückkehrt.

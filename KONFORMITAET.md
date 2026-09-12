@@ -61,10 +61,10 @@ Barrierefreiheit ist hier keine Auflage, sondern die Funktionsvoraussetzung.
 
 Im Deploy-Tor vor jedem Bauen. Zwei Läufe, beide müssen bestehen:
 
-- **`npm run check` — 162 Prüfungen reiner Funktionen.** Zusammenführen beim
+- **`npm run check` — 163 Prüfungen reiner Funktionen.** Zusammenführen beim
   Geräteabgleich samt Zeitstempeln je Feld, Excel-Summen, Arbeitszeit über
   Mitternacht, Verschlüsselung der Sicherung, doppelt kodierte Zeichen.
-- **`npm run check:ui` — 825 angemeldete Prüfungen, davon 418 ausgeführt**
+- **`npm run check:ui` — 843 angemeldete Prüfungen, davon 426 ausgeführt**
   (der Rest wird durch Profil- und Schemafilter ausdrücklich übersprungen),
   Laufzeit rund 15 Minuten, drei Geräteprofile: 360 × 780 Chromium,
   360 × 780 WebKit, 1280 × 900 Chromium.
@@ -79,7 +79,7 @@ Zum Vergleich: In der Vorfassung dieses Berichts (0.9.19) waren es 63.
 | Kontrast je Farbschema | fünf Ansichten × drei weitere Schemata (dunkel, Kontrast dunkel, Kontrast gelb) × zwei Profile, Regel `color-contrast`. Jede Prüfung weist zuvor nach, dass das Schema wirklich anliegt (`data-theme` **und** `data-dark`) und dass axe die Regel überhaupt ausgeführt hat |
 | **Kontrast in den Rückfragen, selbst gerechnet** | zwei Rückfragen × vier Schemata. Eigene Rechnung statt axe, weil axe durch die halbdurchsichtige Abdunklung hindurch den wirksamen Hintergrund nicht bestimmen kann und `incomplete` meldet — siehe 3.2, Punkt 7 |
 | Ansichten hinter den Einstiegen | die sechs Ansichten, die nicht über `?tab=` erreichbar sind (Formular anpassen, **Formularfelder verwalten**, Geräte-Sync, Datensicherung, Hilfe, Jahreskonto, Was gibt's Neues): Überlauf und Trefferflächen bei „normal" und „Extra groß" in drei Profilen, axe in zwei |
-| **Zustände innerhalb der Ansichten** | Ein `?tab=` erreicht die Ansicht, nicht ihre Zustände — dort saßen zwischen 0.9.22 und 0.9.32 acht Fundstellen. Abgedeckt sind jetzt: Formularzustände, Formulare der Stempeluhr, Schicht-Protokoll mit Einträgen, Archiv mit Bestand (Liste, aufgeklappt, Löschabfrage, Suche), die sechs Zustände des Geräteabgleichs, die fünf Schritte des Ersteinstiegs und **alle sechs Rückfragen** |
+| **Zustände innerhalb der Ansichten** | Ein `?tab=` erreicht die Ansicht, nicht ihre Zustände — dort saßen zwischen 0.9.22 und 0.9.32 acht Fundstellen. Abgedeckt sind jetzt: Formularzustände, Formulare der Stempeluhr, Schicht-Protokoll mit Einträgen, Archiv mit Bestand (Liste, aufgeklappt, Löschabfrage, Suche), die sechs Zustände des Geräteabgleichs, die fünf Schritte des Ersteinstiegs und **alle sieben Rückfragen** |
 | **Zwei Geräte, echt gekoppelt** | Textcode, Live-Verbindung (WebRTC ohne ICE-Server) und **QR-Weg mit gestellter Kamera**. Geprüft werden Kopplung, Zusammenführen in beide Richtungen, die Stille einer ruhenden Verbindung und der Bestand danach |
 | Tabulator-Durchlauf | alle elf Ansichten, mit **echten Tastendrücken**: Erreichbarkeit jedes sichtbaren Bedienelements, Reihenfolge in Dokumentordnung, geschlossene Runde. In den Rückfragen zusätzlich: Startfokus, Verbleib im Dialog, Fokus-Rückgabe und die Wirkung von Escape |
 | WCAG 2.5.3 (Beschriftung im Namen) | über alle Ansichten und Zustände: ein `aria-label`, das die sichtbare Aufschrift **ersetzt** statt sie zu enthalten, lässt den Lauf scheitern |
@@ -325,7 +325,7 @@ anwendbar
 | 3.3.1 Fehlererkennung | A | **erfüllt** | seit 2026-09-02 geprüft, indem der Fehler ausgelöst wird: Verschlüsselung einschalten, zu kurzes Passwort eingeben, sichern. Die Meldung erscheint in einem `role="alert"` mit `aria-live="assertive"`, benennt das betroffene Feld und beschreibt den Fehler in Text — ohne dass der Fokus wechseln muss |
 | 3.3.2 Beschriftungen oder Anweisungen | A | plausibel | Zählerfelder tragen `aria-label` und eine `sr-only`-Bedienanleitung |
 | 3.3.3 Fehlerempfehlung | AA | **erfüllt** | dieselbe Prüfung: Die Meldung nennt nicht nur den Fehler, sondern die Korrektur („mindestens 4 Zeichen"). Auch beim Einspielen eines verschlüsselten Backups ohne Passwort steht die Handlungsanweisung im Text, nicht nur die Feststellung |
-| 3.3.4 Fehlervermeidung | AA | **erfüllt** | Vor jedem zerstörenden Vorgang steht eine Rückfrage; der Monatsabschluss lässt sich zusätzlich mit einem Tipp zurücknehmen. Archivschreibungen laufen über einen Pfad mit sichtbarer Fehlermeldung statt stillem Verlust. **Seit 0.9.32 sind alle sechs Rückfragen einzeln gemessen** — Geometrie, Kontrast, Beschriftung und Tastaturbedienung. Das war nötig: Der Startfokus liegt bewusst auf „Abbrechen", damit ein versehentliches Enter nichts löscht, und genau das war bei zwei Rückfragen nicht der Fall. Ebenfalls behoben: Escape brach die Rückfrage **und** die Ansicht dahinter ab — im Geräteabgleich verfiel dabei das bereits empfangene Paket, sodass ein „Nein" zum Ersetzen die ganze Übertragung kostete |
+| 3.3.4 Fehlervermeidung | AA | **erfüllt** | Vor jedem zerstörenden Vorgang steht eine Rückfrage; der Monatsabschluss lässt sich zusätzlich mit einem Tipp zurücknehmen. Archivschreibungen laufen über einen Pfad mit sichtbarer Fehlermeldung statt stillem Verlust. **Seit 0.9.32 sind alle sieben Rückfragen einzeln gemessen** — Geometrie, Kontrast, Beschriftung und Tastaturbedienung. Das war nötig: Der Startfokus liegt bewusst auf „Abbrechen", damit ein versehentliches Enter nichts löscht, und genau das war bei zwei Rückfragen nicht der Fall. Ebenfalls behoben: Escape brach die Rückfrage **und** die Ansicht dahinter ab — im Geräteabgleich verfiel dabei das bereits empfangene Paket, sodass ein „Nein" zum Ersetzen die ganze Übertragung kostete |
 
 ### 5.4 Robustheit
 
@@ -346,10 +346,11 @@ Ausgezählt über Abschnitt 4 und 5:
 | **erfüllt, mit Beleg** | **31** | 26 aus WCAG 2.1 A/AA, 5 aus WCAG 2.2 |
 | teilweise erfüllt | 4 | 1.3.1, 1.4.11, 3.1.2, 4.1.2 |
 | plausibel, ohne Einzelnachweis | 10 | |
-| **nicht erfüllt** | **0** | 2.4.12 ist bewusst offen, aber Stufe AAA und damit außerhalb des Maßstabs |
+| **nicht erfüllt** | **0** | auf dem geltenden Maßstab (A/AA). 2.4.12 ist bewusst offen, liegt aber auf Stufe AAA und zählt hier deshalb nicht mit |
 | **nicht geprüft** | **2** | 1.3.2 und 1.3.3 — bedeutungstragende Reihenfolge und sensorische Eigenschaften. Beide entscheidet ein Mensch, kein Prüflauf |
 | nicht anwendbar | 9 | 1.2.1–1.2.5, 2.4.5, 2.5.4, 3.3.8, 3.3.9 |
 | entfällt | 1 | 4.1.1 (in WCAG 2.2 gestrichen) |
+| außerhalb des Maßstabs (AAA) | 2 | 2.4.12 (nicht erfüllt, bewusst) und 2.4.13 (nicht bewertet). Diese Zeile fehlte bis zum 2026-09-12: Die Bilanz summierte sich auf 57 statt 59, und 2.4.13 kam in keiner Zeile vor — aufgefallen beim Nachzählen der eigenen Tabelle |
 
 **Die aussagekräftigste Zahl steht in der Mitte:** 14 von 50 Kriterien des
 geltenden Sockels sind zwar nicht beanstandet, aber auch nicht einzeln
@@ -469,7 +470,7 @@ Behauptung ist.
 | **2.5.5 Trefferfläche** (0.9.29–0.9.31) | Eine Löschtaste je Schicht mit **32 × 32 px**, der Umschalter des Schicht-Protokolls mit 36 px, das Abzeichen „Live verbunden" mit **42 px**. Alle drei lagen in Zuständen, die keine Prüfung je hergestellt hatte. |
 | **2.1.1 / 2.4.3 Tastatur und Fokus** (0.9.32) | Vier der elf Ansichten warfen den Fokus bei **jedem** App-Render zurück auf ihre Schließen-Taste; eine Ansage genügte als Auslöser. In zwei Rückfragen kam der Fokus gar nicht erst im Dialog an, und der Tabulator lief durch die Seite dahinter. Beides behoben und im Prüftor festgehalten. |
 | **3.3.4 Fehlervermeidung** (0.9.32) | Escape brach die Rückfrage **und** die Ansicht dahinter ab. Im Geräteabgleich verfiel dabei das bereits empfangene Paket — ein „Nein" zum Ersetzen kostete die ganze Übertragung. |
-| **Prüfumfang** | 63 → **825 angemeldete Oberflächenprüfungen** (418 ausgeführt), Funktionsprüfungen 121 → **162**. |
+| **Prüfumfang** | 63 → **843 angemeldete Oberflächenprüfungen** (426 ausgeführt), Funktionsprüfungen 121 → **163**. |
 
 **Nicht bestätigt, unverändert:** ob der Geräteabgleich (Kopplung, QR- und
 Textcode, Zusammenführen) Teil der Screenreader-Durchläufe war.

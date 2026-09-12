@@ -1059,7 +1059,7 @@ Die Lücke stand seit 0.9.22 im eigenen Protokoll: „Das Prüfgate konnte es ni
 finden: Es misst gerenderte Ansichten, und keine Prüfung öffnete je eine
 Rückfrage." Zehn Versionen lang blieb sie stehen.
 
-**Geometrie: ohne Befund** — 36 Kombinationen (sechs Rückfragen × 360/320 px ×
+**Geometrie: ohne Befund** — 42 Kombinationen (sieben Rückfragen × 360/320 px ×
 zwei Schriftgrößen × Breitschrift). Kein Überlauf, keine Trefferfläche unter
 44 px, axe sauber.
 
@@ -1198,7 +1198,7 @@ Ab hier hängt alles an Menschen und Geräten. Kein Werkzeug ersetzt das.
   Korrektur ist gemessen, aber **nicht gehört**.
 
   Der Wiederholungsdurchlauf sollte deshalb ausdrücklich einschließen: die
-  **sechs Rückfragen** (löschen, zurücksetzen, Monat abschließen, Vorlage
+  **sieben Rückfragen** (löschen, zurücksetzen, Monat abschließen, Vorlage
   laden, Schicht löschen, alles ersetzen) und den **Geräteabgleich**, der seit
   0.9.17 nie bestätigt wurde.
 - ~~**Konformitätsbericht** gegen EN 301 549~~ — **neu erhoben am 2026-09-12
