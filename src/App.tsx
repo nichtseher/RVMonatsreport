@@ -54,6 +54,7 @@ import { useEinstellungen } from "./hooks/useEinstellungen";
 import { useStempeluhr } from "./hooks/useStempeluhr";
 import { useBerichtsdaten } from "./hooks/useBerichtsdaten";
 import { monthHasContent } from "./utils/monatInhalt";
+import { rueckfrageOffen } from "./utils/rueckfrage";
 import { stempeln, stempelNachtragen, stempelnGeaenderte } from "./utils/zeitstempel";
 import { pruefeSyncPaket } from "./utils/syncSchema";
 import {
@@ -701,6 +702,14 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!event.altKey || !event.shiftKey) return;
+      /*
+        Solange eine Rueckfrage steht, ruhen diese Kuerzel. Alt+Umschalt+H
+        haette sonst ins Archiv gewechselt, waehrend vorn noch "Endgueltig
+        loeschen?" steht -- der Dialog wird ausserhalb der Reiter-Umschaltung
+        gerendert und bliebe ueber der neuen Ansicht stehen. Begruendung und
+        Messung in `utils/rueckfrage.ts`.
+      */
+      if (rueckfrageOffen()) return;
 
       if (event.key.toLowerCase() === "m") {
         event.preventDefault();

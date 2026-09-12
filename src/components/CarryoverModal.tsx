@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Calendar, Clock, Sparkles, Save, Info } from "lucide-react";
 import { YearlyCarryover } from "../types";
+import { rueckfrageOffen } from "../utils/rueckfrage";
 
 interface CarryoverModalProps {
   isOpen: boolean;
@@ -28,7 +29,18 @@ export default function CarryoverModal({
     setLocalCarryover({ ...carryover });
   }, [carryover, isOpen]);
 
-  // Focus trap
+  /*
+    `onClose` in einer Ref, damit der Effekt unten nicht daran haengt -- die
+    ausfuehrliche Begruendung steht in `ConfirmDialog.tsx`. Gemessen am
+    2026-09-12: Ein App-Render warf den Fokus aus dem Jahreskonto zurueck auf
+    "Zurueck zur Zeiterfassung".
+  */
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  // Escape schliesst; eine Fokusfalle waere hier falsch (Begruendung unten).
   useEffect(() => {
     if (!isOpen) return;
 
@@ -39,8 +51,15 @@ export default function CarryoverModal({
     }, 50);
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      /*
+        Solange eine Rueckfrage steht, ruhen die Tastenkuerzel dieser Ansicht.
+        Ohne diese Zeile schloss ein Escape, das die Rueckfrage abbrechen
+        sollte, zugleich die Ansicht dahinter -- Begruendung und Messung in
+        `utils/rueckfrage.ts`.
+      */
+      if (rueckfrageOffen()) return;
       if (e.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -72,7 +91,7 @@ export default function CarryoverModal({
         previouslyActive.focus();
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

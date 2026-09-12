@@ -34,6 +34,24 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
   const cancelRef = useRef<HTMLButtonElement>(null);
   const previouslyActiveRef = useRef<HTMLElement | null>(null);
 
+  /*
+    `onClose` liegt in einer Ref, damit der Fokus-Effekt unten NICHT davon
+    abhaengen muss.
+
+    Warum das kein Schoenheitsfehler ist, sondern der Grund fuer einen echten
+    Defekt war: Alle Aufrufer uebergeben `onClose` als Inline-Pfeil
+    (`onClose={() => setConfirmRequest(null)}`). Die Identitaet wechselt damit
+    bei JEDEM Render des Elternteils. Stand `onClose` in der Abhaengigkeitsliste,
+    lief der Effekt bei jedem Render neu -- der Aufraeumer holte den Fokus zurueck
+    auf das ausloesende Element, der neue Lauf setzte ihn 50 ms spaeter wieder auf
+    "Abbrechen", und `previouslyActiveRef` zeigte danach auf eine Taste des
+    Dialogs statt auf die des Nutzers.
+  */
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
   const isOpen = request !== null;
 
   useEffect(() => {
@@ -44,7 +62,7 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key === "Tab" && dialogRef.current) {
@@ -52,10 +70,27 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
         if (focusable.length === 0) return;
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
+        const active = document.activeElement as HTMLElement | null;
+
+        /*
+          Liegt der Fokus ueberhaupt nicht im Dialog, holt ihn dieser Zweig
+          zurueck. Ohne ihn greift die Falle nur, wenn der Fokus zufaellig
+          genau auf dem ersten oder letzten Element sitzt -- liegt er
+          irgendwo im Hintergrund, laeuft der Tabulator kommentarlos durch
+          die Seite HINTER der Rueckfrage. Genau das war am 2026-09-12
+          messbar, und genau davor warnt `CLAUDE.md` seit Laengerem.
+          `OnboardingModal` hat diesen Zweig; ausgerechnet der Dialog, den
+          `CLAUDE.md` als Referenz nennt, hatte ihn nicht.
+        */
+        if (!active || !dialogRef.current.contains(active)) {
+          (e.shiftKey ? last : first).focus();
+          e.preventDefault();
+          return;
+        }
+        if (e.shiftKey && active === first) {
           last.focus();
           e.preventDefault();
-        } else if (!e.shiftKey && document.activeElement === last) {
+        } else if (!e.shiftKey && active === last) {
           first.focus();
           e.preventDefault();
         }
@@ -69,7 +104,7 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
       // Fokus dorthin zurueck, wo der Nutzer war
       previouslyActiveRef.current?.focus();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   // Inhalt zusaetzlich per Sprachausgabe ansagen (role="alertdialog" allein
   // wird nicht von jedem Screenreader zuverlaessig komplett vorgelesen).

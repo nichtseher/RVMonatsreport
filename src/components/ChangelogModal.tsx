@@ -44,6 +44,20 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.32: Die Sicherheitsfragen waren mit der Tastatur nicht bedienbar</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Vor jeder Löschung fragt die App nach – bei zwei dieser Fragen landete die Tastatur aber hinter dem Fenster.</strong> Betroffen waren „Kategorie löschen?" und „Formular zurücksetzen?". Die Frage stand vorn auf dem Bildschirm, die Tastatur stand dahinter: Wer mit der Tabulator-Taste weiterging, lief durch die Seite dahinter statt auf „Abbrechen" oder „Löschen". Jetzt liegt der Finger immer zuerst auf <strong>Abbrechen</strong>, und er bleibt in der Frage.</li>
+            <li><strong>Die Esc-Taste schloss zu viel.</strong> Wer eine Sicherheitsfrage mit Esc abbrach, verlor zugleich den ganzen Bildschirm dahinter. Beim Geräte-Sync war das besonders ärgerlich: Nach „Nein" zum Ersetzen war auch die <strong>bereits empfangene Übertragung</strong> weg und musste komplett wiederholt werden. Esc bricht jetzt nur noch die Frage ab.</li>
+            <li><strong>Und Sie verlieren Ihre Stelle nicht mehr.</strong> In Hilfe, Geräte-Sync, Jahreskonto und Formularfelder-Verwaltung sprang die Tastatur bisher an den Seitenanfang zurück, sobald irgendwo in der App etwas passierte – eine Ansage genügte. Wer sich durch die Hilfe las, musste von vorn anfangen. Das ist behoben.</li>
+            <li><strong>Geprüft wird das ab jetzt bei jeder Änderung.</strong> Alle sechs Sicherheitsfragen der App werden automatisch geöffnet und vermessen – Größe, Kontrast, Beschriftung und Tastaturbedienung. Bisher hatte keine einzige davon je eine Prüfung gesehen.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.31: Das Abzeichen „Live verbunden" schob die Seite aus dem Bild</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>

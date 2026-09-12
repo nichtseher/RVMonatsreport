@@ -2373,12 +2373,17 @@ const SCHICHTEN_BESTAND = [
   },
 ];
 
-async function oeffneZeitMitSchichten(page: Page) {
+/**
+ * @param werte Zählerstände des Berichts. Leer für die reinen
+ *   Geometrie-Messungen; gefüllt für die Prüfung, ob das Löschen einer
+ *   Schicht die Stunden wirklich zurückrechnet.
+ */
+async function oeffneZeitMitSchichten(page: Page, werte: Record<string, number> = {}) {
   await page.route("**/leerseite-fuer-schichtpruefung", (route) =>
     route.fulfill({ contentType: "text/html", body: "<!doctype html><title>leer</title>" }),
   );
   await page.goto("/leerseite-fuer-schichtpruefung");
-  await page.evaluate(async (schichten) => {
+  await page.evaluate(async ({ schichten, werte: w }) => {
     const db = await new Promise<IDBDatabase>((res, rej) => {
       const r = indexedDB.open("keyval-store", 1);
       r.onupgradeneeded = () => {
@@ -2394,7 +2399,7 @@ async function oeffneZeitMitSchichten(page: Page) {
           month: "2026-09",
           name: "Marc Petry",
           notes: "",
-          values: {},
+          values: w,
           valuesUpdatedAt: {},
           timeLogs: schichten,
         },
@@ -2403,7 +2408,7 @@ async function oeffneZeitMitSchichten(page: Page) {
       t.oncomplete = () => res();
       t.onerror = () => rej(t.error);
     });
-  }, SCHICHTEN_BESTAND);
+  }, { schichten: SCHICHTEN_BESTAND, werte });
 
   await oeffne(page, "time");
   // Kein Umschalter mehr: Das Protokoll steht seit 0.9.29 offen im Lesefluss.
@@ -2463,6 +2468,440 @@ test.describe("Zeit-Ansicht mit Schichten", () => {
         "mit der Tastatur kommt man nicht an die unteren Einträge",
     ).toBe("0");
   });
+
+  /*
+    Das Löschen einer Schicht rechnet drei Felder des Berichts zurück. Bis
+    hierher war das nur über die reine Funktion `verrechneSchicht` abgedeckt --
+    die ROADMAP führte es ausdrücklich unter „Nicht über die Oberfläche
+    geprüft".
+
+    Der Unterschied ist nicht theoretisch: Die Rechnung stand bis 0.9.14
+    DREIMAL in `App.tsx`, und zwischen der reinen Funktion und dem Bericht
+    liegen der Dialog, der Hook, der Zeitstempel und der Schreibvorgang nach
+    IndexedDB. Geprüft wird deshalb der ganze Weg, einschließlich des
+    Neuladens -- ein nur im Arbeitsspeicher korrigierter Stand wäre nach dem
+    nächsten Start wieder falsch.
+  */
+  test("Schicht löschen rechnet die Stunden zurück und speichert das", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Rechnen haengt nicht am Geraeteprofil");
+    await oeffneZeitMitSchichten(page, {
+      // Der Stand, den die beiden Schichten aus SCHICHTEN_BESTAND erzeugt
+      // hätten: 3,88 + 7,75 Bürostunden, 3,87 Außendienst, zwei Arbeitstage.
+      std_buero: 11.63,
+      std_aussendienst: 3.87,
+      tage_arbeit: 2,
+      // Ein fachfremdes Feld: Es darf sich beim Löschen nicht bewegen.
+      s1_1: 9,
+    });
+
+    await page.getByRole("button", { name: "Schicht vom 02.09. löschen" }).click();
+    await page.getByRole("alertdialog").waitFor({ state: "visible", timeout: 15_000 });
+    await page.getByRole("button", { name: "Schicht löschen", exact: true }).click();
+    await page.waitForTimeout(1500);
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: /Schicht-Protokoll/ }).waitFor({ timeout: 15_000 });
+    await page.waitForTimeout(500);
+
+    const stand = await page.evaluate(async () => {
+      const db = await new Promise<IDBDatabase>((res, rej) => {
+        const r = indexedDB.open("keyval-store", 1);
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+      });
+      const wert = await new Promise<Record<string, unknown>>((res, rej) => {
+        const t = db.transaction("keyval", "readonly");
+        const q = t.objectStore("keyval").get("aussendienst_pwa_data");
+        q.onsuccess = () => res(q.result);
+        q.onerror = () => rej(t.error);
+      });
+      const v = (wert?.values || {}) as Record<string, number>;
+      return {
+        buero: v.std_buero,
+        aussen: v.std_aussendienst,
+        tage: v.tage_arbeit,
+        fremd: v.s1_1,
+        ids: ((wert?.timeLogs || []) as { id: string }[]).map((l) => l.id),
+      };
+    });
+
+    expect(
+      stand,
+      "Nach dem Löschen der ersten Schicht müssen genau deren Stunden fehlen " +
+        "und der Arbeitstag mit ihr. Weicht das ab, steht eine falsche " +
+        "Arbeitszeit im Bericht an die Vertriebsleitung.",
+    ).toEqual({ buero: 7.75, aussen: 0, tage: 1, fremd: 9, ids: ["p2"] });
+  });
+});
+
+/**
+ * Die Rückfragen -- `ConfirmDialog`, der barrierefreie Ersatz für
+ * `window.confirm()`.
+ *
+ * Achter Fall derselben Klasse: geprüft wird, was ein `?tab=` oder ein Klick
+ * erreicht; ein Zustand DARUNTER erreicht es nicht. Dieser hier ist der
+ * unangenehmste der Reihe, denn hinter jeder dieser fünf Rückfragen steht eine
+ * Entscheidung, die Daten vernichtet oder überschreibt -- und **keine einzige
+ * war je gerendert worden**.
+ *
+ * Dass das nicht hypothetisch ist, steht im DEVLOG zu 0.9.22: Die
+ * bestätigende Taste war in zwei Farbschemata unsichtbar (1,00:1 und 1,07:1),
+ * in allen vier zerstörenden Rückfragen -- gefunden von Hand, weil „das
+ * Prüfgate gerenderte Ansichten misst, und keine Prüfung je eine Rückfrage
+ * öffnete". Dieser Block schließt genau diese Lücke.
+ *
+ * Der erste Lauf hat zwei Rückfragen gefunden, in denen der Fokus gar nicht im
+ * Dialog ankam und der Tabulator durch den Hintergrund lief -- siehe die
+ * Begründung in `ConfirmDialog.tsx`.
+ */
+const RUECKFRAGEN = [
+  {
+    /*
+      Die einzige Rückfrage mit `details` (Ergebnisse der
+      Plausibilitätsprüfung). Der `<ul>`-Zweig in `ConfirmDialog` hängt allein
+      an ihr und an „Alles ersetzen" im Sync.
+    */
+    name: "Rückfrage: Monat abschließen",
+    ausloeser: /Monat abschließen und neu starten/,
+    oeffne: async (p: Page) => {
+      await legeBerichtAn(p, {
+        month: "2026-09",
+        name: "Marc Petry",
+        notes: "Sammelbestellung Berufsförderungswerk offen.",
+        values: { s1_1: 5, std_buero: 20 },
+        valuesUpdatedAt: {},
+        timeLogs: SCHICHTEN_BESTAND,
+      });
+      await oeffne(p, "form");
+      await p.getByRole("button", { name: /Monat abschließen und neu starten/ }).first().click();
+    },
+  },
+  {
+    name: "Rückfrage: Vorlage laden",
+    ausloeser: /als Vorlage laden/,
+    oeffne: async (p: Page) => {
+      await legeArchivAn(p);
+      await oeffne(p, "form");
+      await p.getByRole("button", { name: /als Vorlage laden/ }).first().click();
+    },
+  },
+  {
+    name: "Rückfrage: Kategorie löschen",
+    ausloeser: /unwiderruflich löschen/,
+    oeffne: async (p: Page) => {
+      await oeffneFelderVerwalten(p);
+      await p.getByRole("button", { name: /unwiderruflich löschen/ }).first().click();
+    },
+  },
+  {
+    name: "Rückfrage: Formular zurücksetzen",
+    ausloeser: /Formular auf Standard-Felder zurücksetzen/,
+    oeffne: async (p: Page) => {
+      await oeffneFelderVerwalten(p);
+      await p.getByRole("button", { name: /Formular auf Standard-Felder zurücksetzen/ }).first().click();
+    },
+  },
+  {
+    name: "Rückfrage: Schicht löschen",
+    ausloeser: "Schicht vom 02.09. löschen",
+    oeffne: async (p: Page) => {
+      await oeffneZeitMitSchichten(p);
+      await p.getByRole("button", { name: "Schicht vom 02.09. löschen" }).click();
+    },
+  },
+  {
+    /*
+      Die folgenschwerste Aktion der App: „Alles ersetzen" überschreibt das
+      gesamte Archiv dieses Geräts.
+
+      Sie liegt als einzige in einer Ansicht mit EIGENER Fokusfalle
+      (`DeviceSyncModal`) -- zwei Fallen auf demselben `keydown`. Genau
+      deshalb gehört sie hierher und nicht in den Zwei-Geräte-Block.
+
+      Ein zweites Gerät braucht es dafür nicht: Ein Paket, das dasselbe Gerät
+      erzeugt hat, ist strukturell gültig, und gemessen wird die Rückfrage,
+      nicht das Zusammenführen.
+    */
+    name: "Rückfrage: Alles ersetzen",
+    ausloeser: /Alles ersetzen/,
+    oeffne: async (p: Page) => {
+      await oeffneSyncErsetzenAbfrage(p);
+    },
+  },
+] as const;
+
+/**
+ * Bis in die Rückfrage „Alle Daten dieses Geräts ersetzen?".
+ *
+ * Ein zweites Gerät braucht es dafür nicht: Ein Paket, das dasselbe Gerät
+ * erzeugt hat, ist strukturell gültig, und gemessen wird die Rückfrage, nicht
+ * das Zusammenführen. Der Weg läuft bewusst über die Oberfläche statt über ein
+ * von Hand gebautes Paket -- sonst prüfte er den Code-Weg mit, den er
+ * eigentlich voraussetzt.
+ */
+async function oeffneSyncErsetzenAbfrage(p: Page) {
+  /*
+    Die Zwischenablage braucht in Chromium eine Berechtigung. Beide
+    Chromium-Profile (`handy`, `schreibtisch`) bekommen sie hier; das
+    WebKit-Profil misst weder Geometrie noch Tastatur und kommt gar nicht
+    hierher.
+  */
+  await p.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await oeffne(p, "options");
+  await p.getByRole("button", { name: /Geräte-Sync/ }).first().click();
+  await p.getByRole("heading", { name: /Geräte-Synchronisation/ }).first().waitFor({ timeout: 20_000 });
+  await p.getByRole("button", { name: /Daten an anderes Gerät senden/ }).click();
+  const kopieren = p.getByRole("button", { name: /Code kopieren/ });
+  await kopieren.waitFor({ state: "visible", timeout: 20_000 });
+  await kopieren.click();
+  await p.waitForTimeout(600);
+  const code = await p.evaluate(() => navigator.clipboard.readText());
+  expect(code.startsWith("RVC1:"), `Kopierter Code beginnt nicht mit RVC1: (${code.slice(0, 16)})`).toBe(true);
+
+  await p.reload({ waitUntil: "domcontentloaded" });
+  await p.getByRole("button", { name: /Geräte-Sync/ }).first().click();
+  await p.getByRole("heading", { name: /Geräte-Synchronisation/ }).first().waitFor({ timeout: 20_000 });
+  await p.getByRole("button", { name: /Daten von anderem Gerät übernehmen/ }).click();
+  await p.locator("#paste-code-input").waitFor({ state: "visible", timeout: 20_000 });
+  await p.locator("#paste-code-input").fill(code);
+  await p.getByRole("button", { name: /Code übernehmen/ }).click();
+  await p.getByRole("button", { name: /Alles ersetzen/ }).waitFor({ state: "visible", timeout: 20_000 });
+  await p.getByRole("button", { name: /Alles ersetzen/ }).click();
+}
+
+/** Bericht in IndexedDB legen, ohne die App vorher laden zu lassen. */
+async function legeBerichtAn(page: Page, bericht: Record<string, unknown>) {
+  await page.route("**/leerseite-fuer-rueckfragen", (route) =>
+    route.fulfill({ contentType: "text/html", body: "<!doctype html><title>leer</title>" }),
+  );
+  await page.goto("/leerseite-fuer-rueckfragen");
+  await page.evaluate(async (daten) => {
+    const db = await new Promise<IDBDatabase>((res, rej) => {
+      const r = indexedDB.open("keyval-store", 1);
+      r.onupgradeneeded = () => {
+        if (!r.result.objectStoreNames.contains("keyval")) r.result.createObjectStore("keyval");
+      };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+    await new Promise<void>((res, rej) => {
+      const t = db.transaction("keyval", "readwrite");
+      t.objectStore("keyval").put(daten, "aussendienst_pwa_data");
+      t.oncomplete = () => res();
+      t.onerror = () => rej(t.error);
+    });
+  }, bericht);
+}
+
+/**
+ * `ManageModal` liegt zwei Ebenen tief. Die Überschrift, auf die gewartet
+ * wird, trägt nur diese Ansicht -- „Formular anpassen" wäre das Untermenü
+ * darüber und hat von 0.9.18 bis 0.9.21 die falsche Ansicht messen lassen.
+ */
+async function oeffneFelderVerwalten(page: Page) {
+  await oeffne(page, "options");
+  await page.getByRole("button", { name: /Formular anpassen/ }).first().click();
+  await page.getByRole("button", { name: /Eigene Felder löschen/ }).first().click();
+  await page.getByRole("heading", { name: /Formularfelder verwalten/ }).first().waitFor({ timeout: 15_000 });
+  await page.waitForTimeout(250);
+}
+
+async function oeffneRueckfrage(page: Page, eintrag: (typeof RUECKFRAGEN)[number]) {
+  await eintrag.oeffne(page);
+  await page.getByRole("alertdialog").waitFor({ state: "visible", timeout: 20_000 });
+  await page.waitForTimeout(400);
+}
+
+test.describe("Zustände der Rückfragen", () => {
+  for (const rueckfrage of RUECKFRAGEN) {
+    for (const groesse of ["normal", "extra-large"] as const) {
+      test(`${rueckfrage.name} bei ${groesse}`, async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name === "handy-webkit", "Geometrie haengt nicht am Motor");
+        await oeffneRueckfrage(page, rueckfrage);
+        await setzeSchriftgroesse(page, groesse);
+        await warteAufRuhigesLayout(page);
+        await pruefeGeometrie(page, `${rueckfrage.name} / ${groesse}`);
+      });
+    }
+
+    test(`${rueckfrage.name}: kein Name ersetzt die Beschriftung`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "Namen haengen nicht am Geraeteprofil");
+      await oeffneRueckfrage(page, rueckfrage);
+      const verstoesse = await findeNamensverstoesse(page);
+      expect(verstoesse, `${rueckfrage.name}: ${verstoesse.join(" | ")}`).toEqual([]);
+    });
+
+    test(`${rueckfrage.name} ohne schwere Verstöße`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "axe haengt nicht am Motor");
+      await oeffneRueckfrage(page, rueckfrage);
+      const ergebnis = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+        .analyze();
+      const befunde = ergebnis.violations
+        .filter((v) => v.impact === "critical" || v.impact === "serious")
+        .flatMap((v) => v.nodes.map((n) => `${v.id} @ ${n.target.join(" ")} — ${n.failureSummary?.replace(/\s+/g, " ").trim()}`));
+      expect(befunde, `${rueckfrage.name}`).toEqual([]);
+    });
+
+    /*
+      Der eigentliche Fund von 0.9.32.
+
+      Eine modale Rückfrage, die den Fokus nicht bekommt, ist für jemanden,
+      der nicht zeigen kann, schlimmer als keine Rückfrage: Der Screenreader
+      liest über `role="alertdialog"` vor, dass etwas gelöscht werden soll,
+      und die Tastatur steht derweil im Hintergrund. Der nächste Tabulator
+      läuft durch die Seite DAHINTER -- also durch genau die Elemente, die die
+      Rückfrage gerade sperren soll.
+
+      Gemessen wird deshalb dreierlei, und zwar für jede der Rückfragen:
+      wo der Fokus landet, ob er bleibt, und wohin er zurückkehrt.
+    */
+    test(`${rueckfrage.name}: der Fokus liegt im Dialog und bleibt darin`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "Tastatur haengt nicht am Geraeteprofil");
+      await oeffneRueckfrage(page, rueckfrage);
+
+      // Startfokus: bewusst „Abbrechen", damit ein versehentliches Enter bei
+      // einer zerstörenden Aktion nichts auslöst.
+      const start = await page.evaluate(() => {
+        const a = document.activeElement as HTMLElement | null;
+        const d = document.querySelector('[role="alertdialog"]');
+        return {
+          imDialog: !!(a && d && d.contains(a)),
+          name: (a?.getAttribute("aria-label") || a?.textContent || "").trim().slice(0, 30),
+        };
+      });
+      expect(
+        start,
+        `${rueckfrage.name}: Der Startfokus liegt nicht auf „Abbrechen" im Dialog, ` +
+          `sondern auf „${start.name}". Wer nicht zeigen kann, steht damit ` +
+          `im Hintergrund, während vorn eine Löschabfrage steht.`,
+      ).toEqual({ imDialog: true, name: "Abbrechen" });
+
+      // Zehnmal vorwärts, sechsmal rückwärts: Der Fokus darf den Dialog nie
+      // verlassen. Zehn ist mehr als die zwei Tasten des Dialogs -- ein
+      // Durchlauf, der irgendwo im Hintergrund landet, fällt damit sicher auf.
+      const ausbruch: string[] = [];
+      for (const [anzahl, taste] of [
+        [10, "Tab"],
+        [6, "Shift+Tab"],
+      ] as const) {
+        for (let i = 0; i < anzahl; i++) {
+          await page.keyboard.press(taste);
+          const wo = await page.evaluate(() => {
+            const a = document.activeElement as HTMLElement | null;
+            const d = document.querySelector('[role="alertdialog"]');
+            return {
+              drin: !!(a && d && d.contains(a)),
+              name: (a?.getAttribute("aria-label") || a?.textContent || "").trim().slice(0, 26),
+            };
+          });
+          if (!wo.drin) ausbruch.push(`${taste} ${i + 1} → "${wo.name}"`);
+        }
+      }
+      expect(
+        ausbruch,
+        `${rueckfrage.name}: Der Tabulator verlässt die Rückfrage — ${ausbruch.join(" | ")}`,
+      ).toEqual([]);
+
+      // Escape bricht ab, und der Fokus kehrt dorthin zurück, wo der Nutzer
+      // war. Ohne die Rückgabe steht er nach dem Abbrechen am Seitenanfang.
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(400);
+      await expect(
+        page.locator('[role="alertdialog"]'),
+        `${rueckfrage.name}: Escape schließt die Rückfrage nicht`,
+      ).toHaveCount(0);
+
+      const zurueck = await page.evaluate(() => {
+        const a = document.activeElement as HTMLElement | null;
+        return (a?.getAttribute("aria-label") || a?.textContent || "").trim();
+      });
+      expect(
+        zurueck,
+        `${rueckfrage.name}: Nach dem Abbrechen steht der Fokus auf „${zurueck}" ` +
+          `statt zurück auf der auslösenden Taste`,
+      ).toMatch(rueckfrage.ausloeser);
+    });
+  }
+
+  /*
+    Der zweite Fund von 0.9.32, und der teurere.
+
+    Die Rückfrage und die Ansicht dahinter hören beide auf `keydown` am
+    `window`. Ein Escape, das die Rückfrage abbrechen soll, hat deshalb
+    BEIDES geschlossen -- gemessen am 2026-09-12:
+
+      Feldverwaltung  „Kategorie löschen?" → Escape → Überschrift „Optionen"
+      Geräte-Sync     „Alles ersetzen?"    → Escape → Überschrift „Optionen",
+                      und das bereits EMPFANGENE Paket war weg
+
+    Der zweite Fall ist der schwerere: Wer die folgenschwerste Aktion der App
+    verneint, wird dafür mit einer wiederholten Übertragung bestraft.
+
+    Geprüft wird beides in einem Lauf, und zwar in beide Richtungen: Das erste
+    Escape darf NUR die Rückfrage schließen, das zweite MUSS die Ansicht
+    schließen. Ohne die zweite Hälfte wäre die Prüfung auch mit einer Wache
+    zufrieden, die Escape pauschal totlegt -- und das wäre ein neuer Defekt
+    statt einer Behebung.
+  */
+  for (const fall of [
+    {
+      name: "Feldverwaltung",
+      dahinter: /Formularfelder verwalten/,
+      danach: /Optionen/,
+      oeffne: async (p: Page) => {
+        await oeffneFelderVerwalten(p);
+        await p.getByRole("button", { name: /unwiderruflich löschen/ }).first().click();
+      },
+    },
+    {
+      name: "Geräte-Sync",
+      dahinter: /Geräte-Synchronisation/,
+      danach: /Optionen/,
+      oeffne: oeffneSyncErsetzenAbfrage,
+      // Nach dem Abbrechen muss das empfangene Paket noch da sein.
+      bleibt: /Zusammenführen/,
+    },
+  ]) {
+    test(`Escape bricht nur die Rückfrage ab, nicht ${fall.name}`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "Tastatur haengt nicht am Geraeteprofil");
+      await fall.oeffne(page);
+      await page.getByRole("alertdialog").waitFor({ state: "visible", timeout: 20_000 });
+      await page.waitForTimeout(300);
+
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(600);
+
+      await expect(
+        page.locator('[role="alertdialog"]'),
+        `${fall.name}: Escape schließt die Rückfrage nicht`,
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole("heading", { name: fall.dahinter }).first(),
+        `${fall.name}: Escape hat die Rückfrage UND die Ansicht dahinter ` +
+          `geschlossen. Wer eine zerstörende Aktion verneint, verliert damit ` +
+          `auch den Bildschirm, auf dem er gerade arbeitet.`,
+      ).toBeVisible();
+
+      const bleibt = (fall as { bleibt?: RegExp }).bleibt;
+      if (bleibt) {
+        await expect(
+          page.getByRole("button", { name: bleibt }).first(),
+          `${fall.name}: Das empfangene Paket ist beim Abbrechen verfallen — ` +
+            `die ganze Übertragung müsste wiederholt werden.`,
+        ).toBeVisible();
+      }
+
+      // Gegenrichtung: Ohne Rückfrage schließt Escape die Ansicht weiterhin.
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(600);
+      await expect(
+        page.getByRole("heading", { name: fall.danach }).first(),
+        `${fall.name}: Escape schließt die Ansicht nicht mehr — die Wache ` +
+          `gegen den doppelten Abbruch greift zu weit.`,
+      ).toBeVisible();
+    });
+  }
 });
 
 /**
@@ -2926,7 +3365,17 @@ const ZUSTAENDE_MIT_SCHRIFT: Array<{ name: string; oeffne: (p: Page) => Promise<
     name: `Einstieg ${i + 1}: ${titel}`,
     oeffne: (p: Page) => oeffneEinstieg(p, i),
   })),
-  { name: "Zeit: Schicht-Protokoll", oeffne: oeffneZeitMitSchichten },
+  { name: "Zeit: Schicht-Protokoll", oeffne: (p: Page) => oeffneZeitMitSchichten(p) },
+  /*
+    Die Rückfragen gehören hierher, weil ihr Text der längste im engsten
+    Kasten ist: `max-w-md` neben einem 44-px-Symbol, dazu deutsche
+    Zusammensetzungen wie „Sammelbestellung" und bei „Monat abschließen"
+    noch eine Aufzählung.
+  */
+  ...RUECKFRAGEN.map((r) => ({
+    name: r.name,
+    oeffne: (p: Page) => oeffneRueckfrage(p, r),
+  })),
 ];
 
 test.describe("Zustände mit breiter Schrift", () => {

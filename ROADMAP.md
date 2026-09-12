@@ -1,6 +1,6 @@
 # Roadmap — RV Monatsreport (RV Mobil)
 
-Stand: 2026-09-07, Version 0.9.22 (bis 0.9.20 ist veröffentlicht)
+Stand: 2026-09-12, Version 0.9.32 (bis 0.9.31 ist veröffentlicht)
 
 Diese Roadmap ist aus **gemessenen Befunden** entstanden, nicht aus Vermutungen.
 Wo eine Zahl steht, wurde sie nachgemessen. Punkte ohne Beleg sind als
@@ -1033,10 +1033,70 @@ stehen und gehört dem Projektinhaber.
 > `tabIndex` hat. Wer die Einklappung zurückhaben will, sagt es — dann kommt
 > sie zurück, aber mit sichtbarer Excel-Taste davor.
 
-### Nicht über die Oberfläche geprüft
+### Nicht über die Oberfläche geprüft — ERLEDIGT (2026-09-12, 0.9.32)
 
 Das Löschen einer Schicht und damit die Umkehrbarkeit der Verrechnung. Über die
 reinen Prüfungen zu `verrechneSchicht` abgedeckt, über die Oberfläche **nicht**.
+
+> **Nachgemessen mit 0.9.32, über den ganzen Weg einschließlich Neuladen —
+> ohne Befund:** Bürostunden 11,63 → **7,75**, Außendienst 3,87 → **0**,
+> Arbeitstage 2 → **1**, von zwei Schichten bleibt genau die richtige, und ein
+> fachfremdes Zählerfeld bleibt unberührt. Als Prüfung im Gate festgehalten,
+> weil zwischen der reinen Funktion und dem Bericht der Dialog, der Hook, der
+> Zeitstempel und der Schreibvorgang nach IndexedDB liegen.
+
+---
+
+## 0.9.32 — Die Rückfragen — ERLEDIGT (2026-09-12)
+
+Achter Fall derselben Klasse: Geprüft wird, was ein `?tab=` oder ein Klick
+erreicht; ein Zustand *darunter* erreicht es nicht. Diesmal traf es das
+Bedienelement, das jede zerstörende Aktion abfangen soll — **keine der sechs
+Rückfragen war je gerendert worden.** Vollständiges Messprotokoll im
+[DEVLOG](DEVLOG.md).
+
+Die Lücke stand seit 0.9.22 im eigenen Protokoll: „Das Prüfgate konnte es nicht
+finden: Es misst gerenderte Ansichten, und keine Prüfung öffnete je eine
+Rückfrage." Zehn Versionen lang blieb sie stehen.
+
+**Geometrie: ohne Befund** — 36 Kombinationen (sechs Rückfragen × 360/320 px ×
+zwei Schriftgrößen × Breitschrift). Kein Überlauf, keine Trefferfläche unter
+44 px, axe sauber.
+
+**Tastatur: zwei Defekte.**
+
+| | vorher | nachher |
+|---|---|---|
+| „Kategorie löschen?" / „Formular zurücksetzen?", Startfokus | **hinter dem Dialog** (Zurück-Taste) | „Abbrechen" |
+| Tabulator bei offener Rückfrage | **lief durch den Hintergrund** | bleibt im Dialog |
+| Esc auf einer Rückfrage in Feldverwaltung / Sync | schloss **auch die Ansicht** | schließt nur die Rückfrage |
+| … und im Sync das empfangene Paket | **verfallen** | bleibt |
+
+Die Ursache des ersten Defekts reicht über die Rückfragen hinaus: Vier der elf
+Ansichten hängten ihren Fokus-Effekt an `[isOpen, onClose]`, und `onClose` ist
+in `App.tsx` überall ein Inline-Pfeil. **Jeder App-Render warf den Fokus
+zurück auf die Zurück-Taste** — in Hilfe, Geräte-Sync, Jahreskonto und
+Feldverwaltung, gemessen über eine dokumentierte Tastenkombination der App.
+Das Archiv als Gegenprobe blieb stehen.
+
+**Zwei Korrekturen am Wortlaut dieser Datei und von `CLAUDE.md`:**
+- `ConfirmDialog` galt als *Referenzimplementierung* der Fokusfalle. Sie war
+  die schwächere von zweien: `OnboardingModal` holt einen außerhalb liegenden
+  Fokus zurück, `ConfirmDialog` tat das nicht — und genau daran ist der Defekt
+  sichtbar geworden.
+- Die Warnung in `CLAUDE.md` („Fokus auf einer Überschrift mit `tabindex=-1`
+  ist in keiner der beiden Prüfungen") beschrieb den Fall richtig und war
+  trotzdem wirkungslos, weil sie nur als Warnung dastand. Sie steht jetzt als
+  Prüfung im Gate.
+
+**Prüfungen 158 → 162**, Oberflächen-Gate um 39 Prüfungen gewachsen. Die
+wichtigste neue Funktionsprüfung rechnet nichts, sondern erzwingt
+Vollzähligkeit: Jede Datei mit `keydown`-Zuhörer muss die Wache abfragen oder
+mit Grund in einer Ausnahmeliste stehen.
+
+**Offen geblieben:** ob es weitere Effekte dieser Bauart gibt, die an einer
+Inline-Funktion aus `App.tsx` hängen. Behoben sind die fünf mit
+Fokus-Wiederherstellung — das sind die, bei denen es sichtbare Folgen hat.
 
 ---
 

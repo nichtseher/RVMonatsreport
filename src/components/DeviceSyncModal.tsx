@@ -33,6 +33,7 @@ import {
 } from "../utils/syncCode";
 import type { ParsedChunk } from "../utils/syncCode";
 import { pruefeSyncPaket, monateImPaket } from "../utils/syncSchema";
+import { rueckfrageOffen } from "../utils/rueckfrage";
 import ConfirmDialog, { ConfirmRequest } from "./ConfirmDialog";
 
 import {
@@ -183,6 +184,19 @@ export default function DeviceSyncModal({
     resetView();
   }, [resetView]);
 
+  /*
+    `onClose` in einer Ref, damit die Fokus-Falle unten nicht daran haengt --
+    die ausfuehrliche Begruendung steht in `ConfirmDialog.tsx`. Gemessen am
+    2026-09-12: Wer sich durch die Kopplung tabbte, stand nach einem
+    beliebigen App-Render wieder auf "Zurueck zu den Optionen". Das trifft
+    ausgerechnet den Ablauf, den ein blinder Kollege laut ROADMAP durchspielen
+    soll -- und in dem die App bei jedem Schritt eine Ansage macht.
+  */
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
   // Fokus-Falle + Escape (Barrierefreiheit)
   useEffect(() => {
     if (!isOpen) return;
@@ -190,8 +204,15 @@ export default function DeviceSyncModal({
     setTimeout(() => closeButtonRef.current?.focus(), 50);
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      /*
+        Solange eine Rueckfrage steht, ruhen die Tastenkuerzel dieser Ansicht.
+        Ohne diese Zeile schloss ein Escape, das die Rueckfrage abbrechen
+        sollte, zugleich die Ansicht dahinter -- Begruendung und Messung in
+        `utils/rueckfrage.ts`.
+      */
+      if (rueckfrageOffen()) return;
       if (e.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key === "Tab" && modalRef.current) {
@@ -216,7 +237,7 @@ export default function DeviceSyncModal({
       window.removeEventListener("keydown", handleKeyDown);
       previouslyActiveRef.current?.focus();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   // Aufräumen beim Schließen: Ansicht zurücksetzen und eine noch nicht
   // fertige Kopplung abbrechen. Eine BESTEHENDE Live-Verbindung bleibt

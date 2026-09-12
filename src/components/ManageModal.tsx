@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { ArrowLeft, Trash2, Settings, RotateCcw } from "lucide-react";
 import { SectionsConfig, FieldConfig } from "../types";
+import { rueckfrageOffen } from "../utils/rueckfrage";
 
 interface ManageModalProps {
   isOpen: boolean;
@@ -20,7 +21,25 @@ export default function ManageModal({
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Focus trap
+  /*
+    `onClose` in einer Ref, damit der Effekt unten nicht daran haengt -- siehe
+    die ausfuehrliche Begruendung in `ConfirmDialog.tsx`.
+
+    Gemessen am 2026-09-12: `App.tsx` uebergibt `onClose={() => setActiveTab(
+    "options")}`, also bei jedem App-Render eine neue Identitaet. Der Effekt
+    lief damit staendig neu, und sein Aufraeumer setzte den Fokus jedes Mal auf
+    die Zurueck-Taste. Wer hier mitten in der Liste stand und irgendwo in der
+    App loeste einen Render aus (eine Ansage genuegt), landete wieder ganz oben.
+    Bei der Rueckfrage "Kategorie loeschen?" gewann dieser Effekt sogar gegen
+    den Startfokus des Dialogs: Der Fokus sass auf der Zurueck-Taste hinter der
+    Rueckfrage, und der Tabulator lief durch den Hintergrund.
+  */
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  // Escape schliesst; eine Fokusfalle waere hier falsch (Begruendung unten).
   useEffect(() => {
     if (!isOpen) return;
 
@@ -31,8 +50,15 @@ export default function ManageModal({
     }, 50);
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      /*
+        Solange eine Rueckfrage steht, ruhen die Tastenkuerzel dieser Ansicht.
+        Ohne diese Zeile schloss ein Escape, das die Rueckfrage abbrechen
+        sollte, zugleich die Ansicht dahinter -- Begruendung und Messung in
+        `utils/rueckfrage.ts`.
+      */
+      if (rueckfrageOffen()) return;
       if (e.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -58,7 +84,7 @@ export default function ManageModal({
         previouslyActive.focus();
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

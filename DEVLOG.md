@@ -10,6 +10,237 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-12 — v0.9.32: Die Rückfragen, die nie eine Messung gesehen haben
+
+Achter Fall derselben Klasse — und der unangenehmste. Hinter jeder Rückfrage
+der App steht eine Entscheidung, die Daten vernichtet oder überschreibt.
+**Keine einzige von ihnen war je gerendert worden.**
+
+Dass das nicht hypothetisch ist, steht im eigenen Protokoll: 0.9.22 fand die
+bestätigende Taste in zwei Farbschemata unsichtbar (1,00:1 und 1,07:1), in
+allen vier zerstörenden Rückfragen — und notierte dazu, das Prüfgate könne es
+nicht finden, weil es „gerenderte Ansichten misst, und keine Prüfung je eine
+Rückfrage öffnete". Der Satz stand da, die Lücke blieb zehn Versionen offen.
+
+### Was die Geometrie gefunden hat: nichts
+
+36 Kombinationen aus sechs Rückfragen, zwei Fenstergrößen (360/320 px), zwei
+Schriftgrößen und erzwungener Breitschrift. Kein Überlauf, keine Trefferfläche
+unter 44 px, kein verstecktes Seitwärtsscrollen, axe ohne schweren Befund.
+
+Das gehört genauso berichtet wie ein Fund. Der Dialog ist schlicht gebaut —
+`max-w-md`, gestapelte Tasten bis `sm:`, `py-3 px-4` — und das trägt.
+
+### Was die Tastatur gefunden hat
+
+Zwei Defekte, beide nur mit der Tastatur sichtbar, beide in genau dem
+Bedienelement, das eine Löschung abfangen soll.
+
+**Erstens: Bei zwei von fünf Rückfragen kam der Fokus gar nicht im Dialog an.**
+
+| | gemessen |
+|---|---|
+| „Kategorie löschen?" Startfokus | `BUTTON"Zurück zu den Optionen"` — hinter dem Dialog |
+| Tab 1 | `DIV"1. Vorführungen & Auslieferungen"` |
+| Tab 2–10 | die Papierkorb-Tasten der Liste **hinter** der Rückfrage |
+| Shift+Tab 1–6 | ebenso |
+
+Der Verlauf über die Zeit zeigt die Ursache, statt sie zu behaupten:
+
+```
+vor dem Klick:   BUTTON"Zurück zu den Optionen"
+nach ~0 ms:      BUTTON"Kategorie ... löschen"   (die angeklickte Taste)
+nach ~60 ms:     BUTTON"Zurück zu den Optionen"  <-- hier greift der falsche Effekt
+ab ~120 ms:      unverändert
+```
+
+`ManageModal` setzt seinen Fokus 50 ms nach dem Öffnen auf die Zurück-Taste.
+Der Dialog tut dasselbe mit „Abbrechen" — auch nach 50 ms. Beide Zeitgeber
+liefen, und der spätere gewann.
+
+Warum der Effekt von `ManageModal` überhaupt noch einmal lief: Seine
+Abhängigkeitsliste war `[isOpen, onClose]`, und `App.tsx` übergibt
+`onClose={() => setActiveTab("options")}` — einen Inline-Pfeil, also bei
+**jedem** App-Render eine neue Identität. `setConfirmRequest(...)` rendert App.
+Also lief der Effekt neu, sein Aufräumer holte den Fokus zurück, und der neue
+Lauf setzte ihn auf die Zurück-Taste.
+
+**Und das ist nicht auf die Rückfragen beschränkt.** Vier der elf Ansichten
+tragen diesen Effekt. Gemessen über `Alt+Umschalt+S` — eine dokumentierte
+Tastenkombination der App, die App-Zustand ändert und den Fokus nicht anfasst:
+
+| Ansicht | Fokus vorher | nach der Tastenkombination |
+|---|---|---|
+| Hilfe | `BUTTON"RV Analyse"` | **`BUTTON"Zurück zu den Optionen"`** |
+| Geräte-Sync | `BUTTON"Live-Verbindung beitreten"` | **`BUTTON"Zurück zu den Optionen"`** |
+| Jahreskonto | `BUTTON"RV Zeit"` | **`BUTTON"Zurück zur Zeiterfassung"`** |
+| Felder verwalten | `BUTTON"Kategorie …"` | **`BUTTON"Zurück zu den Optionen"`** |
+| Archiv (Gegenprobe) | `BUTTON"RV Report"` | unverändert |
+
+Die Gegenprobe ist der Beleg: Das Archiv trägt diesen Effekt nicht und bleibt
+stehen. Es liegt also am Effekt, nicht an der Tastenkombination.
+
+Für die Zielgruppe heißt das: Wer sich die Hilfe vorlesen lässt — der längste
+Fließtext der App — und dabei irgendeine Ansage auslöst, steht wieder am
+Anfang. Die App sagt fast alles an.
+
+**Zweitens: Die Esc-Taste schloss zwei Dinge auf einmal.**
+
+Die Rückfrage und die Ansicht dahinter hören beide auf `keydown` am `window`.
+
+| | vor 0.9.32 | nach 0.9.32 |
+|---|---|---|
+| Feldverwaltung, Esc auf „Kategorie löschen?" | Überschrift **„Optionen"** | „Formularfelder verwalten" |
+| Geräte-Sync, Esc auf „Alles ersetzen?" | Überschrift **„Optionen"** | „Geräte-Synchronisation" |
+| … und das empfangene Paket | **weg** | vorhanden |
+
+Der zweite Fall ist der teure: Wer die folgenschwerste Aktion der App verneint
+— „Alle Daten dieses Geräts ersetzen?" —, wurde dafür mit einer wiederholten
+Übertragung bestraft. `resetView()` beim Schließen verwirft das eingegangene
+Paket.
+
+### Die Korrekturen, und warum gerade diese
+
+**`onClose` in eine Ref, Abhängigkeitsliste auf `[isOpen]`** — in allen fünf
+betroffenen Dateien. Damit läuft der Fokus-Tanz einmal je Öffnen statt einmal
+je Render. Die Alternative, `useCallback` in `App.tsx`, hätte dieselben fünf
+Stellen geheilt und die Falle für die sechste liegen lassen.
+
+**Ein Zweig in der Fokusfalle des Dialogs, der den Fokus zurückholt**, wenn er
+außerhalb liegt. Vorher griff sie nur, wenn der Fokus zufällig genau auf dem
+ersten oder letzten Element saß. `OnboardingModal` hat diesen Zweig seit
+Längerem, mit einem Kommentar, der das Problem genau beschreibt —
+ausgerechnet `ConfirmDialog`, den `CLAUDE.md` als *Referenzimplementierung*
+der Fokusfalle nennt, hatte ihn nicht.
+
+**Eine ausdrückliche Wache `rueckfrageOffen()`** in jedem Tastatur-Zuhörer, der
+im Hintergrund liegen kann. `preventDefault` hilft dagegen nicht — es
+unterbindet die Standardaktion, nicht die anderen Zuhörer.
+`stopImmediatePropagation` hinge an der Registrierungsreihenfolge, und die
+fällt hier je nach Ansicht anders aus: `ManageModal` meldet sich **nach** dem
+Dialog an, `DeviceSyncModal` lange **davor**. Eine Lösung, die daran hängt,
+hält den nächsten Umbau nicht aus.
+
+### Die Gegenproben, drei Stück und getrennt
+
+Eine neue Prüfung, die grün ist, beweist nichts.
+
+| zurückgenommen | Startfokus | Tabulator |
+|---|---|---|
+| nichts | `BUTTON"Abbrechen"` | bleibt im Dialog |
+| nur die Abhängigkeitsliste | **falsch** | bleibt im Dialog (der neue Zweig fängt ihn) |
+| Liste **und** Zweig | **falsch** | **läuft durch den Hintergrund** |
+
+Der mittlere Lauf ist der aussagekräftige: Er trennt die beiden Korrekturen
+voneinander, statt die eine für die andere einspringen zu lassen. Gemessen
+wurde er mit der Sonde und nicht über das Prüfgate — dort bricht der Lauf
+schon an der ersten Zusicherung ab, und die zweite käme gar nicht zum Zug.
+Genau diese Falle steht im Protokoll zu 0.9.31.
+
+Für die Wache getrennt: ohne sie meldet das Gate beide Fälle rot
+(„Escape hat die Rückfrage UND die Ansicht dahinter geschlossen"), mit ihr
+grün.
+
+### Was jetzt dauerhaft geprüft wird
+
+**39 neue Prüfungen im Oberflächen-Gate**, über sechs Rückfragen: Geometrie
+bei „Normal" und „Extra groß", Trefferflächen, verstecktes Seitwärtsscrollen,
+axe, WCAG 2.5.3, breite Schrift — und je Rückfrage ein Tastatur-Durchlauf, der
+misst, wo der Fokus landet, ob er bleibt und wohin er zurückkehrt.
+
+Dazu zwei Prüfungen für die Esc-Taste, **in beide Richtungen**: Das erste
+Escape darf nur die Rückfrage schließen, das zweite muss die Ansicht
+schließen. Ohne die zweite Hälfte wäre die Prüfung auch mit einer Wache
+zufrieden, die Escape pauschal totlegt — und das wäre ein neuer Defekt statt
+einer Behebung.
+
+**Funktionsprüfungen 158 → 162.** Die vierte ist die wichtigste und prüft
+keine Rechnung, sondern Vollzähligkeit: Jede Datei unter `src/`, die einen
+`keydown`-Zuhörer anmeldet, muss die Wache abfragen oder mit Grund in einer
+Ausnahmeliste stehen. Gegengeprobt durch Entfernen der Wache aus `HelpModal`:
+
+```
+FEHL Rückfrage-Wache: jeder Tastatur-Zuhörer hat die Wache oder eine
+     begründete Ausnahme
+     Diese Dateien melden einen keydown-Zuhörer an, fragen aber nicht
+     rueckfrageOffen() ab: HelpModal.tsx
+```
+
+Dieselbe Bauart wie `zustandsdeckung.ts`, und aus demselben Grund: Aus „daran
+denken" wird „nicht weiterkommen".
+
+### Nebenbei erledigt: das Löschen einer Schicht
+
+Die ROADMAP führte es seit 0.9.23 unter „Nicht über die Oberfläche geprüft".
+Jetzt gemessen, über den ganzen Weg einschließlich Neuladen:
+
+| | vorher | nachher |
+|---|---|---|
+| Bürostunden | 11,63 | **7,75** |
+| Außendienststunden | 3,87 | **0** |
+| Arbeitstage | 2 | **1** |
+| Schichten | `p1, p2` | `p2` |
+| fachfremdes Zählerfeld | 9 | 9 |
+
+**Ohne Befund.** Die Rechnung stimmt, sie wird gespeichert, und sie fasst
+nichts an, was ihr nicht gehört. Als Prüfung im Gate festgehalten, weil
+zwischen der reinen Funktion und dem Bericht der Dialog, der Hook, der
+Zeitstempel und der Schreibvorgang liegen.
+
+### Grenzen dieses Standes, ausdrücklich
+
+- **Keine Aussage über den Screenreader.** Gemessen sind Fokusverlauf,
+  Trefferflächen, Reflow und axe. Ob NVDA oder VoiceOver die Rückfrage
+  verständlich vorlesen, entscheidet der Durchlauf mit den Kollegen — und der
+  steht für den Sync-Umbau aus 0.9.17 weiterhin aus.
+- **Der Tastatur-Durchlauf läuft nur im Chromium-Profil.** Das WebKit-Profil
+  misst Geometrie nicht und bekommt die Zwischenablage nicht auf demselben
+  Weg. Grenze des Werkzeugs, kein Befund über die App.
+- **`OnboardingModal` ist ausdrücklich von der Wache ausgenommen**, mit Grund
+  in der Ausnahmeliste: Der Ersteinstieg wird beendet, bevor irgendetwas
+  Zerstörendes erreichbar ist, und sein Zuhörer behandelt nur Tab.
+- **Nicht gemessen: ob es weitere Fälle dieser Bauart gibt**, in denen ein
+  Effekt an einer Inline-Funktion aus `App.tsx` hängt. Geprüft und behoben
+  sind die fünf mit Fokus-Wiederherstellung; andere Effekte mit Inline-Props
+  laufen weiterhin öfter als nötig, nur ohne sichtbare Folge.
+
+### Nebenbefund: `npm audit` meldet fünf, die ROADMAP spricht von einer
+
+Beim Abschlusslauf aufgefallen und **nicht** von dieser Änderung verursacht —
+es kam keine Abhängigkeit dazu. 0.9.20 hatte den Stand auf „genau eine
+moderate Meldung" gebracht (`uuid` über ExcelJS, mit Begründung getragen).
+Heute sind es fünf:
+
+| Meldung | Weg | erreicht den Browser? |
+|---|---|---|
+| `uuid` — fehlende Bereichsprüfung v3/v5/v6 | ExcelJS | nein, der Pfad ist unerreichbar (0.9.20 begründet) |
+| `qs` — Array-Limit-Umgehung | `express` → `server.ts` | **nein** |
+| `qs` — DoS über `isBuffer` | `express` → `server.ts` | **nein** |
+| `body-parser` | über `qs` | **nein** |
+| `express` | über `qs` | **nein** |
+
+Vier der fünf hängen an `express`, und `express` läuft ausschließlich in
+`server.ts` — dem Entwicklungsserver und `npm start`. **Ausgeliefert wird von
+GitHub Pages**, dort läuft kein `server.ts`. Kein Nutzer erreicht diesen Code.
+
+Das Deploy-Tor ruft `npm audit --omit=dev || true`, bricht also ohnehin nicht
+ab. Bewusst **nicht** mitbehoben: Eine Änderung am Lockfile gehört nicht in
+einen Stand, dessen vollständiger Prüflauf schon hinter ihm liegt, und
+„Stabilität vor Funktionsumfang" spricht gegen ein Anhängsel. Der Punkt gehört
+dem Projektinhaber — mit der Einschätzung, dass er nicht dringt.
+
+### Voller Lauf
+
+`tsc --noEmit` sauber. **162 Funktionsprüfungen bestanden.**
+`npm run check:ui`: 798 Prüfungen angemeldet, **409 ausgeführt und bestanden**,
+389 durch Profil- und Schemafilter übersprungen, 13,9 min, kein Fehlschlag.
+`npm run build` sauber.
+
+Die Zahlen in `CLAUDE.md` waren veraltet (148 / 387) und sind auf diesen Stand
+nachgezogen.
+
+---
+
 ## 2026-09-09 — v0.9.31: Das Abzeichen, das es nur mit Verbindung gibt
 
 Der Anlass ist derselbe wie bei 0.9.30 — ein Satz aus dem eigenen Protokoll —

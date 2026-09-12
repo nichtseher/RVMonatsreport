@@ -5,6 +5,7 @@ import {
   CalendarDays, BarChart3, LayoutGrid, Shield, Zap, Keyboard
 } from "lucide-react";
 import { SectionsConfig } from "../types";
+import { rueckfrageOffen } from "../utils/rueckfrage";
 
 interface HelpModalProps {
   isOpen: boolean;
@@ -16,7 +17,22 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<"general" | "report" | "time" | "backup">("general");
 
-  // Focus trap
+  /*
+    `onClose` in einer Ref, damit der Effekt unten nicht daran haengt -- die
+    ausfuehrliche Begruendung steht in `ConfirmDialog.tsx`.
+
+    Gemessen am 2026-09-12: Wer in der Hilfe neun Mal tabbte und dann
+    Alt+Umschalt+S drueckte (eine dokumentierte Tastenkombination der App),
+    stand wieder auf "Zurueck zu den Optionen". Die Hilfe ist der laengste
+    Fliesstext der App; sie von vorn lesen zu muessen, weil irgendwo eine
+    Ansage lief, trifft genau die Nutzer, fuer die sie geschrieben ist.
+  */
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  // Escape schliesst; Startfokus auf die erste Taste der Ansicht.
   useEffect(() => {
     if (!isOpen) return;
     const previouslyActive = document.activeElement as HTMLElement;
@@ -25,8 +41,15 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
       firstFocusable?.focus();
     }, 50);
     const handleKeyDown = (e: KeyboardEvent) => {
+      /*
+        Solange eine Rueckfrage steht, ruhen die Tastenkuerzel dieser Ansicht.
+        Ohne diese Zeile schloss ein Escape, das die Rueckfrage abbrechen
+        sollte, zugleich die Ansicht dahinter -- Begruendung und Messung in
+        `utils/rueckfrage.ts`.
+      */
+      if (rueckfrageOffen()) return;
       if (e.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
     };
@@ -35,7 +58,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
       document.removeEventListener("keydown", handleKeyDown);
       previouslyActive?.focus();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
