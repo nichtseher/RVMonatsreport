@@ -1188,10 +1188,41 @@ Ab hier hängt alles an Menschen und Geräten. Kein Werkzeug ersetzt das.
 
   Ebenfalls nicht bestätigt: ob der Sync-Umbau aus 0.9.17 Teil der Durchläufe
   war — genau der Punkt, den dieser Eintrag hervorhebt.
-- **Barrierefreiheitserklärung und Konformitätsbericht** gegen EN 301 549:
-  welche Kriterien erfüllt sind, welche nicht, und warum. Ein belegter Bericht
-  mit ehrlichen Lücken ist mehr wert als die Behauptung, alles sei erfüllt —
-  und er ist das Dokument, das eine Abnahme trägt.
+
+  **Stand 2026-09-12: Der Durchlauf ist zehn Fassungen alt und muss wiederholt
+  werden.** Er fand auf 0.9.22 statt; live ist 0.9.32. Dazwischen liegt unter
+  anderem der Umbau der Rückfragen — und der war nötig, weil bei **zwei von
+  fünf der Fokus gar nicht im Dialog ankam**: Der Screenreader las die
+  Löschabfrage vor, während die Tastatur im Hintergrund stand. Ein Durchlauf
+  auf 0.9.22 kann das nicht gesehen haben, weil es damals noch da war; die
+  Korrektur ist gemessen, aber **nicht gehört**.
+
+  Der Wiederholungsdurchlauf sollte deshalb ausdrücklich einschließen: die
+  **sechs Rückfragen** (löschen, zurücksetzen, Monat abschließen, Vorlage
+  laden, Schicht löschen, alles ersetzen) und den **Geräteabgleich**, der seit
+  0.9.17 nie bestätigt wurde.
+- ~~**Konformitätsbericht** gegen EN 301 549~~ — **neu erhoben am 2026-09-12
+  für 0.9.32** ([KONFORMITAET.md](KONFORMITAET.md)). Die Vorfassung galt für
+  0.9.19 und war dreizehn Fassungen alt.
+
+  Stand: **31 Kriterien erfüllt mit Beleg**, 4 teilweise, 10 plausibel ohne
+  Einzelnachweis, **0 nicht erfüllt** auf AA-Ebene, 2 nicht erhoben (1.3.2,
+  1.3.3 — beides Menschenurteil). Die Zahl, auf die es ankommt, ist die
+  mittlere: Sie war 19, dann 16, jetzt 14 — und **jeder** dieser Schritte hat
+  beim ersten Lauf echte Verstöße gefunden.
+
+  Zwei Lücken des Berichts sind ausdrücklich benannt und von hier aus nicht zu
+  schließen: der Screenreader-Durchlauf (siehe oben) und die Tatsache, dass
+  eine gestellte Kamera kein Telefon in der Hand ist.
+
+  **Was weiterhin aussteht, ist die Barrierefreiheitserklärung im Rechtssinn.**
+  Der Bericht ist eine technische Selbstauskunft und sagt das auch; eine
+  Erklärung nach BFSG/BITV ist ein anderes Dokument mit anderen Pflichtangaben
+  (Feedback-Mechanismus, Durchsetzungsverfahren, Datum der Erstellung). Ob und
+  in welcher Form sie nötig ist, hängt daran, ob die App als
+  Beschäftigtenwerkzeug oder als Dienstleistung gilt — das ist eine
+  Rechtsfrage und gehört nicht hierher. Sie ist der letzte offene Punkt dieser
+  Liste, der kein Gerät und keinen Menschen am Screenreader braucht.
 
 ---
 

@@ -2,12 +2,12 @@
 
 | | |
 |---|---|
-| **Stand** | 2026-09-02 |
-| **Geprüfte Fassung** | 0.9.19, Commit `3a7d91d` |
+| **Stand** | 2026-09-12 |
+| **Geprüfte Fassung** | 0.9.32, Commit `75f0564` (veröffentlicht und live nachgewiesen) |
 | **Maßstab** | EN 301 549 V3.2.1 (2021-03), Abschnitt 9 → WCAG 2.1 Stufe A und AA |
 | **Zusätzlich dokumentiert** | die neun Erfolgskriterien aus WCAG 2.2, die der Entwurf EN 301 549 V4.1.0 aufnimmt |
 | **Art des Dokuments** | technische Selbstauskunft |
-| **Nachtrag** | 2026-09-07 — Screenreader-Durchlauf auf 0.9.22 (siehe 3.3) und geänderte Kriterienlage (siehe „Was sich seit diesem Bericht geändert hat") |
+| **Vorfassung** | 2026-09-02 für 0.9.19, mit Nachtrag vom 2026-09-07. Dieser Stand ist **neu erhoben**, nicht nachgetragen: Zwischen 0.9.19 und 0.9.32 liegen dreizehn Fassungen, und der größte Teil davon hat genau an den hier bewerteten Kriterien gearbeitet |
 
 ---
 
@@ -59,19 +59,35 @@ Barrierefreiheit ist hier keine Auflage, sondern die Funktionsvoraussetzung.
 
 ### 3.1 Was automatisiert läuft
 
-Im Deploy-Tor vor jedem Bauen (`npm run check:ui`, 63 Prüfungen, drei
-Geräteprofile: 360 × 780 Chromium, 360 × 780 WebKit, 1280 × 900 Chromium):
+Im Deploy-Tor vor jedem Bauen. Zwei Läufe, beide müssen bestehen:
+
+- **`npm run check` — 162 Prüfungen reiner Funktionen.** Zusammenführen beim
+  Geräteabgleich samt Zeitstempeln je Feld, Excel-Summen, Arbeitszeit über
+  Mitternacht, Verschlüsselung der Sicherung, doppelt kodierte Zeichen.
+- **`npm run check:ui` — 825 angemeldete Prüfungen, davon 418 ausgeführt**
+  (der Rest wird durch Profil- und Schemafilter ausdrücklich übersprungen),
+  Laufzeit rund 15 Minuten, drei Geräteprofile: 360 × 780 Chromium,
+  360 × 780 WebKit, 1280 × 900 Chromium.
+
+Zum Vergleich: In der Vorfassung dieses Berichts (0.9.19) waren es 63.
 
 | Prüfung | Deckung |
 |---|---|
-| Waagerechter Überlauf | fünf Ansichten × drei Schriftgrößen × drei Profile, inkl. Containern mit `overflow-x: auto`, die für die Seitenprüfung unsichtbar bleiben |
-| Trefferflächen | dieselbe Matrix; 43,5 px für alles im Tab-Lauf, 24 px für ausdrücklich ausgenommene Elemente |
-| axe-core | fünf Ansichten, Regelsätze `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa` |
+| Waagerechter Überlauf | fünf Ansichten × drei Schriftgrößen × drei Profile, inkl. Containern mit `overflow-x: auto`, die für die Seitenprüfung unsichtbar bleiben. Zusätzlich **320 px** (iPhone SE) bei „Extra groß" |
+| Trefferflächen | dieselbe Matrix, **eine einzige Schwelle: 44 px**, gemessen über den Layout-Kasten (`offsetWidth`/`offsetHeight`), nicht über `getBoundingClientRect` — Letzteres rechnet Eintritts-Transformationen mit und meldete eine 44-px-Taste im kopflosen Lauf als 41,8 px. Seit 0.9.22 gibt es **keine Ausnahme mehr** (siehe 2.5.5 in Abschnitt 4) |
+| axe-core | alle Ansichten **und die Zustände darunter**, Regelsätze `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa` |
 | Kontrast je Farbschema | fünf Ansichten × drei weitere Schemata (dunkel, Kontrast dunkel, Kontrast gelb) × zwei Profile, Regel `color-contrast`. Jede Prüfung weist zuvor nach, dass das Schema wirklich anliegt (`data-theme` **und** `data-dark`) und dass axe die Regel überhaupt ausgeführt hat |
-| Ansichten hinter den Einstiegen | die sechs Ansichten, die nicht über `?tab=` erreichbar sind (Formular anpassen, Geräte-Sync, Datensicherung, Hilfe, Jahreskonto, Was gibt's Neues): Überlauf und Trefferflächen bei „normal" und „Extra groß" in drei Profilen, axe in zwei |
-| Tabulator-Durchlauf | alle elf Ansichten, mit **echten Tastendrücken**: Erreichbarkeit jedes sichtbaren Bedienelements, Reihenfolge in Dokumentordnung, geschlossene Runde. Modale Dialoge werden erkannt und ihre Fokusfalle als richtig gewertet |
-| Breitere Schrift als hier installiert | alle elf Ansichten bei „Extra groß" mit erzwungener Verdana bzw. DejaVu Sans — stellt nach, dass der Schriftstapel je nach Gerät ein anderes Glied greift |
+| **Kontrast in den Rückfragen, selbst gerechnet** | zwei Rückfragen × vier Schemata. Eigene Rechnung statt axe, weil axe durch die halbdurchsichtige Abdunklung hindurch den wirksamen Hintergrund nicht bestimmen kann und `incomplete` meldet — siehe 3.2, Punkt 7 |
+| Ansichten hinter den Einstiegen | die sechs Ansichten, die nicht über `?tab=` erreichbar sind (Formular anpassen, **Formularfelder verwalten**, Geräte-Sync, Datensicherung, Hilfe, Jahreskonto, Was gibt's Neues): Überlauf und Trefferflächen bei „normal" und „Extra groß" in drei Profilen, axe in zwei |
+| **Zustände innerhalb der Ansichten** | Ein `?tab=` erreicht die Ansicht, nicht ihre Zustände — dort saßen zwischen 0.9.22 und 0.9.32 acht Fundstellen. Abgedeckt sind jetzt: Formularzustände, Formulare der Stempeluhr, Schicht-Protokoll mit Einträgen, Archiv mit Bestand (Liste, aufgeklappt, Löschabfrage, Suche), die sechs Zustände des Geräteabgleichs, die fünf Schritte des Ersteinstiegs und **alle sechs Rückfragen** |
+| **Zwei Geräte, echt gekoppelt** | Textcode, Live-Verbindung (WebRTC ohne ICE-Server) und **QR-Weg mit gestellter Kamera**. Geprüft werden Kopplung, Zusammenführen in beide Richtungen, die Stille einer ruhenden Verbindung und der Bestand danach |
+| Tabulator-Durchlauf | alle elf Ansichten, mit **echten Tastendrücken**: Erreichbarkeit jedes sichtbaren Bedienelements, Reihenfolge in Dokumentordnung, geschlossene Runde. In den Rückfragen zusätzlich: Startfokus, Verbleib im Dialog, Fokus-Rückgabe und die Wirkung von Escape |
+| WCAG 2.5.3 (Beschriftung im Namen) | über alle Ansichten und Zustände: ein `aria-label`, das die sichtbare Aufschrift **ersetzt** statt sie zu enthalten, lässt den Lauf scheitern |
+| Textabstand nach 1.4.12 | die vier Normwerte werden erzwungen, danach Überlauf und Trefferflächen über alle elf Ansichten |
+| Breitere Schrift als hier installiert | alle Ansichten **und Zustände** bei „Extra groß" mit erzwungener Verdana bzw. DejaVu Sans — stellt nach, dass der Schriftstapel je nach Gerät ein anderes Glied greift |
+| Lesefehler beim Start | ein vorübergehender Lesefehler darf weder Archiv noch laufenden Bericht löschen (Regressionsprüfung zum Datenverlust aus 0.9.22) |
 | Medienabfrage `pointer: coarse` | Nachweis, dass die Touch-Zweige im Prüflauf wirklich greifen |
+| Update-Hinweis | der Hinweis entsteht außerhalb von React und ist über keine Ansicht erreichbar; er wird über eine eigene Naht angesprochen und auf Geometrie und axe gemessen |
 
 ### 3.2 Die Grenzen dieser Automatisierung — vollständig benannt
 
@@ -82,10 +98,11 @@ liest, liest ihn falsch:
    keine Konformitätsaussage. Das gilt unabhängig von der Konfiguration.
 2. **Nur `critical` und `serious` lassen die Prüfung scheitern.** Befunde der
    Stufen `moderate` und `minor` werden herausgefiltert und fallen nicht auf.
-3. **Der vollständige axe-Durchlauf läuft nur im Standardtheme.** Seit dem
-   2026-09-02 tritt daneben eine eigene Kontrastprüfung für die drei weiteren
-   Farbschemata (30 Prüfungen). Alle anderen axe-Regeln — Beschriftungen,
-   Rollen, Struktur — werden weiterhin nur im Standardschema geprüft; das ist
+3. **Der vollständige axe-Durchlauf läuft nur im Standardtheme.** Daneben
+   tritt eine eigene Kontrastprüfung für die drei weiteren Farbschemata, seit
+   0.9.32 zusätzlich die selbst gerechnete Kontrastprüfung der Rückfragen in
+   allen vier Schemata. Alle anderen axe-Regeln — Beschriftungen, Rollen,
+   Struktur — werden weiterhin nur im Standardschema geprüft; das ist
    vertretbar, weil sie nicht am Farbschema hängen, aber es ist eine Annahme
    und keine Messung.
    **Alle Kontrastprüfungen laufen bei Schriftgröße „normal".** Das ist der
@@ -94,21 +111,62 @@ liest, liest ihn falsch:
    Stufen sind also die leichteren.
 4. **Regeln der Kategorie „best practice" laufen nicht mit**, weil nur
    WCAG-Regelsätze aktiviert sind. Landmarkenstruktur fällt darunter.
-5. **Was an Klickfolgen hängt, ist nur teilweise abgedeckt.** Die sechs
-   Ansichten hinter den Einstiegen laufen seit dem 2026-09-02 mit. **Nicht**
-   abgedeckt bleiben der Einrichtungsassistent, die Bestätigungsdialoge
-   (`ConfirmDialog`) und die Kamerawege des Geräteabgleichs — sie setzen einen
-   Zustand oder ein Gerät voraus, das der Prüflauf nicht herstellt.
+5. ~~**Was an Klickfolgen hängt, ist nur teilweise abgedeckt.**~~
+   **Geschlossen zwischen 0.9.27 und 0.9.32.** Dieser Punkt nannte drei
+   Lücken: den Einrichtungsassistenten, die Bestätigungsdialoge und die
+   Kamerawege. Alle drei sind abgedeckt — der Assistent mit 0.9.27, die
+   Rückfragen und die Kamerawege mit 0.9.32.
 
-   Der Punkt stand hier zuvor als „Modaldialoge nicht abgedeckt". Das war
+   Bemerkenswert ist, **wie** sie zugegangen sind, denn das betrifft die
+   Lesart dieses ganzen Abschnitts: Alle drei galten als „nicht herstellbar".
+   Bei allen dreien war das eine Vermutung, die niemand nachgerechnet hatte.
+   Für den QR-Weg fehlte am Ende eine Kommandozeilen-Flagge
+   (`--use-fake-device-for-media-stream` neben der Videodatei); ohne sie
+   meldet der Browser „kein Gerät gefunden" — und genau diese Meldung galt
+   drei Fassungen lang als Beleg dafür, dass es nicht geht.
+
+   **Wer diese Liste liest, sollte jeden Satz der Form „X ist nicht prüfbar,
+   weil Y" als Vermutung lesen, bis eine Messung daneben steht.** Zwischen
+   0.9.30 und 0.9.32 sind drei solche Sätze widerlegt worden, und hinter dem
+   ersten steckte ein echter Datenfehler.
+
+   Der Punkt stand ursprünglich als „Modaldialoge nicht abgedeckt". Das war
    ungenau: `ManageModal`, `HistoryModal`, `StatsModal` und `TimeModal` sind
-   trotz ihrer Namen **keine Dialoge**, sondern vollwertige Ansichten. Der
-   blinde Fleck war größer als beschrieben — sechs von elf Ansichten — und ist
-   jetzt kleiner als beschrieben.
-6. **Die Tabulatorreihenfolge selbst ist nicht geprüft.** Die Messung zu
-   2.4.11 hat mit `element.focus()` gearbeitet, nicht mit der echten
-   Tabulatortaste; beide lösen dieselbe Bildlauflogik aus, die Reihenfolge
-   prüft das nicht.
+   trotz ihrer Namen **keine Dialoge**, sondern vollwertige Ansichten.
+6. **Was eine gestellte Kamera nicht ist.** Der QR-Weg läuft gegen ein
+   erzeugtes Video: kein Rauschen, keine Unschärfe, kein Schräghalten, keine
+   Spiegelung auf dem Bildschirm des anderen Geräts. Belegt ist, dass der Weg
+   funktioniert und die Teilstücke sich richtig zusammensetzen — **nicht**,
+   wie gut er sich im Sitzungszimmer bedienen lässt.
+
+   Nebenbefund aus derselben Messung: Bei 640 × 480 kam nur das kurze letzte
+   Teilstück durch, bei 800 × 600 alle drei. Die Telefone der Kollegen filmen
+   weit darüber; wer aber `CHUNK_SIZE` erhöht, verbraucht genau diese Reserve.
+7. **axe kann Kontrast in einem modalen Dialog nicht messen** — und das ist
+   keine Feinheit, sondern der Grund, warum ein realer Verstoß
+   automatisiert unsichtbar war.
+
+   Durch die halbdurchsichtige Abdunklung hindurch kann axe den wirksamen
+   Hintergrund nicht bestimmen. Es meldet dann `incomplete` statt
+   `violation` — und ausgewertet werden `violations`. Gemessen am 2026-09-12
+   mit einem absichtlich zerstörten Kontrast (1,00:1) in der Rückfrage: Die
+   Prüfung blieb grün, über die ganze Seite ebenso wie eingegrenzt auf den
+   Dialog.
+
+   Genau dort saß der Fehler aus 0.9.22 — die bestätigende Taste stand in
+   zwei Farbschemata mit 1,00:1 bzw. 1,07:1 auf ihrem eigenen Hintergrund, in
+   **allen vier** zerstörenden Rückfragen. Gefunden wurde er damals von Hand.
+   Seit 0.9.32 rechnet das Prüfnetz den Kontrast in den Rückfragen selbst,
+   indem es halbdurchsichtige Schichten über den ersten deckenden Vorfahren
+   zusammensetzt.
+8. **`target-size` meldet in einem offenen Dialog auch den Hintergrund.**
+   Die Abdunklung zählt für axe nicht als Verdeckung, die deckende
+   Dialogkarte darüber schon; wo deren Kante eine Tastenzeile schneidet,
+   meldet axe den übrig bleibenden Streifen. Gemessen: `217,2 × 17,5 px` für
+   eine Taste, die tatsächlich 44 px hoch ist. Welche Zeile es trifft, hängt
+   am Umbruch und damit an der Schrift — der Befund trat auf dem CI-Läufer
+   auf und lokal nicht, auch nicht mit erzwungener Breitschrift. Die
+   axe-Messung der Rückfragen ist deshalb auf den Dialog eingegrenzt.
 
 ### 3.3 Screenreader-Durchlauf
 
@@ -144,6 +202,25 @@ selbst gesetzten Maßstab nicht. **Ungeprüft, nicht erfüllt.**
 **Nicht bestätigt:** ob der Geräteabgleich (Kopplung, QR- und Textcode,
 Zusammenführen) Teil dieser Durchläufe war. Das ist der Teil der Anwendung,
 der zuletzt umgebaut wurde.
+
+**Nachtrag 2026-09-12 — der Durchlauf ist zehn Fassungen alt.** Er fand auf
+0.9.22 statt; dieser Bericht bewertet 0.9.32. Dazwischen liegen Änderungen,
+die genau das betreffen, was ein Screenreader-Durchlauf beurteilt:
+
+| Fassung | Änderung mit Screenreader-Bezug |
+|---|---|
+| 0.9.29 | Die Einklappung des Schicht-Protokolls ist entfernt; die Liste steht jetzt im Lesefluss |
+| 0.9.31 | Das Abzeichen „Live verbunden" im Kopfbereich bricht jetzt um |
+| 0.9.32 | **Die Rückfragen sind umgebaut**: Startfokus, Verbleib im Dialog, Fokus-Rückgabe, und Escape bricht nur noch die Rückfrage ab |
+
+Der letzte Punkt wiegt am schwersten. Bis 0.9.32 kam der Fokus bei zwei von
+fünf Rückfragen **gar nicht im Dialog an** — der Screenreader las die
+Löschabfrage vor, während die Tastatur im Hintergrund stand. Das ist genau
+die Klasse von Fehler, die ein Durchlauf auf 0.9.22 nicht gesehen haben kann,
+weil sie damals noch da war. Die Korrektur ist gemessen, aber **nicht gehört**.
+
+**Für die Abnahme heißt das: Ein Durchlauf auf 0.9.32 steht aus, und er sollte
+die Rückfragen und den Geräteabgleich ausdrücklich einschließen.**
 
 ### 3.4 Test auf echten Geräten
 
@@ -182,7 +259,7 @@ Zusätzlich freiwillig über die Norm hinaus:
 
 | Kriterium | Stufe | Stand |
 |---|---|---|
-| 2.5.5 Target Size (Enhanced), 44 × 44 px | **AAA** | **erfüllt für alles im Tab-Lauf**, seit 2026-09-02 im Prüftor abgesichert (gemessen gegen 43,5 px wegen Renderfaktor 0,99993). Die `±5`-Schnelltasten liegen darunter und laufen unter der Gleichwertigkeitsausnahme: `aria-hidden`, außerhalb des Tab-Laufs, Funktion vollständig über `±1` und das Zahlenfeld erreichbar |
+| 2.5.5 Target Size (Enhanced), 44 × 44 px | **AAA** | **erfüllt für jedes Bedienelement, ohne Ausnahme** (seit 0.9.22). In der Vorfassung galt das nur „für alles im Tab-Lauf": Die `±5`-Schnelltasten lagen darunter und liefen unter der Gleichwertigkeitsausnahme. Sie sind auf Vorgabe des Projektinhabers entfernt; kein Bedienelement trägt mehr `tabindex="-1"` oder `aria-hidden`. Das Prüftor kennt seither **eine** Schwelle statt zweier — eine Ausnahme, die niemanden mehr hat, ist eine offene Tür. Der frei gewordene Platz ist in die verbliebenen drei Elemente geflossen: `±1` bei „Extra groß" von 53,6 auf **80 × 64 px**, das Zahlenfeld von 56–72 auf **76–96 px** |
 
 ---
 
@@ -205,10 +282,10 @@ anwendbar
 | 1.3.5 Eingabezweck bestimmen | AA | **erfüllt** | beide Felder, die eine Angabe über den Nutzer selbst erfassen, tragen `autoComplete="name"` (`App.tsx`, `OnboardingModal.tsx`). Weitere Felder der Anwendung — Zählwerte, Zeiten, Notizen — fallen nicht unter die Liste der Eingabezwecke |
 | 1.4.1 Benutzung von Farbe | A | plausibel | die vier Kategoriefarben sind bedeutungstragend; in den Kontrastschemata fallen sie bewusst zusammen, dort tragen Beschriftung und Symbol die Unterscheidung |
 | 1.4.2 Audio-Steuerung | A | erfüllt | Sprachansagen sind abschaltbar, Geschwindigkeit einstellbar; kein selbsttätig startender Ton über 3 s |
-| 1.4.3 Kontrast (Minimum) | AA | **erfüllt** | fortlaufend geprüft in **allen vier Farbschemata** über fünf Ansichten und zwei Geräteprofile (seit 2026-09-02, 30 zusätzliche Prüfungen; zuvor nur im Standardschema). Zwei echte Verstöße wurden so gefunden und behoben (Fußzeile 4,41:1, Seitenleiste **3,59:1**). Offen bleibt die allgemeine Einschränkung: Dialoge sind nicht automatisiert erfasst |
+| 1.4.3 Kontrast (Minimum) | AA | **erfüllt** | fortlaufend geprüft in **allen vier Farbschemata** über fünf Ansichten und zwei Geräteprofile. Zwei echte Verstöße wurden so gefunden und behoben (Fußzeile 4,41:1, Seitenleiste **3,59:1**). **Die Rückfragen sind seit 0.9.32 mitgeprüft** — und zwar mit einer eigenen Rechnung, weil axe sie gar nicht messen kann (siehe 3.2, Punkt 7). Genau dort lag der schwerste Kontrastfehler der Projektgeschichte: die bestätigende Taste mit 1,00:1 bzw. 1,07:1 in den beiden Hochkontrast-Schemata, in allen vier zerstörenden Rückfragen, behoben mit 0.9.22 |
 | 1.4.4 Textgröße ändern | AA | **erfüllt** | drei Schriftstufen (100 / 125 / 150 %) über alle Ansichten und Profile automatisiert; Browser-Zoom auf 200 % ist **nicht** gesondert geprüft |
 | 1.4.5 Bilder eines Textes | AA | erfüllt | keine Texte als Bild |
-| 1.4.10 Reflow | AA | **erfüllt** | 360 px × drei Schriftgrößen × fünf Ansichten × drei Profile, einschließlich verdeckten Überlaufs in scrollbaren Containern; seit 2026-09-02 zusätzlich die sechs Ansichten hinter den Einstiegen. **Vier Fälle gefunden und behoben**, zwei davon erst durch die Erweiterung: das Jahreskonto schob bei „Extra groß" 456 px Inhalt in ein 360-px-Fenster, und in der Hilfe brachen lange Komposita nicht um |
+| 1.4.10 Reflow | AA | **erfüllt** | 360 px **und 320 px** × Schriftgrößen × alle elf Ansichten **und die Zustände darunter** × drei Profile, einschließlich verdeckten Überlaufs in scrollbaren Containern und mit erzwungener Breitschrift. **Der häufigste Layoutfehler dieses Projekts, mit Abstand:** `min-width: auto` an Flex-Elementen — ein Flex-Kind gibt seine Breite standardmäßig nicht unter seinen Inhalt preis und sprengt dann die Zeile, statt umzubrechen. **Bis 0.9.31 acht gefundene Fälle**, jeder einzeln nachgemessen; die auffälligsten: Jahreskonto 456 px, Feldverwaltung 531 px und das Abzeichen „Live verbunden" mit 385 px — alle in einem 360-px-Fenster. Der letzte erscheint nur bei bestehender Live-Verbindung und war deshalb nie jemandem aufgefallen |
 | 1.4.11 Kontrast von Nicht-Text | AA | **teilweise** | Rahmenfarben gezielt gemessen: 3,24:1 gegen die Karte, 3,10:1 gegen den Grund, im dunklen Schema 3,09:1. Nicht für alle Bedienelemente einzeln nachgewiesen |
 | 1.4.12 Textabstand | AA | **erfüllt** | seit 2026-09-02 geprüft: Die vier von der Norm genannten Werte werden erzwungen (Zeilenhöhe 1,5×, Absatzabstand 2×, Sperrung 0,12×, Wortabstand 0,16×) und danach über alle elf Ansichten auf Überlauf und Trefferflächen gemessen. Bestanden ohne Befund. **Was das nicht abdeckt:** Text, der innerhalb eines Kastens abgeschnitten wird, ohne den Kasten zu sprengen — das braucht ein Auge. Zusätzlich wurde die eigene Sperrung bereinigt: 21 negative Werte entfernt, die Ausreißer vereinheitlicht, von sieben Werten auf zwei |
 | 1.4.13 Inhalt bei Hover oder Fokus | AA | **erfüllt** | **acht Verstöße am 2026-09-02 gefunden und behoben.** Native Tooltips aus dem `title`-Attribut erfüllen keine der drei Bedingungen des Kriteriums: nicht schließbar ohne Zeigerbewegung, nicht überfahrbar, nicht dauerhaft — auf dem Handy erscheinen sie ohnehin nie. Drei Stellen dublierten nur einen vorhandenen `aria-label` und sind entfernt; **fünf weitere fand erst die Prüfung**, darunter vier Schnelltext-Tasten, die den einzufügenden Text ausschließlich im Tooltip trugen. Deren Inhalt ist jetzt im `aria-label` — mit der sichtbaren Aufschrift voran, damit 2.5.3 gewahrt bleibt. Eine Prüfung hält `title`-Attribute künftig draußen |
@@ -217,8 +294,8 @@ anwendbar
 
 | Kriterium | Stufe | Stand | Anmerkung |
 |---|---|---|---|
-| 2.1.1 Tastatur | A | **erfüllt** | seit 2026-09-02 mit **echten Tastendrücken** über alle elf Ansichten geprüft: Jedes sichtbare, nicht ausgenommene Bedienelement wird vom Tabulator erreicht. **Zwei echte Verstöße dabei gefunden und behoben:** der Inhaltsbereich der Hilfe war scrollbar, aber weder fokussierbar noch mit fokussierbarem Inhalt (axe `scrollable-region-focusable`); und das Jahreskonto hatte eine Fokusfalle, obwohl es kein modaler Dialog ist — die sichtbare Navigationsleiste war dort per Tastatur unerreichbar. Die `±5`-Tasten bleiben bewusst außerhalb des Tab-Laufs, gleichwertig erreichbar |
-| 2.1.2 Keine Tastaturfalle | A | **erfüllt** | der Durchlauf schließt in jeder Ansicht die Runde, statt hängen zu bleiben; Dialoge sind zusätzlich mit Escape verlassbar. Die Fokusfalle des Geräteabgleichs bleibt — dort ist sie richtig, weil es ein echtes Overlay mit abgedunkeltem Hintergrund und `aria-modal="true"` ist |
+| 2.1.1 Tastatur | A | **erfüllt** | mit **echten Tastendrücken** über alle elf Ansichten geprüft: Jedes sichtbare Bedienelement wird vom Tabulator erreicht. **Vier echte Verstöße so gefunden und behoben:** der scrollbare Inhaltsbereich der Hilfe (axe `scrollable-region-focusable`); eine Fokusfalle im Jahreskonto, das gar kein modaler Dialog ist; dieselbe Falle in der Feldverwaltung (0.9.22); und deren scrollbare Kategorienliste. Seit 0.9.22 trägt **kein** Bedienelement mehr `tabindex="-1"` — die `±5`-Tasten, der einzige Fall, sind entfernt |
+| 2.1.2 Keine Tastaturfalle | A | **erfüllt** | der Durchlauf schließt in jeder Ansicht die Runde, statt hängen zu bleiben; Dialoge sind zusätzlich mit Escape verlassbar. Die Fokusfalle des Geräteabgleichs bleibt — dort ist sie richtig, weil es ein echtes Overlay mit abgedunkeltem Hintergrund und `aria-modal="true"` ist. **Seit 0.9.32 ist auch das Gegenteil geprüft:** In den Rückfragen darf der Tabulator den Dialog *nicht* verlassen. Bei zwei von fünf tat er es — der Fokus kam gar nicht erst im Dialog an, und der Tabulator lief durch die Seite dahinter |
 | 2.1.4 Zeichentasten-Kurzbefehle | A | **erfüllt** | am 2026-09-02 am Quelltext geprüft (`App.tsx`, Tastaturbehandlung): Alle sieben Kürzel verlangen **Alt + Umschalt** und brechen ohne beide Zusatztasten sofort ab. Das Kriterium betrifft ausschließlich Kürzel aus einem einzelnen Zeichen ohne Zusatztaste — solche gibt es hier nicht |
 | 2.2.1 Zeitliche Einstellbarkeit | A | **erfüllt** | die Ein-Minuten-Frist war ein Zeitlimit ohne Verlängerung und ist entfernt |
 | 2.2.2 Pausieren, Stoppen, Ausblenden | A | plausibel | `prefers-reduced-motion` schaltet Animationen global ab |
@@ -232,7 +309,7 @@ anwendbar
 | 2.4.7 Fokus sichtbar | AA | **erfüllt** | globaler Fokusring: 3 px Umriss plus 7 px Hof, in allen vier Themes definiert, in den Kontrastschemata deckend statt transparent |
 | 2.5.1 Zeigergesten | A | **erfüllt** | mit dem Nachweis zu 2.5.7 abgedeckt |
 | 2.5.2 Zeigerabbruch | A | **erfüllt** | seit 2026-09-02 im Prüflauf: Der gesamte `src`-Baum enthält **keinen einzigen** `onMouseDown`, `onPointerDown` oder `onTouchStart`. Jede Aktion läuft über `onClick`, also beim Loslassen. Geprüft am Quelltext, weil es eine Eigenschaft des Codes ist — ein Browsertest müsste jede Taste einzeln antippen. Für diese Zielgruppe zählt das Kriterium besonders: Wer die Bedienelemente nicht genau sieht, tippt daneben und zieht den Finger weg, statt loszulassen |
-| 2.5.3 Beschriftung im Namen | A | plausibel | als Regel verankert, nicht systematisch geprüft |
+| 2.5.3 Beschriftung im Namen | A | **erfüllt** | seit 0.9.22 im Prüftor über alle Ansichten und Zustände: Ein `aria-label`, das die sichtbare Aufschrift **ersetzt** statt sie zu enthalten, lässt den Lauf scheitern. **Zehn Verstöße beim ersten Lauf gefunden und behoben.** Für diese Zielgruppe zählt das doppelt: Wer per Sprachsteuerung sagt, was er liest, trifft sonst nichts |
 | 2.5.4 Bewegungsaktivierung | A | n. a. | keine Bewegungssteuerung |
 
 ### 5.3 Verständlichkeit
@@ -248,7 +325,7 @@ anwendbar
 | 3.3.1 Fehlererkennung | A | **erfüllt** | seit 2026-09-02 geprüft, indem der Fehler ausgelöst wird: Verschlüsselung einschalten, zu kurzes Passwort eingeben, sichern. Die Meldung erscheint in einem `role="alert"` mit `aria-live="assertive"`, benennt das betroffene Feld und beschreibt den Fehler in Text — ohne dass der Fokus wechseln muss |
 | 3.3.2 Beschriftungen oder Anweisungen | A | plausibel | Zählerfelder tragen `aria-label` und eine `sr-only`-Bedienanleitung |
 | 3.3.3 Fehlerempfehlung | AA | **erfüllt** | dieselbe Prüfung: Die Meldung nennt nicht nur den Fehler, sondern die Korrektur („mindestens 4 Zeichen"). Auch beim Einspielen eines verschlüsselten Backups ohne Passwort steht die Handlungsanweisung im Text, nicht nur die Feststellung |
-| 3.3.4 Fehlervermeidung | AA | plausibel | Bestätigungsdialoge vor Löschvorgängen; Archivschreibungen laufen über einen Pfad mit sichtbarer Fehlermeldung statt stillem Verlust |
+| 3.3.4 Fehlervermeidung | AA | **erfüllt** | Vor jedem zerstörenden Vorgang steht eine Rückfrage; der Monatsabschluss lässt sich zusätzlich mit einem Tipp zurücknehmen. Archivschreibungen laufen über einen Pfad mit sichtbarer Fehlermeldung statt stillem Verlust. **Seit 0.9.32 sind alle sechs Rückfragen einzeln gemessen** — Geometrie, Kontrast, Beschriftung und Tastaturbedienung. Das war nötig: Der Startfokus liegt bewusst auf „Abbrechen", damit ein versehentliches Enter nichts löscht, und genau das war bei zwei Rückfragen nicht der Fall. Ebenfalls behoben: Escape brach die Rückfrage **und** die Ansicht dahinter ab — im Geräteabgleich verfiel dabei das bereits empfangene Paket, sodass ein „Nein" zum Ersetzen die ganze Übertragung kostete |
 
 ### 5.4 Robustheit
 
@@ -266,38 +343,49 @@ Ausgezählt über Abschnitt 4 und 5:
 
 | | Anzahl | davon |
 |---|---|---|
-| **erfüllt, mit Beleg** | **29** | 24 aus WCAG 2.1 A/AA, 5 aus WCAG 2.2 |
+| **erfüllt, mit Beleg** | **31** | 26 aus WCAG 2.1 A/AA, 5 aus WCAG 2.2 |
 | teilweise erfüllt | 4 | 1.3.1, 1.4.11, 3.1.2, 4.1.2 |
-| plausibel, ohne Einzelnachweis | 12 | |
+| plausibel, ohne Einzelnachweis | 10 | |
 | **nicht erfüllt** | **0** | 2.4.12 ist bewusst offen, aber Stufe AAA und damit außerhalb des Maßstabs |
 | **nicht geprüft** | **2** | 1.3.2 und 1.3.3 — bedeutungstragende Reihenfolge und sensorische Eigenschaften. Beide entscheidet ein Mensch, kein Prüflauf |
 | nicht anwendbar | 9 | 1.2.1–1.2.5, 2.4.5, 2.5.4, 3.3.8, 3.3.9 |
 | entfällt | 1 | 4.1.1 (in WCAG 2.2 gestrichen) |
 
-**Die aussagekräftigste Zahl steht in der Mitte:** 16 von 50 Kriterien des
+**Die aussagekräftigste Zahl steht in der Mitte:** 14 von 50 Kriterien des
 geltenden Sockels sind zwar nicht beanstandet, aber auch nicht einzeln
-nachgewiesen. Sie sind kein Mangel — aber sie sind auch kein Nachweis. (Am
-Morgen des 2026-09-02 waren es noch 19; die drei Tastatur-Kriterien sind
-seither belegt statt plausibel.)
+nachgewiesen. Sie sind kein Mangel — aber sie sind auch kein Nachweis.
+
+Der Verlauf dieser Zahl ist aussagekräftiger als ihr Wert: **19** am Morgen
+des 2026-09-02, **16** am Abend (die drei Tastatur-Kriterien wurden belegt),
+**14** mit 0.9.32 (2.5.3 und 3.3.4 sind vom Wort auf die Messung gewechselt).
+Jeder dieser Schritte hat beim ersten Lauf echte Verstöße gefunden — zehn bei
+2.5.3, zwei bei 3.3.4. Das ist das Argument gegen die Zwischenkategorie
+„plausibel": Sie hat sich noch nie als leer erwiesen.
 
 ### Die Lücken, nach Gewicht
 
 **Dieser Bericht belegt keinen Verstoß auf AA-Ebene.** Was er belegt, ist
 etwas anderes: wie viel nicht geprüft ist.
 
-1. **Ob die Fokus-Reihenfolge *sinnvoll* ist**, weiß weiterhin niemand. Dass
-   sie der Dokumentreihenfolge folgt, ist seit dem 2026-09-02 belegt — das ist
-   die notwendige Bedingung. Die hinreichende beurteilt ein Mensch mit
-   Screenreader.
-2. **Der Einrichtungsassistent, die Bestätigungsdialoge und die Kamerawege**
-   sind automatisiert nicht abgedeckt; sie setzen einen Zustand oder ein Gerät
-   voraus, das der Prüflauf nicht herstellt.
-3. **TalkBack ungeprüft**, mit sachlichem Grund (siehe 3.3).
-4. **1.3.2 und 1.3.3** sind nicht erhoben — bedeutungstragende Reihenfolge und
+1. **Der Screenreader-Durchlauf ist zehn Fassungen alt.** Er fand auf 0.9.22
+   statt; bewertet wird 0.9.32. Dazwischen sind die Rückfragen umgebaut
+   worden — und zwar, weil bei zweien von fünf der Fokus gar nicht im Dialog
+   ankam. Die Korrektur ist gemessen, aber nicht gehört. **Das ist die
+   größte Lücke dieses Berichts**, und sie ist von hier aus nicht zu
+   schließen; Einzelheiten in 3.3.
+2. **Ob die Fokus-Reihenfolge *sinnvoll* ist**, weiß weiterhin niemand. Dass
+   sie der Dokumentreihenfolge folgt, ist belegt — das ist die notwendige
+   Bedingung. Die hinreichende beurteilt ein Mensch mit Screenreader.
+3. ~~**Der Einrichtungsassistent, die Bestätigungsdialoge und die
+   Kamerawege**~~ — **geschlossen** (0.9.27 und 0.9.32), siehe 3.2 Punkt 5.
+   Übrig bleibt die Einschränkung aus 3.2 Punkt 6: Eine gestellte Kamera ist
+   kein Telefon in der Hand.
+4. **TalkBack ungeprüft**, mit sachlichem Grund (siehe 3.3).
+5. **1.3.2 und 1.3.3** sind nicht erhoben — bedeutungstragende Reihenfolge und
    sensorische Eigenschaften. Beides ist keine Messfrage: Ob die
    Vorlesereihenfolge Sinn ergibt und ob Anweisungen ohne Farbe, Form oder
    Position verständlich bleiben, beurteilt ein Mensch. Sie sind damit
-   dieselbe Klasse wie Punkt 1.
+   dieselbe Klasse wie Punkt 2.
 
 ~~**Fokus-Reihenfolge und Tastaturdurchlauf nie systematisch geprüft**~~ —
 **geschlossen am 2026-09-02.** Der Tabulator-Durchlauf prüft jetzt alle elf
@@ -360,12 +448,14 @@ fortgeschrieben, wenn:
 
 ---
 
-## Was sich seit diesem Bericht geändert hat (Nachtrag 2026-09-07)
+## Was sich zwischen 0.9.19 und 0.9.32 geändert hat
 
-Der Bericht oben ist für **0.9.19** geschrieben. Er ist für 0.9.22 **nicht
-vollständig neu erhoben** — das wäre eine eigene Arbeit. Was seither
-gemessen und geändert wurde, gehört aber hierher, weil es Kriterien betrifft,
-die der Bericht behandelt:
+**Diese Liste war bis zum 2026-09-12 ein Nachtrag zu einem Bericht, der für
+0.9.19 galt.** Sie ist es nicht mehr: Der Bericht oben ist für 0.9.32 neu
+erhoben, und die Kriterien tragen den Stand von heute. Die Liste bleibt
+trotzdem stehen — als Beleg dafür, *wie* die Kriterien ihren Stand bekommen
+haben, und weil ein Konformitätsbericht ohne Herkunft seiner Zahlen nur eine
+Behauptung ist.
 
 | Kriterium | Änderung seit 0.9.19 |
 |---|---|
@@ -375,6 +465,22 @@ die der Bericht behandelt:
 | **2.5.3 Label in Name** | Zehn Bedienelemente trugen ein `aria-label`, das die sichtbare Beschriftung ersetzte. Alle behoben; eine eigene Prüfung setzt das jetzt über alle Ansichten durch. |
 | **2.5.5 Trefferfläche (AAA)** | Die ±5-Tasten des Zählers sind entfernt. Damit entfällt die **einzige** Ausnahme, die die App in Anspruch nahm; das Prüfgate kennt nur noch eine Schwelle von 44 px. |
 | **4.1.3 Statusmeldungen** | Der Bereichswechsel per Wischen erfolgte stumm; jetzt wird er angesagt. Ein Lesefehler beim Start meldet sich mit `role="alert"` und Ansage, statt still einen leeren Stand anzuzeigen. |
+| **1.4.10 Reflow** (0.9.29–0.9.31) | Drei weitere Fälle von `min-width: auto` an Flex-Elementen gefunden und behoben, zuletzt das Abzeichen „Live verbunden" im Kopfbereich: **385 px Inhalt in einem 360-px-Fenster**, 384 in einem 320-px-Fenster. Es erscheint nur bei bestehender Live-Verbindung — deshalb hatte es nie jemand gesehen. |
+| **2.5.5 Trefferfläche** (0.9.29–0.9.31) | Eine Löschtaste je Schicht mit **32 × 32 px**, der Umschalter des Schicht-Protokolls mit 36 px, das Abzeichen „Live verbunden" mit **42 px**. Alle drei lagen in Zuständen, die keine Prüfung je hergestellt hatte. |
+| **2.1.1 / 2.4.3 Tastatur und Fokus** (0.9.32) | Vier der elf Ansichten warfen den Fokus bei **jedem** App-Render zurück auf ihre Schließen-Taste; eine Ansage genügte als Auslöser. In zwei Rückfragen kam der Fokus gar nicht erst im Dialog an, und der Tabulator lief durch die Seite dahinter. Beides behoben und im Prüftor festgehalten. |
+| **3.3.4 Fehlervermeidung** (0.9.32) | Escape brach die Rückfrage **und** die Ansicht dahinter ab. Im Geräteabgleich verfiel dabei das bereits empfangene Paket — ein „Nein" zum Ersetzen kostete die ganze Übertragung. |
+| **Prüfumfang** | 63 → **825 angemeldete Oberflächenprüfungen** (418 ausgeführt), Funktionsprüfungen 121 → **162**. |
 
 **Nicht bestätigt, unverändert:** ob der Geräteabgleich (Kopplung, QR- und
 Textcode, Zusammenführen) Teil der Screenreader-Durchläufe war.
+
+**Was diese Liste über die Arbeitsweise sagt**, und warum sie hier steht statt
+in einem Änderungsprotokoll: **Fast jeder Eintrag ist beim ersten Lauf einer
+neuen Prüfung entstanden, nicht durch einen Fehlerbericht.** Kein Nutzer hat
+das Abzeichen bei 385 px gemeldet, niemand die 32-px-Löschtaste, niemand die
+unsichtbare Bestätigungstaste. Sie lagen alle in Zuständen, die zwar
+erreichbar waren, aber nie hergestellt wurden.
+
+Das ist der Grund, warum dieser Bericht Prüfumfang und Kriterienstand
+zusammen ausweist. Ein Kriterium gilt hier nur so weit als erfüllt, wie der
+Zustand, in dem es gemessen wurde, auch wirklich vorkam.
