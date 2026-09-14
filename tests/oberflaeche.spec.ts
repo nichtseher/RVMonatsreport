@@ -2797,6 +2797,25 @@ const RUECKFRAGEN = [
       await p.getByRole("button", { name: /Eintrag löschen/ }).first().click();
     },
   },
+  {
+    /*
+      Die zwölfte (0.9.38). Sie ist die einzige, die nicht vor einer
+      Änderung an den eigenen Daten steht, sondern vor einer Übertragung an
+      einen Dritten: Das Diktat nutzt die Spracherkennung des Browsers, und
+      die schickt die Aufnahme an Google bzw. Apple.
+
+      Sie trägt außerdem `details` und eine eigene Abbrechen-Beschriftung –
+      wie der Monatsabschluss-Check, dessen Fehlen 0.9.32 zunächst
+      durchrutschte.
+    */
+    name: "Rückfrage: Diktat-Zustimmung",
+    ausloeser: /diktieren/,
+    abbrechen: "Lieber tippen",
+    oeffne: async (p: Page) => {
+      await oeffne(p, "form");
+      await p.getByRole("button", { name: /Notiz per Sprache diktieren/ }).first().click();
+    },
+  },
 ] as const;
 
 /**

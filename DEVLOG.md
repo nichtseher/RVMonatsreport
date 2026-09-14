@@ -10,6 +10,82 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-14 — v0.9.38: Die Hilfe geprüft, und dabei eine gebrochene Zusage gefunden
+
+Anlass war eine Frage des Projektinhabers: „Ist die Hilfe auf aktuellem Stand,
+und fehlt noch was in den Optionen?" Die Antwort auf das Zweite ist nein — auf
+das Erste war sie fünfmal nein, und einmal davon schwerwiegend.
+
+### Die Zusage, die an einer Stelle nicht stimmte
+
+`useSprachausgabe.ts:129` nutzt `webkitSpeechRecognition`. Diese
+Browser-Schnittstelle erkennt Sprache **nicht auf dem Gerät**, sondern
+überträgt die Aufnahme an den Anbieter des Browsers — bei Chrome an Google,
+bei Safari an Apple.
+
+Demgegenüber stand:
+
+> **Hilfe:** „es gibt keinen Server, der im Hintergrund mithört … Daten
+> verlassen Ihr Gerät nur … beim Teilen eines Excel-Reports oder beim
+> Übertragen auf ein zweites Gerät"
+>
+> **README:** „Kein Backend, keine API, kein Tracking, keine externen Dienste"
+
+Die Hilfe zählte **zwei** Wege auf; es sind **drei**. Kein Schleichweg — der
+Nutzer drückt die Taste —, aber er drückt sie im Vertrauen auf eine Zusage, die
+an dieser Stelle nicht galt. Und es trifft ausgerechnet das Notizfeld, in dem
+Schulnamen und Kundenbemerkungen landen; für eine blinde Kollegin ist Diktieren
+dort vermutlich der bevorzugte Weg, also kein Randfall.
+
+**Behoben, aber nicht durch Streichen der Funktion.** Sie ist für die
+Zielgruppe wertvoll. Stattdessen:
+
+- Eine **einmalige, ausdrückliche Rückfrage** vor der ersten Nutzung, die in
+  klaren Worten sagt, was übertragen wird, und die rät, keine Namen zu
+  diktieren. Wer ablehnt, tippt — das Notizfeld kann alles, was das Diktat kann.
+- Die Antwort wird gemerkt (`aussendienst_pwa_diktat_ok_v1`).
+- Hilfe, README und Konformitätsbericht benennen den Weg jetzt.
+
+Die Rückfrage ist die **zwölfte** der App und die einzige, die nicht vor einer
+Änderung an den eigenen Daten steht, sondern vor einer Übertragung an Dritte.
+`scripts/checks/rueckfrage.ts` hat ihr Fehlen im Prüfnetz sofort gemeldet.
+
+### Vier weitere Stellen Drift in der Hilfe
+
+- **Das Jahreskonto stand am falschen Ort beschrieben.** Genannt war nur der Weg
+  über „RV Zeit" — und genau der verschwindet, wenn die Stempeluhr abgeschaltet
+  wird. Der Weg über Optionen → Meine Sachen, der seit 0.9.35 immer funktioniert,
+  fehlte.
+- **Die Stempeluhr-FAQ verschwieg, dass man sie abschalten kann** — und dass
+  erfasste Schichten löschbar sind (beides 0.9.34).
+- **Alt+Umschalt+T** hat seit 0.9.34 eine Bedingung; die Hilfe nannte sie nicht.
+- **Die Sync-FAQ** sagt „jede Kategorie wird einzeln abgeglichen". Für
+  **Meine Demogeräte** gilt das nicht: Die Liste wird beim Ersetzen übernommen,
+  beim Zusammenführen bleibt die lokale stehen. So gewollt (0.9.36), aber
+  nirgends dokumentiert, wo ein Nutzer es liest.
+
+### Die Optionen: nichts fehlt
+
+Alle zwölf Ansichten sind erreichbar. „Was gibt's Neues?" sitzt als Pille in der
+Kopfzeile statt als Menüzeile, die Sprechgeschwindigkeit ist regelbar, und die
+Gruppierung in **Meine Sachen / Einstellungen / Daten & Hilfe** trägt.
+
+**Benannt, nicht geändert:** Es gibt keinen Weg, *alle* Daten zu löschen —
+einzelne Monate ja, eigene Felder ja, erfasste Schichten ja, aber „alles
+zurücksetzen" nur über den Absturzbildschirm. Das kann Absicht sein; der Fall
+„Gerät geht zurück ans Haus" ist damit aber nicht bedient.
+
+### Prüfstand
+
+| | 0.9.37 | 0.9.38 |
+|---|---|---|
+| `lint` | grün | grün |
+| `check` | 172 | 172 |
+| `check:ui` | 512 | **520, exit 0** |
+| Rückfragen | 11 | **12** |
+
+---
+
 ## 2026-09-14 — v0.9.37: Die Geräteliste heißt „Meine Demogeräte“
 
 Vorgabe des Projektinhabers, unmittelbar nach der Veröffentlichung von 0.9.36.

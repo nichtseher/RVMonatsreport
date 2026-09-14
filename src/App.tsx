@@ -1501,6 +1501,53 @@ export default function App() {
      auf, das nur Text an die Notiz anhängt. Entfernt, weil toter Code mit
      Schreibzugriff bei der nächsten Durchsicht als Feature gelesen wird. */
 
+  /*
+    Zustimmung vor dem ersten Diktat.
+
+    WARUM DAS NOETIG IST: Das Diktat nutzt die Spracherkennung des
+    Browsers (`webkitSpeechRecognition`). Die arbeitet NICHT auf dem
+    Geraet, sondern schickt die Aufnahme an den Anbieter des Browsers --
+    bei Chrome an Google, bei Safari an Apple.
+
+    Die App verspricht an mehreren Stellen das Gegenteil ("keine externen
+    Dienste", "kein Server, der mithoert"). Das ist kein Schleichweg --
+    der Nutzer drueckt die Taste --, aber er drueckt sie im Vertrauen auf
+    eine Zusage, die an dieser einen Stelle nicht stimmt. Und es trifft
+    ausgerechnet das Notizfeld, in dem Schulnamen stehen.
+
+    Also: einmal ausdruecklich fragen, in klaren Worten, und die Antwort
+    merken. Wer ablehnt, tippt -- das Feld bleibt bedienbar.
+  */
+  const DIKTAT_ZUSTIMMUNG = "aussendienst_pwa_diktat_ok_v1";
+  const handleDiktat = useCallback(() => {
+    let schonZugestimmt = false;
+    try {
+      schonZugestimmt = localStorage.getItem(DIKTAT_ZUSTIMMUNG) === "1";
+    } catch {
+      /* Kein Speicher: dann eben jedes Mal fragen. */
+    }
+    if (schonZugestimmt || isDictating) {
+      toggleDictation();
+      return;
+    }
+    setConfirmRequest({
+      title: "Diktat nutzt einen fremden Dienst",
+      message:
+        "Die Spracherkennung läuft nicht auf Ihrem Gerät. Ihre Aufnahme wird an den Anbieter Ihres Browsers übertragen – bei Chrome an Google, bei Safari an Apple. Das ist der einzige Teil der App, bei dem das passiert.",
+      details: [
+        "Sprechen Sie keine Namen oder andere vertrauliche Angaben ein.",
+        "Sie können stattdessen jederzeit tippen.",
+        "Diese Frage kommt nur einmal.",
+      ],
+      confirmLabel: "Verstanden, diktieren",
+      cancelLabel: "Lieber tippen",
+      onConfirm: () => {
+        safeSetItem(DIKTAT_ZUSTIMMUNG, "1");
+        toggleDictation();
+      },
+    });
+  }, [isDictating, toggleDictation, setConfirmRequest]);
+
   // --- COMPUTE LIVE TOTALS FOR DASHBOARD ---
   const s1Total = getSectionTotal(appFields.s1);
   const s2Total = getSectionTotal(appFields.s2);
@@ -2812,7 +2859,7 @@ export default function App() {
             {/* Dictate Speech Input button */}
             <button
               type="button"
-              onClick={toggleDictation}
+              onClick={handleDiktat}
               aria-label={
                 isDictating
                   ? "Sprachaufnahme stoppen"

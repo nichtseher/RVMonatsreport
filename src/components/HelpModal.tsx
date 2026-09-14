@@ -183,7 +183,13 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   title="Sind meine Daten sicher? Werden sie ins Internet übertragen?"
                 >
                   <p><strong>Ihre Daten bleiben ausschließlich auf Ihrem Gerät.</strong></p>
-                  <p>Diese App ist eine "Offline-App". Das bedeutet, es gibt keinen Server, der im Hintergrund mithört oder Daten speichert. Alles, was Sie eintragen, bleibt im Speicher Ihres Browsers (z.B. Safari oder Chrome). Daten verlassen Ihr Gerät nur, wenn Sie es selbst auslösen: beim Teilen eines Excel-Reports oder beim Übertragen auf ein zweites Gerät (Geräte-Sync) – und auch dann gehen sie direkt zum Zielgerät, nicht über einen fremden Server.</p>
+                  <p>Diese App ist eine "Offline-App". Das bedeutet, es gibt keinen Server, der im Hintergrund mithört oder Daten speichert. Alles, was Sie eintragen, bleibt im Speicher Ihres Browsers (z.B. Safari oder Chrome).</p>
+                  <p className="mt-2">Daten verlassen Ihr Gerät nur, wenn Sie es selbst auslösen – und dafür gibt es genau <strong>drei</strong> Wege:</p>
+                  <ul className="list-disc list-inside space-y-1 mt-1">
+                    <li><strong>Excel-Report teilen</strong> – geht dorthin, wohin Sie ihn schicken.</li>
+                    <li><strong>Geräte-Sync</strong> – geht direkt zum Zielgerät, nicht über einen fremden Server.</li>
+                    <li><strong>Diktat im Notizfeld</strong> – und das ist die Ausnahme, die Sie kennen sollten: Die Spracherkennung läuft <strong>nicht</strong> auf Ihrem Gerät. Ihre Aufnahme wird an den Anbieter Ihres Browsers übertragen (bei Chrome an Google, bei Safari an Apple). Die App fragt Sie einmal ausdrücklich, bevor das zum ersten Mal passiert. Wenn Sie das nicht möchten, tippen Sie – das Notizfeld kann alles, was das Diktat kann.</li>
+                  </ul>
                 </FAQItem>
 
                 <FAQItem
@@ -209,6 +215,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <p><strong>Einmal-Übertragung:</strong> Ein Gerät zeigt einen Code an, das andere übernimmt ihn – gut, um Daten einmalig zu übertragen. Sie wählen dabei, ob die Daten <em>zusammengeführt</em> (empfohlen) oder <em>ersetzt</em> werden sollen.</p>
                   <p><strong>Live-Verbindung:</strong> Nach einer einmaligen Kopplung gleichen sich beide Geräte von selbst ab – immer dann, wenn sich etwas geändert hat. Sie können das Sync-Fenster danach schließen und ganz normal weiterarbeiten; oben erscheint der Hinweis <strong>„Live verbunden“</strong>. Voraussetzung: beide Geräte im gleichen WLAN, App auf beiden geöffnet.</p>
                   <p>Tippen Sie auf beiden Geräten kurz hintereinander etwas ein, bleiben <strong>beide Eingaben erhalten</strong> – jede Kategorie wird einzeln abgeglichen. Nur wenn Sie dieselbe Kategorie gleichzeitig auf beiden Geräten ändern, gilt die zuletzt getippte.</p>
+                  <p className="mt-2"><strong>Eine Ausnahme:</strong> Ihre Liste <strong>Meine Demogeräte</strong> wird <em>nicht</em> zusammengeführt. Beim Zusammenführen bleibt die Liste des Geräts stehen, an dem Sie gerade sitzen; nur bei <strong>Ersetzen</strong> und beim Einspielen einer Datensicherung wird sie übernommen. Pflegen Sie die Liste deshalb am besten auf einem Gerät.</p>
                   <p>Die Verbindung endet, wenn Sie sie trennen oder die App schließen. Bricht sie von selbst ab – WLAN weg, anderes Gerät zugeklappt –, meldet die App das mit einem <strong>deutlichen Hinweis samt Ansage</strong> und bietet „Neu verbinden“ an. Solange Sie diesen Hinweis sehen, landen Ihre Eingaben nur noch auf diesem einen Gerät.</p>
                   <p><strong>Keine Kamera nötig:</strong> Auf dem empfangenden Gerät steht das Feld „Ohne Kamera: Code einfügen“ <strong>ganz oben</strong> – noch vor der Kameravorschau. Ein eingefügter Code wird sofort übernommen, Sie müssen danach keine Schaltfläche mehr suchen. Nur bei einem <em>verschlüsselten</em> Code fragt die App zuerst nach dem Passwort; dann tragen Sie es ein und tippen auf „Code übernehmen“. Jeder Code lässt sich auf dem sendenden Gerät mit „Code kopieren“ übertragen; eine Webcam am PC braucht es dafür nicht.</p>
                   <p><strong>Zum Antwort-Code der Live-Verbindung:</strong> Lassen Sie sich Zeit – nachgemessen funktioniert er noch nach mehreren Minuten. Sollte die Verbindung trotzdem nicht zustande kommen, erzeugen Sie auf dem zweiten Gerät einfach einen neuen Antwort-Code und übertragen ihn erneut.</p>
@@ -224,7 +231,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                     <li><strong>Alt+Umschalt+M</strong> – zum Feld „Monat“ springen</li>
                     <li><strong>Alt+Umschalt+N</strong> – zum Feld „Mitarbeiter/in“ springen</li>
                     <li><strong>Alt+Umschalt+O</strong> – zum Notizfeld springen</li>
-                    <li><strong>Alt+Umschalt+T</strong> – RV Zeit (Stempeluhr) öffnen</li>
+                    <li><strong>Alt+Umschalt+T</strong> – RV Zeit (Stempeluhr) öffnen. Ist die Stempeluhr in den Optionen abgeschaltet, sagt die App das an und bleibt, wo sie ist.</li>
                     <li><strong>Alt+Umschalt+H</strong> – RV Archiv öffnen</li>
                     <li><strong>Alt+Umschalt+S</strong> – Sprachansagen ein- oder ausschalten</li>
                     <li><strong>Alt+Umschalt+L</strong> – Ein-Hand-Modus ein- oder ausschalten</li>
@@ -317,7 +324,8 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <p>Der Reiter <strong>RV Zeit</strong> ersetzt einen Stundenzettel. Wenn Sie morgens anfangen, drücken Sie auf <strong>Einstempeln</strong>. Die Uhr beginnt zu laufen.</p>
                   <p>Wenn Sie Feierabend machen, drücken Sie auf <strong>Ausstempeln</strong>. Es öffnet sich ein Dialog, in dem Sie Ihre Pausenzeit anpassen und die gearbeitete Zeit auf Büro- und Außendienst aufteilen können. Bestätigen Sie dies, um den Eintrag zu speichern.</p>
                   <p className="mt-2 text-[var(--info-text)] font-bold">Automatisch übernommen werden: Ihre Arbeitsstunden (Büro und Außendienst) sowie die Anzahl der Arbeitstage – diese müssen Sie nicht doppelt eintragen.</p>
-                  <p className="mt-2 text-[var(--warning-text)] font-bold">Bitte selbst eintragen: <strong>Urlaubs- und Krankheitstage</strong> tragen Sie im RV Report (Bereich 4 „Arbeitszeit &amp; Büro“) von Hand ein. Die Stempeluhr erfasst diese nicht automatisch – sie rechnet damit aber in der Jahresübersicht weiter.</p>
+                  <p className="mt-2 text-[var(--warning-text)] font-bold">Bitte selbst eintragen: <strong>Urlaubs- und Krankheitstage</strong> tragen Sie im RV Report (Bereich 4 „Arbeitszeit &amp; Büro") von Hand ein. Die Stempeluhr erfasst diese nicht automatisch – sie rechnet damit aber in der Jahresübersicht weiter.</p>
+                  <p className="mt-2"><strong>Sie müssen die Stempeluhr nicht benutzen.</strong> Unter <strong>Optionen → Anzeige &amp; Bedienung</strong> lässt sie sich abschalten; dann verschwindet der Bereich „RV Zeit", und Sie tragen Ihre Bürostunden und Arbeitstage im RV Report von Hand ein. Ist sie abgeschaltet und liegen noch Schichten auf dem Gerät, erscheint dort außerdem <strong>Erfasste Schichten löschen</strong>. Das entfernt die Aufzeichnungen aus dem laufenden Monat und aus dem RV Archiv – <strong>Ihre Zählerstände im Bericht bleiben dabei unverändert</strong>.</p>
                 </FAQItem>
 
                 <FAQItem 
@@ -326,7 +334,8 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 >
                   <p>Die App berechnet Ihr Gleitzeitkonto automatisch anhand Ihrer täglichen Soll-Stunden. Im Bereich <strong>RV Zeit</strong> wechseln Sie dafür oben auf den Reiter <strong>Jahreskonto</strong>.</p>
                   <p>Dort sehen Sie für jeden Monat, wie viele Stunden Sie arbeiten sollten (Soll) und wie viele Sie tatsächlich gearbeitet haben (Ist, aus Büro + Außendienst). Auch Ihr Resturlaub wird dort berechnet – auf Basis der Urlaubstage, die Sie im RV Report eingetragen haben.</p>
-                  <p>Ihre Startwerte (z. B. Resturlaub aus dem Vorjahr, alte Überstunden, Soll-Stunden pro Tag) passen Sie dort über <strong>Jahresübertrag &amp; Soll-Stunden bearbeiten</strong> an. Auf dem Reiter „Stempeluhr &amp; Schichten“ führt <strong>Jahreskonto-Einstellungen bearbeiten</strong> zur selben Ansicht.</p>
+                  <p>Ihre Startwerte (z. B. Resturlaub aus dem Vorjahr, alte Überstunden, Soll-Stunden pro Tag) passen Sie dort über <strong>Jahresübertrag &amp; Soll-Stunden bearbeiten</strong> an. Auf dem Reiter „Stempeluhr &amp; Schichten" führt <strong>Jahreskonto-Einstellungen bearbeiten</strong> zur selben Ansicht.</p>
+                  <p className="mt-2">Das Jahreskonto finden Sie außerdem unter <strong>Optionen → Meine Sachen → Jahreskonto</strong>. Dieser Weg funktioniert immer – auch dann, wenn Sie die Stempeluhr abgeschaltet haben und der Bereich „RV Zeit" gar nicht angezeigt wird.</p>
                 </FAQItem>
               </div>
             </div>

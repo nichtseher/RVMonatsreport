@@ -8,8 +8,15 @@ optimiert für blinde und sehbehinderte Mitarbeitende.
 Die App ist **komplett serverlos** konzipiert:
 
 - **Alle Daten bleiben lokal** auf dem Gerät (localStorage / IndexedDB).
-- **Kein Backend, keine API, kein Tracking, keine externen Dienste** (auch keine
-  externen Schriftarten – alles wird lokal ausgeliefert).
+- **Kein Backend, keine API, kein Tracking** (auch keine externen
+  Schriftarten – alles wird lokal ausgeliefert).
+- **Eine Ausnahme, und sie gehört hierher:** Das optionale **Diktat** im
+  Notizfeld nutzt die Spracherkennung des Browsers
+  (`webkitSpeechRecognition`). Die arbeitet nicht auf dem Gerät, sondern
+  überträgt die Aufnahme an den Anbieter des Browsers (Chrome → Google,
+  Safari → Apple). Die App fragt vor der ersten Nutzung ausdrücklich
+  nach und merkt sich die Antwort; wer ablehnt, tippt. Bis 0.9.37 war
+  das weder hier noch in der Hilfe erwähnt.
 - **Geräte-Sync per QR-Code:** Die Übertragung zwischen zwei Geräten läuft rein
   optisch von Bildschirm zu Kamera – offline, ohne Server, ohne Internet.
   Große Datenmengen werden komprimiert und auf mehrere rotierende QR-Codes

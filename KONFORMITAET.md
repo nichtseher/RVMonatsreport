@@ -461,6 +461,14 @@ Produktionsserver. Seit 0.9.34 bringt die gebaute Seite eine
 Content-Security-Policy und `Referrer-Policy` als `<meta>` mit; wirksam sind
 damit drei von sechs.
 
+**Nachtrag 2026-09-14 (0.9.38), Datenabfluss:** Die App gab an drei Stellen
+an, keine externen Dienste zu nutzen. Das traf auf das optionale Diktat im
+Notizfeld nicht zu: Es nutzt `webkitSpeechRecognition`, das die Aufnahme an
+den Browser-Anbieter überträgt. Seit 0.9.38 fragt die App vor der ersten
+Nutzung ausdrücklich nach, und Hilfe wie README benennen den Weg. Für die
+Bewertung heißt das: Es gibt drei Wege, auf denen Daten das Gerät verlassen
+können, und alle drei sind nutzerausgelöst und benannt.
+
 Nicht herstellbar bleiben auf dieser Plattform: Klickjacking-Schutz
 (`frame-ancestors` wird im `<meta>` ignoriert, `X-Frame-Options` gibt es dort
 nicht), `X-Content-Type-Options` und `Permissions-Policy`. Das ist eine
