@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import {
   ArrowLeft,
   Smartphone,

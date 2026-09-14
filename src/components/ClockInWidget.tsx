@@ -4,11 +4,7 @@ import {
   Play,
   Square,
   Trash2,
-  Shield,
-  Calendar,
-  Info,
   Check,
-  HelpCircle,
   FileSpreadsheet,
   Plus,
 } from "lucide-react";
@@ -1056,7 +1052,7 @@ export default React.memo(function ClockInWidget({
                 aria-label="Monatliche Schichtliste"
               >
                 {timeLogs.map((log) => {
-                  const [y, m, d] = log.date.split("-");
+                  const [, m, d] = log.date.split("-");
                   const formattedDate = `${d}.${m}.`;
                   return (
                     <div

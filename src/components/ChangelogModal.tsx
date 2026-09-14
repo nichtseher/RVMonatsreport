@@ -1,4 +1,3 @@
-import React from "react";
 import { ArrowLeft, Sparkles, ShieldCheck, Activity, Bug } from "lucide-react";
 import { APP_VERSION } from "../version";
 
@@ -41,6 +40,20 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       </div>
 
       <div className="space-y-6">
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <ShieldCheck className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.34: Schutzvorgaben, die vorher wirkungslos waren</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Die App bringt ihre Sicherheitsvorgaben jetzt selbst mit.</strong> Sie legt fest, dass ausschließlich Dateien aus der App selbst geladen werden dürfen – kein fremdes Skript, keine fremde Schrift, kein fremdes Bild. Das war bisher zwar so gedacht, kam aber beim Browser nie an: Die Vorgaben hingen an einem Server, der gar nicht ausliefert. Nachgemessen und jetzt behoben.</li>
+            <li><strong>Für Sie ändert sich dabei nichts Sichtbares.</strong> Alle Funktionen wurden unter den neuen Vorgaben durchgespielt – Bericht, Zeiterfassung, Archiv, Geräte-Sync, Datensicherung und der Excel-Export in beiden Varianten. Nichts davon wird eingeschränkt.</li>
+            <li><strong>Außerdem verrät die App beim Teilen keine Herkunftsadresse mehr</strong> (Referrer-Policy).</li>
+            <li><strong>Aufgeräumt:</strong> 56 Stellen mit ungenutztem Code sind entfernt, und der Compiler lässt ab jetzt keine neuen mehr durch. Das macht die App nicht schneller, aber es sorgt dafür, dass niemand mehr über Reste stolpert, die nichts mehr tun.</li>
+          </ul>
+        </div>
+
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />

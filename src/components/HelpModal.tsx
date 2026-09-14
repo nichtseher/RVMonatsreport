@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { 
   ArrowLeft, HelpCircle, BookOpen, Clock, FileText,
-  Settings, Share2, Lock, AlertTriangle, Play,
+  Share2, Lock, AlertTriangle, Play,
   CalendarDays, BarChart3, LayoutGrid, Shield, Zap, Keyboard
 } from "lucide-react";
 import { SectionsConfig } from "../types";

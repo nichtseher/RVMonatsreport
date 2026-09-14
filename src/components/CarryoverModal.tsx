@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Calendar, Clock, Sparkles, Save, Info } from "lucide-react";
+import { ArrowLeft, Calendar, Save, Info } from "lucide-react";
 import { YearlyCarryover } from "../types";
 import { rueckfrageOffen } from "../utils/rueckfrage";
 
@@ -94,12 +94,6 @@ export default function CarryoverModal({
   }, [isOpen]);
 
   if (!isOpen) return null;
-
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
 
   const handleFieldChange = (key: keyof YearlyCarryover, value: number) => {
     setLocalCarryover((prev) => ({

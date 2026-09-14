@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from "react";
+import { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Trash2, Download } from "lucide-react";
 import { clear as clearIndexedDb } from "idb-keyval";
 import { ladeRettungsPaketHerunter } from "./utils/speicherSchutz";

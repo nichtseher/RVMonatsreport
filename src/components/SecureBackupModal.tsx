@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { ArrowLeft, Download, Upload, Share2, Lock, Unlock, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Download, Upload, Share2, Lock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { encryptData, decryptData } from "../utils/crypto";
 import { merkeSicherung } from "../utils/speicherSchutz";
 import { motion } from "framer-motion";

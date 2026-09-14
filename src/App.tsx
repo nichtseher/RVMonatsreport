@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import { useSwipeable } from "react-swipeable";
-import { get, set } from "idb-keyval";
 import {
   Calendar,
   CalendarPlus,
@@ -9,20 +8,11 @@ import {
   Target,
   Share2,
   User,
-  FileSpreadsheet,
-  PlusCircle,
-  Trash2,
   Mic,
   MicOff,
   Settings,
-  RotateCcw,
-  HelpCircle,
   Info,
   Sparkles,
-  ArrowRight,
-  RefreshCw,
-  Plus,
-  Minus,
   History,
   Volume2,
   Square,
@@ -38,12 +28,9 @@ import {
 
 import {
   SectionsConfig,
-  ReportData,
   AccessibilitySettings,
   FieldConfig,
   HistoryRecord,
-  YearlyCarryover,
-  TimeLog,
 } from "./types";
 import { baueArchivEintrag } from "./utils/archivEintrag";
 import { persistHistory, safeSetItem } from "./utils/speicher";
@@ -71,7 +58,7 @@ import { formatMonthGerman } from "./utils/dateUtils";
 import { subscribeLiveSync, getLiveSyncSnapshot } from "./utils/liveSync";
 import A11yModal from "./components/A11yModal";
 import CounterField from "./components/CounterField";
-import QuickEntryPanel, { QuickEntryConfig, DEFAULT_QUICK_CONFIG } from "./components/QuickEntryPanel";
+import QuickEntryPanel from "./components/QuickEntryPanel";
 import ConfirmDialog, { ConfirmRequest } from "./components/ConfirmDialog";
 import OnboardingModal from "./components/OnboardingModal";
 import HelpModal from "./components/HelpModal";
@@ -585,7 +572,7 @@ export default function App() {
     saveStatus, lastSavedTime,
     storageWriteFailed, ladeFehler,
     speicherFehler, fehlerZaehler, handleHistoryPersistFailure,
-    handleValueChange, applyValueDelta, handleValueInput, handleMetaChange,
+    applyValueDelta, handleValueInput, handleMetaChange,
     lastMonthClose, setLastMonthClose,
   } = useBerichtsdaten({
     appFields,
@@ -1382,7 +1369,7 @@ export default function App() {
   // Paket bauen, Paket übernehmen, Live-Verbindung anbinden. Der Hook macht
   // sichtbar, woran dieser Teil hängt -- im Monolithen war das unsichtbar,
   // weil alles im selben Sichtbarkeitsbereich lag.
-  const { buildSyncPayload, ersetzeGesamtstand, handleSyncImport } = useGeraeteSync({
+  const { buildSyncPayload, handleSyncImport } = useGeraeteSync({
     appFields,
     setAppFields,
     history,

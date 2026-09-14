@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { 
   X, 
   Trash2, 
@@ -6,7 +6,6 @@ import {
   ArrowUpRight, 
   History, 
   Calendar,
-  AlertTriangle,
   Clock,
   ChevronDown,
   ChevronUp,

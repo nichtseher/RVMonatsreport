@@ -1420,7 +1420,7 @@ test.describe("Update-Hinweis", () => {
  * der Fehler bliebe unsichtbar.
  */
 test.describe("Lesefehler beim Start", () => {
-  test("löscht weder Archiv noch Bericht", async ({ page, baseURL }, testInfo) => {
+  test("löscht weder Archiv noch Bericht", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "handy", "Speicherverhalten haengt nicht am Geraeteprofil");
 
     // Eine leere Seite gleicher Herkunft: Sie teilt sich die IndexedDB mit der

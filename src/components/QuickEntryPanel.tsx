@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Zap, Settings2, Sparkles } from "lucide-react";
 import { FieldConfig, SectionsConfig, HistoryRecord } from "../types";
 import { getIconForString } from "../utils/iconMap";

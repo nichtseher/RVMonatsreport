@@ -13,7 +13,7 @@ async function startServer() {
   const PORT = Number(process.env.PORT) || 3000;
 
   // DevSecOps: Security-Header
-  app.use((req, res, next) => {
+  app.use((_req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
     res.setHeader("Referrer-Policy", "no-referrer");
@@ -43,7 +43,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*", (req, res) => {
+    app.get("*", (_req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }

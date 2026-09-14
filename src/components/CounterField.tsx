@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React from "react";
 import { FieldConfig } from "../types";
 import { Plus, Minus } from "lucide-react";
 import { getIconForString } from "../utils/iconMap";
@@ -32,7 +32,6 @@ export default React.memo(function CounterField({
   const inputId = `input-${config.id}`;
   const instructionsId = `${inputId}-instructions`;
   const displayVal = value === "" ? "" : value;
-  const currentNumericValue = typeof value === "number" ? value : 0;
 
   const triggerHaptic = () => {
     if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
@@ -113,7 +112,6 @@ export default React.memo(function CounterField({
     }
   };
 
-  const parentPadding = isCompact ? "py-1.5 gap-2" : "py-4 gap-3";
   const labelSize = isCompact ? "text-sm font-bold" : "text-base font-bold";
   // Bedienflaechen bewusst in festen Pixeln statt in rem: Sie enthalten nur
   // Symbole, keinen Text. Mit rem wuchsen sie bei "Grosse Schrift" mit --

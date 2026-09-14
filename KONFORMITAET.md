@@ -454,6 +454,20 @@ Prüfnetz mit — Geometrie bei zwei Schriftgrößen, axe-core, Kontrast in alle
 vier Farbschemata, Fokusfalle und Tastaturlauf — aber ein neu erhobener
 Bericht ist das nicht.
 
+**Nachtrag 2026-09-14 (0.9.34), Transportsicherheit:** Bis hierher sendete die
+öffentliche Adresse von sechs in `server.ts` gesetzten Schutz-Kopfzeilen genau
+eine — und die setzt GitHub Pages selbst. `server.ts` ist nicht der
+Produktionsserver. Seit 0.9.34 bringt die gebaute Seite eine
+Content-Security-Policy und `Referrer-Policy` als `<meta>` mit; wirksam sind
+damit drei von sechs.
+
+Nicht herstellbar bleiben auf dieser Plattform: Klickjacking-Schutz
+(`frame-ancestors` wird im `<meta>` ignoriert, `X-Frame-Options` gibt es dort
+nicht), `X-Content-Type-Options` und `Permissions-Policy`. Das ist eine
+Eigenschaft des Hostings, keine Umsetzungslücke — es gehört aber in die
+Bewertung, weil eine Prüfung danach fragen wird.
+
+
 ---
 
 ## 8. Fortschreibung

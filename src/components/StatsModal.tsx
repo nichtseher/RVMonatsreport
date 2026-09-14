@@ -1,16 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { formatMonthGerman } from "../utils/dateUtils";
 import { 
-   X, 
    BarChart3, 
    TrendingUp, 
    PieChart, 
-   Calendar, 
-   Layers, 
-   Clock, 
    AlertCircle,
-   Sparkles,
-   Award,
    Table
 } from "lucide-react";
 import { ReportData, SectionsConfig, HistoryRecord } from "../types";

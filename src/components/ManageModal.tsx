@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { ArrowLeft, Trash2, Settings, RotateCcw } from "lucide-react";
-import { SectionsConfig, FieldConfig } from "../types";
+import { SectionsConfig } from "../types";
 import { rueckfrageOffen } from "../utils/rueckfrage";
 
 interface ManageModalProps {

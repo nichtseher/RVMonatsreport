@@ -10,6 +10,147 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-14 — v0.9.34: Die Sicherheitsvorgaben kamen nie an, und der Hash war falsch
+
+Anlass war die Frage des Projektinhabers, ob die Codebasis „durchgeprüft und
+sicher" sei. Die ehrliche Antwort war nein, und der konkreteste Punkt dabei
+war einer, der seit 0.9.24 als „benannt, nicht geändert" in der ROADMAP stand.
+
+### Gemessen, bevor etwas geändert wurde
+
+```
+curl -sI https://nichtseher.github.io/RVMonatsreport/
+-> Strict-Transport-Security   (den setzt GitHub Pages selbst)
+fehlt: CSP, X-Frame-Options, X-Content-Type-Options,
+       Referrer-Policy, Permissions-Policy
+```
+
+`server.ts` setzt alle sechs. `server.ts` ist aber nicht der
+Produktionsserver: Ausgeliefert wird von GitHub Pages, und Pages setzt keine
+eigenen Kopfzeilen. Fünf von sechs waren also wirkungslos, seit es die Seite
+gibt — die Absicht stand im Quelltext, die Wirkung nirgends.
+
+### Was der Weg über `<meta>` leisten kann, und was nicht
+
+Ehrlich zuerst, weil die Lücke sonst als geschlossen gilt:
+
+| Kopfzeile | über `<meta>` |
+|---|---|
+| Content-Security-Policy | **ja** (ohne `frame-ancestors`) |
+| Referrer-Policy | **ja** |
+| X-Frame-Options / `frame-ancestors` | **nein** — im `<meta>` laut Spezifikation ignoriert |
+| X-Content-Type-Options | **nein** — keine `<meta>`-Entsprechung |
+| Permissions-Policy | **nein** — keine `<meta>`-Entsprechung |
+
+Von fünf fehlenden kommen also **zwei** zurück. **Klickjacking-Schutz bleibt
+auf GitHub Pages unerreichbar**; dafür bräuchte es einen Server, der Header
+setzen kann. Das ist keine Nachlässigkeit, sondern eine Eigenschaft der
+Plattform, und es gehört in den Konformitätsbericht statt unter den Teppich.
+
+### Warum das Ganze nur im Build passiert
+
+Ein `<meta>` direkt in `index.html` würde auch im Entwicklungsbetrieb greifen,
+und Vite braucht dort Inline-Skripte und `eval`. Der Dev-Server — und damit
+`npm run check:ui`, das gegen ihn läuft — wäre sofort tot. Die Richtlinie wird
+deshalb von einem kleinen Vite-Plugin mit `apply: "build"` eingefügt.
+
+Der Preis dafür ist eine blinde Stelle, die benannt gehört: **Die CSP greift
+in keinem Prüflauf des Oberflächen-Tores.** Sie wirkt ausschließlich in
+Produktion. Deshalb hängt am Build eine eigene Prüfung
+(`scripts/csp-pruefen.ts`), und deshalb wurde sie zusätzlich am fertigen Build
+im Browser gemessen.
+
+### Der Fehler, der genau diese Lücke beinahe ausgenutzt hätte
+
+Der erste Entwurf war fertig, gebaut, und die CSP stand korrekt in der Seite.
+Im Browser wurde das Inline-Skript trotzdem **blockiert**:
+
+```
+in der CSP eingetragen : sha256-ZsPRt/rMrbBVzLD4Xr22q38XAzM0eyV0gVCmxNKNamM=
+von Chromium verlangt  : sha256-DPdrqS6lRd2ts5Ma52IQABnwq1ck8xrgJh/SRHXK4d8=
+```
+
+Ursache: Der HTML-Parser normalisiert Zeilenenden im Textinhalt nach Vorschrift
+auf `\n`. Der Browser hasht also den normalisierten Text, das Plugin hashte die
+Rohbytes — und `index.html` ist CRLF, mit 225 CR im Skript, eines je Zeile.
+
+Das ist die Sorte Fehler, vor der die ROADMAP an dieser Stelle gewarnt hat
+(„eine falsch gefasste CSP legt die App still lahm"), und sie wäre **nur in
+Produktion** aufgefallen: Lokal grün, Prüftor grün, Update-Hinweis tot. Gefunden
+hat sie kein Nachdenken, sondern der Blick in die Konsolenmeldung — Chromium
+nennt den Hash, den es erwartet.
+
+### Was tatsächlich durchgespielt wurde
+
+Ein Statikserver ohne eigene Kopfzeilen (GitHub Pages nachgestellt), dann der
+gebaute Stand im Browser, mit Mitschrift jedes `securitypolicyviolation`:
+
+- alle fünf Ansichten, Geräte-Sync (QR-Erzeugung), Datensicherung (Krypto)
+- **der Excel-Export in beiden Varianten** — der Pfad, der ExcelJS nachlädt und
+  die einzige Stelle im ganzen Bundle mit einem `new Function` enthält
+  (ein `setImmediate`-Polyfill, dessen eval-Zweig nur bei einem
+  String-Argument greift; „tote Strecke" war eine Lesart, jetzt ist sie eine
+  Messung)
+
+```
+nur Vorlage    -> RV_Mobil_Report_..._September_2026.xlsx   8.481 B
+alle Blaetter  -> RV_Mobil_Report_..._September_2026.xlsx  10.333 B
+CSP-Verstoesse: keine    Seitenfehler: keine
+```
+
+Der Größenunterschied belegt nebenbei, dass die Blattwahl aus 0.9.33 im
+gebauten Stand wirklich greift.
+
+Gegenprobe, damit die Richtlinie nicht bloß Wunschdenken ist: Ein von der Seite
+nachgeladenes fremdes Skript (`https://example.com/...`) wird blockiert.
+
+### Zwei Gegenproben für die neue Prüfung
+
+`scripts/csp-pruefen.ts` läuft als Teil von `npm run build`. Beide Fälle
+ausprobiert und gemeldet: ein verfälschter Hash, und ein still eingefügtes
+`'unsafe-inline'` im `script-src`.
+
+### Toter Code, und ein Tor dagegen
+
+`tsc --noUnusedLocals --noUnusedParameters` meldete 56 Deklarationen in 18
+Dateien. Entfernt; darunter ein toter Handler in `App.tsx`, der nie gerenderte
+Import von `ClockInWidget` (1.130 Zeilen) und der Rest einer entfernten
+Fokusfalle in `TimeModal`.
+
+Beides steht jetzt in `tsconfig.json` — also im Deploy-Tor. Eine Aufräumrunde
+wirkt einmal; ein Schalter wirkt weiter. Gegenprobe gemacht: eine tote
+Konstante eingesetzt, `npm run lint` meldet sie.
+
+**Der Automat hat dabei zwei Dateien zerlegt** (ein Default-Import ohne
+Klammern und eine leer gewordene Importliste). Aufgefallen ist das sofort, weil
+nach dem Lauf `tsc` lief — aber es ist die Erinnerung daran, dass ein Skript,
+das Quelltext umschreibt, nachgeprüft gehört, auch wenn es vom Compiler
+gesteuert wird.
+
+### Benannt, nicht geändert
+
+**Der Fokus wandert beim Ansichtswechsel nicht mit.** Nur 4 von 15 Komponenten
+setzen beim Öffnen Fokus (`CarryoverModal`, `DeviceSyncModal`, `ManageModal`,
+`OnboardingModal`); die übrigen — darunter `TimeModal`, `StatsModal`,
+`HistoryModal`, `HelpModal` — tun es nicht. Das ist im Quelltext als Absicht
+kommentiert („this is now an inline page"), betrifft sieben Komponenten und ist
+eine Entwurfsfrage, keine Aufräumarbeit. Sie gehört in den
+Screenreader-Durchlauf; hier wäre sie eine stille Verhaltensänderung an sieben
+Stellen gewesen.
+
+### Prüfstand
+
+| | 0.9.33 | 0.9.34 |
+|---|---|---|
+| `lint` | grün | grün, **jetzt mit noUnusedLocals** |
+| `check` | 171 | 171 |
+| `check:ui` | 472 | 472 |
+| `build` | — | **+ CSP-Prüfung** |
+| ungenutzte Deklarationen | 56 | **0** |
+| wirksame Sicherheitskopfzeilen | 1 von 6 | **3 von 6** |
+
+---
+
 ## 2026-09-14 — v0.9.33: Die Blattwahl, die Grenze der Stempeluhr, eine Bibliothek weniger
 
 Anlass waren vier Fragen des Projektinhabers: alles noch einmal prüfen; dem

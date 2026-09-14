@@ -18,7 +18,7 @@ npm run dev        # tsx server.ts — dev server on http://localhost:3000 (Expr
 npm run lint       # tsc --noEmit (covers src/, scripts/, tests/); no ESLint config
 npm run check      # tsx scripts/pruefen.ts — 171 checks, no test framework
 npm run check:ui   # playwright test — 948 UI/a11y checks over three profiles (472 run, 476 skipped by profile), ~16 min (starts the dev server itself)
-npm run build      # vite build (client) + esbuild bundles server.ts -> dist/server.cjs
+npm run build      # vite build + scripts/csp-pruefen.ts + esbuild bundles server.ts -> dist/server.cjs
 npm run start      # node dist/server.cjs — serve the production build
 ```
 
@@ -178,6 +178,22 @@ This is a first-class requirement, not a nice-to-have — the primary users are 
 - **While a `ConfirmDialog` is open, background keyboard handlers must stand down** — `rueckfrageOffen()` in `src/utils/rueckfrage.ts`, enforced for every `keydown` listener by a check in `scripts/checks/rueckfrage.ts`. Without it, one Escape closed the confirmation *and* the view behind it; in the sync view that discarded an already-received packet, so declining "replace everything" cost the whole transfer. `preventDefault` does not help (it stops the default action, not other listeners), and `stopImmediatePropagation` depends on registration order, which differs per view — `ManageModal` registers after the dialog, `DeviceSyncModal` long before it.
 - Counter buttons use fixed pixel sizes on purpose: they contain icons, not text, so WCAG 1.4.4 does not require them to scale — and rem-based sizing pushed them off-screen at the larger font settings. The number input stays rem-based, because it *is* text.
 - Nothing that hides content behind a collapse: it breaks the search and the screen-reader reading order (see ROADMAP.md, "Bewusst NICHT geplant").
+
+## Security headers and dead code
+
+**The security headers only exist in the build, and no gate sees them.** `server.ts` sets six headers and **is not the production server** — GitHub Pages serves the site and sets none of its own. Measured 2026-09-14 with `curl -I`: exactly one of the six arrived, and that one (HSTS) is Pages' own. Since 0.9.34 a Vite plugin injects a CSP and `Referrer-Policy` as `<meta>` at build time, with the `script-src` hash computed from the inline script in `index.html`. Three of six are now effective.
+
+Three things about this that are easy to get wrong:
+
+- **`apply: "build"` is not a detail.** A `<meta>` CSP in `index.html` would also apply in dev, and Vite needs inline scripts and `eval` there — the dev server, and therefore `check:ui` which runs against it, would die instantly.
+- **Consequence: the CSP is active in production and nowhere else.** No `check:ui` run ever exercises it. `scripts/csp-pruefen.ts` runs as part of `npm run build` and asserts the policy, the hash and the absence of `'unsafe-inline'`; anything beyond that has to be measured against a served `dist/`, not against the dev server.
+- **Hash the newline-normalized text, not the raw bytes.** The HTML parser normalizes newlines in text content to `\n`, so the browser hashes the normalized script while the file is CRLF. That mismatch blocked the update notice on the first attempt — `sha256-ZsPRt/...` written, `sha256-DPdrqS6l...` demanded — and it would have failed **only in production**. Chromium names the hash it expects in the console message; that is how it was found, not by reasoning.
+
+**`frame-ancestors` and clickjacking protection are not achievable here at all** — `frame-ancestors` is ignored inside a `<meta>` by spec and `X-Frame-Options` has no `<meta>` form. Same for `X-Content-Type-Options` and `Permissions-Policy`. That is a hosting property, not a code smell; do not "fix" it in the page.
+
+**`noUnusedLocals` / `noUnusedParameters` are on since 0.9.34**, so `npm run lint` — the deploy gate — rejects dead code. The sweep that preceded them removed 56 declarations across 18 files, including a dead handler in `App.tsx` and an import of `ClockInWidget` (1,130 lines) that was never rendered. Unused parameters forced by a foreign signature (Express) carry a leading underscore. When a script rewrites source automatically, run `tsc` straight after: the sweep broke two files (a default import left as `import  from "react"`, an emptied `import React, {  }`) and only the compiler noticed.
+
+---
 
 ## PWA specifics
 

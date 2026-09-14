@@ -1,12 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { formatMonthGerman } from "../utils/dateUtils";
 import { 
-  X, 
   Clock, 
   Calendar, 
   Briefcase, 
   Umbrella, 
-  HeartPulse, 
   Table 
 } from "lucide-react";
 import ClockInWidget from "./ClockInWidget";
@@ -44,7 +42,6 @@ export default function TimeModal({
   reportData
 }: TimeModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [activeTab, setActiveTab] = useState<"stempeln" | "konto">("stempeln");
 
   // Remove focus trap since this is now an inline page

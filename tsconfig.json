@@ -22,6 +22,20 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true,
+    /*
+      Seit 0.9.34. Der Compiler meldete 56 ungenutzte Deklarationen in 18
+      Dateien -- darunter ein toter Handler in App.tsx, ein nie gerenderter
+      Import der groessten Komponente (1.130 Zeilen) und der Rest einer
+      entfernten Fokusfalle. Nichts davon hat je jemand bemerkt, weil nichts
+      danach gefragt hat.
+
+      Als Schalter statt als einmalige Aufraeumrunde, weil eine Aufraeumrunde
+      genau einmal wirkt. Das Ziel npm run lint IST das Deploy-Tor; ab hier
+      kann toter Code nicht mehr unbemerkt einziehen. Ungenutzte Parameter,
+      die eine fremde Signatur erzwingt (Express), tragen einen Unterstrich.
+    */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "strict": true
   }
 }

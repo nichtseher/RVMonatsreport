@@ -966,19 +966,29 @@ gültiges eingegangenes Paket und damit ein zweites Gerät.
 > sonst nichts. Und zwei Kontexte auf einem Rechner sind keine zwei Geräte in
 > einem WLAN; das entscheidet ein Durchlauf mit zwei Telefonen.
 
-### Benannt, nicht geändert: die Sicherheits-Header wirken nicht
+### Die Sicherheits-Header wirkten nicht — TEILWEISE BEHOBEN (0.9.34)
 
-Die laufende Seite sendet **keinen** der in `server.ts` gesetzten Header —
+Die laufende Seite sendete **keinen** der in `server.ts` gesetzten Header —
 nachgemessen mit `curl -I`: weder `Permissions-Policy` noch
 `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` noch die
 strikte `Content-Security-Policy`. Der Grund ist strukturell: `server.ts` ist
 nicht der Produktionsserver, ausgeliefert wird von GitHub Pages, und Pages
 setzt keine eigenen Header.
 
-Eine CSP ließe sich als `<meta http-equiv>` in die `index.html` legen und
-würde dort greifen. Das ist aber eine Entscheidung des Sicherheitskonzepts —
-eine falsch gefasste CSP legt die App still lahm —, und sie gehört nicht in
-einen Nachtrag.
+**Behoben am 2026-09-14 (0.9.34), soweit über `<meta>` möglich:** CSP und
+Referrer-Policy werden beim Build in die Seite eingefügt, die CSP mit einem
+aus dem Inline-Skript berechneten Hash. Wirksam sind damit 3 von 6 Kopfzeilen
+statt 1 von 6.
+
+**Nicht behebbar auf dieser Plattform:** `frame-ancestors` wird im `<meta>`
+laut Spezifikation ignoriert, `X-Frame-Options` gibt es dort nicht —
+Klickjacking-Schutz braucht einen Server, der Header setzen kann.
+`X-Content-Type-Options` und `Permissions-Policy` haben ebenfalls keine
+`<meta>`-Entsprechung. Das ist eine Hosting-Frage, keine Code-Frage, und sie
+bleibt offen.
+
+Einzelheiten, einschließlich der Zeilenende-Falle beim Hash und der blinden
+Stelle im Prüfnetz: Abschnitt 0.9.34.
 
 ---
 
@@ -1044,6 +1054,76 @@ reinen Prüfungen zu `verrechneSchicht` abgedeckt, über die Oberfläche **nicht
 > fachfremdes Zählerfeld bleibt unberührt. Als Prüfung im Gate festgehalten,
 > weil zwischen der reinen Funktion und dem Bericht der Dialog, der Hook, der
 > Zeitstempel und der Schreibvorgang nach IndexedDB liegen.
+
+---
+
+## 0.9.34 — Die Sicherheitsvorgaben kamen nie an — ERLEDIGT (2026-09-14)
+
+Ausgelöst durch die Frage des Projektinhabers, ob die Codebasis „durchgeprüft
+und sicher" sei. Sie war es nicht, und der konkreteste Punkt stand seit 0.9.24
+hier als „benannt, nicht geändert".
+
+### Was gemessen wurde, bevor etwas geändert wurde
+
+Die öffentliche Adresse sendete von sechs in `server.ts` gesetzten Kopfzeilen
+**genau eine** — und die setzt GitHub Pages selbst. `server.ts` ist nicht der
+Produktionsserver; Pages setzt keine eigenen Header. Fünf von sechs waren
+wirkungslos, seit es die Seite gibt.
+
+### Was der `<meta>`-Weg leistet — und was nicht
+
+Zurück kommen **CSP** und **Referrer-Policy**. Nicht herstellbar bleiben, und
+zwar grundsätzlich, nicht aus Bequemlichkeit:
+
+- **`frame-ancestors` wird im `<meta>` laut Spezifikation ignoriert**, und
+  `X-Frame-Options` gibt es als `<meta>` nicht. **Klickjacking-Schutz ist auf
+  GitHub Pages damit nicht erreichbar.** Wer ihn braucht, braucht einen Server,
+  der Kopfzeilen setzen kann — das ist eine Hosting-Entscheidung, keine
+  Code-Frage.
+- `X-Content-Type-Options` und `Permissions-Policy` haben ebenfalls keine
+  `<meta>`-Entsprechung. Die Kamerafreigabe regelt weiterhin allein die
+  Nachfrage des Browsers.
+
+Stand damit: **3 von 6 wirksam** (HSTS von Pages, CSP und Referrer-Policy von
+uns) statt vorher 1 von 6.
+
+### Die blinde Stelle, die dieser Weg erzeugt
+
+Die Richtlinie wird nur beim Build eingefügt (`apply: "build"`), weil ein
+`<meta>` in `index.html` sonst den Dev-Server und damit `check:ui` lahmlegen
+würde — Vite braucht dort Inline-Skripte und `eval`.
+
+**Folge: Die CSP greift in keinem Lauf des Oberflächen-Tores.** Sie wirkt
+ausschließlich in Produktion. Deshalb hängt `scripts/csp-pruefen.ts` am Build,
+und deshalb wurde zusätzlich am fertigen Build im Browser gemessen. Wer die
+Richtlinie ändert, muss dort messen — das Prüfnetz sagt dazu nichts.
+
+### Und beinahe hätte genau diese Stelle zugeschlagen
+
+Der erste Entwurf war gebaut, die CSP stand korrekt in der Seite, und das
+Inline-Skript wurde im Browser trotzdem blockiert: Der HTML-Parser normalisiert
+Zeilenenden im Textinhalt auf `\n`, das Plugin hashte die Rohbytes, und
+`index.html` ist CRLF (225 CR im Skript). Lokal grün, Prüftor grün,
+Update-Hinweis in Produktion tot. Gefunden über die Konsolenmeldung — Chromium
+nennt den Hash, den es erwartet.
+
+### Toter Code
+
+56 ungenutzte Deklarationen in 18 Dateien entfernt; `noUnusedLocals` und
+`noUnusedParameters` stehen jetzt in `tsconfig.json` und damit im Deploy-Tor.
+Eine Aufräumrunde wirkt einmal, ein Schalter wirkt weiter.
+
+### Benannt, nicht geändert: der Fokus beim Ansichtswechsel
+
+Nur **4 von 15** Komponenten setzen beim Öffnen Fokus (`CarryoverModal`,
+`DeviceSyncModal`, `ManageModal`, `OnboardingModal`). `TimeModal`,
+`StatsModal`, `HistoryModal`, `HelpModal` und weitere tun es nicht — im
+Quelltext als Absicht kommentiert („this is now an inline page").
+
+Ob ein Ansichtswechsel den Fokus mitnehmen sollte, ist eine Entwurfsfrage über
+sieben Komponenten und gehört in den **Screenreader-Durchlauf**, nicht in eine
+Aufräumrunde. Hier wäre sie eine stille Verhaltensänderung an sieben Stellen
+gewesen.
 
 ---
 
