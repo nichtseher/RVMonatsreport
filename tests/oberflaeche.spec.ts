@@ -2900,6 +2900,48 @@ async function oeffneRueckfrage(page: Page, eintrag: (typeof RUECKFRAGEN)[number
   await page.waitForTimeout(400);
 }
 
+/*
+  Die Reiter der Hilfe duerfen nicht heissen wie etwas anderes, das
+  gleichzeitig sichtbar ist.
+
+  Bis 0.9.38 hiessen zwei von ihnen "RV Report" und "RV Zeit" -- genau wie
+  die Tasten der Hauptnavigation, die neben der geoeffneten Hilfe stehen
+  bleiben. Wer mit Sprachsteuerung "RV Zeit" sagt, trifft dann die
+  Navigation und verlaesst die Hilfe.
+
+  Die Reiternamen werden aus dem DOM gelesen, nicht hier aufgezaehlt: Eine
+  Liste, die jemand pflegen muss, hat in diesem Projekt schon dreimal
+  versagt.
+*/
+test.describe("Hilfe: eindeutige Reiternamen", () => {
+  test("kein Reitername kollidiert mit etwas gleichzeitig Sichtbarem", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Namen haengen nicht am Geraeteprofil");
+    await oeffneUeberEinstieg(page, EINSTIEGE.find((e) => e.name === "Hilfe")!);
+
+    const doppelt = await page.evaluate(() => {
+      const sichtbar = (el: Element) => {
+        const r = (el as HTMLElement).getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      };
+      const name = (el: Element) =>
+        (el.getAttribute("aria-label") || el.textContent || "").trim();
+
+      const leiste = document.querySelector('[data-scroll-x="absicht"]');
+      if (!leiste) return ["Die Reiterleiste der Hilfe wurde nicht gefunden"];
+      const reiter = [...leiste.querySelectorAll("button")].map(name).filter(Boolean);
+
+      const alle = [...document.querySelectorAll("button")].filter(sichtbar).map(name);
+      return reiter.filter((r) => alle.filter((n) => n === r).length > 1);
+    });
+
+    expect(
+      doppelt,
+      `Diese Reiternamen kommen noch einmal vor, solange die Hilfe offen ist: ${doppelt.join(
+)}`,
+    ).toEqual([]);
+  });
+});
+
 test.describe("Zustände der Rückfragen", () => {
   for (const rueckfrage of RUECKFRAGEN) {
     for (const groesse of ["normal", "extra-large"] as const) {

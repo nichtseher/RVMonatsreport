@@ -1059,6 +1059,50 @@ reinen Prüfungen zu `verrechneSchicht` abgedeckt, über die Oberfläche **nicht
 
 ---
 
+## 0.9.37–0.9.39 — Benennung, Hilfe, und eine gebrochene Zusage — ERLEDIGT (2026-09-14)
+
+### Die Zusage, die an einer Stelle nicht stimmte (0.9.38)
+
+Die App gab an drei Stellen an, keine externen Dienste zu nutzen. Das
+**Diktat** im Notizfeld nutzt `webkitSpeechRecognition` und überträgt die
+Aufnahme an Google bzw. Apple. Die Hilfe zählte zwei Wege auf, über die Daten
+das Gerät verlassen; es sind drei.
+
+Behoben nicht durch Streichen — die Funktion ist für die Zielgruppe wertvoll —,
+sondern durch eine **einmalige, ausdrückliche Rückfrage** vor der ersten
+Nutzung. Hilfe, README und Konformitätsbericht benennen den Weg. Es ist die
+zwölfte Rückfrage der App und die einzige vor einer Übertragung an Dritte statt
+vor einer Änderung eigener Daten.
+
+### Vier weitere Stellen Drift in der Hilfe (0.9.38)
+
+Jahreskonto nur über „RV Zeit“ beschrieben (also über den Weg, der mit der
+Stempeluhr verschwindet) · Abschaltbarkeit der Stempeluhr und das Löschen
+erfasster Schichten gar nicht erwähnt · Alt+Umschalt+T ohne seine Bedingung ·
+die Sync-Ausnahme für „Meine Demogeräte“ nirgends dokumentiert.
+
+### Namensgleichheit mit der Navigation (0.9.39)
+
+Die Reiter der Hilfe hießen „RV Report“ und „RV Zeit“ — wie die Tasten der
+Hauptnavigation, die neben der geöffneten Hilfe sichtbar bleiben. Für
+**Sprachsteuerung** heißt das: Der Befehl trifft die Navigation und verlässt
+die Hilfe. Kein WCAG-Verstoß, aber unbedienbar. Jetzt „Bericht“ und
+„Zeiterfassung“, abgesichert durch eine Prüfung, die die Reiternamen **aus dem
+DOM liest** statt sie aufzuzählen.
+
+**Gefunden wurde das durch einen Fehler in der eigenen Messung:** Eine
+Live-Sonde traf die Navigation statt des Reiters und meldete drei Texte als
+fehlend, die vorhanden waren. Eine Sonde, die auf Namen klickt, muss auf den
+Bereich eingegrenzt werden, den sie meint.
+
+### Benennung (0.9.37)
+
+Aus „Mein Bestand“ wurde „Meine Demogeräte“. Nur die sichtbare Beschriftung;
+Route, Speicherschlüssel und Typnamen blieben, weil ein umbenannter Schlüssel
+vorhandene Listen verwaisen ließe.
+
+---
+
 ## 0.9.36 — „Mein Bestand" — ERLEDIGT (2026-09-14)
 
 Eine freiwillige Liste der Vorführgeräte, die eine Kollegin gerade dabeihat.

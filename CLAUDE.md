@@ -17,7 +17,7 @@ npm install
 npm run dev        # tsx server.ts — dev server on http://localhost:3000 (Express + Vite middleware, HMR)
 npm run lint       # tsc --noEmit (covers src/, scripts/, tests/); no ESLint config
 npm run check      # tsx scripts/pruefen.ts — 171 checks, no test framework
-npm run check:ui   # playwright test — 1041 UI/a11y checks over three profiles (520 run, 521 skipped by profile), ~19 min (starts the dev server itself)
+npm run check:ui   # playwright test — 1044 UI/a11y checks over three profiles (521 run, 523 skipped by profile), ~18 min (starts the dev server itself)
 npm run build      # vite build + scripts/csp-pruefen.ts + esbuild bundles server.ts -> dist/server.cjs
 npm run start      # node dist/server.cjs — serve the production build
 ```

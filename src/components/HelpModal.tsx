@@ -123,10 +123,25 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
           data-scroll-x="absicht"
           className="flex flex-shrink-0 border-b border-[var(--border-color)] overflow-x-auto"
         >
+          {/*
+            Die Reiter heissen bewusst NICHT wie die Ansichten, zu denen sie
+            gehoeren. Bis 0.9.38 trugen sie "RV Report" und "RV Zeit" -- also
+            dieselben Namen wie die Tasten der Hauptnavigation, die neben der
+            geoeffneten Hilfe sichtbar bleiben.
+
+            Fuer die Sprachsteuerung ist das ein echtes Problem: Wer "RV Zeit"
+            sagt, waehrend die Hilfe offen ist, trifft die Navigation und
+            verlaesst die Hilfe. Kein WCAG-Verstoss (die Namen stimmen jeweils
+            mit dem Sichtbaren ueberein), aber unbedienbar ist unbedienbar.
+
+            Aufgefallen ist es nicht im Betrieb, sondern weil eine Pruefsonde
+            am 2026-09-14 an genau dieser Stelle die Navigation traf und
+            beinahe drei Defekte gemeldet haette, die keine waren.
+          */}
           {[
             { id: "general", label: "Allgemein", icon: BookOpen },
-            { id: "report", label: "RV Report", icon: LayoutGrid },
-            { id: "time", label: "RV Zeit", icon: Clock },
+            { id: "report", label: "Bericht", icon: LayoutGrid },
+            { id: "time", label: "Zeiterfassung", icon: Clock },
             { id: "backup", label: "Daten & Backup", icon: Shield },
           ].map((tab) => {
             const Icon = tab.icon;

@@ -10,6 +10,53 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-14 — v0.9.39: Die Reiter der Hilfe hießen wie die Navigation
+
+Nachtrag zu 0.9.38, gefunden durch einen **Fehler in der eigenen Messung**.
+
+Die Live-Prüfung von 0.9.38 meldete drei der neuen Hilfetexte als fehlend. Sie
+fehlten nicht. Die Sonde klickte auf `getByRole("button", { name: /^RV Zeit$/ })`
+— und traf damit die **Hauptnavigation**, die neben der geöffneten Hilfe
+sichtbar bleibt, statt des gleichnamigen Reiters *in* der Hilfe. Danach war die
+Hilfe zu, und der gesuchte Text folgerichtig nicht da.
+
+Beinahe hätte ich drei Defekte gemeldet, die keine sind. Die Messung war
+falsch, nicht die App.
+
+### Aber das Problem dahinter ist echt
+
+Wer mit **Sprachsteuerung** arbeitet, sagt, was er liest. Bei geöffneter Hilfe
+standen „RV Zeit" und „RV Report" zweimal auf dem Bildschirm — einmal als
+Reiter, einmal in der Navigation. Der Befehl trifft die Navigation und verlässt
+die Hilfe. Das ist kein WCAG-Verstoß (jeder Name stimmt mit seinem sichtbaren
+Text überein, 2.5.3 ist erfüllt), aber unbedienbar ist unbedienbar.
+
+Die Reiter heißen jetzt **„Bericht"** und **„Zeiterfassung"**; „Allgemein" und
+„Daten & Backup" waren ohnehin eindeutig.
+
+### Die Zusicherung liest die Namen aus dem DOM
+
+Eine neue Prüfung öffnet die Hilfe, nimmt die Reiternamen **aus der
+Reiterleiste selbst** und zählt, wie oft jeder davon unter allen sichtbaren
+Tasten vorkommt. Mehr als einmal ist ein Fehler.
+
+Die Namen werden bewusst nicht im Test aufgezählt: Eine Liste, die jemand
+pflegen muss, hat in diesem Projekt schon dreimal versagt.
+
+**Gegenprobe gemacht:** Alten Namen testweise zurückgesetzt → die Prüfung
+meldet „Diese Reiternamen kommen noch einmal vor, solange die Hilfe offen ist:
+RV Zeit". Zurückgenommen → grün.
+
+### Prüfstand
+
+| | 0.9.38 | 0.9.39 |
+|---|---|---|
+| `lint` | grün | grün |
+| `check` | 172 | 172 |
+| `check:ui` | 520 | **521, exit 0** |
+
+---
+
 ## 2026-09-14 — v0.9.38: Die Hilfe geprüft, und dabei eine gebrochene Zusage gefunden
 
 Anlass war eine Frage des Projektinhabers: „Ist die Hilfe auf aktuellem Stand,
