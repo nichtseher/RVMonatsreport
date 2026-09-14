@@ -19,7 +19,7 @@ interface BestandModalProps {
 }
 
 /**
- * "Mein Bestand" -- eine Liste der Vorfuehrgeraete, die man gerade dabei hat.
+ * "Meine Demogeräte" -- eine Liste der Geraete, die man gerade dabei hat.
  *
  * BEWUSST EIN NOTIZZETTEL, KEIN VERWALTUNGSSYSTEM. Ein erster Entwurf hatte
  * Zustaende ("beim Kunden", "unterwegs"), Uebergabe-Codes und Erinnerungen an
@@ -172,7 +172,7 @@ export default function BestandModal({
         <Package className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
         {/* min-w-0: sonst gibt das Flex-Element seine Breite nicht unter den
             Inhalt preis und die Überschrift schiebt die Seite waagerecht auf. */}
-        <h2 className="text-2xl md:text-3xl font-black min-w-0 break-words">Mein Bestand</h2>
+        <h2 className="text-2xl md:text-3xl font-black min-w-0 break-words">Meine Demogeräte</h2>
       </div>
 
       <div className="p-3.5 mb-5 rounded-xl bg-[var(--cat-4-soft)] border border-[var(--cat-4)]/10 flex gap-2.5 items-start text-xs font-bold leading-relaxed">

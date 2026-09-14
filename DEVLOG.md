@@ -10,6 +10,44 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-14 — v0.9.37: Die Geräteliste heißt „Meine Demogeräte“
+
+Vorgabe des Projektinhabers, unmittelbar nach der Veröffentlichung von 0.9.36.
+
+Geändert wurde die **sichtbare Beschriftung** — Route (`?tab=bestand`),
+Speicherschlüssel (`aussendienst_pwa_bestand_v1`), Typ- und Dateinamen bleiben.
+Ein umbenannter Schlüssel würde vorhandene Listen verwaisen lassen, und intern
+ist „Bestand“ weiterhin richtig.
+
+Betroffen: Überschrift der Ansicht, Menüeintrag samt Hinweistext, zwei Stellen
+in der Hilfe, vier Innenkommentare und sechs Stellen im Prüfnetz — 16 insgesamt.
+
+Der Changelog-Eintrag zu 0.9.36 trägt weiterhin „Mein Bestand“, den Namen,
+unter dem er veröffentlicht wurde; sonst ergäbe der Eintrag zur Umbenennung
+keinen Sinn.
+
+### Zwischenstand, der nie veröffentlicht wurde
+
+Zwischendurch hieß die Liste „Hilfsmittel im Bestand“ — committet, voll
+geprüft (512 Prüfungen, exit 0), aber **nicht gepusht**. Der Commit wurde
+ersetzt statt ergänzt: Eine zweite Version im Changelog, die auf einen Namen
+umbenennt, den nie jemand gesehen hat, wäre für die Nutzer Unsinn.
+
+Die Zwischenmessung ist trotzdem etwas wert: Sie lief mit **22 Zeichen**
+Beschriftung durch, der jetzige Name hat **16**. Der engere Fall ist damit
+bereits belegt.
+
+### Trotzdem neu gemessen
+
+Eine kürzere Zeichenkette ist nicht automatisch die harmlosere — andere
+Zeichen, andere Umbruchstellen. Die Menüzeile aus Symbol, Text und Pfeil gibt
+ihre Breite standardmäßig nicht unter den Inhalt preis (`min-width: auto`),
+und die Überschrift der Ansicht steht neben einem 44-px-Symbol.
+
+Also nicht geschlossen, sondern nachgesehen.
+
+---
+
 ## 2026-09-14 — v0.9.36: „Mein Bestand" — und ein Entwurf, der zweimal zu groß war
 
 Wunsch des Projektinhabers: Kollegen sollen für sich aufschreiben können,

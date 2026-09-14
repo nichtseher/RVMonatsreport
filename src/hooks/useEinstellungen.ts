@@ -104,7 +104,7 @@ export function useEinstellungen(p: EinstellungenParameter): Einstellungen {
     ladeMitStandard("aussendienst_pwa_goals_v2", STANDARD_ZIELE),
   );
   /*
-    "Mein Bestand" -- eine freiwillige Notizliste, keine Pflicht und kein
+    "Meine Demogeräte" -- eine freiwillige Notizliste, keine Pflicht
     Nachweis. Sie liegt in localStorage wie die uebrigen Einstellungen: Ein
     paar Dutzend Zeilen Text sind Einstellungsgroesse, nicht Berichtsgroesse.
   */

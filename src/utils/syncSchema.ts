@@ -190,7 +190,7 @@ export function pruefeSyncPaket(unbekannt: unknown): PruefErgebnis {
   }
 
   /*
-    "Mein Bestand" (0.9.36). Alles von aussen geht durch diese Pruefung,
+    "Meine Demogeräte" (0.9.36). Alles von aussen geht durch diese
     bevor es den Zustand beruehrt -- ohne sie hat ein syntaktisch gueltiges,
     strukturell falsches Paket die App schon einmal in die Fehlerseite
     gerissen.

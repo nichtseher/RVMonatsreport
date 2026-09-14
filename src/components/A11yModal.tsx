@@ -296,7 +296,7 @@ export default function A11yModal({
           <MenuRow
             icon={<Package className="w-5 h-5" />}
             iconClass="bg-[var(--accent)] text-[var(--accent-text)]"
-            label="Mein Bestand"
+            label="Meine Demogeräte"
             hint="Welche Vorführgeräte haben Sie gerade dabei? Freiwillig."
             onClick={onOpenBestand}
           />

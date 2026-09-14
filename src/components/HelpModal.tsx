@@ -284,9 +284,9 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
 
                 <FAQItem
                   icon={<Package className="text-[var(--accent)]" />}
-                  title="Wofür ist Mein Bestand?"
+                  title="Wofür ist Meine Demogeräte?"
                 >
-                  <p>Unter <strong>Optionen → Mein Bestand</strong> können Sie für sich notieren, welche Vorführgeräte Sie gerade dabeihaben. Das ist <strong>freiwillig</strong> und wird nirgendwo ausgewertet – es hilft, wenn jemand fragt, ob Sie ein bestimmtes Gerät noch haben, weil es weitergeschickt werden soll.</p>
+                  <p>Unter <strong>Optionen → Meine Demogeräte</strong> können Sie für sich notieren, welche Vorführgeräte Sie gerade dabeihaben. Das ist <strong>freiwillig</strong> und wird nirgendwo ausgewertet – es hilft, wenn jemand fragt, ob Sie ein bestimmtes Gerät noch haben, weil es weitergeschickt werden soll.</p>
                   <p>Sie schreiben in ein freies Textfeld, was Ihnen hilft; es gibt keine Vorgaben und keine Pflichtfelder. Mit <strong>Liste vorlesen</strong> hören Sie den gesamten Bestand.</p>
                   <p>Die Liste bleibt auf Ihrem Gerät, geht <strong>nicht</strong> in den Monatsreport und wandert in die Datensicherung mit.</p>
                 </FAQItem>

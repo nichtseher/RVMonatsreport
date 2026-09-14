@@ -2786,7 +2786,7 @@ const RUECKFRAGEN = [
   },
   {
     /*
-      Die elfte (0.9.36). Sie gehört zu "Mein Bestand" -- einer freiwilligen
+      Die elfte (0.9.36). Sie gehört zu "Meine Demogeräte" -- einer
       Liste, die nichts nachweist. Zerstörend ist sie trotzdem: Was hier weg
       ist, ist weg, und niemand merkt es, weil die Liste niemand prüft.
     */
@@ -3873,7 +3873,7 @@ test.describe("Zwei Geräte über die Live-Verbindung", () => {
  */
 
 /*
-  "Mein Bestand" mit Inhalt (0.9.36).
+  "Meine Demogeräte" mit Inhalt (0.9.36).
 
   Der leere Zustand steckt in ANSICHTEN. Dieser hier misst, was die
   Ansicht tatsächlich zeigt: lange Gerätebezeichnungen neben zwei
@@ -3894,11 +3894,11 @@ async function oeffneBestandMitInhalt(page: Page) {
     localStorage.setItem("aussendienst_pwa_onboarding_v1", "1");
   }, BESTAND_BESTAND);
   await oeffne(page, "bestand");
-  await page.getByRole("heading", { name: /Mein Bestand/ }).first().waitFor({ timeout: 15_000 });
+  await page.getByRole("heading", { name: /Meine Demogeräte/ }).first().waitFor({ timeout: 15_000 });
   await page.waitForTimeout(300);
 }
 
-test.describe("Mein Bestand mit Einträgen", () => {
+test.describe("Meine Demogeräte mit Einträgen", () => {
   for (const groesse of ["normal", "extra-large"] as const) {
     test(`Bestand mit Einträgen bei ${groesse}`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name === "handy-webkit", "Geometrie haengt nicht am Motor");
@@ -3939,7 +3939,7 @@ test.describe("Mein Bestand mit Einträgen", () => {
       localStorage.setItem("aussendienst_pwa_onboarding_v1", "1");
     });
     await oeffne(page, "bestand");
-    await page.getByRole("heading", { name: /Mein Bestand/ }).first().waitFor({ timeout: 15_000 });
+    await page.getByRole("heading", { name: /Meine Demogeräte/ }).first().waitFor({ timeout: 15_000 });
 
     const gespeichert = () =>
       page.evaluate(() => {
@@ -3957,7 +3957,7 @@ test.describe("Mein Bestand mit Einträgen", () => {
 
     // --- überlebt ein Neuladen (der eigentliche Zweck der Liste)
     await page.reload({ waitUntil: "networkidle" });
-    await page.getByRole("heading", { name: /Mein Bestand/ }).first().waitFor({ timeout: 15_000 });
+    await page.getByRole("heading", { name: /Meine Demogeräte/ }).first().waitFor({ timeout: 15_000 });
     await expect(
       page.getByText("Tactonom Pro mit Netzteil"),
       "Der Eintrag ist nach dem Neuladen weg",

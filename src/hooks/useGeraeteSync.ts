@@ -112,7 +112,7 @@ export function useGeraeteSync(p: GeraeteSyncParameter): GeraeteSync {
         safeSetItem("aussendienst_pwa_carryover_v2", JSON.stringify(paket.carryover));
       }
       /*
-        "Mein Bestand" wird ERSETZT, nicht zusammengefuehrt. Beim
+        "Meine Demogeräte" wird ERSETZT, nicht zusammengefuehrt. Beim
         Zusammenfuehren zweier Geraete bleibt der lokale Bestand deshalb
         unangetastet -- Absicht: Die Liste ist ein Notizzettel, und
         `mergeSyncPayload` ist die Stelle, an der in diesem Projekt schon

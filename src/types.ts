@@ -125,7 +125,7 @@ export interface AccessibilitySettings {
 }
 
 /**
- * Ein Eintrag in "Mein Bestand" -- der freiwilligen Liste der
+ * Ein Eintrag in "Meine Demogeräte" -- der freiwilligen Liste der
  * Vorfuehrgeraete, die eine Kollegin gerade dabeihat.
  *
  * EIN FREIES TEXTFELD, KEIN FORMULAR. Die Geraete tragen keine scanbaren
