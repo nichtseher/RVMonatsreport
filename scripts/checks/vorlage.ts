@@ -10,6 +10,7 @@ import {
   BLATT_ZEITEN,
   monatFuerVorlage,
 } from "../../src/utils/vorlageExport";
+import type { BlattUmfang } from "../../src/utils/vorlageExport";
 import { VORLAGE_BLATTNAME } from "../../src/utils/vorlageMonatsinfo";
 import type { SectionsConfig, ReportData, HistoryRecord } from "../../src/types";
 
@@ -76,8 +77,12 @@ const archiviert: HistoryRecord = {
   savedAt: "2026-08-31T10:00:00.000Z",
 };
 
-const lade = async (data: ReportData | HistoryRecord) => {
-  const bytes = await erzeugeVorlagenDatei(data, felder);
+const lade = async (
+  data: ReportData | HistoryRecord,
+  umfang: BlattUmfang = "alle",
+  mitZeitenblatt = true,
+) => {
+  const bytes = await erzeugeVorlagenDatei(data, felder, umfang, mitZeitenblatt);
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(bytes.buffer as ArrayBuffer);
   return wb;
@@ -96,6 +101,45 @@ pruefe("Monatsformat folgt der Vorgabe MM/JJJJ aus D3", () => {
 pruefe("die drei Blätter heißen wie vereinbart", async () => {
   const wb = await lade(laufend);
   gleich(wb.worksheets.map((w) => w.name), [VORLAGE_BLATTNAME, BLATT_ZUSATZ, BLATT_ZEITEN]);
+});
+
+/*
+  Die Blattwahl (0.9.33). Sie entscheidet, was den Betrieb verlaesst: Blatt 3
+  traegt die einzelnen Schichten mit Kommen, Gehen, Pause und Notiz -- die
+  einzige Stelle, an der die Vertriebsleitung sie ueberhaupt zu sehen bekommt.
+  Ein Fehler hier ist nicht "eine Datei sieht anders aus", sondern "es ging
+  mehr raus als gewollt".
+*/
+pruefe("„nur Vorlage“ liefert Blatt 1 und sonst nichts", async () => {
+  const wb = await lade(laufend, "vorlage");
+  gleich(wb.worksheets.map((w) => w.name), [VORLAGE_BLATTNAME]);
+});
+
+pruefe("„nur Vorlage“ befüllt Blatt 1 genau wie „alle“", async () => {
+  // Die Wahl darf den Bericht selbst nicht antasten -- sonst bekaeme die
+  // Vertriebsleitung je nach Knopfdruck andere Zahlen.
+  const zellen = (wb: ExcelJS.Workbook) => {
+    const ws = wb.getWorksheet(VORLAGE_BLATTNAME)!;
+    return [ZELLE_MONAT, ZELLE_NAME, ZELLE_KOMMENTAR, ...Object.values(FELD_ZU_ZELLE)]
+      .map((a) => `${a}=${JSON.stringify(ws.getCell(a).value)}`);
+  };
+  gleich(zellen(await lade(laufend, "vorlage")), zellen(await lade(laufend, "alle")));
+});
+
+pruefe("„nur Vorlage“ enthält keine Schicht im Klartext", async () => {
+  // Gegenprobe zur Blattzahl: Auch kein Rest in einem anderen Blatt.
+  const wb = await lade(laufend, "vorlage");
+  const text: string[] = [];
+  wb.worksheets.forEach((ws) => ws.eachRow((z) => text.push(JSON.stringify(z.values))));
+  const alles = text.join(String.fromCharCode(10));
+  for (const spur of ["03.08.2026", "09.08.2026", "08:00", "16:30"]) {
+    wahr(!alles.includes(spur), `"${spur}" steht trotz „nur Vorlage“ in der Datei`);
+  }
+});
+
+pruefe("abgeschaltete Stempeluhr lässt Blatt 3 weg, Blatt 2 bleibt", async () => {
+  const wb = await lade(laufend, "alle", false);
+  gleich(wb.worksheets.map((w) => w.name), [VORLAGE_BLATTNAME, BLATT_ZUSATZ]);
 });
 
 pruefe("jeder Zähler landet in seiner Zelle der Vorlage", async () => {
@@ -138,6 +182,24 @@ pruefe("die gelbe Markierung der Eingabefelder überlebt", async () => {
       return !f || f.pattern !== "solid";
     });
   gleich(ohneFuellung, []);
+});
+
+pruefe("die gelbe Markierung überlebt auch bei „nur Vorlage“", async () => {
+  /*
+    Der Fall darüber prüft "alle Blätter". Seit 0.9.33 ist "nur Vorlage" die
+    vorgeschlagene Antwort und damit der Weg, den die Vertriebsleitung
+    tatsächlich zu sehen bekommt -- er braucht dieselbe Zusicherung. Die
+    Blattwahl darf Blatt 1 nicht anfassen.
+  */
+  const ws = (await lade(laufend, "vorlage")).getWorksheet(VORLAGE_BLATTNAME)!;
+  const ohneFuellung = [ZELLE_MONAT, ZELLE_NAME, ZELLE_KOMMENTAR, ...Object.values(FELD_ZU_ZELLE)]
+    .filter((adr) => {
+      const f = ws.getCell(adr).fill as { type?: string; pattern?: string } | undefined;
+      return !f || f.pattern !== "solid";
+    });
+  gleich(ohneFuellung, []);
+  gleich((ws.getCell("D10").value as { formula?: string })?.formula, "SUM(D6:D9)");
+  gleich((ws.model.merges || []).length, 22);
 });
 
 pruefe("Fettdruck, Rahmen und verbundene Bereiche bleiben erhalten", async () => {

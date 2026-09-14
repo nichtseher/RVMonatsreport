@@ -16,8 +16,10 @@ import {
   Undo2
 } from "lucide-react";
 import { SectionsConfig, HistoryRecord } from "../types";
-import { exportTimeLogsToExcel, triggerFileDownload } from "../utils/excelUtils";
+import { triggerFileDownload } from "../utils/excelUtils";
 import { formatMonthGerman } from "../utils/dateUtils";
+import { ConfirmRequest } from "./ConfirmDialog";
+import type { BlattUmfang } from "../utils/vorlageExport";
 
 interface HistoryModalProps {
   appFields: SectionsConfig;
@@ -30,6 +32,15 @@ interface HistoryModalProps {
   onToggleVersand: (monthStr: string, versendet: boolean) => void;
   /** Nach erfolgreichem Export markieren -- ohne eigene Ansage. */
   onVersandGemeldet: (monthStr: string) => void;
+  /**
+   * Die Rueckfrage laeuft ueber den EINEN Dialog in App.tsx, nicht ueber eine
+   * eigene Fassung hier. Grund: Die Fokusfalle ist in diesem Projekt dreimal
+   * geschrieben und zweimal falsch gewesen -- eine vierte Fassung waere das
+   * Gegenteil von schlank.
+   */
+  setConfirmRequest: (anfrage: ConfirmRequest) => void;
+  /** Steuert, ob "alle Blaetter" ueberhaupt ein Schichtenblatt bedeutet. */
+  stempeluhrAktiv: boolean;
 }
 
 /** ISO-Zeit -> "03.09.2026". Leere/unbrauchbare Eingabe ergibt "". */
@@ -57,7 +68,9 @@ export default function HistoryModal({
   announceToAriaAndSpeech,
   triggerToast,
   onToggleVersand,
-  onVersandGemeldet
+  onVersandGemeldet,
+  setConfirmRequest,
+  stempeluhrAktiv
 }: HistoryModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
@@ -106,13 +119,39 @@ export default function HistoryModal({
     return total;
   };
 
-  // Direct Excel export from history without loading it first!
-  const handleDirectExport = async (record: HistoryRecord) => {
+  /*
+    Auch der Weg aus dem Archiv fragt nach dem Umfang (0.9.33).
+
+    Bis dahin war er der einzige Export ganz ohne Rueckfrage -- und er kann
+    dasselbe versenden wie der aus dem Formular, nur rueckwirkend. Ein
+    Sonderweg waere hier keine Bequemlichkeit, sondern eine Luecke.
+  */
+  const handleDirectExport = (record: HistoryRecord) => {
+    setConfirmRequest({
+      title: "Was soll gesendet werden?",
+      message: stempeluhrAktiv
+        ? "Blatt 1 ist das gewohnte Formular der Vertriebsleitung. Auf Wunsch kommen zwei weitere Blätter dazu: Ihre Zusatzangaben und Ihre einzelnen Schichten. Beides braucht die Vertriebsleitung nicht."
+        : "Blatt 1 ist das gewohnte Formular der Vertriebsleitung. Auf Wunsch kommt ein Blatt mit Ihren Zusatzangaben dazu, für die es im Formular keine Zeile gibt.",
+      confirmLabel: "Nur Vorlage senden",
+      cancelLabel: "Abbrechen",
+      alternative: {
+        label: stempeluhrAktiv ? "Alle drei Blätter" : "Beide Blätter",
+        onSelect: () => {
+          void exportiereReport(record, "alle");
+        },
+      },
+      onConfirm: () => {
+        void exportiereReport(record, "vorlage");
+      },
+    });
+  };
+
+  const exportiereReport = async (record: HistoryRecord, umfang: BlattUmfang) => {
     announceToAriaAndSpeech(`Direkt-Export für ${formatMonthGerman(record.month)} wird vorbereitet.`);
     try {
       // Erst beim Export laden -- siehe App.tsx: ExcelJS plus eingebettete Vorlage.
       const { erzeugeVorlagenDatei } = await import("../utils/vorlageExport");
-      const wbout = await erzeugeVorlagenDatei(record, appFields);
+      const wbout = await erzeugeVorlagenDatei(record, appFields, umfang, stempeluhrAktiv);
       const monthVal = record.month || "Monat";
       const nameVal = record.name || "Mitarbeitende_r";
       const cleanName = nameVal.replace(/\s+/g, "_") || "Mitarbeiter";
@@ -146,7 +185,8 @@ export default function HistoryModal({
   const handleDirectExportTimeLogs = async (record: HistoryRecord) => {
     announceToAriaAndSpeech(`Zeiterfassungs-Export für ${formatMonthGerman(record.month)} wird vorbereitet.`);
     try {
-      const result = await exportTimeLogsToExcel(record, true);
+      const { erzeugeZeitenDatei } = await import("../utils/vorlageExport");
+      const result = await erzeugeZeitenDatei(record, true);
       if (!result) {
         triggerToast("Keine Zeiterfassungsdaten vorhanden!");
         announceToAriaAndSpeech("Keine Zeiterfassungsdaten zum Exportieren vorhanden.");

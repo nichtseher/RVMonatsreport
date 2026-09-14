@@ -5,11 +5,12 @@ import {
   ReportData,
   SectionsConfig,
 } from "../types";
-import { exportTimeLogsToExcel, triggerFileDownload } from "../utils/excelUtils";
+import { triggerFileDownload } from "../utils/excelUtils";
 import { formatMonthGerman } from "../utils/dateUtils";
 import { pruefeMonatsabschluss } from "../utils/abschlussCheck";
 import { persistHistory, OnPersistFailure } from "../utils/speicher";
 import { ConfirmRequest } from "../components/ConfirmDialog";
+import type { BlattUmfang } from "../utils/vorlageExport";
 
 /**
  * Alles, was den Betrieb verlaesst: die beiden Excel-Ausgaben, der
@@ -56,7 +57,7 @@ export interface ExportFunktionen {
   /** Die Warnungen des Abschluss-Checks fuer den aktuellen Stand. */
   getReportWarnings: () => string[];
   /** Monatsreport in der Firmenvorlage ausgeben. */
-  handleExportExcel: () => Promise<void>;
+  handleExportExcel: (umfang: BlattUmfang) => Promise<void>;
   /** Stundenzettel getrennt ausgeben. */
   handleExportTimeLogsExcel: () => Promise<void>;
   /** Mit Abschluss-Check: fragt bei Auffaelligkeiten nach. */
@@ -128,8 +129,9 @@ export function useExport(p: ExportParameter): ExportFunktionen {
 
   // Blatt 1 IST die Firmenvorlage der Vertriebsleitung, nicht ein Nachbau --
   // siehe utils/vorlageExport.ts. Alles, was dort keine Zeile hat, steht auf
-  // Blatt 2 und 3.
-  const handleExportExcel = useCallback(async () => {
+  // Blatt 2 und 3. Seit 0.9.33 entscheidet der Nutzer vor jedem Senden, ob
+  // die beiden ueberhaupt mitgehen; `umfang` traegt diese Entscheidung.
+  const handleExportExcel = useCallback(async (umfang: BlattUmfang) => {
     triggerHaptic(25);
     const daten = reportData;
     if (!daten) {
@@ -140,7 +142,14 @@ export function useExport(p: ExportParameter): ExportFunktionen {
       // Erst beim Export laden: Das Modul zieht ExcelJS (271 KB gzip) und die
       // eingebettete Vorlage (19 KB) nach. Beides braucht niemand beim Start.
       const { erzeugeVorlagenDatei } = await import("../utils/vorlageExport");
-      const wbout = await erzeugeVorlagenDatei(daten, appFields);
+      const wbout = await erzeugeVorlagenDatei(
+        daten,
+        appFields,
+        umfang,
+        // Ist die Stempeluhr abgeschaltet, waere ein Schichtenblatt (leer oder
+        // mit Altbestand) keine Angabe, sondern ein Missverstaendnis.
+        accessibility.enableTimeTracking !== false,
+      );
       const monthVal = daten.month || "Monat";
       const nameVal = daten.name || "Mitarbeitende_r";
       const cleanName = nameVal.replace(/\s+/g, "_") || "Mitarbeiter";
@@ -175,7 +184,7 @@ export function useExport(p: ExportParameter): ExportFunktionen {
     }
   }, [
     reportData, appFields, history, triggerHaptic, meldeNochNichtGeladen,
-    triggerToast, announceToAriaAndSpeech, setzeVersandStatus,
+    triggerToast, announceToAriaAndSpeech, setzeVersandStatus, accessibility,
   ]);
 
   const handleExportTimeLogsExcel = useCallback(async () => {
@@ -186,7 +195,9 @@ export function useExport(p: ExportParameter): ExportFunktionen {
       return;
     }
     try {
-      const result = await exportTimeLogsToExcel(daten);
+      // Erst beim Export laden -- wie beim Bericht: ExcelJS kommt nach.
+      const { erzeugeZeitenDatei } = await import("../utils/vorlageExport");
+      const result = await erzeugeZeitenDatei(daten);
       if (!result) {
         triggerToast("Keine Zeiterfassungsdaten vorhanden!");
         announceToAriaAndSpeech("Keine Zeiterfassungsdaten zum Exportieren vorhanden.");
@@ -225,11 +236,45 @@ export function useExport(p: ExportParameter): ExportFunktionen {
 
     // DSGVO-konform ohne Server: Der Bericht wird als Excel-Datei ueber den
     // System-Teilen-Dialog (z. B. E-Mail an die VL) weitergegeben.
-    const senden = async () => {
+    const senden = async (umfang: BlattUmfang) => {
       announceToAriaAndSpeech(
-        "Teilen-Dialog wird geöffnet, um den Bericht an die VL zu senden.",
+        umfang === "vorlage"
+          ? "Teilen-Dialog wird geöffnet. Gesendet wird nur das Blatt Monatsinfo."
+          : "Teilen-Dialog wird geöffnet. Gesendet werden alle Blätter.",
       );
-      await handleExportExcel();
+      await handleExportExcel(umfang);
+    };
+
+    /*
+      Die Blattwahl (0.9.33) -- bewusst vor JEDEM Senden und bewusst nicht als
+      gespeicherte Einstellung.
+
+      Blatt 3 traegt die einzelnen Schichten mit Kommen, Gehen, Pause und
+      Notiz. Das ist die einzige Stelle, an der die Vertriebsleitung sie zu
+      sehen bekommt; die Vorlage selbst fragt nur nach Arbeitstagen (D18) und
+      Buerostunden (D19). Wer das einmal einstellt, weiss beim naechsten Mal
+      nicht mehr, was gerade rausgeht -- deshalb die Frage statt eines
+      Schalters.
+    */
+    const mitZeiten = accessibility.enableTimeTracking !== false;
+    const frageNachUmfang = () => {
+      setConfirmRequest({
+        title: "Was soll gesendet werden?",
+        message: mitZeiten
+          ? "Blatt 1 ist das gewohnte Formular der Vertriebsleitung. Auf Wunsch kommen zwei weitere Blätter dazu: Ihre Zusatzangaben und Ihre einzelnen Schichten. Beides braucht die Vertriebsleitung nicht."
+          : "Blatt 1 ist das gewohnte Formular der Vertriebsleitung. Auf Wunsch kommt ein Blatt mit Ihren Zusatzangaben dazu, für die es im Formular keine Zeile gibt.",
+        confirmLabel: "Nur Vorlage senden",
+        cancelLabel: "Abbrechen",
+        alternative: {
+          label: mitZeiten ? "Alle drei Blätter" : "Beide Blätter",
+          onSelect: () => {
+            void senden("alle");
+          },
+        },
+        onConfirm: () => {
+          void senden("vorlage");
+        },
+      });
     };
 
     const warnungen = getReportWarnings();
@@ -243,16 +288,14 @@ export function useExport(p: ExportParameter): ExportFunktionen {
         details: warnungen,
         confirmLabel: "Trotzdem senden",
         cancelLabel: "Erst korrigieren",
-        onConfirm: () => {
-          void senden();
-        },
+        onConfirm: frageNachUmfang,
       });
       return;
     }
-    await senden();
+    frageNachUmfang();
   }, [
     reportData, triggerHaptic, announceToAriaAndSpeech,
-    handleExportExcel, getReportWarnings, setConfirmRequest,
+    handleExportExcel, getReportWarnings, setConfirmRequest, accessibility,
   ]);
 
   return {

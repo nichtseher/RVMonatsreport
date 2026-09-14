@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { AccessibilitySettings, AccessibilityTheme, SectionsConfig } from "../types";
 import {
   Type, Volume2, Sparkles, HelpCircle, Lock, Settings2, ChevronRight,
-  ArrowLeft, Clock, Sliders, Smartphone, Bell, Monitor, Palette,
+  ArrowLeft, Clock, Sliders, Smartphone, Bell, Monitor, Palette, CalendarDays,
 } from "lucide-react";
 
 interface A11yModalProps {
@@ -24,6 +24,18 @@ interface A11yModalProps {
   onOpenBackup?: () => void;
   onOpenSync?: () => void;
   onOpenChangelog?: () => void;
+  /**
+   * Das Jahreskonto (Resturlaub, Überstunden) war bis 0.9.32 AUSSCHLIESSLICH
+   * über die Ansicht "RV Zeit" erreichbar -- und die wird ausgeblendet,
+   * sobald die Stempeluhr abgeschaltet ist. Wer sie abschaltete, kam an sein
+   * Jahreskonto nicht mehr heran, obwohl das gar keine Stempeluhr-Daten sind.
+   * Gemessen am 2026-09-14.
+   */
+  onOpenCarryover?: () => void;
+  /** Anzahl erfasster Schichten (laufender Monat und Archiv zusammen). */
+  schichtenAnzahl?: number;
+  /** Alle erfassten Schichten löschen -- fragt selbst zurück. */
+  onSchichtenLoeschen?: () => void;
 }
 
 /* ---------- Wiederverwendbare, kompakte Bausteine ---------- */
@@ -161,6 +173,9 @@ export default function A11yModal({
   onOpenBackup,
   onOpenSync,
   onOpenChangelog,
+  onOpenCarryover,
+  schichtenAnzahl = 0,
+  onSchichtenLoeschen,
 }: A11yModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeMenu, setActiveMenu] = useState<"main" | "a11y" | "form">("main");
@@ -265,6 +280,15 @@ export default function A11yModal({
       </SectionCard>
 
       <SectionCard title="Daten & Hilfe">
+        {onOpenCarryover && (
+          <MenuRow
+            icon={<CalendarDays className="w-5 h-5" />}
+            iconClass="bg-[var(--primary)] text-[var(--primary-text)]"
+            label="Jahreskonto"
+            hint="Resturlaub und Überstunden aus dem Vorjahr"
+            onClick={onOpenCarryover}
+          />
+        )}
         {onOpenSync && (
           <MenuRow
             icon={<Smartphone className="w-5 h-5" />}
@@ -435,6 +459,31 @@ export default function A11yModal({
           checked={settings.enableTimeTracking !== false}
           onToggle={() => updateSetting("enableTimeTracking", settings.enableTimeTracking === false ? true : false)}
         />
+        {settings.enableTimeTracking === false && schichtenAnzahl > 0 && onSchichtenLoeschen && (
+          /*
+            Wer die Stempeluhr abschaltet, will die Aufzeichnungen oft auch los
+            sein -- bis 0.9.32 gab es dafuer keinen Weg, und die Schichten
+            blieben in der IndexedDB liegen, im laufenden Monat wie im Archiv.
+
+            Die Zaehlerstaende bleiben dabei UNANGETASTET. Sie sind der Bericht,
+            den die Vertriebsleitung bekommt; sie hier still zu aendern hiesse,
+            bereits gemeldete Zahlen nachtraeglich zu verfaelschen. Geloescht
+            wird der Nachweis, nicht die Meldung.
+          */
+          <div className="px-1 pb-2">
+            <button
+              type="button"
+              onClick={onSchichtenLoeschen}
+              className="w-full min-h-[44px] py-3 px-4 rounded-xl font-bold border-2 border-[var(--danger-text)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--danger-bg)] transition-all cursor-pointer"
+            >
+              Erfasste Schichten löschen ({schichtenAnzahl})
+            </button>
+            <p className="mt-1.5 text-xs text-[var(--text-muted)]">
+              Entfernt alle Schicht-Aufzeichnungen von diesem Gerät. Ihre
+              Zählerstände im Bericht bleiben unverändert.
+            </p>
+          </div>
+        )}
         <ToggleRow
           icon={<Monitor className="w-5 h-5" />}
           label="Desktop-Layout am PC"

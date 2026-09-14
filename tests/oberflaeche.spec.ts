@@ -518,6 +518,19 @@ const EINSTIEGE = [
     ueberschrift: /Jahreskonto & Einstellungen/,
   },
   {
+    /*
+      Zweiter Einstieg, seit 0.9.33 -- und nicht Bequemlichkeit, sondern die
+      Behebung eines gemessenen Defekts: Bis dahin führte NUR der Weg über
+      "RV Zeit" hierher, und der verschwindet, sobald die Stempeluhr
+      abgeschaltet wird. Resturlaub und Überstunden waren damit unerreichbar,
+      obwohl sie mit der Stempeluhr nichts zu tun haben.
+    */
+    name: "Jahreskonto über Optionen",
+    start: "options",
+    einstieg: /Jahreskonto/,
+    ueberschrift: /Jahreskonto & Einstellungen/,
+  },
+  {
     // Punkt statt Apostroph: Die Quelle kann ' oder ’ enthalten, und daran
     // soll keine Pruefung haengen.
     name: "Was gibt's Neues",
@@ -902,6 +915,25 @@ test.describe("320 px (iPhone SE)", () => {
   const alle = [
     ...ANSICHTEN.map((a) => ({ name: a.name, oeffne: (p: Page) => oeffne(p, a.tab) })),
     ...EINSTIEGE.map((e) => ({ name: e.name, oeffne: (p: Page) => oeffneUeberEinstieg(p, e) })),
+    /*
+      Die Blattwahl (0.9.33) ist die EINZIGE Rückfrage mit drei Tasten und
+      damit die einzige, deren Geometrie hier neu ist. Sie stapelt auf jeder
+      Breite, statt ab `sm` nebeneinander zu liegen -- drei Tasten lägen in
+      `max-w-md` bei „Extra groß" jeweils unter 44 px.
+
+      Warum nur diese eine und nicht alle zehn: Die übrigen Rückfragen tragen
+      unverändert zwei Tasten, ihre Geometrie ist seit 0.9.32 dieselbe, und
+      die Laufzeit dieses Blocks ist nicht gratis. Wer die Tastenzeile in
+      `ConfirmDialog` anfasst, prüft den Satz hier nach.
+    */
+    {
+      name: "Rückfrage: Blattwahl (drei Tasten)",
+      oeffne: (p: Page) =>
+        oeffneRueckfrage(
+          p,
+          RUECKFRAGEN.find((r) => r.name === "Rückfrage: Blattwahl beim Senden")!,
+        ),
+    },
   ];
 
   for (const ansicht of alle) {
@@ -1644,7 +1676,12 @@ const ZEIT_FORMULARE = [
 test.describe("Formulare der Stempeluhr", () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
-      localStorage.removeItem("aussendienst_pwa_clockin");
+      // Der Schlüssel hieß hier bis 0.9.32 "aussendienst_pwa_clockin" -- die
+      // App schreibt aber "aussendienst_pwa_clock_in_time_v2"
+      // (hooks/useStempeluhr.ts). Das Aufräumen hat also nie etwas geräumt.
+      // Es fiel nicht auf, weil Playwright jeden Fall in einem frischen
+      // Kontext startet; ein wiederverwendeter Zustand hätte gereicht.
+      localStorage.removeItem("aussendienst_pwa_clock_in_time_v2");
     });
   });
 
@@ -2669,6 +2706,79 @@ const RUECKFRAGEN = [
       await p.getByRole("button", { name: /Bericht an VL senden/ }).first().click();
     },
   },
+  {
+    /*
+      Die achte (0.9.33) -- und die erste, die nicht fragt OB, sondern WAS.
+
+      Sie entscheidet, ob Blatt 2 und 3 den Betrieb verlassen. Blatt 3 traegt
+      die einzelnen Schichten mit Kommen, Gehen, Pause und Notiz; die Vorlage
+      selbst fragt nur nach Arbeitstagen (D18) und Buerostunden (D19). Wer
+      hier danebengreift, schickt mehr raus als gewollt, und das faellt in
+      einer fertigen Excel-Datei niemandem auf.
+
+      Sie ist zugleich die einzige Rueckfrage mit DREI Tasten -- die dritte
+      hat eine eigene Farbgebung und deshalb einen eigenen Kontrastfall
+      weiter unten.
+    */
+    name: "Rückfrage: Blattwahl beim Senden",
+    ausloeser: /Bericht an VL senden/,
+    oeffne: async (p: Page) => {
+      await legeBerichtAn(p, {
+        month: "2026-09",
+        name: "Marc Petry",
+        notes: "",
+        // Bewusst OHNE Auffälligkeit: Name gesetzt, Zähler gesetzt, keine
+        // Schichten. Sonst stünde der Monatsabschluss-Check davor, und die
+        // Blattwahl bekäme dieser Fall nie zu Gesicht.
+        values: { s1_1: 5, tage_arbeit: 12 },
+        valuesUpdatedAt: {},
+        timeLogs: [],
+      });
+      await oeffne(p, "form");
+      await p.getByRole("button", { name: /Bericht an VL senden/ }).first().click();
+    },
+  },
+  {
+    /*
+      Dieselbe Wahl, anderer Weg: Der Direkt-Export aus dem RV Archiv war bis
+      0.9.32 der einzige Ausgang ganz ohne Rueckfrage -- und er kann
+      rueckwirkend dasselbe versenden.
+    */
+    name: "Rückfrage: Blattwahl im Archiv",
+    ausloeser: /Export RV Report/,
+    oeffne: async (p: Page) => {
+      await oeffneArchiv(p, "offen");
+      await p.getByRole("button", { name: /Export RV Report/ }).first().click();
+    },
+  },
+  {
+    /*
+      Die zehnte (0.9.33). Sie hängt an einem Zustand, den es vorher nicht gab:
+      Der Löschweg erscheint erst, wenn die Stempeluhr AUSGESCHALTET ist und
+      trotzdem noch Schichten auf dem Gerät liegen.
+
+      Bis 0.9.32 gab es für diese Aufzeichnungen überhaupt keinen Löschweg --
+      wer die Uhr aus einem Betriebsrats-Grund abschaltete, behielt sie
+      trotzdem in der IndexedDB, im laufenden Monat wie im Archiv.
+    */
+    name: "Rückfrage: Schichten löschen",
+    ausloeser: /Erfasste Schichten löschen/,
+    oeffne: async (p: Page) => {
+      await legeBerichtAn(p, {
+        month: "2026-09",
+        name: "Marc Petry",
+        notes: "",
+        values: { s1_1: 5 },
+        valuesUpdatedAt: {},
+        timeLogs: SCHICHTEN_BESTAND,
+      });
+      await oeffne(p, "options");
+      await p.getByRole("button", { name: /Anzeige & Bedienung/ }).first().click();
+      // Der Schalter trägt role="switch" und als Namen seine Beschriftung.
+      await p.getByRole("switch", { name: /Zeiterfassung/ }).first().click();
+      await p.getByRole("button", { name: /Erfasste Schichten löschen/ }).first().click();
+    },
+  },
 ] as const;
 
 /**
@@ -2847,8 +2957,9 @@ test.describe("Zustände der Rückfragen", () => {
       ).toEqual({ imDialog: true, name: erwartet });
 
       // Zehnmal vorwärts, sechsmal rückwärts: Der Fokus darf den Dialog nie
-      // verlassen. Zehn ist mehr als die zwei Tasten des Dialogs -- ein
-      // Durchlauf, der irgendwo im Hintergrund landet, fällt damit sicher auf.
+      // verlassen. Zehn ist mehr als die zwei bzw. (bei der Blattwahl) drei
+      // Tasten des Dialogs -- ein Durchlauf, der irgendwo im Hintergrund
+      // landet, fällt damit sicher auf.
       const ausbruch: string[] = [];
       for (const [anzahl, taste] of [
         [10, "Tab"],
@@ -2914,13 +3025,22 @@ test.describe("Zustände der Rückfragen", () => {
     ersten deckenden Vorfahren gerechnet) und das Verhältnis nach WCAG 1.4.3
     gebildet -- 4,5:1, für große Schrift 3:1.
 
-    Zwei Rückfragen genügen dafür, und das ist eine Aussage, keine Abkürzung:
-    Die Farben im Dialog hängen an genau einer Verzweigung, `tone === "danger"`.
-    Je ein Vertreter deckt beide Zweige ab; welche Aktion dahintersteht,
-    ändert an den Farben nichts.
+    Drei Rückfragen genügen dafür, und das ist eine Aussage, keine Abkürzung:
+    Die Farben im Dialog hängen an zwei Verzweigungen -- `tone === "danger"`
+    und, seit 0.9.33, `alternative`. Je ein Vertreter deckt einen Zweig ab;
+    welche Aktion dahintersteht, ändert an den Farben nichts.
+
+    Die dritte Taste hat ihren eigenen Fall, weil sie ihre eigene Farbgebung
+    hat -- und weil die naheliegende Fassung falsch gewesen wäre: `--primary`
+    als SCHRIFT steht im Schema „Dunkel" mit 3,45:1 auf `--card-bg`. Sie ist
+    deshalb nur der Rahmen (dort genügen 3:1), die Schrift bleibt
+    `--text-color`. Gerechnet am 2026-09-14, bevor die Taste geschrieben war.
   */
   for (const rueckfrage of RUECKFRAGEN.filter(
-    (r) => r.name === "Rückfrage: Kategorie löschen" || r.name === "Rückfrage: Monat abschließen",
+    (r) =>
+      r.name === "Rückfrage: Kategorie löschen" ||
+      r.name === "Rückfrage: Monat abschließen" ||
+      r.name === "Rückfrage: Blattwahl beim Senden",
   )) {
     for (const schema of [{ id: "standard", name: "Standard" }, ...FARBSCHEMATA]) {
       test(`${rueckfrage.name}: Kontrast im Schema „${schema.name}"`, async ({ page }, testInfo) => {
@@ -3781,7 +3901,7 @@ test.describe("Zustände mit breiter Schrift", () => {
     // Wie im Block der Stempeluhr: Der Zeitstempel des Einstempelns darf
     // nicht auf dem Stand eines früheren Laufs aufsetzen.
     await page.addInitScript(() => {
-      localStorage.removeItem("aussendienst_pwa_clockin");
+      localStorage.removeItem("aussendienst_pwa_clock_in_time_v2");
     });
   });
 
@@ -3795,4 +3915,164 @@ test.describe("Zustände mit breiter Schrift", () => {
       await pruefeGeometrie(page, `${zustand.name} / breit`);
     });
   }
+});
+
+/*
+  Die Grenze der Stempeluhr (0.9.33).
+
+  Anlass ist ein gemessener Defekt, kein Vorhaben: Bis 0.9.32 war das
+  Jahreskonto AUSSCHLIESSLICH über "RV Zeit" erreichbar -- und diese Ansicht
+  verschwindet, sobald die Stempeluhr abgeschaltet wird. Resturlaub und
+  Überstunden waren damit unerreichbar, obwohl sie keine Stempeluhr-Daten
+  sind. Genau die Art Lücke, die dieses Prüfnetz achtmal zu spät gefunden hat:
+  nicht eine Ansicht, sondern ein ZUSTAND einer Ansicht.
+
+  Die Gegenprobe (Uhr AN) steht bewusst daneben. Eine Sperre, die immer
+  greift, bestünde diese Prüfung sonst genauso.
+*/
+const UHR_AUS = () => {
+  localStorage.setItem("aussendienst_pwa_a11y", JSON.stringify({ enableTimeTracking: false }));
+  localStorage.setItem("aussendienst_pwa_onboarding_v1", "1");
+};
+
+test.describe("Grenze der abgeschalteten Stempeluhr", () => {
+  test("?tab=time landet im Formular, wenn die Uhr aus ist", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Routing haengt nicht am Geraeteprofil");
+    // Die Manifest-Verknuepfung "Stempeluhr" zeigt auf ./?tab=time und bleibt
+    // bestehen -- ein Manifest laesst sich nicht pro Einstellung aendern.
+    await page.addInitScript(UHR_AUS);
+    await page.goto("/?tab=time");
+    await page.waitForTimeout(1200);
+    await expect(
+      page.getByRole("heading", { name: /Zeiterfassung|Stempeluhr/ }),
+      "Die Zeit-Ansicht öffnet trotz abgeschalteter Uhr",
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: /Bericht an VL senden/ }),
+      "Es wurde nicht im Formular gelandet",
+    ).toHaveCount(1);
+  });
+
+  test("?tab=time öffnet die Uhr weiterhin, wenn sie an ist", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Routing haengt nicht am Geraeteprofil");
+    await page.addInitScript(() => localStorage.setItem("aussendienst_pwa_onboarding_v1", "1"));
+    await page.goto("/?tab=time");
+    await page.waitForTimeout(1200);
+    const stempeln = await page.getByRole("button", { name: /Einstempeln|Ausstempeln/ }).count();
+    expect(stempeln, "Die Sperre greift auch bei eingeschalteter Uhr").toBeGreaterThan(0);
+  });
+
+  test("das Jahreskonto bleibt über die Optionen erreichbar", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Navigation haengt nicht am Geraeteprofil");
+    await page.addInitScript(UHR_AUS);
+    await page.goto("/");
+    await page.waitForTimeout(1000);
+    await expect(
+      page.getByRole("button", { name: /RV Zeit/ }),
+      "RV Zeit steht trotz abgeschalteter Uhr in der Navigation",
+    ).toHaveCount(0);
+
+    await page.goto("/?tab=options");
+    await page.waitForTimeout(900);
+    await page.getByRole("button", { name: /Jahreskonto/ }).first().click();
+    await page
+      .getByRole("heading", { name: /Jahreskonto & Einstellungen/ })
+      .first()
+      .waitFor({ state: "visible", timeout: 15_000 });
+
+    // Zurueck muss in die Optionen fuehren, nicht in die abgeschaltete Ansicht.
+    await page.getByRole("button", { name: /Zurück/ }).first().click();
+    await page.waitForTimeout(700);
+    await expect(
+      page.getByRole("button", { name: /Anzeige & Bedienung/ }),
+      "Zurück führte nicht in die Optionen",
+    ).toHaveCount(1);
+  });
+
+  test("Schichten löschen räumt Archiv und laufenden Monat, ohne Zähler zu ändern", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Datenhaltung haengt nicht am Geraeteprofil");
+    await page.addInitScript(() => {
+      localStorage.setItem("aussendienst_pwa_a11y", JSON.stringify({ enableTimeTracking: false }));
+      localStorage.setItem("aussendienst_pwa_onboarding_v1", "1");
+      const s = {
+        id: "t1", date: "2026-09-02", clockIn: "08:00", clockOut: "16:00",
+        breakMinutes: 30, duration: 7.5, officeRatio: 0.5, officeHours: 3.75, fieldHours: 3.75,
+      };
+      (window as unknown as { __vorbereiten: () => Promise<void> }).__vorbereiten = async () => {
+        const db: IDBDatabase = await new Promise((res, rej) => {
+          const r = indexedDB.open("keyval-store", 1);
+          r.onupgradeneeded = () => {
+            if (!r.result.objectStoreNames.contains("keyval")) r.result.createObjectStore("keyval");
+          };
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => rej(r.error);
+        });
+        const setze = (wert: unknown, schluessel: string) =>
+          new Promise<void>((res, rej) => {
+            const t = db.transaction("keyval", "readwrite");
+            t.objectStore("keyval").put(wert, schluessel);
+            t.oncomplete = () => res();
+            t.onerror = () => rej(t.error);
+          });
+        await setze(
+          { month: "2026-09", name: "Marc Petry", notes: "", values: { s1_1: 5, std_buero: 3.75 }, valuesUpdatedAt: {}, timeLogs: [s] },
+          "aussendienst_pwa_data",
+        );
+        await setze(
+          { "2026-08": { month: "2026-08", name: "Marc Petry", notes: "", values: { s1_1: 2 }, savedAt: "2026-08-31T10:00:00.000Z", fieldsSnapshot: { s1: [], s2: [], s3: [], s4: [] }, timeLogs: [{ ...s, id: "t2", date: "2026-08-05" }] } },
+          "aussendienst_pwa_history",
+        );
+      };
+    });
+    await page.goto("/");
+    await page.evaluate(() => (window as unknown as { __vorbereiten: () => Promise<void> }).__vorbereiten());
+    await page.goto("/?tab=options");
+    await page.waitForTimeout(1200);
+
+    await page.getByRole("button", { name: /Anzeige & Bedienung/ }).first().click();
+    const taste = page.getByRole("button", { name: /Erfasste Schichten löschen/ }).first();
+    await taste.waitFor({ state: "visible", timeout: 15_000 });
+    // Ueber die Kennung gezaehlt: Der laufende Monat liegt zugleich im Archiv.
+    // Vor der Korrektur meldete diese Taste "(3)" bei zwei Schichten.
+    expect((await taste.textContent())?.trim(), "Der laufende Monat wird doppelt gezählt").toContain("(2)");
+
+    await taste.click();
+    await page.getByRole("alertdialog").waitFor({ state: "visible", timeout: 15_000 });
+    await page.getByRole("button", { name: /Endgültig löschen/ }).click();
+    await page.waitForTimeout(1500);
+
+    const rest = await page.evaluate(async () => {
+      const db: IDBDatabase = await new Promise((res, rej) => {
+        const r = indexedDB.open("keyval-store", 1);
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+      });
+      const lies = (k: string) =>
+        new Promise<Record<string, unknown>>((res, rej) => {
+          const t = db.transaction("keyval", "readonly");
+          const q = t.objectStore("keyval").get(k);
+          q.onsuccess = () => res(q.result);
+          q.onerror = () => rej(q.error);
+        });
+      const daten = (await lies("aussendienst_pwa_data")) as { timeLogs?: unknown[]; values?: Record<string, number> };
+      const archiv = (await lies("aussendienst_pwa_history")) as Record<string, { timeLogs?: unknown[]; values?: Record<string, number> }>;
+      return {
+        laufend: daten?.timeLogs?.length ?? -1,
+        archiv: Object.values(archiv || {}).reduce((s, e) => s + (e.timeLogs?.length || 0), 0),
+        zaehlerLaufend: daten?.values?.std_buero ?? null,
+        zaehlerArchiv: Object.values(archiv || {})[0]?.values?.s1_1 ?? null,
+        laufendeSchicht: localStorage.getItem("aussendienst_pwa_clock_in_time_v2"),
+      };
+    });
+    expect(rest.laufend, "Schichten im laufenden Monat nicht gelöscht").toBe(0);
+    expect(rest.archiv, "Schichten im Archiv nicht gelöscht").toBe(0);
+    /*
+      Der wichtigste Teil dieser Prüfung: Die Zählerstände sind der Bericht,
+      der an die Vertriebsleitung geht. Das Löschen der Aufzeichnungen darf
+      eine bereits gemeldete Zahl nicht nachträglich verändern.
+    */
+    expect(rest.zaehlerLaufend, "Zählerstand wurde still verändert").toBe(3.75);
+    expect(rest.zaehlerArchiv, "Archiv-Zählerstand wurde still verändert").toBe(2);
+    expect(rest.laufendeSchicht, "laufende Schicht nicht zurückgesetzt").toBeNull();
+  });
 });

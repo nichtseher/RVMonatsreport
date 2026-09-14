@@ -10,6 +10,178 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-14 — v0.9.33: Die Blattwahl, die Grenze der Stempeluhr, eine Bibliothek weniger
+
+Anlass waren vier Fragen des Projektinhabers: alles noch einmal prüfen; dem
+Nutzer die Wahl geben, ob nur das erste Tabellenblatt exportiert wird; den Code
+schlank halten; und die Frage, ob die Stempeluhr wegen des Betriebsrats besser
+entfiele.
+
+### Die vierte Frage beantwortet sich an einer Zelle
+
+Die Firmenvorlage selbst verlangt `tage_arbeit` (D18) und `std_buero` (D19) —
+nachzulesen in `FELD_ZU_ZELLE`. Diese Zahlen gingen schon vor dieser App an die
+Vertriebsleitung; das Formular ist älter als die App, die es ersetzt. Die
+Stempeluhr erzeugt sie also nicht zusätzlich, sie hilft nur, sie richtig
+auszufüllen. Ein Ausbau (gezählt: rund 1.600 zu löschende, 2.400 zu berührende
+Zeilen) nähme das Werkzeug weg, nicht den Datenfluss — und stellte genau das
+Problem wieder her, gegen das die App angetreten ist: das Nachrechnen aus dem
+Gedächtnis am Monatsende.
+
+Neu und im Sinn von § 87 Abs. 1 Nr. 6 BetrVG heikel ist die **einzelne
+Schicht** — Kommen, Gehen, Pause, Notiz. Die erreicht die Vertriebsleitung an
+genau einer Stelle: Blatt 3 des Berichts. Damit ist die zweite Frage zugleich
+die Antwort auf die vierte. Die Entscheidung des Projektinhabers: Stempeluhr
+behalten, ihre Grenze schärfen, und vor **jedem** Senden fragen.
+
+Das ist keine Rechtsauskunft und ersetzt ROADMAP-Frage 4 nicht. Es verschiebt
+nur, wer entscheidet.
+
+### Die Blattwahl
+
+`erzeugeVorlagenDatei(data, appFields, umfang, mitZeitenblatt)` — `umfang` ist
+`"vorlage" | "alle"` und hat **bewusst keinen Vorgabewert**. Ein stiller
+Standard, der alles mitschickt, wäre genau der Fehler, den die Wahl verhindern
+soll; ohne Vorgabewert zwingt der Compiler jeden Aufrufer zur Entscheidung.
+
+Gefragt wird über den vorhandenen `ConfirmDialog`, der dafür eine dritte,
+gleichrangige Taste bekommen hat (`alternative`). Keine zweite
+Dialogkomponente: Die Fokusfalle ist in diesem Projekt dreimal geschrieben und
+zweimal falsch gewesen — eine vierte Fassung wäre das Gegenteil von schlank.
+Bei drei Tasten stapelt der Dialog auf jeder Breite; nebeneinander lägen sie in
+`max-w-md` bei „Extra groß" unter 44 px.
+
+**Die naheliegende Gestaltung wäre falsch gewesen, und das wurde vor dem
+Schreiben gerechnet.** Die zweite Taste als `text-[var(--primary)]` auf
+`--card-bg` ergibt im Schema „Dunkel" **3,45:1** — unter den 4,5:1 aus WCAG
+1.4.3. Das ist derselbe Fehlertyp wie 0.9.22, nur in anderer Verkleidung. Sie
+trägt `--primary` deshalb nur als **Rahmen** (dort genügen 3:1; gemessen
+3,90:1), die Schrift bleibt `--text-color`. Gerechnet über alle vier Schemata,
+bevor eine Zeile davon im Quelltext stand.
+
+Gefragt wird auf **beiden** Wegen — Formular und Direkt-Export aus dem Archiv.
+Der Archivweg war bis hierher der einzige Ausgang ganz ohne Rückfrage und kann
+rückwirkend dasselbe versenden.
+
+Nichts davon wird gespeichert: keine neue Einstellung, kein
+`localStorage`-Schlüssel, keine Änderung an `syncSchema` oder `merge`. Das ist
+der Gewinn von „jedes Mal fragen".
+
+### Ein gemessener Defekt, der dabei herausfiel
+
+**Das Jahreskonto war unerreichbar, sobald die Stempeluhr abgeschaltet war.**
+`activeTab = "carryover"` wurde an genau einer Stelle gesetzt: als Prop in
+`TimeModal`, und `TimeModal` rendert nur bei `activeTab === "time"`, dessen
+Navigationseintrag an `enableTimeTracking` hängt. Resturlaub und Überstunden
+lagen weiter im `localStorage` und waren über die Oberfläche nicht mehr zu
+ändern — obwohl sie mit der Stempeluhr nichts zu tun haben.
+
+Das ist wieder die Sorte Lücke, die dieses Projekt achtmal zu spät gefunden
+hat: nicht eine Ansicht, sondern ein **Zustand** einer Ansicht. Das Jahreskonto
+hat jetzt einen eigenen Einstieg unter „Optionen", und `CarryoverModal`
+schließt dorthin zurück, wo es geöffnet wurde (Ref statt State — kein
+Neurendern nötig).
+
+### „Aus" heißt jetzt aus
+
+`?tab=time` fällt bei abgeschalteter Uhr auf das Formular zurück; die
+Manifest-Verknüpfung „Stempeluhr" bleibt bestehen, weil ein Manifest sich nicht
+pro Einstellung ändern lässt, führt aber nicht mehr ins Leere. Alt+Shift+T
+ruht mit Ansage. Bei `umfang: "alle"` entfällt Blatt 3, wenn die Uhr aus ist.
+
+Neu ist außerdem ein Löschweg für erfasste Schichten (Optionen → Anzeige &
+Bedienung, sichtbar nur bei abgeschalteter Uhr und vorhandenem Bestand). Er
+räumt den laufenden Monat **und** jeden Archiveintrag und setzt den laufenden
+Einstempel-Zeitpunkt zurück. **Die Zählerstände bleiben unangetastet** — sie
+sind der Bericht, der bereits gemeldet wurde; den Nachweis zu löschen darf
+keine gemeldete Zahl nachträglich verändern. Das ist als Zusicherung geprüft,
+nicht nur als Absicht kommentiert.
+
+### SheetJS ist raus
+
+Die App trug zwei Excel-Bibliotheken für dasselbe Dateiformat: `exceljs`
+(940 KB, Firmenvorlage) und `xlsx`/SheetJS (500 KB, nur noch der
+Stundenzettel). Dieselbe Schichttabelle stand zweimal im Quelltext, mit
+denselben acht Spalten und denselben drei Summenformeln. Sie ist jetzt eine
+Funktion, `baueZeitenBlatt`, die Blatt 3 des Berichts **und** den
+Stundenzettel baut.
+
+**Gemessen, nicht angenommen:** Ein Wegwerf-Skript hat beide Fassungen erzeugt
+und Zeile für Zeile verglichen — Formular wie Archiv, **0 abweichende Zeilen
+von 8**, gleicher Blattname, gleiche Formeln (`SUM(E8:E9)`), Umlaute und
+Sortierung unverändert.
+
+Eine Korrektur an meiner eigenen Behauptung aus der Planung: Der Ausbau räumt
+**keine** der fünf `npm audit`-Meldungen ab — `xlsx` taucht dort gar nicht auf.
+Der Grund dafür ist allerdings das bessere Argument: Es kam als Tarball von
+`cdn.sheetjs.com`, lag damit außerhalb der Registry und war die eine
+Abhängigkeit, die `npm audit` **strukturell nicht sehen konnte**.
+
+Ehrliche Bilanz: Gesamt-Assets rund 500 KB kleiner, eine Abhängigkeit weniger.
+Aber wer *nur* den Stundenzettel exportiert, lädt künftig ExcelJS (940 KB)
+statt SheetJS (500 KB). Das Startbündel ändert sich nicht — beide waren schon
+vorher dynamisch nachgeladen.
+
+### Was die Durchsicht sonst ergeben hat
+
+- **`vite.config.ts:24` trug seit Langem ein Mojibake**: ein Gedankenstrich,
+  dessen drei UTF-8-Bytes (E2 80 94) **einzeln als Latin-1** gelesen worden
+  waren — U+00E2, U+0080, U+0094. Die Kodierungsprüfung suchte nach `â€` mit
+  dem Euro-Zeichen U+20AC; das entsteht nur beim Lesen als **CP1252**. Sie lief
+  also an einem Fall vorbei, für den sie gebaut war. Zweitens durchsuchte sie
+  ohnehin nur `src/`, und die Datei liegt daneben. Beides ist behoben: Wurzel
+  jetzt das ganze Projekt, und das Muster kennt zusätzlich das einzelne
+  `â`/`Â` sowie den C1-Bereich U+0080–U+009F. **Gegenprobe gemacht:** Artefakt
+  testweise wieder eingesetzt → die Prüfung meldet es; entfernt → grün.
+- **Ein Aufräumcode im Prüfnetz griff seit jeher ins Leere.** Zwei Stellen
+  löschten `aussendienst_pwa_clockin`; die App schreibt
+  `aussendienst_pwa_clock_in_time_v2`. Es fiel nicht auf, weil Playwright jeden
+  Fall in einem frischen Kontext startet — ein einziger wiederverwendeter
+  Zustand hätte gereicht.
+- **`README_DEPLOY.md` beschrieb zwei Wege, die es beide nicht gibt:**
+  `npm run deploy` (mit 0.9.20 entfernt) und einen `gh-pages`-Branch (der
+  Workflow veröffentlicht über `actions/deploy-pages`). Neu geschrieben,
+  einschließlich der Nachkontrolle nach dem Push.
+- **`CLAUDE.md` behauptete, der Excel-Export liege ausschließlich in
+  `excelUtils.ts`.** Das stimmte seit 0.9.11 nicht mehr.
+- **Toter Code in `App.tsx`:** ein leerer Import aus `excelUtils`, und
+  `ClockInWidget` (1.130 Zeilen) importiert, aber nie gerendert — die Ansicht
+  holt es sich über `TimeModal`.
+- **Der Zähler an der Löschtaste zählte doppelt.** Ein Bestand aus zwei
+  Schichten wurde als „(3)" angezeigt, weil der laufende Monat zugleich im
+  Archiv liegt. Jetzt wird über die Kennung gezählt, nicht addiert. Gefunden
+  hat das die Messung, nicht das Lesen.
+
+### Benannt, nicht geändert
+
+`tsc --noUnusedLocals --noUnusedParameters` meldet **56 ungenutzte
+Deklarationen** in 18 Dateien (`App.tsx` 18, `StatsModal` 7, `ClockInWidget` 5,
+`TimeModal` 4). Darunter `closeButtonRef` in `TimeModal.tsx:47` — die Ansicht
+setzt beim Öffnen **keinen** Fokus. Acht Stellen sind hier von Hand behoben;
+den Schalter als Dauertor hat der Projektinhaber für diese Fassung abgewählt,
+ebenso das Nachladen der elf eager geladenen Ansichten (~4.850 Zeilen im
+573-KB-Startbündel) und die Entzerrung von `App.tsx`.
+
+### Prüfstand
+
+| | vorher | nachher |
+|---|---|---|
+| `npm run lint` | grün | grün |
+| `npm run check` | 163 | **171** |
+| `npm run check:ui` | 426 (Grundmessung vor der Arbeit, 14,8 min) | siehe unten |
+| `npm audit` | 5 moderate | 5 moderate (unverändert) |
+
+Die Grundmessung vor dem ersten Eingriff war Absicht: Der Deploy von 0.9.32 war
+an `check:ui` gescheitert, der Zustand dieses Tores also nicht bekannt. Ohne
+sie wäre jeder spätere Fehlschlag nicht zuzuordnen gewesen.
+
+`RUECKFRAGEN` steht jetzt bei **zehn** (vorher sieben): zwei Blattwahlen und
+das Löschen der Schichten. `scripts/checks/rueckfrage.ts` hat die fehlenden
+Einträge beim ersten Lauf selbst gemeldet — die Zählprüfung aus 0.9.32 hat
+genau das getan, wofür sie gebaut wurde.
+
+---
+
 ## 2026-09-12 — Nachtrag zu 0.9.32: der rote Deploy, und der QR-Weg ist doch prüfbar
 
 ### Der Deploy von 0.9.32 ist fehlgeschlagen

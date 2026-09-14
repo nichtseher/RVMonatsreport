@@ -15,18 +15,41 @@ import { gruppe, pruefe, wahr } from "../helfer";
   Genau diese Prüfung hätte ihn gefunden.
 */
 
-const WURZEL = new URL("../../src", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
-const ENDUNGEN = [".ts", ".tsx", ".css"];
+const PROJEKT = new URL("../..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+const ENDUNGEN = [".ts", ".tsx", ".css", ".html"];
+const UEBERSPRINGEN = new Set([
+  "node_modules",
+  "dist",
+  ".git",
+  ".claude",
+  "test-results",
+  "playwright-report",
+  // Diese Datei selbst: Sie MUSS die gesuchten Zeichen enthalten, sonst
+  // koennte sie nicht nach ihnen suchen.
+  "kodierung.ts",
+]);
 
 /** Absichtliche Vorkommen: Der Changelog erklärt den Fehler von damals. */
 const ERLAUBT: Array<{ datei: string; text: string }> = [
   { datei: "ChangelogModal.tsx", text: "Anzahl VorfÃ¼hrungen" },
 ];
 
-const MUSTER = /Ã[¤¶¼ŸœÄÖ„]|Ã|â€[žœ“”]|ï¿½|ðŸ/;
+/*
+  Warum hier mehr steht als die klassische CP1252-Signatur: Der Fund vom
+  2026-09-14 in vite.config.ts war ein Gedankenstrich, dessen drei UTF-8-Bytes
+  (E2 80 94) EINZELN als Latin-1 gelesen wurden -- also U+00E2, U+0080,
+  U+0094. Die alte Fassung suchte nach "â€" mit dem Euro-Zeichen U+20AC;
+  das entsteht nur beim Lesen als CP1252. Deshalb lief sie daran vorbei.
+
+  Neu sind deshalb das einzelne "â"/"Â" und der C1-Bereich U+0080-U+009F.
+  Letzterer sind Steuerzeichen: In Quelltext haben sie NIE etwas zu suchen,
+  ein Treffer ist immer ein Schaden.
+*/
+const MUSTER = /Ã[¤¶¼ŸœÄÖ„]|Ã|Â|â|[\u0080-\u009f]|�|ðŸ/;
 
 function dateienSammeln(verzeichnis: string, treffer: string[] = []): string[] {
   for (const eintrag of readdirSync(verzeichnis)) {
+    if (UEBERSPRINGEN.has(eintrag)) continue;
     const pfad = join(verzeichnis, eintrag);
     if (statSync(pfad).isDirectory()) dateienSammeln(pfad, treffer);
     else if (ENDUNGEN.some((e) => pfad.endsWith(e))) treffer.push(pfad);
@@ -36,7 +59,7 @@ function dateienSammeln(verzeichnis: string, treffer: string[] = []): string[] {
 
 gruppe("Textkodierung der Quelldateien");
 
-const dateien = dateienSammeln(WURZEL);
+const dateien = dateienSammeln(PROJEKT);
 
 pruefe("es werden überhaupt Dateien geprüft", () => {
   wahr(dateien.length > 10, `nur ${dateien.length} Dateien gefunden — Pfad falsch?`);
@@ -51,7 +74,7 @@ pruefe("keine doppelt kodierten Zeichen", () => {
     }
     inhalt.split("\n").forEach((zeile, i) => {
       if (MUSTER.test(zeile)) {
-        befunde.push(`${datei.replace(WURZEL, "src")}:${i + 1}  ${zeile.trim().slice(0, 80)}`);
+        befunde.push(`${datei.replace(PROJEKT, "")}:${i + 1}  ${zeile.trim().slice(0, 80)}`);
       }
     });
   }
@@ -66,7 +89,7 @@ pruefe("keine Datei beginnt mit einem BOM", () => {
 
 pruefe("die Standardfelder haben ihre Beschriftungen und Symbole", () => {
   // Genau das, was der Encoding-Schaden zerstört hat.
-  const app = readFileSync(join(WURZEL, "App.tsx"), "utf8");
+  const app = readFileSync(join(PROJEKT, "src", "App.tsx"), "utf8");
   const block = app.slice(app.indexOf("DEFAULT_FIELDS_CONFIG"), app.indexOf("export default function App"));
   const umlaute = (block.match(/[äöüßÄÖÜ]/g) || []).length;
   const symbole = (block.match(/icon:\s*"[^"]+"/g) || []).length;

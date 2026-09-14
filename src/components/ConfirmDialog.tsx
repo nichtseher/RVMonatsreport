@@ -10,6 +10,18 @@ export interface ConfirmRequest {
   cancelLabel?: string;
   tone?: "danger" | "default";
   onConfirm: () => void;
+  /**
+   * Zweite, gleichrangige Wahl -- keine Bestaetigung und kein Abbruch,
+   * sondern eine andere Antwort auf dieselbe Frage. Bislang genau ein Fall:
+   * die Blattwahl vor dem Senden an die Vertriebsleitung ("nur die Vorlage"
+   * oder "alle Blaetter").
+   *
+   * Ist sie gesetzt, stapelt der Dialog seine Tasten auf JEDER Breite. Drei
+   * nebeneinander sind in `max-w-md` bei "Extra gross" jeweils unter 44 px
+   * breit -- und 44 px sind in diesem Projekt die eine Schwelle, ohne
+   * Ausnahme.
+   */
+  alternative?: { label: string; onSelect: () => void };
 }
 
 interface ConfirmDialogProps {
@@ -166,7 +178,11 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
             )}
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row gap-2.5 pt-1">
+          <div
+            className={`flex flex-col-reverse gap-2.5 pt-1 ${
+              request.alternative ? "" : "sm:flex-row"
+            }`}
+          >
             <button
               ref={cancelRef}
               type="button"
@@ -175,6 +191,26 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
             >
               {request.cancelLabel || "Abbrechen"}
             </button>
+            {request.alternative && (
+              <button
+                type="button"
+                onClick={() => {
+                  request.alternative!.onSelect();
+                  onClose();
+                }}
+                /*
+                  Rahmen in --primary, Schrift aber in --text-color: Gerechnet
+                  am 2026-09-14 steht --primary im Schema "Dunkel" mit 3,45:1
+                  auf --card-bg und faellt damit unter 4,5:1. Als RAHMEN
+                  genuegen 3:1 (Bedienelement, kein Text) -- dort sind es 3,90:1.
+                  Die naheliegende Fassung "text-[var(--primary)]" waere genau
+                  der Fehler aus 0.9.22 in neuer Verkleidung gewesen.
+                */
+                className="flex-1 py-3 px-4 rounded-xl font-bold border-2 border-[var(--primary)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--border-color)] transition-all cursor-pointer"
+              >
+                {request.alternative.label}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {

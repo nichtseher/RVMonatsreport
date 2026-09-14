@@ -68,8 +68,6 @@ import {
 // Eine Quelle für die Monatsnamen: Dieselbe Funktion lag zuvor zusätzlich
 // hier und in HistoryModal.tsx -- drei Kopien, die auseinanderlaufen konnten.
 import { formatMonthGerman } from "./utils/dateUtils";
-import {
-} from "./utils/excelUtils";
 import { subscribeLiveSync, getLiveSyncSnapshot } from "./utils/liveSync";
 import A11yModal from "./components/A11yModal";
 import CounterField from "./components/CounterField";
@@ -81,7 +79,6 @@ import ManageModal from "./components/ManageModal";
 import HistoryModal from "./components/HistoryModal";
 import StatsModal from "./components/StatsModal";
 import CarryoverModal from "./components/CarryoverModal";
-import ClockInWidget from "./components/ClockInWidget";
 import TimeModal from "./components/TimeModal";
 /*
   Geräte-Sync und Datensicherung werden erst geladen, wenn man sie öffnet.
@@ -285,7 +282,19 @@ export default function App() {
       // Manifest-Verknuepfung "Zahlen erfassen" zeigt auf ./?tab=form und traf
       // bisher nur zufaellig das Richtige. Aendert sich der Standard je, waere
       // sie stillschweigend kaputt.
-      if (tab === "form" || tab === "time" || tab === "stats" || tab === "history" || tab === "options") return tab;
+      if (tab === "form" || tab === "stats" || tab === "history" || tab === "options") return tab;
+      if (tab === "time") {
+        /*
+          Die Manifest-Verknuepfung "Stempeluhr" zeigt hierher. Ein Manifest
+          laesst sich nicht pro Einstellung aendern, also bleibt sie stehen --
+          sie darf aber nicht doch in die Ansicht fuehren, die der Nutzer
+          abgeschaltet hat. Die Einstellung wird hier direkt aus dem Speicher
+          gelesen, weil der Zustand `accessibility` erst weiter unten entsteht.
+        */
+        const roh = localStorage.getItem("aussendienst_pwa_a11y");
+        const aus = roh ? JSON.parse(roh)?.enableTimeTracking === false : false;
+        return aus ? "form" : "time";
+      }
     } catch {
       /* ignore */
     }
@@ -730,6 +739,13 @@ export default function App() {
         announceToAriaAndSpeech("Ein-Hand-Modus aktualisiert.", true);
       } else if (event.key.toLowerCase() === "t") {
         event.preventDefault();
+        if (accessibility.enableTimeTracking === false) {
+          announceToAriaAndSpeech(
+            "Die Zeiterfassung ist abgeschaltet. Sie lässt sich in den Optionen wieder einschalten.",
+            true,
+          );
+          return;
+        }
         setActiveTab("time");
         announceToAriaAndSpeech("Zeiterfassung geöffnet.", true);
       } else if (event.key.toLowerCase() === "h") {
@@ -741,7 +757,7 @@ export default function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [announceToAriaAndSpeech, focusAndAnnounce]);
+  }, [announceToAriaAndSpeech, focusAndAnnounce, accessibility.enableTimeTracking]);
 
   // --- STEMPELUHR (ausgelagert nach hooks/useStempeluhr) ---
   // Der laufende Einstempel-Zeitpunkt liegt in localStorage, nicht im Bericht:
@@ -953,6 +969,53 @@ export default function App() {
     handleMonthChange(monthStr);
     setActiveTab("form");
   };
+
+  /*
+    Aus welcher Ansicht das Jahreskonto geoeffnet wurde -- "RV Zeit" oder
+    "Optionen". Vorher zeigte sein Schliessen fest auf "time"; seit es einen
+    zweiten Einstieg gibt, waere das ein Sprung in eine Ansicht, die der
+    Nutzer vielleicht gar nicht sehen will (oder die abgeschaltet ist).
+  */
+  const carryoverHerkunftRef = useRef<"time" | "options">("time");
+
+  /**
+   * Alle Schicht-Aufzeichnungen von diesem Geraet entfernen.
+   *
+   * Die Zaehlerstaende bleiben absichtlich stehen: Sie sind der Bericht, der
+   * an die Vertriebsleitung geht. Wer den Nachweis loescht, soll damit keine
+   * bereits gemeldete Zahl veraendern.
+   */
+  const handleSchichtenLoeschen = useCallback(() => {
+    setConfirmRequest({
+      title: "Erfasste Schichten löschen?",
+      message:
+        "Alle Schicht-Aufzeichnungen werden von diesem Gerät entfernt – im laufenden Monat und im RV Archiv. Ihre Zählerstände im Bericht bleiben unverändert.",
+      details: ["Das lässt sich nicht rückgängig machen."],
+      confirmLabel: "Endgültig löschen",
+      tone: "danger",
+      onConfirm: () => {
+        localStorage.removeItem("aussendienst_pwa_clock_in_time_v2");
+        setReportData((prev) => (prev ? { ...prev, timeLogs: [] } : prev));
+        setHistory((prev) => {
+          if (!prev) return prev;
+          const updated: Record<string, HistoryRecord> = {};
+          for (const [monat, eintrag] of Object.entries(prev)) {
+            updated[monat] = { ...eintrag, timeLogs: [] };
+          }
+          persistHistory(updated, handleHistoryPersistFailure, "schichten-loeschen");
+          return updated;
+        });
+        triggerToast("Erfasste Schichten gelöscht.");
+        announceToAriaAndSpeech(
+          "Alle erfassten Schichten wurden gelöscht. Die Zählerstände im Bericht sind unverändert.",
+          true,
+        );
+      },
+    });
+  }, [
+    setConfirmRequest, setReportData, setHistory,
+    handleHistoryPersistFailure, triggerToast, announceToAriaAndSpeech,
+  ]);
 
   const handleDeleteRecordFromHistory = (monthStr: string) => {
     setHistory((prev) => {
@@ -3022,7 +3085,10 @@ export default function App() {
             onDeleteLog={handleDeleteLog}
             announceToAriaAndSpeech={announceToAriaAndSpeech}
             carryover={carryover}
-            onOpenCarryover={() => setActiveTab("carryover")}
+            onOpenCarryover={() => {
+              carryoverHerkunftRef.current = "time";
+              setActiveTab("carryover");
+            }}
             onExportExcel={handleExportTimeLogsExcel}
             selectedMonth={reportData?.month}
             onAddManualLog={handleManualLogAdd}
@@ -3057,6 +3123,8 @@ export default function App() {
             triggerToast={triggerToast}
             onToggleVersand={handleToggleVersandStatus}
             onVersandGemeldet={(monat) => setzeVersandStatus(monat, true)}
+            setConfirmRequest={setConfirmRequest}
+            stempeluhrAktiv={accessibility.enableTimeTracking !== false}
           />
         </div>
       )}
@@ -3101,6 +3169,26 @@ export default function App() {
             onOpenChangelog={() => {
               setActiveTab("changelog");
             }}
+            onOpenCarryover={() => {
+              carryoverHerkunftRef.current = "options";
+              setActiveTab("carryover");
+            }}
+            /*
+              Ueber die Kennung zaehlen, nicht addieren: Der laufende Monat
+              steht zugleich im Archiv (die Selbstsicherung legt ihn dort ab),
+              seine Schichten kaemen sonst doppelt vor. Gemessen am
+              2026-09-14 -- ein Bestand aus zwei Schichten wurde als "(3)"
+              angezeigt.
+            */
+            schichtenAnzahl={
+              new Set([
+                ...(reportData?.timeLogs || []).map((s) => s.id),
+                ...Object.values(history || {}).flatMap((e) =>
+                  (e.timeLogs || []).map((s) => s.id),
+                ),
+              ]).size
+            }
+            onSchichtenLoeschen={handleSchichtenLoeschen}
           />
         </div>
       )}
@@ -3114,7 +3202,7 @@ export default function App() {
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
           <CarryoverModal
             isOpen={true}
-            onClose={() => setActiveTab("time")}
+            onClose={() => setActiveTab(carryoverHerkunftRef.current)}
             carryover={carryover}
             onSave={updateCarryover}
             announceToAriaAndSpeech={announceToAriaAndSpeech}

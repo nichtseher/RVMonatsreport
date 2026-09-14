@@ -44,6 +44,22 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.33: Sie entscheiden jetzt, was die Vertriebsleitung bekommt</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Vor jedem Senden fragt die App, welche Tabellenblätter mitgehen sollen.</strong> <strong>Nur Vorlage senden</strong> schickt allein das gewohnte Formular der Vertriebsleitung – das ist die vorgeschlagene Antwort und reicht dort völlig. Mit <strong>Alle drei Blätter</strong> gehen zusätzlich Ihre Zusatzangaben und Ihre einzelnen Schichten mit. Bisher gingen immer alle drei Blätter mit, ohne dass jemand gefragt wurde. Die Frage kommt auf beiden Wegen – im Formular und beim Direkt-Export aus dem RV Archiv.</li>
+            <li><strong>Warum das wichtig ist:</strong> Auf dem dritten Blatt stehen Ihre einzelnen Schichten mit Kommen, Gehen, Pause und Kommentar. Das Formular der Vertriebsleitung fragt dagegen nur nach <em>Arbeitstagen</em> und <em>Bürostunden</em> – also nach Summen. Was darüber hinausgeht, verlässt Ihr Gerät ab jetzt nur, wenn Sie es ausdrücklich möchten.</li>
+            <li><strong>Das Jahreskonto war nicht mehr erreichbar, wenn Sie die Stempeluhr abgeschaltet hatten.</strong> Resturlaub und Überstunden lagen dann zwar noch auf dem Gerät, aber es führte kein Weg mehr hin – der einzige Zugang lag in der Ansicht „RV Zeit", und die wird mit der Stempeluhr ausgeblendet. Das Jahreskonto steht jetzt zusätzlich unter <strong>Optionen</strong> und hat mit der Stempeluhr nichts mehr zu tun.</li>
+            <li><strong>„Stempeluhr aus" heißt jetzt wirklich aus.</strong> Bisher führte die Verknüpfung „Stempeluhr" auf dem Startbildschirm und das Tastenkürzel weiterhin in die abgeschaltete Ansicht. Beides landet jetzt im Bericht, mit Ansage.</li>
+            <li><strong>Und Sie können erfasste Schichten löschen.</strong> Neu unter <strong>Optionen → Anzeige &amp; Bedienung</strong>, sobald die Stempeluhr ausgeschaltet ist: Alle Schicht-Aufzeichnungen werden vom Gerät entfernt – aus dem laufenden Monat und aus dem RV Archiv. <strong>Ihre Zählerstände im Bericht bleiben dabei unverändert</strong>, denn das sind die Zahlen, die Sie bereits gemeldet haben.</li>
+            <li><strong>Unter der Haube:</strong> Die App trug zwei verschiedene Excel-Bibliotheken für dieselbe Aufgabe mit sich herum. Eine davon ist entfallen – rund 500 KB weniger, und die Zeiterfassungs-Datei sieht Zeile für Zeile unverändert aus (nachgemessen).</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.32: Die Sicherheitsfragen waren mit der Tastatur nicht bedienbar</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>

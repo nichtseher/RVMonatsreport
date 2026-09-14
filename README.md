@@ -50,7 +50,8 @@ npm run lint       # TypeScript-Prüfung
 
 ## Deployment
 
-Siehe `README_DEPLOY.md` (GitHub Pages) – alternativ `npm run start` hinter
+Jeder Push auf `main` veröffentlicht sofort auf GitHub Pages – Einzelheiten
+und die Nachkontrolle in `README_DEPLOY.md`. Alternativ `npm run start` hinter
 einem beliebigen Reverse-Proxy. Der Node-Server liefert nur statische Dateien
 aus und setzt Security-Header (CSP, HSTS u. a.); er verarbeitet keinerlei
 personenbezogene Daten.

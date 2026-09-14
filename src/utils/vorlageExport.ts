@@ -1,5 +1,8 @@
 import { ReportData, HistoryRecord, SectionsConfig, FieldConfig } from "../types";
 import { VORLAGE_MONATSINFO_BASE64, VORLAGE_BLATTNAME } from "./vorlageMonatsinfo";
+// Nur der Typ -- ExcelJS selbst wird erst beim Export nachgeladen (271 KB).
+import type { Workbook as ExcelWorkbook } from "exceljs";
+import { formatMonthGerman } from "./dateUtils";
 
 /**
  * Export in der Firmenvorlage der Vertriebsleitung.
@@ -9,8 +12,8 @@ import { VORLAGE_MONATSINFO_BASE64, VORLAGE_BLATTNAME } from "./vorlageMonatsinf
  * gelbe Eingabefelder, Rahmen, verbundene Bereiche, Spaltenbreiten und die
  * Summenformel in D10 bleiben unangetastet.
  *
- * WARUM EXCELJS UND NICHT DAS SONST GENUTZTE SHEETJS: Gemessen am 2026-08-19 --
- * SheetJS in der Community-Fassung schreibt keine Zellformatierung. Nach einem
+ * WARUM EXCELJS: Gemessen am 2026-08-19 -- das frueher hier genutzte
+ * SheetJS schreibt in der Community-Fassung keine Zellformatierung. Nach einem
  * Lesen-und-Schreiben-Umlauf kam die Farbe FFFF99 in der Datei NIRGENDS mehr
  * vor, die styles.xml enthielt eine Schrift, keinen Fettdruck und zwei Rahmen.
  * Als .xls geschrieben ging zusaetzlich die Formel in D10 verloren. Damit ist
@@ -90,47 +93,105 @@ const alleFelder = (felder: SectionsConfig): FieldConfig[] => [
   ...(felder.s4 || []),
 ];
 
-export const erzeugeVorlagenDatei = async (
+/**
+ * Wie viel der Bericht enthalten soll.
+ *
+ * "vorlage" ist Blatt 1 allein -- das gewohnte Formular der Vertriebsleitung
+ * und sonst nichts. "alle" haengt die beiden RV-Mobil-Blaetter an.
+ *
+ * Bewusst OHNE Vorgabewert an `erzeugeVorlagenDatei`: Ein stiller Standard,
+ * der alles mitschickt, ist genau der Fehler, den die Wahl verhindern soll.
+ * So muss jeder Aufrufer sich entscheiden, und der Compiler merkt es an.
+ */
+export type BlattUmfang = "vorlage" | "alle";
+
+/** Die ersten sieben Spalten des Schichtenblatts -- auf beiden Wegen gleich. */
+const ZEITEN_SPALTEN = [
+  "Datum",
+  "Kommen",
+  "Gehen",
+  "Abzug Pause (Min)",
+  "Netto-Stunden (h)",
+  "Anteil Büro (h)",
+  "Anteil Außendienst (h)",
+];
+
+interface ZeitenBlattOptionen {
+  blattName: string;
+  /** Zeilen ueber der Tabelle; die erste wird als Titel gesetzt. */
+  kopfZeilen: (string | number)[][];
+  /** Die achte Spalte heisst auf den beiden Wegen unterschiedlich. */
+  kommentarSpalte: string;
+  /** Spaltenbreiten in Excel-Zeichen, acht Stueck. */
+  breiten: number[];
+}
+
+/**
+ * Das Schichtenblatt -- einmal als Blatt 3 des Berichts, einmal als eigene
+ * Datei (Stundenzettel).
+ *
+ * Bis 0.9.32 stand diese Tabelle ZWEIMAL im Quelltext: hier mit ExcelJS und
+ * in utils/excelUtils.ts noch einmal mit SheetJS. Dieselben acht Spalten,
+ * dieselben drei Summenformeln, zwei Bibliotheken, 1,44 MB. Die zweite
+ * Fassung ist mit 0.9.33 entfallen.
+ */
+const baueZeitenBlatt = (
+  wb: ExcelWorkbook,
   data: ReportData | HistoryRecord,
-  appFields: SectionsConfig
-): Promise<Uint8Array> => {
-  const ExcelJS = (await import("exceljs")).default;
+  optionen: ZeitenBlattOptionen,
+) => {
+  const schichten = (Array.isArray(data.timeLogs) ? [...data.timeLogs] : []).sort(
+    (a, b) => a.date.localeCompare(b.date),
+  );
 
-  // Archivierte Monate bringen ihren eigenen Feldaufbau mit.
-  const felder =
-    "fieldsSnapshot" in data && data.fieldsSnapshot ? data.fieldsSnapshot : appFields;
+  const blatt = wb.addWorksheet(optionen.blattName);
+  blatt.columns = optionen.breiten.map((width) => ({ width }));
 
-  const wert = (id: string): number => {
-    const v = (data.values || {})[id];
-    return typeof v === "number" ? v : 0;
-  };
+  optionen.kopfZeilen.forEach((inhalt, i) => {
+    const zeile = blatt.addRow(inhalt);
+    if (i === 0) zeile.font = { bold: true, size: 13 };
+  });
 
-  const wb = new ExcelJS.Workbook();
-  await wb.xlsx.load(base64ZuBytes(VORLAGE_MONATSINFO_BASE64).buffer as ArrayBuffer);
-
-  const ws = wb.getWorksheet(VORLAGE_BLATTNAME);
-  if (!ws) {
-    // Kann nur passieren, wenn die eingebettete Vorlage ausgetauscht wurde und
-    // dabei der Blattname abgewichen ist. Lieber laut scheitern als still ein
-    // leeres Blatt ausliefern.
-    throw new Error(`Vorlage beschädigt: Blatt "${VORLAGE_BLATTNAME}" fehlt.`);
+  if (schichten.length === 0) {
+    blatt.addRow(["Keine Schichten erfasst."]);
+    return blatt;
   }
 
-  // --- Blatt 1: die Vorlage befuellen -----------------------------------
-  ws.getCell(ZELLE_MONAT).value = monatFuerVorlage(data.month);
-  ws.getCell(ZELLE_NAME).value = data.name || "";
+  const kopf = blatt.addRow([...ZEITEN_SPALTEN, optionen.kommentarSpalte]);
+  kopf.font = { bold: true };
 
-  const belegteFelder = new Set<string>();
-  for (const [id, zelle] of Object.entries(FELD_ZU_ZELLE)) {
-    ws.getCell(zelle).value = wert(id);
-    belegteFelder.add(id);
-  }
+  const ersteZeile = blatt.rowCount + 1;
+  schichten.forEach((s) => {
+    const [j, m, t] = s.date.split("-");
+    blatt.addRow([
+      j && m && t ? `${t}.${m}.${j}` : s.date,
+      s.clockIn,
+      s.clockOut,
+      s.breakMinutes,
+      s.duration,
+      s.officeHours,
+      s.fieldHours,
+      s.notes || "",
+    ]);
+  });
+  const letzteZeile = blatt.rowCount;
 
-  // Der Kommentarbereich ist B28:D28 verbunden -- der Wert gehoert in die
-  // linke obere Zelle, sonst zeigt Excel ihn nicht an.
-  ws.getCell(ZELLE_KOMMENTAR).value = data.notes || "";
+  const summe = blatt.addRow(["GESAMT", "", "", "", null, null, null, ""]);
+  summe.font = { bold: true };
+  summe.getCell(5).value = { formula: `SUM(E${ersteZeile}:E${letzteZeile})` };
+  summe.getCell(6).value = { formula: `SUM(F${ersteZeile}:F${letzteZeile})` };
+  summe.getCell(7).value = { formula: `SUM(G${ersteZeile}:G${letzteZeile})` };
+  return blatt;
+};
 
-  // --- Blatt 2: alles, was in der Vorlage keinen Platz hat ---------------
+/** Blatt 2: alles, was in der Vorlage keine Zeile hat. */
+const baueZusatzBlatt = (
+  wb: ExcelWorkbook,
+  data: ReportData | HistoryRecord,
+  felder: SectionsConfig,
+  belegteFelder: Set<string>,
+  wert: (id: string) => number,
+) => {
   const uebrig = alleFelder(felder).filter((f) => !belegteFelder.has(f.id));
 
   const zusatz = wb.addWorksheet(BLATT_ZUSATZ);
@@ -168,65 +229,111 @@ export const erzeugeVorlagenDatei = async (
     const summe = (felder[s] || []).reduce((a, f) => a + wert(f.id), 0);
     zusatz.addRow([bereichsNamen[s], summe]);
   });
+  return zusatz;
+};
 
-  // --- Blatt 3: Schichten der Stempeluhr ---------------------------------
-  const schichten = (Array.isArray(data.timeLogs) ? [...data.timeLogs] : []).sort(
-    (a, b) => a.date.localeCompare(b.date)
-  );
+export const erzeugeVorlagenDatei = async (
+  data: ReportData | HistoryRecord,
+  appFields: SectionsConfig,
+  umfang: BlattUmfang,
+  /**
+   * Blatt 3 weglassen, obwohl `umfang` "alle" ist. Genau ein Fall: Die
+   * Stempeluhr ist abgeschaltet -- dann ist ein Schichtenblatt (leer oder
+   * mit Altbestand) keine Angabe, sondern ein Missverstaendnis.
+   */
+  mitZeitenblatt: boolean = true,
+): Promise<Uint8Array> => {
+  const ExcelJS = (await import("exceljs")).default;
 
-  const zeiten = wb.addWorksheet(BLATT_ZEITEN);
-  zeiten.columns = [
-    { width: 12 }, // Datum
-    { width: 10 }, // Kommen
-    { width: 10 }, // Gehen
-    { width: 16 }, // Pause
-    { width: 16 }, // Netto
-    { width: 14 }, // Büro
-    { width: 20 }, // Außendienst
-    { width: 42 }, // Kommentar
-  ];
-  const titel = zeiten.addRow(["Arbeitszeiten aus RV Mobil"]);
-  titel.font = { bold: true, size: 13 };
-  zeiten.addRow([`Monat: ${monatFuerVorlage(data.month)}`]);
-  zeiten.addRow([`Name: ${data.name || ""}`]);
-  zeiten.addRow([]);
+  // Archivierte Monate bringen ihren eigenen Feldaufbau mit.
+  const felder =
+    "fieldsSnapshot" in data && data.fieldsSnapshot ? data.fieldsSnapshot : appFields;
 
-  if (schichten.length === 0) {
-    zeiten.addRow(["Keine Schichten erfasst."]);
-  } else {
-    const kopf = zeiten.addRow([
-      "Datum",
-      "Kommen",
-      "Gehen",
-      "Abzug Pause (Min)",
-      "Netto-Stunden (h)",
-      "Anteil Büro (h)",
-      "Anteil Außendienst (h)",
-      "Kommentar / Ort",
-    ]);
-    kopf.font = { bold: true };
-    const ersteZeile = zeiten.rowCount + 1;
-    schichten.forEach((s) => {
-      const [j, m, t] = s.date.split("-");
-      zeiten.addRow([
-        j && m && t ? `${t}.${m}.${j}` : s.date,
-        s.clockIn,
-        s.clockOut,
-        s.breakMinutes,
-        s.duration,
-        s.officeHours,
-        s.fieldHours,
-        s.notes || "",
-      ]);
-    });
-    const letzteZeile = zeiten.rowCount;
-    const summe = zeiten.addRow(["GESAMT", "", "", "", null, null, null, ""]);
-    summe.font = { bold: true };
-    summe.getCell(5).value = { formula: `SUM(E${ersteZeile}:E${letzteZeile})` };
-    summe.getCell(6).value = { formula: `SUM(F${ersteZeile}:F${letzteZeile})` };
-    summe.getCell(7).value = { formula: `SUM(G${ersteZeile}:G${letzteZeile})` };
+  const wert = (id: string): number => {
+    const v = (data.values || {})[id];
+    return typeof v === "number" ? v : 0;
+  };
+
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(base64ZuBytes(VORLAGE_MONATSINFO_BASE64).buffer as ArrayBuffer);
+
+  const ws = wb.getWorksheet(VORLAGE_BLATTNAME);
+  if (!ws) {
+    // Kann nur passieren, wenn die eingebettete Vorlage ausgetauscht wurde und
+    // dabei der Blattname abgewichen ist. Lieber laut scheitern als still ein
+    // leeres Blatt ausliefern.
+    throw new Error(`Vorlage beschädigt: Blatt "${VORLAGE_BLATTNAME}" fehlt.`);
+  }
+
+  // --- Blatt 1: die Vorlage befuellen -----------------------------------
+  ws.getCell(ZELLE_MONAT).value = monatFuerVorlage(data.month);
+  ws.getCell(ZELLE_NAME).value = data.name || "";
+
+  const belegteFelder = new Set<string>();
+  for (const [id, zelle] of Object.entries(FELD_ZU_ZELLE)) {
+    ws.getCell(zelle).value = wert(id);
+    belegteFelder.add(id);
+  }
+
+  // Der Kommentarbereich ist B28:D28 verbunden -- der Wert gehoert in die
+  // linke obere Zelle, sonst zeigt Excel ihn nicht an.
+  ws.getCell(ZELLE_KOMMENTAR).value = data.notes || "";
+
+  if (umfang === "alle") {
+    baueZusatzBlatt(wb, data, felder, belegteFelder, wert);
+    if (mitZeitenblatt) {
+      baueZeitenBlatt(wb, data, {
+        blattName: BLATT_ZEITEN,
+        kopfZeilen: [
+          ["Arbeitszeiten aus RV Mobil"],
+          [`Monat: ${monatFuerVorlage(data.month)}`],
+          [`Name: ${data.name || ""}`],
+          [],
+        ],
+        kommentarSpalte: "Kommentar / Ort",
+        breiten: [12, 10, 10, 16, 16, 14, 20, 42],
+      });
+    }
   }
 
   const puffer = await wb.xlsx.writeBuffer();
   return new Uint8Array(puffer as ArrayBuffer);
+};
+
+/**
+ * Der separate Stundenzettel -- eine Datei, ein Blatt, keine Vorlage.
+ *
+ * Lag bis 0.9.32 in utils/excelUtils.ts und lief ueber SheetJS. Gibt `null`
+ * zurueck, wenn es nichts zu berichten gibt; das ist kein Fehler, und die
+ * Aufrufer melden es als "Keine Zeiterfassungsdaten vorhanden".
+ */
+export const erzeugeZeitenDatei = async (
+  data: ReportData | HistoryRecord,
+  istArchiv: boolean = false,
+) => {
+  const monthVal = data.month || "Monat";
+  const nameVal = data.name || "Mitarbeitende_r";
+
+  const schichten = Array.isArray(data.timeLogs) ? data.timeLogs : [];
+  if (schichten.length === 0) return null;
+
+  const ExcelJS = (await import("exceljs")).default;
+  const wb = new ExcelJS.Workbook();
+
+  baueZeitenBlatt(wb, data, {
+    blattName: "Arbeitszeiten",
+    kopfZeilen: [
+      [`ARBEITSZEITERFASSUNG & STEMPELUHR - RV AUßENDIENST${istArchiv ? " (HISTORISCH)" : ""}`],
+      [`Erstellt mit der barrierefreien RV Mobil App${istArchiv ? " (Archiv)" : ""}`],
+      [],
+      ["Mitarbeiter/in:", nameVal],
+      ["Berichtsmonat:", formatMonthGerman(monthVal)],
+      [],
+    ],
+    kommentarSpalte: "Kommentar / Ort / Besuchte Schule",
+    breiten: [12, 10, 10, 18, 18, 16, 22, 45],
+  });
+
+  const puffer = await wb.xlsx.writeBuffer();
+  return { wbout: new Uint8Array(puffer as ArrayBuffer), monthVal, nameVal };
 };

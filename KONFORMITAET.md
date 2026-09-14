@@ -432,6 +432,28 @@ verbindlicher Einsatz typischerweise die Mitbestimmung nach § 87 BetrVG. Auch
 das ist keine Rechtsauskunft, sondern ein Hinweis auf einen Beteiligten, der
 vor einem Rollout gefragt sein will.
 
+**Nachtrag 2026-09-14 (0.9.33), nicht Teil der obigen Erhebung:** Die Frage,
+ob die Stempeluhr deshalb entfallen sollte, wurde gestellt und verneint — mit
+einer Begründung, die hier hergehört, weil sie den Umfang der Datenweitergabe
+betrifft: Die Firmenvorlage verlangt Arbeitstage (D18) und Bürostunden (D19)
+selbst; diese Zahlen gingen an die Vertriebsleitung, bevor es diese App gab.
+Neu war allein das dritte Tabellenblatt mit den **einzelnen Schichten**
+(Kommen, Gehen, Pause, Notiz).
+
+Seit 0.9.33 fragt die App vor jedem Senden, welche Blätter mitgehen, mit „Nur
+Vorlage senden" als vorgeschlagener Antwort; die Stempeluhr lässt sich
+vollständig abschalten, und erfasste Schichten lassen sich löschen, ohne
+bereits gemeldete Zählerstände zu verändern. Wer die Mitbestimmungsfrage
+prüft, prüft damit eine Anwendung, in der der Beschäftigte entscheidet, was
+den Betrieb verlässt.
+
+**Dieser Nachtrag bewertet keine Erfolgskriterien neu.** Die Tabellen oben
+gelten unverändert für 0.9.32. Die drei Oberflächenzustände, die 0.9.33
+hinzufügt (zwei Blattwahlen, das Löschen der Schichten), laufen im
+Prüfnetz mit — Geometrie bei zwei Schriftgrößen, axe-core, Kontrast in allen
+vier Farbschemata, Fokusfalle und Tastaturlauf — aber ein neu erhobener
+Bericht ist das nicht.
+
 ---
 
 ## 8. Fortschreibung

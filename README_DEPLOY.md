@@ -1,41 +1,84 @@
-# 🚀 Anleitung: PWA auf GitHub Pages bereitstellen
+# Bereitstellung auf GitHub Pages
 
-Dieses PWA-Projekt wurde so vorkonfiguriert, dass es vollautomatisch oder manuell per Terminal auf **GitHub Pages** bereitgestellt werden kann.
-
----
-
-## Methode 1: Vollautomatisch per GitHub Actions (Empfohlen)
-
-Es wurde ein automatischer Workflow unter `.github/workflows/deploy.yml` eingerichtet. Sobald du dein Projekt auf GitHub hochlädst, passiert die Bereitstellung von ganz allein!
-
-### Einmalige Aktivierung auf GitHub:
-1. Erstelle ein neues Repository auf GitHub und pushe deinen Code dorthin.
-2. Gehe in deinem GitHub-Repository auf **Settings** (Einstellungen) ➡️ **Pages**.
-3. Wähle unter **Build and deployment** ➡️ **Source** die Option **Deploy from a branch** aus.
-4. Gehe in deinem GitHub-Repository auf **Settings** ➡️ **Actions** ➡️ **General**.
-5. Scrolle ganz nach unten zu **Workflow permissions** und stelle sicher, dass **"Read and write permissions"** ausgewählt ist (damit die Action die fertig gebaute Seite hochladen darf).
-6. Wenn du nun Code auf den `main`- oder `master`-Branch pushst, baut GitHub deine App automatisch und erstellt einen neuen Branch namens `gh-pages`.
-7. Wähle auf der **Settings ➡️ Pages**-Seite nun den Branch `gh-pages` und den Ordner `/ (root)` aus und klicke auf **Save**.
+Es gibt **genau einen** Weg, diese App zu veröffentlichen: einen Push auf
+`main`. Alles andere in dieser Datei beschreibt nur, was dabei passiert.
 
 ---
 
-## Methode 2: Manuell über dein lokales Terminal
+## Der einzige Weg: Push auf `main`
 
-Wenn du die App lieber direkt von deinem Computer aus hochladen möchtest, kannst du das mit nur einem Befehl tun:
+`.github/workflows/deploy.yml` läuft bei jedem Push auf `main` (oder `master`)
+und veröffentlicht über `actions/deploy-pages`. Es gibt **keinen
+`gh-pages`-Branch** und **kein `npm run deploy`** — das Skript ist mit 0.9.20
+entfernt worden, zusammen mit der `gh-pages`-Abhängigkeit. Es veröffentlichte
+auf einen Branch, der seit 0.9.2 nichts mehr entschieden hat, und las sich wie
+der echte Weg. Wer es sucht, sucht eine Falle.
 
-1. Öffne dein Terminal im Projektordner.
-2. Installiere die Abhängigkeiten (falls noch nicht geschehen):
-   ```bash
-   npm install
-   ```
-3. Führe den vordefinierten Bereitstellungs-Befehl aus:
-   ```bash
-   npm run deploy
-   ```
-   *Dieser Befehl baut das Projekt automatisch neu (`npm run build`) und lädt das Ergebnis (`dist`-Ordner) direkt auf den `gh-pages`-Branch deines verknüpften GitHub-Repositories hoch.*
+### Einmalige Einrichtung auf GitHub
+
+1. **Settings → Pages → Build and deployment → Source:** **GitHub Actions**
+   auswählen (nicht „Deploy from a branch").
+2. Mehr ist nicht nötig. Die nötigen Rechte stehen im Workflow selbst
+   (`permissions: pages: write`, `id-token: write`).
 
 ---
 
-## 🛠️ Technische Details zur PWA-Kompatibilität
-* **Relative Pfade (`base: './'`)**: In `vite.config.ts` wurde die Basisadresse auf `./` eingestellt. Dadurch funktioniert die App auf jeder beliebigen GitHub-URL (z. B. `https://dein-benutzername.github.io/dein-projektname/`), ohne dass Assets verloren gehen.
-* **Offline-Unterstützung**: Da es sich um eine PWA (Progressive Web App) handelt, wird deine Anwendung auf Smartphones und Tablets (iOS/Android) installierbar sein, sobald sie über HTTPS auf GitHub Pages bereitgestellt wurde!
+## Was vor der Veröffentlichung geprüft wird
+
+Der Workflow prüft, **bevor** er baut. Schlägt ein Schritt fehl, bricht der Job
+ab und die bisherige Fassung bleibt online:
+
+| Schritt | Befehl |
+|---|---|
+| Typen | `npm run lint` |
+| Rechenkerne und Textkodierung | `npm run check` |
+| Oberfläche und Barrierefreiheit | `npm run check:ui` (Chromium + WebKit) |
+| Bekannte Sicherheitslücken | `npm audit --omit=dev` (nur Bericht, kein Abbruch) |
+
+`npm ci` statt `npm install`: Damit entspricht das ausgelieferte Bundle exakt
+der `package-lock.json`. Mit `npm install` erzeugten zwei aufeinanderfolgende
+Läufe bei unverändertem Quelltext unterschiedliche Bundles (2026-08-02
+beobachtet).
+
+---
+
+## Nach dem Push: nachsehen, nicht annehmen
+
+Zwei Dinge sind hier schon schiefgegangen, beide unbemerkt:
+
+- **Ein Push erzeugt nicht zwingend einen Lauf.** Am 2026-08-08 meldete `git
+  push` Erfolg, und für die Fassung erschien nie ein Workflow-Lauf.
+- **Ein Lauf ist nicht zwingend erfolgreich.** Am 2026-09-02 liefen zwei
+  Veröffentlichungen auf `failure`, und die Produktion stand fünf Tage auf
+  einem älteren Stand, ohne dass es jemandem auffiel.
+
+Deshalb: **Lauf UND Ergebnis prüfen.** Ohne `gh`-CLI über die öffentliche API —
+höchstens alle 30 Sekunden abfragen, unangemeldet sind 60 Anfragen pro Stunde
+erlaubt. Fehlt der Schlüssel `workflow_runs` in der Antwort, ist das ein
+Fehler und **kein leeres Ergebnis**:
+
+```bash
+curl -s "https://api.github.com/repos/nichtseher/RVMonatsreport/actions/runs?per_page=5"
+curl -s "https://api.github.com/repos/nichtseher/RVMonatsreport/deployments?per_page=4"
+```
+
+Die Gegenprobe braucht gar kein Kontingent und misst das, worauf es ankommt —
+was tatsächlich ausgeliefert wird:
+
+```bash
+curl -s https://nichtseher.github.io/RVMonatsreport/ | grep -o 'assets/index-[A-Za-z0-9._-]*\.js'
+curl -s https://nichtseher.github.io/RVMonatsreport/assets/index-<hash>.js | grep -c '<Kennzeichen>'
+```
+
+Ein geänderter Bundle-Name belegt, dass überhaupt neu gebaut wurde; ein
+Kennzeichen im Bundle belegt, dass es der gemeinte Build ist.
+
+---
+
+## Technische Details zur PWA
+
+- **Relative Pfade (`base: './'`)** in `vite.config.ts`: Die App läuft damit
+  unter jeder Unteradresse, ohne dass Assets verloren gehen.
+- **Service Worker** (`public/sw.js`): handgeschrieben, network-first,
+  ausschließlich eigene Herkunft. Kein `vite-plugin-pwa`.
+- **Offline-fähig und installierbar**, sobald sie über HTTPS ausgeliefert wird.

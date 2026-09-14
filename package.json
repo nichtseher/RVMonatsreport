@@ -1,7 +1,7 @@
 {
   "name": "rv-monatsreport",
   "private": true,
-  "version": "0.9.32",
+  "version": "0.9.33",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -26,8 +26,7 @@
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-swipeable": "^7.0.2",
-    "vite": "^6.2.3",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+    "vite": "^6.2.3"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

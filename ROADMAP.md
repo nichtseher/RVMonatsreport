@@ -1047,6 +1047,82 @@ reinen Prüfungen zu `verrechneSchicht` abgedeckt, über die Oberfläche **nicht
 
 ---
 
+## 0.9.33 — Was den Betrieb verlässt, entscheidet der Nutzer — ERLEDIGT (2026-09-14)
+
+### Die Blattwahl
+
+Vor **jedem** Senden fragt die App, welche Tabellenblätter mitgehen. „Nur
+Vorlage senden" ist die vorgeschlagene Antwort; „Alle drei Blätter" hängt
+Zusatzangaben und Schichten an. Auf beiden Wegen — Formular und Direkt-Export
+aus dem Archiv; letzterer war bis hierher der einzige Ausgang ganz ohne
+Rückfrage.
+
+Bewusst **keine gespeicherte Einstellung**: Wer das einmal einstellt, weiß beim
+nächsten Mal nicht mehr, was gerade rausgeht. Der Preis ist ein Dialog pro
+Sendung, der Gewinn ist null neue Persistenz — kein Schlüssel, keine Änderung
+an `syncSchema` oder `merge`.
+
+`umfang` hat **keinen Vorgabewert**. Ein stiller Standard, der alles
+mitschickt, wäre genau der Fehler, den die Wahl verhindern soll.
+
+### Geprüft und verworfen: den Ausbau der Stempeluhr
+
+Der Projektinhaber hat ihn erwogen (Betriebsrat). Gegen den Ausbau spricht eine
+Zelle: Die Vorlage verlangt `tage_arbeit` (D18) und `std_buero` (D19) selbst.
+Der Ausbau (gezählt: ~1.600 gelöschte, ~2.400 berührte Zeilen) nähme das
+Werkzeug weg, nicht den Datenfluss, und stellte das Problem wieder her, gegen
+das die App angetreten ist. Einzelheiten in offener Frage 4.
+
+### Gemessene Defekte
+
+- **Das Jahreskonto war unerreichbar, sobald die Stempeluhr abgeschaltet war.**
+  `activeTab = "carryover"` wurde an genau einer Stelle gesetzt — als Prop in
+  `TimeModal`, das nur bei `activeTab === "time"` rendert. Wieder ein
+  **Zustand** einer Ansicht, nicht eine Ansicht: die Lücke, die dieses Projekt
+  jetzt zum neunten Mal getroffen hat. Eigener Einstieg unter „Optionen",
+  Rückweg dorthin, wo geöffnet wurde.
+- **`vite.config.ts:24` trug ein Mojibake, das die eigene Kodierungsprüfung
+  nicht sehen konnte** — ein Gedankenstrich, dessen UTF-8-Bytes einzeln als
+  **Latin-1** gelesen worden waren (U+00E2, U+0080, U+0094). Die Prüfung suchte
+  nach der **CP1252**-Signatur `â€` (U+20AC) und durchsuchte ohnehin nur `src/`.
+  Beides behoben, mit Gegenprobe: Artefakt wieder eingesetzt → gemeldet.
+- **Ein Aufräumcode im Prüfnetz griff seit jeher ins Leere** (falscher
+  `localStorage`-Schlüssel). Folgenlos nur, weil Playwright frische Kontexte
+  startet.
+- **`README_DEPLOY.md` beschrieb zwei Wege, die es beide nicht gibt** —
+  `npm run deploy` und einen `gh-pages`-Branch.
+- **Der Zähler an der neuen Löschtaste zählte doppelt** (laufender Monat liegt
+  zugleich im Archiv). Gefunden von der Messung, nicht vom Lesen.
+
+### Eine Bibliothek weniger
+
+SheetJS ist raus. Die Schichttabelle stand zweimal im Quelltext, in zwei
+Bibliotheken (zusammen 1,44 MB); sie ist jetzt eine Funktion. Nachgemessen
+gegen die alte Ausgabe: **0 abweichende Zeilen von 8**, Formular wie Archiv.
+
+Nebenbefund, der wichtiger ist als die 500 KB: `xlsx` kam als Tarball von
+`cdn.sheetjs.com` und lag damit **außerhalb der npm-Registry** — die eine
+Abhängigkeit, die `npm audit` strukturell nicht sehen konnte. Die fünf
+`audit`-Meldungen bleiben davon unberührt; sie stammen aus `exceljs → uuid`
+(nur per Major-Rückstufung zu beheben, nicht akzeptabel) und `express → qs`
+(nur der lokale Dev-Server).
+
+### Benannt, nicht geändert
+
+`tsc --noUnusedLocals --noUnusedParameters` meldet **56 ungenutzte
+Deklarationen** in 18 Dateien. Darunter `closeButtonRef` in `TimeModal.tsx:47`
+— die Ansicht setzt beim Öffnen **keinen** Fokus. Acht Stellen sind von Hand
+behoben; den Schalter als Dauertor hat der Projektinhaber für diese Fassung
+abgewählt, ebenso das Nachladen der elf eager geladenen Ansichten (~4.850
+Zeilen im 573-KB-Startbündel) und die Entzerrung von `App.tsx` (3.264 Zeilen,
+davon 1.735 JSX in einem `return`; die vier Bereichsblöcke sind ~200 Zeilen
+fast gleiches JSX, die Navigationsliste steht zweimal).
+
+Diese drei bleiben die nächsten Hebel, wenn „schlank und wendig" wieder auf der
+Tagesordnung steht.
+
+---
+
 ## 0.9.32 — Die Rückfragen — ERLEDIGT (2026-09-12)
 
 Achter Fall derselben Klasse: Geprüft wird, was ein `?tab=` oder ein Klick
@@ -1267,6 +1343,30 @@ Ab hier hängt alles an Menschen und Geräten. Kein Werkzeug ersetzt das.
    typischerweise die Mitbestimmung nach § 87 BetrVG. Das ist keine
    Rechtsauskunft und keine technische Frage — aber es ist die Sorte Punkt, die
    einen Rollout kurz vor dem Start kippt, wenn ihn vorher niemand stellt.
+
+   **Stand 2026-09-14 (0.9.33): technisch entschärft, rechtlich weiter offen.**
+   Der Projektinhaber hat die Frage aufgeworfen, ob die Stempeluhr deshalb
+   besser entfiele. Die Antwort steht in der Vorlage selbst: Sie verlangt
+   `tage_arbeit` (D18) und `std_buero` (D19) — diese Zahlen gingen schon an die
+   Vertriebsleitung, bevor es diese App gab. Die Stempeluhr erzeugt sie nicht
+   zusätzlich, sie hilft nur beim richtigen Ausfüllen. Ein Ausbau (gezählt:
+   ~1.600 gelöschte, ~2.400 berührte Zeilen) nähme das Werkzeug weg, nicht den
+   Datenfluss.
+
+   Neu — und im Sinn von § 87 Abs. 1 Nr. 6 überhaupt erst heikel — ist die
+   **einzelne Schicht** mit Kommen, Gehen, Pause und Notiz. Die erreichte die
+   Vertriebsleitung über genau einen Weg: Blatt 3 des Berichts. Seit 0.9.33
+   fragt die App vor **jedem** Senden, welche Blätter mitgehen, mit „Nur
+   Vorlage senden" als vorgeschlagener Antwort; die Stempeluhr lässt sich
+   vollständig abschalten (und „aus" heißt seit 0.9.33 wirklich aus), und
+   erfasste Schichten lassen sich löschen, ohne gemeldete Zählerstände zu
+   verändern.
+
+   Damit entscheidet der Beschäftigte, was den Betrieb verlässt. **Das ersetzt
+   keine Mitbestimmungsprüfung** — ob die App als technische Einrichtung im
+   Sinn der Vorschrift gilt, ist eine Rechtsfrage und gehört nicht hierher.
+   Verschoben ist nur, wer entscheidet, und das ist der Punkt, an dem eine
+   solche Prüfung sinnvollerweise ansetzt.
 5. **Wer beobachtet die Excel-Vorlage?** Sie ist mit Stand 01.2026 in die App
    eingebettet. Gibt die Firma eine neue Fassung heraus, produziert die App
    weiter das alte Formular, und es fällt niemandem auf.
