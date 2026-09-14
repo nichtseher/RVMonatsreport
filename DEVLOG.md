@@ -10,6 +10,101 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-14 — v0.9.35: Ein Wächter für die Vorlage, und ein roter Deploy meldet sich selbst
+
+Zwei Empfehlungen aus der Bestandsaufnahme, vom Projektinhaber zur Umsetzung
+ausgewählt.
+
+### Die eingebettete Vorlage hatte keinen Wächter
+
+```
+src/utils/vorlageMonatsinfo.ts:4
+  Herkunft: 2600_apa_pd.xls (Stand 01.2026), von der Vertriebsleitung
+```
+
+Das war die **einzige** Stelle, an der stand, welche Fassung des
+Firmenformulars in der App steckt — ein Quelltextkommentar. Weder die App noch
+die erzeugte Datei nannte sie.
+
+Das wiegt schwerer als es klingt, weil die gesamte Produktzusage lautet
+„Blatt 1 **ist** die Vorlage". Gibt die Firma eine neue heraus, produziert die
+App weiter das Januar-Formular, und die Vertriebsleitung bekommt eine Datei,
+die aussieht wie ihr Formular und es nicht mehr ist. Das fällt niemandem auf,
+und wenn, dann am Monatsende.
+
+Die Fassung steht jetzt an genau einer Stelle (`utils/vorlageStand.ts`) und
+erscheint von dort aus:
+
+- in den **Dokumenteigenschaften** jeder erzeugten Datei — dem einzigen Ort,
+  der unabhängig vom Blattumfang existiert. Gerade der Weg „nur Vorlage", den
+  die Vertriebsleitung regelmäßig bekommt, hätte sonst keine Angabe getragen.
+- sichtbar auf **Blatt 2**, sofern mitgesendet
+- in der **Rückfrage vor dem Senden** („Fassung 01.2026") — dem Moment, in dem
+  die Entscheidung fällt
+- in der **Hilfe**, mit der Bitte, sich bei einem neuen Formular zu melden
+
+Blatt 1 bleibt unangetastet. Das ist die Zusage, und ein Vermerk in einer
+nicht vorgesehenen Zelle wäre ihr Bruch gewesen.
+
+`scripts/checks/vorlage.ts` sichert es ab (Prüfung 172): Beide Blattumfänge
+müssen die Fassung in Betreff und Beschreibung tragen, und auf Blatt 2 muss sie
+lesbar stehen.
+
+### Zwei Fehlgriffe auf dem Weg dorthin, beide gemessen statt geraten
+
+**Erstens: Die Konstante neben die Vorlage zu legen zog 16 KB ins
+Startbündel.** Ein Import aus `vorlageMonatsinfo.ts` brachte die
+base64-Vorlage mit — 581.777 → 598.106 Bytes — und nahm sie zugleich aus dem
+Export-Chunk heraus. Damit hätte sie jeder beim Start geladen statt nur, wer
+exportiert. Gemessen, nicht vermutet: Suche nach der PK-Signatur `UEsDB` im
+Startbündel.
+
+**Zweitens: `version.ts` war der falsche Ausweg.** Die Datei liest
+`__APP_VERSION__`, das Vite erst zur Bauzeit einsetzt; die Prüfungen laufen
+unter `tsx` ohne das und brachen mit `ReferenceError` ab. Deshalb eine eigene
+kleine Datei ohne Bauzeit-Magie.
+
+Endstand: **+584 Bytes** im Startbündel für das ganze Merkmal, Vorlage wieder
+im Export-Chunk.
+
+### Ein roter Deploy meldet sich jetzt selbst
+
+Zweimal unbemerkt geblieben: am 2026-09-02 fünf Tage lang (Produktion stand auf
+einem älteren Stand), am 2026-09-12 immerhin 22 Minuten. Beide Male war nicht
+der Fehlschlag das Problem, sondern dass ihn niemand sah.
+
+**Was hier nicht ging:** Die Benachrichtigungseinstellung liegt im GitHub-Konto
+des Projektinhabers, nicht im Projekt. Von hier aus nicht erreichbar.
+
+**Was stattdessen gebaut ist:** Der Workflow legt bei Fehlschlag eine Meldung im
+Repository an (`if: failure()`, `actions/github-script`, Rechte um
+`issues: write` erweitert). Über eine Meldung benachrichtigt GitHub die
+Beobachter des Repositorys von sich aus. Läuft bereits eine offene Meldung mit
+der Kennzeichnung `deploy-fehler`, bekommt sie einen Kommentar statt einer
+zweiten Meldung — bei mehreren Fehlschlägen hintereinander wäre sonst der
+Posteingang das Problem.
+
+**Was daran ungeprüft bleibt, und das ist der ehrliche Teil:** Der Pfad feuert
+nur bei einem echten Fehlschlag. Geprüft ist, dass die YAML keine Tabulatoren
+enthält und sich strukturell liest, dass das eingebettete Skript
+**JavaScript-syntaktisch gültig** ist (`node --check` gegen den extrahierten
+Block) und dass die drei benutzten Namen die tatsächlichen Octokit-Methoden
+sind. Ob GitHub die Meldung dann wirklich anlegt, zeigt erst der erste rote
+Deploy — oder ein absichtlich herbeigeführter. Das wäre gefahrlos, weil ein
+fehlgeschlagenes Tor gerade bedeutet, dass **nichts** veröffentlicht wird; es
+kostet einen roten Lauf in der Historie und rund 20 Minuten.
+
+### Prüfstand
+
+| | 0.9.34 | 0.9.35 |
+|---|---|---|
+| `lint` | grün | grün |
+| `check` | 171 | **172** |
+| `check:ui` | 472 | 472 |
+| Startbündel | 581.777 B | **582.361 B** |
+
+---
+
 ## 2026-09-14 — v0.9.34: Die Sicherheitsvorgaben kamen nie an, und der Hash war falsch
 
 Anlass war die Frage des Projektinhabers, ob die Codebasis „durchgeprüft und

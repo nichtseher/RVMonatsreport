@@ -42,6 +42,18 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="space-y-6">
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Activity className="w-5 h-5 text-[var(--accent)]" />
+            <span>Version 0.9.35: Jede Datei sagt jetzt, welches Formular drinsteckt</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Die App bringt das Formular der Vertriebsleitung in einer bestimmten Fassung mit – und sagt Ihnen jetzt, in welcher.</strong> Sie steht vor dem Senden in der Rückfrage, in der Hilfe, und in jeder erzeugten Datei: in den Dateieigenschaften und, wenn Sie alle Blätter mitschicken, sichtbar auf dem Blatt <strong>Zusatzangaben</strong>.</li>
+            <li><strong>Warum das wichtig ist:</strong> Gibt die Vertriebsleitung ein <em>neues</em> Formular heraus, erkennt die App das nicht von selbst – sie würde weiter das alte ausfüllen, und die Datei sähe aus wie immer. Jetzt steht die Fassung schwarz auf weiß da, und es fällt auf. <strong>Bitte melden Sie sich, wenn Sie ein neues Formular bekommen.</strong></li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.34: Schutzvorgaben, die vorher wirkungslos waren</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>

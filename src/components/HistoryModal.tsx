@@ -19,6 +19,7 @@ import { triggerFileDownload } from "../utils/excelUtils";
 import { formatMonthGerman } from "../utils/dateUtils";
 import { ConfirmRequest } from "./ConfirmDialog";
 import type { BlattUmfang } from "../utils/vorlageExport";
+import { VORLAGE_STAND } from "../utils/vorlageStand";
 
 interface HistoryModalProps {
   appFields: SectionsConfig;
@@ -129,8 +130,8 @@ export default function HistoryModal({
     setConfirmRequest({
       title: "Was soll gesendet werden?",
       message: stempeluhrAktiv
-        ? "Blatt 1 ist das gewohnte Formular der Vertriebsleitung. Auf Wunsch kommen zwei weitere Blätter dazu: Ihre Zusatzangaben und Ihre einzelnen Schichten. Beides braucht die Vertriebsleitung nicht."
-        : "Blatt 1 ist das gewohnte Formular der Vertriebsleitung. Auf Wunsch kommt ein Blatt mit Ihren Zusatzangaben dazu, für die es im Formular keine Zeile gibt.",
+        ? `Blatt 1 ist das gewohnte Formular der Vertriebsleitung (Fassung ${VORLAGE_STAND}). Auf Wunsch kommen zwei weitere Blätter dazu: Ihre Zusatzangaben und Ihre einzelnen Schichten. Beides braucht die Vertriebsleitung nicht.`
+        : `Blatt 1 ist das gewohnte Formular der Vertriebsleitung (Fassung ${VORLAGE_STAND}). Auf Wunsch kommt ein Blatt mit Ihren Zusatzangaben dazu, für die es im Formular keine Zeile gibt.`,
       confirmLabel: "Nur Vorlage senden",
       cancelLabel: "Abbrechen",
       alternative: {

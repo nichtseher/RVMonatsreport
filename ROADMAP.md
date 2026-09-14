@@ -689,11 +689,13 @@ dieser Rechner nicht. Mit der Wartezeit von 40 ms je Schritt ist er behoben.
 Status `failure`. Beide Sätze stehen jetzt dort, samt der beiden
 API-Aufrufe, die die Frage „was ist live?" wirklich beantworten.
 
-Offene Frage an den Projektinhaber: Ein roter Deploy fällt derzeit niemandem
-auf. Eine Benachrichtigung bei fehlgeschlagenem Workflow (GitHub schickt sie
-auf Wunsch per E-Mail an den Commit-Autor) wäre der billigste Weg, das nicht
-wieder fünf Tage laufen zu lassen — sie ist offenbar aus, sonst wäre es
-aufgefallen.
+~~Offene Frage an den Projektinhaber: Ein roter Deploy fällt derzeit niemandem
+auf.~~ **Behoben mit 0.9.35**, allerdings anders als hier vorgeschlagen: Die
+Benachrichtigungseinstellung liegt im GitHub-KONTO und ist aus dem Projekt
+heraus nicht erreichbar. Der Workflow legt stattdessen bei Fehlschlag selbst
+eine Meldung im Repository an; darüber benachrichtigt GitHub die Beobachter
+von sich aus. Der Auslöser selbst ist noch ungeprüft — er feuert erst bei
+einem echten Fehlschlag. Einzelheiten im Abschnitt 0.9.35.
 
 ### Zerbrechlich, gemessen, benannt
 
@@ -1054,6 +1056,52 @@ reinen Prüfungen zu `verrechneSchicht` abgedeckt, über die Oberfläche **nicht
 > fachfremdes Zählerfeld bleibt unberührt. Als Prüfung im Gate festgehalten,
 > weil zwischen der reinen Funktion und dem Bericht der Dialog, der Hook, der
 > Zeitstempel und der Schreibvorgang nach IndexedDB liegen.
+
+---
+
+## 0.9.35 — Ein Wächter für die Vorlage, und ein roter Deploy meldet sich — ERLEDIGT (2026-09-14)
+
+Zwei Empfehlungen aus der Bestandsaufnahme, vom Projektinhaber ausgewählt.
+
+### Die Fassung des Formulars steht jetzt in der Datei
+
+Bis hierher stand sie **ausschließlich** in einem Quelltextkommentar
+(`vorlageMonatsinfo.ts:4`). Das traf die Kernzusage des Produkts: Gibt die Firma
+ein neues Formular heraus, produziert die App weiter das alte, und die Datei
+sieht aus wie das gewohnte Formular.
+
+Eine Quelle (`utils/vorlageStand.ts`), und von dort aus in die
+Dokumenteigenschaften **jeder** erzeugten Datei (auch der mit nur Blatt 1 —
+das ist der Weg, den die Vertriebsleitung regelmäßig bekommt), sichtbar auf
+Blatt 2, in die Rückfrage vor dem Senden und in die Hilfe. Blatt 1 bleibt
+unangetastet; ein Vermerk in einer nicht vorgesehenen Zelle wäre der Bruch der
+Zusage gewesen. Prüfung 172 sichert es ab.
+
+**Zwei Fehlgriffe auf dem Weg, beide gemessen:** Die Konstante neben die
+Vorlage zu legen zog die 16-KB-base64-Vorlage ins Startbündel (581.777 →
+598.106 Bytes) und nahm sie aus dem Export-Chunk. Und `version.ts` war der
+falsche Ausweg, weil es `__APP_VERSION__` liest, das es unter `tsx` nicht gibt.
+Endstand +584 Bytes.
+
+**Was das NICHT leistet:** Die App erkennt ein neues Formular weiterhin nicht
+von selbst — sie kann es nicht, sie hat keine Verbindung nach außen. Sie macht
+nur sichtbar, welche Fassung sie benutzt. Wer sie austauscht, ändert
+`VORLAGE_STAND` mit. Offene Frage 5 ist damit **entschärft, nicht beantwortet**.
+
+### Ein roter Deploy meldet sich selbst
+
+Die Benachrichtigungseinstellung liegt im GitHub-Konto und ist von hier aus
+nicht erreichbar. Stattdessen legt der Workflow bei Fehlschlag eine Meldung im
+Repository an (`if: failure()`); über Meldungen benachrichtigt GitHub die
+Beobachter von sich aus. Eine bereits offene Meldung bekommt einen Kommentar
+statt einer zweiten.
+
+**Ungeprüft bleibt der Auslöser selbst.** Geprüft sind YAML-Struktur,
+JavaScript-Syntax des eingebetteten Skripts (`node --check`) und die Namen der
+Octokit-Methoden. Ob GitHub die Meldung anlegt, zeigt erst der erste rote
+Deploy. Ein absichtlicher Test wäre gefahrlos — ein fehlgeschlagenes Tor
+bedeutet gerade, dass nichts veröffentlicht wird — und kostet einen roten Lauf
+in der Historie.
 
 ---
 
@@ -1449,7 +1497,14 @@ Ab hier hängt alles an Menschen und Geräten. Kein Werkzeug ersetzt das.
    solche Prüfung sinnvollerweise ansetzt.
 5. **Wer beobachtet die Excel-Vorlage?** Sie ist mit Stand 01.2026 in die App
    eingebettet. Gibt die Firma eine neue Fassung heraus, produziert die App
-   weiter das alte Formular, und es fällt niemandem auf.
+   weiter das alte Formular.
+
+   **Stand 2026-09-14 (0.9.35): entschärft, nicht beantwortet.** Die Fassung
+   steht jetzt in jeder erzeugten Datei, in der Rückfrage vor dem Senden und
+   in der Hilfe — „es fällt niemandem auf" stimmt damit nicht mehr. Erkennen
+   kann die App ein neues Formular weiterhin nicht; sie hat keine Verbindung
+   nach außen und soll keine haben. Die Frage, WER die Vorlage beobachtet,
+   bleibt eine Frage an Menschen.
 6. **Was passiert, wenn der einzige Entwickler ausfällt?** Die Dokumentation
    ist ungewöhnlich gut, aber niemand sonst hat diese App je gebaut und
    veröffentlicht. „Was, wenn Marc in der Abgabewoche krank ist" ist eine faire

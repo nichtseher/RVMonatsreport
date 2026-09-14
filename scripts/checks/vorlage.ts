@@ -12,6 +12,7 @@ import {
 } from "../../src/utils/vorlageExport";
 import type { BlattUmfang } from "../../src/utils/vorlageExport";
 import { VORLAGE_BLATTNAME } from "../../src/utils/vorlageMonatsinfo";
+import { VORLAGE_STAND } from "../../src/utils/vorlageStand";
 import type { SectionsConfig, ReportData, HistoryRecord } from "../../src/types";
 
 /*
@@ -182,6 +183,35 @@ pruefe("die gelbe Markierung der Eingabefelder überlebt", async () => {
       return !f || f.pattern !== "solid";
     });
   gleich(ohneFuellung, []);
+});
+
+pruefe("jede erzeugte Datei nennt die Fassung des Formulars", async () => {
+  /*
+    Bis 0.9.34 stand die Fassung NUR in einem Quelltextkommentar. Gibt die
+    Firma ein neues Formular heraus, produziert die App weiter das alte --
+    und die Datei sieht aus wie das gewohnte Formular. Genau deshalb muss
+    die Angabe in JEDER Ausgabe stehen, auch in der mit nur Blatt 1: Das
+    ist der Weg, den die Vertriebsleitung regelmaessig bekommt.
+  */
+  for (const umfang of ["vorlage", "alle"] as const) {
+    const wb = await lade(laufend, umfang);
+    wahr(
+      String(wb.subject || "").includes(VORLAGE_STAND),
+      `Umfang "${umfang}": die Fassung ${VORLAGE_STAND} fehlt in den Dateieigenschaften`,
+    );
+    wahr(
+      String(wb.description || "").includes(VORLAGE_STAND),
+      `Umfang "${umfang}": die Fassung fehlt in der Beschreibung`,
+    );
+  }
+  // Und sichtbar auf Blatt 2, wo es mitgesendet wird.
+  const zusatz = (await lade(laufend, "alle")).getWorksheet(BLATT_ZUSATZ)!;
+  const text: string[] = [];
+  zusatz.eachRow((z) => text.push(JSON.stringify(z.values)));
+  wahr(
+    text.join(String.fromCharCode(10)).includes(VORLAGE_STAND),
+    `Die Fassung ${VORLAGE_STAND} steht nicht sichtbar auf Blatt 2`,
+  );
 });
 
 pruefe("die gelbe Markierung überlebt auch bei „nur Vorlage“", async () => {

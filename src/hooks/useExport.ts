@@ -11,6 +11,7 @@ import { pruefeMonatsabschluss } from "../utils/abschlussCheck";
 import { persistHistory, OnPersistFailure } from "../utils/speicher";
 import { ConfirmRequest } from "../components/ConfirmDialog";
 import type { BlattUmfang } from "../utils/vorlageExport";
+import { VORLAGE_STAND } from "../utils/vorlageStand";
 
 /**
  * Alles, was den Betrieb verlaesst: die beiden Excel-Ausgaben, der
@@ -261,8 +262,8 @@ export function useExport(p: ExportParameter): ExportFunktionen {
       setConfirmRequest({
         title: "Was soll gesendet werden?",
         message: mitZeiten
-          ? "Blatt 1 ist das gewohnte Formular der Vertriebsleitung. Auf Wunsch kommen zwei weitere Blätter dazu: Ihre Zusatzangaben und Ihre einzelnen Schichten. Beides braucht die Vertriebsleitung nicht."
-          : "Blatt 1 ist das gewohnte Formular der Vertriebsleitung. Auf Wunsch kommt ein Blatt mit Ihren Zusatzangaben dazu, für die es im Formular keine Zeile gibt.",
+          ? `Blatt 1 ist das gewohnte Formular der Vertriebsleitung (Fassung ${VORLAGE_STAND}). Auf Wunsch kommen zwei weitere Blätter dazu: Ihre Zusatzangaben und Ihre einzelnen Schichten. Beides braucht die Vertriebsleitung nicht.`
+          : `Blatt 1 ist das gewohnte Formular der Vertriebsleitung (Fassung ${VORLAGE_STAND}). Auf Wunsch kommt ein Blatt mit Ihren Zusatzangaben dazu, für die es im Formular keine Zeile gibt.`,
         confirmLabel: "Nur Vorlage senden",
         cancelLabel: "Abbrechen",
         alternative: {

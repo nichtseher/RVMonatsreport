@@ -5,6 +5,7 @@ import {
   CalendarDays, BarChart3, LayoutGrid, Shield, Zap, Keyboard
 } from "lucide-react";
 import { SectionsConfig } from "../types";
+import { VORLAGE_STAND } from "../utils/vorlageStand";
 import { rueckfrageOffen } from "../utils/rueckfrage";
 
 interface HelpModalProps {
@@ -290,6 +291,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <p>Zusätzlich können Sie im <strong>RV Archiv</strong> jederzeit rückwirkend Excel-Dateien für jeden vergangenen Monat herunterladen oder teilen.</p>
                   <p className="mt-2">Im RV Archiv trägt jeder Monat ein Abzeichen: <strong>„Gesendet"</strong> mit Datum oder <strong>„Noch offen"</strong>. Es wird automatisch gesetzt, sobald Sie den Monat exportiert und die Datei wirklich verschickt haben – brechen Sie den Teilen-Dialog ab, bleibt der Monat offen. Mit der Schaltfläche <strong>Als gesendet markieren</strong> können Sie es jederzeit von Hand korrigieren.</p>
                   <p className="mt-2 text-[var(--info-text)] font-bold">Vor jedem Senden fragt die App, <strong>was mitgehen soll</strong>. <strong>Nur Vorlage senden</strong> schickt allein das Blatt <strong>Monatsinfo</strong> – exakt das gewohnte Formular der Vertriebsleitung, gleiche Zeilen, gleiche gelbe Felder, gleiche Summenformel. Das ist die vorgeschlagene Antwort, und sie reicht der Vertriebsleitung.</p>
+                  <p className="mt-2"><strong>Welche Formularfassung steckt drin?</strong> Die App bringt das Formular der Vertriebsleitung in der Fassung <strong>{VORLAGE_STAND}</strong> mit. Diese Angabe steht auch in jeder erzeugten Datei – in den Dateieigenschaften und, sofern mitgesendet, auf dem Blatt <strong>Zusatzangaben</strong>. Gibt die Vertriebsleitung ein neues Formular heraus, melden Sie sich bitte: Die App erkennt das nicht von selbst.</p>
                   <p className="mt-2">Wählen Sie stattdessen <strong>Alle drei Blätter</strong>, kommen zwei weitere dazu: Auf <strong>RV Mobil - Zusatzangaben</strong> stehen alle Werte, für die es im Formular keine Zeile gibt (etwa Urlaubs- und Krankheitstage, Reisezeit und Ihre eigenen Kategorien) samt der Summen je Bereich. Auf <strong>RV Mobil - Arbeitszeiten</strong> stehen Ihre einzelnen Schichten aus der Stempeluhr – mit Kommen, Gehen, Pause und Kommentar. Ist die Stempeluhr abgeschaltet, entfällt dieses Blatt, und die Antwort heißt <strong>Beide Blätter</strong>.</p>
                 </FAQItem>
               </div>

@@ -1,5 +1,6 @@
 import { ReportData, HistoryRecord, SectionsConfig, FieldConfig } from "../types";
 import { VORLAGE_MONATSINFO_BASE64, VORLAGE_BLATTNAME } from "./vorlageMonatsinfo";
+import { VORLAGE_STAND } from "./vorlageStand";
 // Nur der Typ -- ExcelJS selbst wird erst beim Export nachgeladen (271 KB).
 import type { Workbook as ExcelWorkbook } from "exceljs";
 import { formatMonthGerman } from "./dateUtils";
@@ -203,6 +204,7 @@ const baueZusatzBlatt = (
     "Diese Werte haben in der Vorlage der Vertriebsleitung keine Zeile.",
     "",
   ]);
+  zusatz.addRow([`Formularfassung der Vorlage: ${VORLAGE_STAND}`, ""]);
   zusatz.addRow([`Monat: ${monatFuerVorlage(data.month)}`, ""]);
   zusatz.addRow([`Name: ${data.name || ""}`, ""]);
   zusatz.addRow([]);
@@ -256,6 +258,20 @@ export const erzeugeVorlagenDatei = async (
 
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(base64ZuBytes(VORLAGE_MONATSINFO_BASE64).buffer as ArrayBuffer);
+
+  /*
+    Die Fassung des Formulars gehoert in JEDE erzeugte Datei, auch in die
+    mit nur Blatt 1 -- sonst traegt gerade der Weg, den die
+    Vertriebsleitung regelmaessig bekommt, keine Angabe darueber, welches
+    Formular sie da vor sich hat. Die Dokumenteigenschaften sind dafuer der
+    einzige Ort, der unabhaengig vom Blattumfang existiert; Blatt 1 selbst
+    bleibt unangetastet, das ist die Zusage.
+  */
+  wb.title = `RV Monatsreport ${data.month || ""}`.trim();
+  wb.subject = `Formularfassung ${VORLAGE_STAND}`;
+  wb.company = "Reinecker Vision GmbH";
+  wb.description =
+    `Erzeugt mit RV Mobil. Blatt 1 ist die Firmenvorlage in der Fassung ${VORLAGE_STAND}.`;
 
   const ws = wb.getWorksheet(VORLAGE_BLATTNAME);
   if (!ws) {
