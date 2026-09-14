@@ -10,6 +10,69 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-14 — v0.9.40: Der Changelog sagt nur noch bei neuen Funktionen, was los ist
+
+Vorgabe des Projektinhabers: Ausführlich nur, wenn es eine neue Funktion gibt;
+sonst knapp („Fehlerbehebung" und dergleichen). Rückwirkend auch für die alten
+Einträge.
+
+### Die Regel, nach der eingeordnet wurde
+
+**Ausführlich**, wenn der Nutzer etwas **neu tun** kann oder etwas **neu wissen
+muss**, um zu handeln — eine neue Ansicht, eine neue Wahl, eine Offenlegung.
+**Knapp** bei allem anderen: Fehlerbehebungen, Umbenennungen, Darstellung,
+Kontrast, interne Prüfungen, Sicherheitsarbeit ohne sichtbare Folge.
+
+16 von 49 Einträgen bleiben ausführlich, 33 sind auf eine Zeile geschrumpft.
+Die Datei ging von 745 auf 654 Zeilen.
+
+Die Einordnung steht als **Liste im Skript**, nicht als Heuristik: Wer sie
+ändert, sieht, was er ändert.
+
+### Eine Ausnahme, die ich begründen will
+
+**0.9.38 bleibt ausführlich, obwohl es keine neue Funktion ist.** Der Eintrag
+legt offen, dass das Diktat die Aufnahme an Google bzw. Apple überträgt — und
+dass die App vorher das Gegenteil behauptet hat. Das zu „Fehlerbehebung" zu
+verkürzen hieße, genau die Information zu verstecken, wegen der wir sie
+überhaupt geschrieben haben. Dem Projektinhaber vorher gesagt, nicht
+stillschweigend entschieden.
+
+### Zwei Folgen, die nicht offensichtlich waren
+
+**Ein gekürzter Eintrag kann einen späteren verwaisen lassen.** 0.9.37 war die
+Umbenennung von „Mein Bestand" zu „Meine Demogeräte" und ist jetzt
+„Fehlerbehebungen". Damit führte der Changelog eine Funktion unter einem Namen,
+den es in der App nicht gibt. Der Eintrag zu 0.9.36 trägt deshalb jetzt den
+**aktuellen** Namen — wer nachliest, sucht, was auf seinem Bildschirm steht.
+
+**Die Ausnahmeliste der Kodierungsprüfung ist gegenstandslos geworden.** Das
+absichtliche Mojibake stand im Eintrag zu 0.7.0, und der ist jetzt eine Zeile
+lang. `scripts/checks/kodierung.ts` hat damit **keine Ausnahmeliste mehr** und
+ist strenger als vorher. Eine Ausnahme ohne Fall ist eine offene Tür.
+
+### Ein Fehler im eigenen Umbau, den der Compiler gefunden hat
+
+Das Skript teilt die Datei an den Eintrags-Karten auf und setzt sie wieder
+zusammen. `join` setzt das Trennzeichen aber **zwischen** die Teile — beim
+Zusammensetzen fehlte deshalb das erste `<div>`, und die Datei war um genau ein
+öffnendes Element ärmer.
+
+`tsc` meldete `')' expected` in der vorletzten Zeile — 600 Zeilen entfernt von
+der Ursache. Gefunden durch Auszählen der Verschachtelung, nicht durch Lesen.
+Die Sicherungskopie vor dem Lauf war das, was die Korrektur billig gemacht hat.
+
+### Prüfstand
+
+| | 0.9.39 | 0.9.40 |
+|---|---|---|
+| `lint` | grün | grün |
+| `check` | 172 | 172 (jetzt **ohne Ausnahmeliste** in der Kodierungsprüfung) |
+| `check:ui` | 521 | **521, exit 0** |
+| ChangelogModal | 745 Zeilen | **654** |
+
+---
+
 ## 2026-09-14 — v0.9.39: Die Reiter der Hilfe hießen wie die Navigation
 
 Nachtrag zu 0.9.38, gefunden durch einen **Fehler in der eigenen Messung**.

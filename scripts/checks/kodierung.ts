@@ -29,10 +29,15 @@ const UEBERSPRINGEN = new Set([
   "kodierung.ts",
 ]);
 
-/** Absichtliche Vorkommen: Der Changelog erklärt den Fehler von damals. */
-const ERLAUBT: Array<{ datei: string; text: string }> = [
-  { datei: "ChangelogModal.tsx", text: "Anzahl VorfÃ¼hrungen" },
-];
+/*
+  Absichtliche Vorkommen -- derzeit keine.
+
+  Bis 0.9.39 stand hier der Changelog-Eintrag zu 0.7.0, der den damaligen
+  Kodierungsschaden als Beispiel zeigte. Mit der knapperen
+  Changelog-Politik ab 0.9.40 ist dieser Text entfallen, und damit auch
+  die Ausnahme. Eine Ausnahme ohne Fall ist eine offene Tuer.
+*/
+const ERLAUBT: Array<{ datei: string; text: string }> = [];
 
 /*
   Warum hier mehr steht als die klassische CP1252-Signatur: Der Fund vom
