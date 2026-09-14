@@ -4,7 +4,7 @@ import {
   HistoryRecord,
   ReportData,
   SectionsConfig,
-  YearlyCarryover,
+  YearlyCarryover, Bestandsposten,
 } from "../types";
 import { mergeSyncPayload } from "../utils/merge";
 import { stableStringify } from "../utils/stableJson";
@@ -30,6 +30,8 @@ export interface GeraeteSyncParameter {
   history: Record<string, HistoryRecord> | null;
   setHistory: (verlauf: Record<string, HistoryRecord>) => void;
   carryover: YearlyCarryover;
+  bestand: Bestandsposten[];
+  setBestand: (posten: Bestandsposten[]) => void;
   setCarryover: (uebertrag: YearlyCarryover) => void;
   reportData: ReportData | null;
   setReportData: (daten: ReportData) => void;
@@ -63,6 +65,7 @@ export function useGeraeteSync(p: GeraeteSyncParameter): GeraeteSync {
     appFields, setAppFields,
     history, setHistory,
     carryover, setCarryover,
+    bestand, setBestand,
     reportData, setReportData,
     liveSyncFailed, zeigeAbbruchHinweis,
     announceToAriaAndSpeech, triggerToast, setActiveTab, onPersistFailure,
@@ -83,9 +86,10 @@ export function useGeraeteSync(p: GeraeteSyncParameter): GeraeteSync {
       appFields,
       history,
       carryover,
+      bestand,
       reportData,
     });
-  }, [appFields, history, carryover, reportData]);
+  }, [appFields, history, carryover, bestand, reportData]);
 
   /**
    * Gemeinsame Grundlage fuer "Ersetzen" beim Geraete-Sync und fuer das
@@ -107,9 +111,18 @@ export function useGeraeteSync(p: GeraeteSyncParameter): GeraeteSync {
         setCarryover(paket.carryover);
         safeSetItem("aussendienst_pwa_carryover_v2", JSON.stringify(paket.carryover));
       }
+      /*
+        "Mein Bestand" wird ERSETZT, nicht zusammengefuehrt. Beim
+        Zusammenfuehren zweier Geraete bleibt der lokale Bestand deshalb
+        unangetastet -- Absicht: Die Liste ist ein Notizzettel, und
+        `mergeSyncPayload` ist die Stelle, an der in diesem Projekt schon
+        zweimal Daten still verschwunden sind. Fuer ein freiwilliges
+        Gadget ist das der falsche Ort fuer Risiko.
+      */
+      if (Array.isArray(paket.bestand)) setBestand(paket.bestand);
       if (paket.reportData) setReportData(paket.reportData);
     },
-    [setAppFields, setHistory, setCarryover, setReportData, onPersistFailure],
+    [setAppFields, setHistory, setCarryover, setBestand, setReportData, onPersistFailure],
   );
 
   const handleSyncImport = useCallback(

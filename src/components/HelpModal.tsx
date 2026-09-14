@@ -3,7 +3,7 @@ import {
   ArrowLeft, HelpCircle, BookOpen, Clock, FileText,
   Share2, Lock, AlertTriangle, Play,
   CalendarDays, BarChart3, LayoutGrid, Shield, Zap, Keyboard
-} from "lucide-react";
+, Package } from "lucide-react";
 import { SectionsConfig } from "../types";
 import { VORLAGE_STAND } from "../utils/vorlageStand";
 import { rueckfrageOffen } from "../utils/rueckfrage";
@@ -280,6 +280,15 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   </ul>
                   <p className="mt-2">Danach erscheint oben ein Streifen mit der Taste <strong>Rückgängig</strong>. Damit sind Sie sofort wieder im alten Monat, als wäre nichts gewesen. Der Streifen verschwindet, sobald Sie im neuen Monat den ersten Wert erfassen – ein Rücksprung würde diesen sonst gefährden.</p>
                   <p className="mt-2">Auch ohne Rückgängig ist nichts verloren: Sie können sich die archivierten Monate jederzeit über den Reiter „RV Archiv“ wieder ansehen, nachträglich bearbeiten oder exportieren.</p>
+                </FAQItem>
+
+                <FAQItem
+                  icon={<Package className="text-[var(--accent)]" />}
+                  title="Wofür ist Mein Bestand?"
+                >
+                  <p>Unter <strong>Optionen → Mein Bestand</strong> können Sie für sich notieren, welche Vorführgeräte Sie gerade dabeihaben. Das ist <strong>freiwillig</strong> und wird nirgendwo ausgewertet – es hilft, wenn jemand fragt, ob Sie ein bestimmtes Gerät noch haben, weil es weitergeschickt werden soll.</p>
+                  <p>Sie schreiben in ein freies Textfeld, was Ihnen hilft; es gibt keine Vorgaben und keine Pflichtfelder. Mit <strong>Liste vorlesen</strong> hören Sie den gesamten Bestand.</p>
+                  <p>Die Liste bleibt auf Ihrem Gerät, geht <strong>nicht</strong> in den Monatsreport und wandert in die Datensicherung mit.</p>
                 </FAQItem>
 
                 <FAQItem 

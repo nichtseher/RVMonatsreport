@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { AccessibilitySettings, AccessibilityTheme, SectionsConfig } from "../types";
 import {
   Type, Volume2, Sparkles, HelpCircle, Lock, Settings2, ChevronRight,
-  ArrowLeft, Clock, Sliders, Smartphone, Bell, Monitor, Palette, CalendarDays,
+  ArrowLeft, Clock, Sliders, Smartphone, Bell, Monitor, Palette, CalendarDays, Package,
 } from "lucide-react";
 
 interface A11yModalProps {
@@ -32,6 +32,8 @@ interface A11yModalProps {
    * Gemessen am 2026-09-14.
    */
   onOpenCarryover?: () => void;
+  /** Freiwillige Liste der Vorfuehrgeraete -- siehe KONZEPT-INVENTAR.md. */
+  onOpenBestand?: () => void;
   /** Anzahl erfasster Schichten (laufender Monat und Archiv zusammen). */
   schichtenAnzahl?: number;
   /** Alle erfassten Schichten löschen -- fragt selbst zurück. */
@@ -174,6 +176,7 @@ export default function A11yModal({
   onOpenSync,
   onOpenChangelog,
   onOpenCarryover,
+  onOpenBestand,
   schichtenAnzahl = 0,
   onSchichtenLoeschen,
 }: A11yModalProps) {
@@ -279,7 +282,7 @@ export default function A11yModal({
         />
       </SectionCard>
 
-      <SectionCard title="Daten & Hilfe">
+      <SectionCard title="Meine Sachen">
         {onOpenCarryover && (
           <MenuRow
             icon={<CalendarDays className="w-5 h-5" />}
@@ -289,6 +292,18 @@ export default function A11yModal({
             onClick={onOpenCarryover}
           />
         )}
+        {onOpenBestand && (
+          <MenuRow
+            icon={<Package className="w-5 h-5" />}
+            iconClass="bg-[var(--accent)] text-[var(--accent-text)]"
+            label="Mein Bestand"
+            hint="Welche Vorführgeräte haben Sie gerade dabei? Freiwillig."
+            onClick={onOpenBestand}
+          />
+        )}
+      </SectionCard>
+
+      <SectionCard title="Daten & Hilfe">
         {onOpenSync && (
           <MenuRow
             icon={<Smartphone className="w-5 h-5" />}

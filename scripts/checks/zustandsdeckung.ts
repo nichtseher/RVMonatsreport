@@ -65,6 +65,8 @@ const MUSTER = /useState(?:<[^>]*>)?\(\s*(?:false|true|"[^"]*"|'[^']*')\s*\)/g;
 const ERWARTET: Record<string, number> = {
   "App.tsx": 10,
   "A11yModal.tsx": 1,
+  // 0.9.36: Entwurfstext und Notiz-Entwurf in "Mein Bestand".
+  "BestandModal.tsx": 2,
   // 0.9.29: von 14 auf 13. `isLogsCollapsed` ist entfallen -- das
   // Schicht-Protokoll lag hinter einer Einklappung, die die Projektregel
   // ausdruecklich verbietet, und versteckte neben der Liste auch die

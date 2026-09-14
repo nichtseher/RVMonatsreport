@@ -12,7 +12,7 @@
  * Schema-Validierung. Unbekannte Zusatzfelder sind erlaubt, damit ältere und
  * neuere Fassungen zusammenarbeiten können.
  */
-import type { SectionsConfig, HistoryRecord, ReportData, YearlyCarryover } from "../types";
+import type { SectionsConfig, HistoryRecord, ReportData, YearlyCarryover, Bestandsposten } from "../types";
 
 /** Kennung im Paket, seit 0.9.5 mitgeschrieben. Ältere Pakete haben keine. */
 export const PAKET_APP = "rvmobil";
@@ -24,6 +24,7 @@ export interface SyncPaket {
   appFields?: SectionsConfig;
   history?: Record<string, HistoryRecord>;
   carryover?: YearlyCarryover;
+  bestand?: Bestandsposten[];
   reportData?: ReportData;
 }
 
@@ -184,6 +185,30 @@ export function pruefeSyncPaket(unbekannt: unknown): PruefErgebnis {
       const wert = (unbekannt.carryover as Record<string, unknown>)[schluessel];
       if (wert !== undefined && typeof wert !== "number") {
         return { ok: false, grund: "Die Werte des Jahreskontos im Paket sind keine Zahlen." };
+      }
+    }
+  }
+
+  /*
+    "Mein Bestand" (0.9.36). Alles von aussen geht durch diese Pruefung,
+    bevor es den Zustand beruehrt -- ohne sie hat ein syntaktisch gueltiges,
+    strukturell falsches Paket die App schon einmal in die Fehlerseite
+    gerissen.
+  */
+  if (unbekannt.bestand !== undefined && unbekannt.bestand !== null) {
+    if (!Array.isArray(unbekannt.bestand)) {
+      return { ok: false, grund: "Der Bestand im Paket ist keine Liste." };
+    }
+    for (const posten of unbekannt.bestand as unknown[]) {
+      if (!istObjekt(posten)) {
+        return { ok: false, grund: "Ein Bestandseintrag im Paket ist beschädigt." };
+      }
+      const p = posten as Record<string, unknown>;
+      if (typeof p.id !== "string" || typeof p.text !== "string") {
+        return { ok: false, grund: "Einem Bestandseintrag fehlen Kennung oder Text." };
+      }
+      if (p.notiz !== undefined && typeof p.notiz !== "string") {
+        return { ok: false, grund: "Die Notiz eines Bestandseintrags ist kein Text." };
       }
     }
   }

@@ -66,6 +66,7 @@ import ManageModal from "./components/ManageModal";
 import HistoryModal from "./components/HistoryModal";
 import StatsModal from "./components/StatsModal";
 import CarryoverModal from "./components/CarryoverModal";
+import BestandModal from "./components/BestandModal";
 import TimeModal from "./components/TimeModal";
 /*
   Geräte-Sync und Datensicherung werden erst geladen, wenn man sie öffnet.
@@ -262,7 +263,7 @@ const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
 export default function App() {
   // --- ROUTING / NAVIGATION STATE ---
   // Start-Ansicht per URL-Parameter (für PWA-Shortcuts, z. B. ./?tab=time)
-  const [activeTab, setActiveTab] = useState<"form" | "time" | "stats" | "history" | "options" | "help" | "backup" | "manage" | "carryover" | "sync" | "changelog">(() => {
+  const [activeTab, setActiveTab] = useState<"form" | "time" | "stats" | "history" | "options" | "help" | "backup" | "manage" | "carryover" | "bestand" | "sync" | "changelog">(() => {
     try {
       const tab = new URLSearchParams(window.location.search).get("tab");
       // "form" steht hier, obwohl es auch der Standard unten ist: Die
@@ -270,6 +271,14 @@ export default function App() {
       // bisher nur zufaellig das Richtige. Aendert sich der Standard je, waere
       // sie stillschweigend kaputt.
       if (tab === "form" || tab === "stats" || tab === "history" || tab === "options") return tab;
+      /*
+        "bestand" ist per ?tab= erreichbar, obwohl die Ansicht nur ueber die
+        Optionen angeboten wird. Zwei Gruende: Eine spaetere
+        Startbildschirm-Verknuepfung bleibt moeglich, und die Ansicht laeuft
+        damit in ANSICHTEN statt nur in EINSTIEGE -- also im vollen Prueflauf
+        (Ueberlauf x drei Schriftgroessen, axe, Kontrast x vier Schemata).
+      */
+      if (tab === "bestand") return tab;
       if (tab === "time") {
         /*
           Die Manifest-Verknuepfung "Stempeluhr" zeigt hierher. Ein Manifest
@@ -776,6 +785,8 @@ export default function App() {
     carryover,
     setCarryover,
     updateCarryover,
+    bestand,
+    setBestand,
   } = useEinstellungen({
     appFields,
     accessibility,
@@ -1383,6 +1394,8 @@ export default function App() {
     announceToAriaAndSpeech,
     triggerToast,
     setActiveTab,
+    bestand,
+    setBestand,
     onPersistFailure: handleHistoryPersistFailure,
   });
 
@@ -3160,6 +3173,7 @@ export default function App() {
               carryoverHerkunftRef.current = "options";
               setActiveTab("carryover");
             }}
+            onOpenBestand={() => setActiveTab("bestand")}
             /*
               Ueber die Kennung zaehlen, nicht addieren: Der laufende Monat
               steht zugleich im Archiv (die Selbstsicherung legt ihn dort ab),
@@ -3185,6 +3199,20 @@ export default function App() {
           <ChangelogModal onClose={() => setActiveTab("options")} />
         </div>
       )}
+      {/* MEIN BESTAND -- freiwillige Liste der Vorfuehrgeraete */}
+      {activeTab === "bestand" && (
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
+          <BestandModal
+            isOpen={true}
+            onClose={() => setActiveTab("options")}
+            posten={bestand}
+            onSave={setBestand}
+            announceToAriaAndSpeech={announceToAriaAndSpeech}
+            setConfirmRequest={setConfirmRequest}
+          />
+        </div>
+      )}
+
       {activeTab === "carryover" && (
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
           <CarryoverModal

@@ -1059,6 +1059,56 @@ reinen Prüfungen zu `verrechneSchicht` abgedeckt, über die Oberfläche **nicht
 
 ---
 
+## 0.9.36 — „Mein Bestand" — ERLEDIGT (2026-09-14)
+
+Eine freiwillige Liste der Vorführgeräte, die eine Kollegin gerade dabeihat.
+Entwurf und Begründung: [KONZEPT-INVENTAR.md](KONZEPT-INVENTAR.md).
+
+### Geprüft und verworfen: das Verwaltungssystem
+
+Der erste Entwurf hatte Zustände, Übergabe-Codes über QR,
+Empfangsbestätigungen und Erinnerungen an überfällige Sendungen. Verworfen auf
+Ansage des Projektinhabers, und das Argument ist es wert, hier zu stehen:
+
+**Sobald die Liste etwas nachweisen soll, wird sie zur Pflicht — und
+Pflichtlisten werden nicht gepflegt, sie veralten und lügen dann.** Eine
+falsche Inventarliste ist schlechter als keine, weil man ihr glaubt.
+
+### Zwei Entscheidungen, die nicht offensichtlich sind
+
+**Freies Textfeld statt Formular.** Die Geräte tragen keine scanbaren
+Etiketten; eine Seriennummer wäre blind getippte Zwölfstelligkeit und als
+Pflichtfeld das Ende der Benutzbarkeit.
+
+**Route `?tab=bestand`, obwohl die Ansicht nur über die Optionen angeboten
+wird.** Damit landet sie in `ANSICHTEN` statt in `EINSTIEGE` und läuft ohne
+weiteres Zutun im vollen Prüfnetz mit — 24 Prüfungen beim ersten Lauf.
+Wer eine neue Ansicht baut, sollte das übernehmen: Es ist billiger als jeder
+eigens geschriebene Einstiegstest.
+
+### Platzierung
+
+Neue Gruppe **„Meine Sachen"** in den Optionen, die Jahreskonto und Bestand
+zusammenfasst — gruppiert nach *wessen Daten das sind*, nicht nach *was für
+ein Bildschirm*. Nicht in die Hauptnavigation: Ein Gadget gehört nicht auf
+dieselbe Stufe wie der Report, und die untere Leiste ist bei 320 px und
+„Extra groß" die Stelle mit der Überlaufgeschichte.
+
+### Sync: ersetzen, nicht zusammenführen
+
+Der Bestand wandert in die Datensicherung und wird beim Ersetzen übernommen.
+**Beim Zusammenführen zweier Geräte bleibt der lokale unangetastet** — Absicht:
+`mergeSyncPayload` ist die Stelle, an der hier schon zweimal Daten still
+verschwunden sind, und eine freiwillige Notizliste ist der falsche Anlass für
+Risiko dort. `merge.ts` wurde nicht angefasst.
+
+### Nicht im Monatsreport
+
+Entscheidung des Projektinhabers. Hält den Bestand nebenbei aus der
+Mitbestimmungsfrage heraus.
+
+---
+
 ## 0.9.35 — Ein Wächter für die Vorlage, und ein roter Deploy meldet sich — ERLEDIGT (2026-09-14)
 
 Zwei Empfehlungen aus der Bestandsaufnahme, vom Projektinhaber ausgewählt.

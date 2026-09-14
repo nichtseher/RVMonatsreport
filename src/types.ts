@@ -104,6 +104,7 @@ export type AppTab =
   | "backup"
   | "manage"
   | "carryover"
+  | "bestand"
   | "sync"
   | "changelog";
 
@@ -121,4 +122,19 @@ export interface AccessibilitySettings {
   speechRate: number;
   enableTimeTracking?: boolean;
   desktopLayout?: boolean;
+}
+
+/**
+ * Ein Eintrag in "Mein Bestand" -- der freiwilligen Liste der
+ * Vorfuehrgeraete, die eine Kollegin gerade dabeihat.
+ *
+ * EIN FREIES TEXTFELD, KEIN FORMULAR. Die Geraete tragen keine scanbaren
+ * Etiketten; jedes Pflichtfeld waere blind getippte Mehrarbeit fuer einen
+ * Nutzen, den niemand verlangt hat. Wer eine Seriennummer will, schreibt
+ * sie dazu. Siehe KONZEPT-INVENTAR.md.
+ */
+export interface Bestandsposten {
+  id: string;
+  text: string;
+  notiz?: string;
 }

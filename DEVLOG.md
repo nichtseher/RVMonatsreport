@@ -10,6 +10,123 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-14 — v0.9.36: „Mein Bestand" — und ein Entwurf, der zweimal zu groß war
+
+Wunsch des Projektinhabers: Kollegen sollen für sich aufschreiben können,
+welche Vorführgeräte sie dabeihaben — falls ein Demogerät weitergeschickt
+werden muss.
+
+### Zwei Entwürfe zu groß, bevor der richtige dastand
+
+Der erste Entwurf hatte Zustände („beim Kunden", „unterwegs an Kollegen"),
+Übergabe-Codes über QR, Empfangsbestätigungen, Erinnerungen an überfällige
+Sendungen und eine zweistufige Umsetzung, die `merge.ts` anfasst. Antworten auf
+Fragen, die niemand gestellt hatte.
+
+Die Korrektur kam vom Projektinhaber in einem Satz: *„es geht doch nur darum,
+dass Kollegen selbst aufschreiben können, was in ihrem Inventar ist. Keine
+Pflicht, sondern nur nettes Gadget."*
+
+Das Argument, das dabei hängengeblieben ist und im Quelltext steht: **Sobald
+die Liste etwas nachweisen soll, wird sie zur Pflicht — und Pflichtlisten
+werden nicht gepflegt, sie veralten und lügen dann.** Eine falsche
+Inventarliste ist schlechter als keine, weil man ihr glaubt.
+
+Übrig blieb: eine Liste, ein freies Textfeld, eine Notiz, vorlesen.
+
+### Warum ein freies Textfeld und keine Felder
+
+Die Geräte tragen **keine scanbaren Etiketten** (Auskunft des
+Projektinhabers). Der Scanner der App könnte es — `html5-qrcode` 2.3.8
+beherrscht CODE_128, CODE_39, EAN_13, DATA_MATRIX, ITF und CODABAR, und das
+Projekt schränkt die Formate nicht ein —, aber es gibt nichts zu scannen.
+
+Eine Seriennummer wäre damit blind getippte Zwölfstelligkeit. Als Pflichtfeld
+hätte sie die Liste unbenutzbar gemacht. Also: ein Textfeld, in das schreibt,
+wer will, was er will. „Tactonom Pro mit Netzteil" und „großer Koffer, grauer
+Griff" sind beide richtig.
+
+Diktat kam als Ausweg **nicht** in Frage, solange der offene Befund zur
+Spracherkennung ungeklärt ist (`useSprachausgabe.ts` nutzt
+`webkitSpeechRecognition`, das die Aufnahme an Google bzw. Apple überträgt —
+die Hilfe zählt dagegen genau zwei Wege auf, über die Daten das Gerät
+verlassen).
+
+### Wo die Ansicht sitzt, und warum das eine Entscheidung war
+
+Nicht in der Hauptnavigation: Ein Gadget gehört nicht auf dieselbe Stufe wie
+der Report, und die untere Leiste ist bei 320 px und „Extra groß" genau die
+Stelle, an der dieses Projekt wiederholt Überlauf hatte.
+
+Nicht als siebter Eintrag in die Optionen: Die sind bereits eine Rumpelkammer,
+und ein Bestand ist keine *Einstellung*.
+
+Stattdessen eine neue Gruppe **„Meine Sachen"**, die das Jahreskonto (seit
+0.9.35 dort) und den Bestand zusammenfasst. Gruppiert wird damit danach,
+**wessen Daten das sind**, statt danach, was für ein Bildschirm es ist.
+
+Dazu eine Route `?tab=bestand`, obwohl die Ansicht nur über die Optionen
+angeboten wird. Der Grund ist das Prüfnetz: Damit landet sie in `ANSICHTEN`
+statt nur in `EINSTIEGE` — und wird ohne weiteres Zutun im vollen Sweep
+gemessen. Das hat sich sofort ausgezahlt: **24 Prüfungen liefen beim ersten
+Lauf mit**, darunter Überlauf in drei Schriftgrößen, axe, Kontrast in drei
+Schemata, Breitschrift, 320 px, Textabstand nach WCAG 1.4.12, Tastaturlauf und
+WCAG 2.5.3.
+
+### Sync: ersetzen, nicht zusammenführen
+
+Der Bestand liegt in `localStorage` und wandert über `buildSyncPayload` in die
+Datensicherung — damit er einen Gerätewechsel übersteht. Beim Ersetzen und beim
+Wiederherstellen wird er übernommen.
+
+**Beim Zusammenführen zweier Geräte bleibt der lokale Bestand unangetastet**,
+und das ist Absicht, keine Lücke: `mergeSyncPayload` ist die Stelle, an der in
+diesem Projekt schon zweimal Daten still verschwunden sind. Für eine
+freiwillige Notizliste ist das der falsche Ort für Risiko. `merge.ts` wurde
+nicht angefasst.
+
+Von außen kommende Pakete gehen wie alles andere durch `pruefeSyncPaket()` —
+Liste, Kennung und Text werden geprüft, bevor irgendetwas den Zustand berührt.
+
+### Was die Wächter gemeldet haben
+
+Beim ersten `npm run check` nach dem Bau, unaufgefordert:
+
+```
+FEHL Zustandsdeckung: BestandModal.tsx: erwartet 0, gefunden 2
+FEHL Rückfrage-Wache: Im Quelltext stehen 11 Rückfragen, im Prüfnetz 10.
+```
+
+Genau das, wofür die beiden gebaut sind. `RUECKFRAGEN` steht jetzt bei **elf**.
+
+### Ein Befund aus dem eigenen Test
+
+Der Funktionstest scheiterte zunächst an einer Doppeldeutigkeit: Das
+Formularfeld heißt beim Bearbeiten „Eintrag ändern", die Zeilentaste hieß
+„Eintrag ändern: …". Für Sprachsteuerung trifft man damit das Falsche.
+Geändert wurde die **Beschriftung**, nicht der Test — die Taste heißt jetzt
+„Bearbeiten: …".
+
+### Geprüft wurde auch, ob es etwas tut
+
+Dass eine Ansicht gut aussieht, sagt nichts darüber, ob sie funktioniert. Der
+Dauertest geht den ganzen Weg — anlegen, **neu laden**, ändern, löschen — und
+sieht in `localStorage` nach. Die Frage „wird wirklich geschrieben" war in
+diesem Projekt schon zweimal teuer (verschluckte `.catch(() => {})` beim
+Archiv, bis 0.9.3).
+
+### Prüfstand
+
+| | 0.9.35 | 0.9.36 |
+|---|---|---|
+| `lint` | grün | grün |
+| `check` | 172 | 172 |
+| `check:ui` | 472 | **512, exit 0** |
+| Startbündel | 582.361 B | **595.354 B** (+13 KB für die Ansicht) |
+| Rückfragen | 10 | **11** |
+
+---
+
 ## 2026-09-14 — v0.9.35: Ein Wächter für die Vorlage, und ein roter Deploy meldet sich selbst
 
 Zwei Empfehlungen aus der Bestandsaufnahme, vom Projektinhaber zur Umsetzung

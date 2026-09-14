@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   AccessibilitySettings,
   SectionsConfig,
-  YearlyCarryover,
+  YearlyCarryover, Bestandsposten,
 } from "../types";
 import { QuickEntryConfig, DEFAULT_QUICK_CONFIG } from "../components/QuickEntryPanel";
 import { safeSetItem } from "../utils/speicher";
@@ -50,6 +50,8 @@ export interface Einstellungen {
   goalsConfig: GoalsConfig;
   updateGoalsConfig: (neu: GoalsConfig) => void;
   carryover: YearlyCarryover;
+  bestand: Bestandsposten[];
+  setBestand: (posten: Bestandsposten[]) => void;
   /** Ohne Speichern -- fuer den Geraete-Abgleich, der selbst schreibt. */
   setCarryover: React.Dispatch<React.SetStateAction<YearlyCarryover>>;
   /** Mit Speichern, Zeitstempel und Rueckmeldung -- fuer die Oberflaeche. */
@@ -101,6 +103,27 @@ export function useEinstellungen(p: EinstellungenParameter): Einstellungen {
   const [goalsConfig, setGoalsConfig] = useState<GoalsConfig>(() =>
     ladeMitStandard("aussendienst_pwa_goals_v2", STANDARD_ZIELE),
   );
+  /*
+    "Mein Bestand" -- eine freiwillige Notizliste, keine Pflicht und kein
+    Nachweis. Sie liegt in localStorage wie die uebrigen Einstellungen: Ein
+    paar Dutzend Zeilen Text sind Einstellungsgroesse, nicht Berichtsgroesse.
+  */
+  const [bestand, setBestandIntern] = useState<Bestandsposten[]>(() => {
+    try {
+      const roh = localStorage.getItem("aussendienst_pwa_bestand_v1");
+      const gelesen = roh ? JSON.parse(roh) : [];
+      return Array.isArray(gelesen) ? gelesen : [];
+    } catch {
+      // Ein beschaedigter Eintrag darf die App nicht am Start hindern.
+      return [];
+    }
+  });
+
+  const setBestand = (posten: Bestandsposten[]) => {
+    setBestandIntern(posten);
+    safeSetItem("aussendienst_pwa_bestand_v1", JSON.stringify(posten));
+  };
+
   const [carryover, setCarryover] = useState<YearlyCarryover>(() =>
     ladeMitStandard("aussendienst_pwa_carryover_v2", STANDARD_UEBERTRAG),
   );
@@ -159,5 +182,7 @@ export function useEinstellungen(p: EinstellungenParameter): Einstellungen {
     carryover,
     setCarryover,
     updateCarryover,
+    bestand,
+    setBestand,
   };
 }

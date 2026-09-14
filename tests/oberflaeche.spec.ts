@@ -23,6 +23,11 @@ const SCHRIFTGROESSEN = ["normal", "large", "extra-large"] as const;
 const ANSICHTEN = [
   { name: "Formular", tab: "form" },
   { name: "Zeit", tab: "time" },
+  // 0.9.36: leer -- der Zustand, den eine neue Nutzerin sieht. Der Zustand
+  // MIT Einträgen steht weiter unten und wird eigens geöffnet; ihn hier zu
+  // vergessen wäre der Fehler aus 0.9.25 ("Das Archiv war geprüft, aber
+  // immer leer").
+  { name: "Bestand", tab: "bestand" },
   { name: "Analyse", tab: "stats" },
   { name: "Archiv", tab: "history" },
   { name: "Optionen", tab: "options" },
@@ -2779,6 +2784,19 @@ const RUECKFRAGEN = [
       await p.getByRole("button", { name: /Erfasste Schichten löschen/ }).first().click();
     },
   },
+  {
+    /*
+      Die elfte (0.9.36). Sie gehört zu "Mein Bestand" -- einer freiwilligen
+      Liste, die nichts nachweist. Zerstörend ist sie trotzdem: Was hier weg
+      ist, ist weg, und niemand merkt es, weil die Liste niemand prüft.
+    */
+    name: "Rückfrage: Bestandseintrag löschen",
+    ausloeser: /Eintrag löschen/,
+    oeffne: async (p: Page) => {
+      await oeffneBestandMitInhalt(p);
+      await p.getByRole("button", { name: /Eintrag löschen/ }).first().click();
+    },
+  },
 ] as const;
 
 /**
@@ -3853,6 +3871,123 @@ test.describe("Zwei Geräte über die Live-Verbindung", () => {
  * Steht am Dateiende, weil `test.describe` seinen Rumpf sofort beim Einlesen
  * ausführt und die Listen der Zustände weiter oben noch nicht angelegt sind.
  */
+
+/*
+  "Mein Bestand" mit Inhalt (0.9.36).
+
+  Der leere Zustand steckt in ANSICHTEN. Dieser hier misst, was die
+  Ansicht tatsächlich zeigt: lange Gerätebezeichnungen neben zwei
+  44-px-Tasten in einer Zeile -- genau die Kombination, an der in diesem
+  Projekt wiederholt die Breite gerissen ist.
+
+  Eine Ansicht nur leer zu prüfen war der Fehler aus 0.9.25; das Archiv
+  galt drei Fassungen lang als geprüft und war in jedem Lauf leer.
+*/
+const BESTAND_BESTAND = [
+  { id: "b1", text: "Tactonom Pro mit Netzteil und Transporttasche", notiz: "seit KW 37, geht danach an die Kollegin in Kassel" },
+  { id: "b2", text: "Envision Glasses" },
+];
+
+async function oeffneBestandMitInhalt(page: Page) {
+  await page.addInitScript((posten) => {
+    localStorage.setItem("aussendienst_pwa_bestand_v1", JSON.stringify(posten));
+    localStorage.setItem("aussendienst_pwa_onboarding_v1", "1");
+  }, BESTAND_BESTAND);
+  await oeffne(page, "bestand");
+  await page.getByRole("heading", { name: /Mein Bestand/ }).first().waitFor({ timeout: 15_000 });
+  await page.waitForTimeout(300);
+}
+
+test.describe("Mein Bestand mit Einträgen", () => {
+  for (const groesse of ["normal", "extra-large"] as const) {
+    test(`Bestand mit Einträgen bei ${groesse}`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name === "handy-webkit", "Geometrie haengt nicht am Motor");
+      await oeffneBestandMitInhalt(page);
+      await setzeSchriftgroesse(page, groesse);
+      await warteAufRuhigesLayout(page);
+      await pruefeGeometrie(page, `Bestand mit Einträgen / ${groesse}`);
+    });
+  }
+
+  test("Bestand mit Einträgen ohne schwere Verstöße", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "axe haengt nicht am Motor");
+    await oeffneBestandMitInhalt(page);
+    const ergebnis = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+      .analyze();
+    const schwere = ergebnis.violations.filter(
+      (v) => v.impact === "critical" || v.impact === "serious",
+    );
+    expect(
+      schwere.map((v) => `${v.id}: ${v.nodes.length}`),
+      `Bestand mit Einträgen: ${schwere.map((v) => v.id).join(", ")}`,
+    ).toEqual([]);
+  });
+
+
+  /*
+    Dass die Ansicht gut aussieht, sagt nichts darüber, ob sie etwas tut.
+
+    Dieser Fall geht den ganzen Weg: anlegen, ändern, löschen — und nach einem
+    Neuladen nachsehen, ob es überhaupt gespeichert wurde. Die Frage „wird
+    wirklich geschrieben" ist in diesem Projekt schon zweimal teuer gewesen
+    (verschluckte `.catch(() => {})` beim Archiv, bis 0.9.3).
+  */
+  test("anlegen, ändern, löschen — und es überlebt das Neuladen", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Datenhaltung haengt nicht am Geraeteprofil");
+    await page.addInitScript(() => {
+      localStorage.setItem("aussendienst_pwa_onboarding_v1", "1");
+    });
+    await oeffne(page, "bestand");
+    await page.getByRole("heading", { name: /Mein Bestand/ }).first().waitFor({ timeout: 15_000 });
+
+    const gespeichert = () =>
+      page.evaluate(() => {
+        const roh = localStorage.getItem("aussendienst_pwa_bestand_v1");
+        return roh ? (JSON.parse(roh) as { text: string; notiz?: string }[]) : [];
+      });
+
+    // --- anlegen
+    await page.getByLabel(/Was haben Sie dabei/).fill("Tactonom Pro mit Netzteil");
+    await page.getByLabel(/Notiz/).fill("seit KW 37");
+    await page.getByRole("button", { name: /Zur Liste hinzufügen/ }).click();
+    await page.waitForTimeout(400);
+    expect(await gespeichert(), "Anlegen hat nichts geschrieben").toHaveLength(1);
+    expect((await gespeichert())[0].text).toBe("Tactonom Pro mit Netzteil");
+
+    // --- überlebt ein Neuladen (der eigentliche Zweck der Liste)
+    await page.reload({ waitUntil: "networkidle" });
+    await page.getByRole("heading", { name: /Mein Bestand/ }).first().waitFor({ timeout: 15_000 });
+    await expect(
+      page.getByText("Tactonom Pro mit Netzteil"),
+      "Der Eintrag ist nach dem Neuladen weg",
+    ).toBeVisible();
+
+    // --- ändern
+    await page.getByRole("button", { name: /Bearbeiten:/ }).first().click();
+    await page.getByRole("textbox", { name: "Eintrag ändern" }).fill("Envision Glasses");
+    await page.getByRole("button", { name: /Änderung übernehmen/ }).click();
+    await page.waitForTimeout(400);
+    const nachAenderung = await gespeichert();
+    expect(nachAenderung, "Ändern hat einen zweiten Eintrag erzeugt").toHaveLength(1);
+    expect(nachAenderung[0].text).toBe("Envision Glasses");
+    expect(nachAenderung[0].notiz, "Die Notiz ist beim Ändern verlorengegangen").toBe("seit KW 37");
+
+    // --- löschen (über die Rückfrage)
+    await page.getByRole("button", { name: /Eintrag löschen/ }).first().click();
+    await page.getByRole("alertdialog").waitFor({ state: "visible", timeout: 15_000 });
+    await page.getByRole("button", { name: /^Löschen$/ }).click();
+    await page.waitForTimeout(500);
+    expect(await gespeichert(), "Löschen hat nichts entfernt").toHaveLength(0);
+  });
+
+  test("Bestand: kein Name ersetzt die Beschriftung", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Namen haengen nicht am Geraeteprofil");
+    await oeffneBestandMitInhalt(page);
+    const verstoesse = await findeNamensverstoesse(page);
+    expect(verstoesse, `Bestand: ${verstoesse.join(" | ")}`).toEqual([]);
+  });
+});
 const ZUSTAENDE_MIT_SCHRIFT: Array<{ name: string; oeffne: (p: Page) => Promise<void> }> = [
   ...ZEIT_FORMULARE.map((f) => ({ name: f.name, oeffne: f.oeffne })),
   ...FORMULAR_ZUSTAENDE.map((z) => ({ name: z.name, oeffne: z.oeffne })),
@@ -3884,6 +4019,7 @@ const ZUSTAENDE_MIT_SCHRIFT: Array<{ name: string; oeffne: (p: Page) => Promise<
     oeffne: (p: Page) => oeffneEinstieg(p, i),
   })),
   { name: "Zeit: Schicht-Protokoll", oeffne: (p: Page) => oeffneZeitMitSchichten(p) },
+  { name: "Bestand mit Einträgen", oeffne: (p: Page) => oeffneBestandMitInhalt(p) },
   /*
     Die Rückfragen gehören hierher, weil ihr Text der längste im engsten
     Kasten ist: `max-w-md` neben einem 44-px-Symbol, dazu deutsche
