@@ -536,6 +536,18 @@ const EINSTIEGE = [
     ueberschrift: /Jahreskonto & Einstellungen/,
   },
   {
+    /*
+      Seit 0.9.45 fuehrt der einzige Weg zur Analyse ueber "Mehr" -- sie ist
+      keine Station der unteren Leiste mehr. Ohne diesen Eintrag waere der
+      Klickweg ungeprueft, und genau so ist `manage` von 0.9.18 bis 0.9.21
+      durchs Netz gefallen.
+    */
+    name: "RV Analyse über Mehr",
+    start: "options",
+    einstieg: /RV Analyse/,
+    ueberschrift: /RV Analyse & Trends/,
+  },
+  {
     // Punkt statt Apostroph: Die Quelle kann ' oder ’ enthalten, und daran
     // soll keine Pruefung haengen.
     name: "Was gibt's Neues",
@@ -915,11 +927,15 @@ async function erzwingeTextabstand(page: Page) {
  */
 const FOKUS_WEGE = [
   // Ueber die untere Navigationsleiste (bzw. die Seitenleiste am Schreibtisch).
-  { name: "Formular", start: "options", nav: "RV Report", titel: /^RV Report$/ },
-  { name: "Zeit", start: "form", nav: "RV Zeit", titel: /Zeiterfassung/ },
-  { name: "Analyse", start: "form", nav: "RV Analyse", titel: /RV Analyse & Trends/ },
-  { name: "Archiv", start: "form", nav: "RV Archiv", titel: /RV Archiv/ },
-  { name: "Optionen", start: "form", nav: "Optionen", titel: /^Optionen$/ },
+  { name: "Formular", start: "options", nav: "Report", titel: /^RV Report$/ },
+  { name: "Zeit", start: "form", nav: "Zeit", titel: /Zeiterfassung/ },
+  { name: "Archiv", start: "form", nav: "Archiv", titel: /RV Archiv/ },
+  { name: "Mehr", start: "form", nav: "Mehr", titel: /^Optionen$/ },
+  /*
+    Die Analyse ist seit 0.9.45 keine Station mehr, sondern eine Menuezeile in
+    "Mehr" -- deshalb steht sie hier mit `menue` statt mit `nav`.
+  */
+  { name: "Analyse", start: "options", menue: /RV Analyse/, titel: /RV Analyse & Trends/ },
   // Ueber das Optionen-Menue.
   { name: "Was gibt's Neues", start: "options", menue: /Was gibt.s Neues/, titel: /Was gibt.s Neues/ },
   { name: "Jahreskonto", start: "options", menue: /Jahreskonto/, titel: /Jahreskonto & Einstellungen/ },
@@ -1031,7 +1047,7 @@ test.describe("Fokus beim Ansichtswechsel", () => {
     await page.getByRole("button", { name: /Hilfe & Anleitung/ }).locator("visible=true").first().click();
     await page.getByRole("heading", { name: /Hilfe & Handbuch/ }).first().waitFor({ state: "visible", timeout: 20_000 });
 
-    await page.getByRole("button", { name: "Optionen", exact: true }).locator("visible=true").first().click();
+    await page.getByRole("button", { name: "Mehr", exact: true }).locator("visible=true").first().click();
     await page.getByRole("heading", { name: /^Optionen$/ }).first().waitFor({ state: "visible", timeout: 20_000 });
 
     await expect
@@ -4074,7 +4090,7 @@ test.describe("Zwei Geräte über die Live-Verbindung", () => {
       await a.waitForTimeout(800);
       // Die untere Navigation trägt role="tab", nicht role="button" -- eine
       // Suche über die Rolle „button" findet sie nicht.
-      await a.locator('button:has-text("RV Report")').first().click({ timeout: 20_000 });
+      await a.locator('button:has-text("Report")').first().click({ timeout: 20_000 });
       await expect(
         a.getByRole("button", { name: /^Live verbunden/ }),
         "Nach dem Schließen des Sync-Fensters ist die Live-Verbindung weg. Sie " +
@@ -4552,5 +4568,169 @@ test.describe("Alle Daten löschen", () => {
     const nachher = await stand();
     expect(nachher.monate, "Das Archiv liegt nach dem Löschen noch in der IndexedDB").toBe(0);
     expect(nachher.onboarding, "Die Onboarding-Marke hat das Löschen überlebt").toBeNull();
+  });
+});
+
+
+/*
+  Die untere Navigationsleiste: lesbar und begrenzt (0.9.45).
+
+  ANLASS, gemessen am 2026-09-15 auf 0.9.44: Bei "Extra gross" war JEDE der
+  fuenf Beschriftungen abgeschnitten -- 51 px Taste bei 360 px Breite, 44 px
+  bei 320 px, gegen 57 bis 88 px Bedarf.
+
+  Warum das keine der bis dahin 1.086 Pruefungen bemerkt hat, und warum es
+  deshalb eine eigene braucht:
+
+  - Der Ueberlauf-Waechter schlaegt nicht an. `truncate` kappt mit
+    Auslassungspunkten, es ragt nichts heraus, `scrollWidth` der Seite bleibt
+    gleich der Fensterbreite.
+  - axe sieht nichts. Der zugaengliche Name bleibt vollstaendig; fuer eine
+    Stimme ist alles in Ordnung.
+  - Die Trefferflaechen-Pruefung sieht nichts. Die Tasten sind gross genug,
+    nur ihre Aufschrift ist es nicht.
+
+  Betroffen ist also genau die Gruppe, die die grosse Schrift einstellt:
+  sehbehinderte Nutzer, die noch lesen. Fuer sie unterscheiden sich fuenf
+  Tasten namens "RV A...", "RV R...", "RV Ar..." nur noch am Symbol.
+*/
+test.describe("Untere Navigationsleiste", () => {
+  for (const [breite, groesse] of [
+    [360, "normal"],
+    [360, "extra-large"],
+    [320, "extra-large"],
+  ] as const) {
+    test(`keine abgeschnittene Beschriftung bei ${breite} px und ${groesse}`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(testInfo.project.name !== "handy", "Eine Engine genuegt; die Leiste haengt nicht am Motor");
+      await oeffne(page, "form");
+      await page.setViewportSize({ width: breite, height: 780 });
+      await setzeSchriftgroesse(page, groesse);
+      await warteAufRuhigesLayout(page);
+
+      const abgeschnitten = await page.evaluate(() => {
+        const leiste = document.querySelector('[aria-label="Hauptnavigation"]');
+        if (!leiste) return ["(Leiste nicht gefunden)"];
+        const befunde: string[] = [];
+        for (const taste of Array.from(leiste.querySelectorAll("button"))) {
+          const text = taste.querySelector("span");
+          if (!text) continue;
+          // +1 px Toleranz: Unterpixel-Rundung, kein Abschneiden.
+          if (text.scrollWidth > text.clientWidth + 1) {
+            befunde.push(
+              `"${(text.textContent || "").trim()}" braucht ${Math.round(text.scrollWidth)}px, hat ${Math.round(text.clientWidth)}px`,
+            );
+          }
+        }
+        return befunde;
+      });
+
+      expect(
+        abgeschnitten,
+        `${breite} px / ${groesse}: Beschriftung abgeschnitten — ${abgeschnitten.join(" | ")}\n` +
+          `Das faellt sonst niemandem auf: Es ragt nichts heraus, und der zugaengliche ` +
+          `Name bleibt vollstaendig. Entweder kuerzere Woerter oder weniger Stationen.`,
+      ).toEqual([]);
+    });
+  }
+
+  /*
+    Die Obergrenze steht hier und nicht nur im Konzept: Bei fuenf Stationen
+    bleiben auf 320 px 49 px je Taste -- weniger, als die kuerzeste der
+    heutigen Beschriftungen braucht. Wer eine fuenfte ergaenzt, soll das nicht
+    versehentlich tun.
+  */
+  test("hoechstens vier Stationen", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Die Anzahl haengt nicht am Motor");
+    await oeffne(page, "form");
+    const anzahl = await page.evaluate(
+      () => document.querySelectorAll('[aria-label="Hauptnavigation"] button').length,
+    );
+    expect(
+      anzahl,
+      "Die untere Leiste hat mehr als vier Stationen. Bei fuenf bleiben auf " +
+        "320 px 49 px je Taste, und keine Beschriftung passt mehr (gemessen " +
+        "2026-09-15). Wer eine Station braucht, nimmt eine weg.",
+    ).toBeLessThanOrEqual(4);
+  });
+});
+
+
+/*
+  „zuletzt: heute, 11:40" am Zaehler (0.9.45).
+
+  Die reine Funktion prueft `npm run check` (acht Faelle, samt Uhr aus der
+  Zukunft). Hier geht es um das, was eine reine Funktion nicht zeigen kann:
+  dass die Zeile wirklich erscheint, dass sie AUCH nach einer eingetippten
+  Zahl erscheint -- und dass die gesprochene Fassung am Eingabefeld haengt,
+  nicht bloss irgendwo im Dokument.
+
+  Der Fall mit der eingetippten Zahl ist der wichtigste. Ein Entwurf, der ein
+  Tagesprotokoll ueber die `+1`-Tipps gefuehrt haette, waere genau hier
+  unvollstaendig gewesen und haette trotzdem vollstaendig ausgesehen. Der
+  Zeitstempel kennt diesen Unterschied nicht -- und dieser Fall beweist es.
+*/
+test.describe("Zuletzt geändert am Zähler", () => {
+  test("erscheint nach dem Tipp und nach der eingetippten Zahl", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Haengt nicht am Geraeteprofil");
+    await oeffne(page, "form");
+
+    const ersterZaehler = page.locator('input[role="spinbutton"]').first();
+    await ersterZaehler.waitFor({ state: "visible", timeout: 20_000 });
+
+    const zeile = page.locator("text=/^zuletzt: /").first();
+    await expect(
+      zeile,
+      "Vor der ersten Aenderung darf keine Zeile dastehen -- sonst behauptet sie etwas ueber einen Zeitpunkt, den es nicht gibt.",
+    ).toHaveCount(0);
+
+    // --- Weg 1: die Plus-Taste ---------------------------------------------
+    await page.getByRole("button", { name: "Erhöhen" }).first().click();
+    await expect(page.locator("text=/^zuletzt: heute/").first()).toBeVisible({ timeout: 10_000 });
+
+    // --- Weg 2: die eingetippte Zahl ---------------------------------------
+    // Zweiter Zaehler, damit der erste Nachweis nicht der zweite ist.
+    const zweiterZaehler = page.locator('input[role="spinbutton"]').nth(1);
+    await zweiterZaehler.fill("7");
+    await zweiterZaehler.blur();
+    await page.waitForTimeout(400);
+
+    const anzahl = await page.locator("text=/^zuletzt: heute/").count();
+    expect(
+      anzahl,
+      "Nach einer eingetippten Zahl fehlt die Zeile. Der Zeitstempel muss JEDE " +
+        "Aenderung erfassen -- sonst zeigt die Ansicht ein halbes Bild und sieht " +
+        "dabei vollstaendig aus.",
+    ).toBeGreaterThanOrEqual(2);
+  });
+
+  test("die gesprochene Fassung haengt am Eingabefeld und nennt keine Ziffernfolge", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Haengt nicht am Geraeteprofil");
+    await oeffne(page, "form");
+    await page.getByRole("button", { name: "Erhöhen" }).first().click();
+    await page.waitForTimeout(400);
+
+    const beschreibung = await page.evaluate(() => {
+      const feld = document.querySelector('input[role="spinbutton"]');
+      const id = feld?.getAttribute("aria-describedby");
+      if (!id) return "(kein aria-describedby)";
+      return document.getElementById(id)?.textContent ?? "(kein Element zur id)";
+    });
+
+    expect(
+      beschreibung,
+      "Die Beschreibung des Eingabefelds nennt den Zeitpunkt nicht. Sichtbar " +
+        "steht er da, gesprochen nicht -- dann haette ihn ausgerechnet die " +
+        "Zielgruppe nicht.",
+    ).toContain("zuletzt geändert heute um");
+    expect(
+      beschreibung.slice(beschreibung.indexOf("zuletzt geändert")),
+      'Die gesprochene Fassung enthaelt einen Doppelpunkt. Screenreader lesen ' +
+        '"11:40" je nach Stimme als Datum oder als "Doppelpunkt" -- deshalb ' +
+        '"11 Uhr 40".',
+    ).not.toContain(":");
   });
 });

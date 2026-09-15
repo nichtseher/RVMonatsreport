@@ -4,6 +4,8 @@ import { VORLAGE_STAND } from "./vorlageStand";
 // Nur der Typ -- ExcelJS selbst wird erst beim Export nachgeladen (271 KB).
 import type { Workbook as ExcelWorkbook } from "exceljs";
 import { formatMonthGerman } from "./dateUtils";
+import { FELD_ZU_ZELLE } from "./vorlageZellen";
+export { FELD_ZU_ZELLE };
 
 /**
  * Export in der Firmenvorlage der Vertriebsleitung.
@@ -24,37 +26,6 @@ import { formatMonthGerman } from "./dateUtils";
  * die Vertriebsleitung ihr gewohntes Blatt behaelt und die uebrigen Zahlen
  * trotzdem einzeln herauskopieren kann.
  */
-
-/**
- * Welches Zaehlerfeld gehoert in welche Zelle der Vorlage.
- *
- * Die Zuordnung laeuft ueber die Feld-ID, nicht ueber die Beschriftung: Die
- * Wortlaute weichen an mehreren Stellen leicht voneinander ab (die Vorlage
- * sagt "Anzahl Schulungen / Support vor Ort (ohne Auslieferung)", die App
- * "Anzahl Schulungen/Support (ohne Auslieferung)"), und Beschriftungen sind
- * vom Nutzer aenderbar. IDs sind es nicht.
- *
- * Die Zellen stammen nicht aus dem Augenmass: In der Vorlage sind genau 20
- * Zellen gelb hinterlegt (FFFF99) -- das sind die vorgesehenen Eingabefelder.
- * D10 ist bewusst NICHT dabei, dort steht die Formel SUM(D6:D9).
- */
-export const FELD_ZU_ZELLE: Record<string, string> = {
-  vf_schule: "D6",
-  vf_arbeit: "D7",
-  aus_schule: "D8",
-  aus_arbeit: "D9",
-  schul_vorort: "D12",
-  schul_tel: "D13",
-  akquise: "D14",
-  messen: "D16",
-  tage_arbeit: "D18",
-  std_buero: "D19",
-  tac_vf: "D21",
-  envision_vf: "D22",
-  feel_vf: "D23",
-  wewalk_vf: "D24",
-  wewalk_tel: "D25",
-};
 
 /** Zellen ausserhalb der Zaehlerfelder. */
 export const ZELLE_MONAT = "D3";

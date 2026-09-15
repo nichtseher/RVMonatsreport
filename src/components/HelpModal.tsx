@@ -286,11 +286,20 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   icon={<LayoutGrid className="text-[var(--info-border)]" />}
                   title="Wie trage ich meine Tätigkeiten im RV Report ein?"
                 >
-                  <p>Unter dem Reiter <strong>RV Report</strong> finden Sie verschiedene Bereiche (z.B. Vorführungen, Schulungen). Tippen Sie einfach auf das <strong>+</strong> Symbol, um den Zähler für eine Tätigkeit um 1 zu erhöhen. Tippen Sie auf das <strong>-</strong> Symbol, um ihn wieder zu verringern.</p>
+                  <p>Im Bereich <strong>RV Report</strong> – in der unteren Leiste heißt er kurz <strong>Report</strong> – finden Sie verschiedene Bereiche (z.B. Vorführungen, Schulungen). Tippen Sie einfach auf das <strong>+</strong> Symbol, um den Zähler für eine Tätigkeit um 1 zu erhöhen. Tippen Sie auf das <strong>-</strong> Symbol, um ihn wieder zu verringern.</p>
                   <p className="mt-2"><strong>Mehrere Vorgänge auf einmal?</strong> Tippen Sie die Zahl direkt in das Feld zwischen den beiden Tasten. Das ist der schnellste Weg, wenn Sie einen ganzen Tag nachtragen – Sie müssen nicht zehnmal auf Plus tippen.</p>
                   <p>Sie können auch in das Eingabefeld zwischen + und - tippen, um direkt eine größere Zahl über die Tastatur einzugeben.</p>
                   <p><strong>Mit Tastatur:</strong> Im Eingabefeld erhöhen und verringern die Pfeiltasten den Wert. Mit <strong>Enter</strong> springen Sie zum nächsten Feld, mit <strong>Umschalt+Enter</strong> zum vorherigen.</p>
                   <p>Die Suchleiste über den Bereichen filtert die Kategorien – hilfreich, wenn Sie eine bestimmte schnell finden möchten.</p>
+                </FAQItem>
+
+                <FAQItem
+                  icon={<HelpCircle className="text-[var(--info-border)]" />}
+                  title="Wo finde ich was? Die vier Schaltflächen unten"
+                >
+                  <p>Unten stehen vier Bereiche: <strong>Report</strong> (Ihre Zahlen), <strong>Zeit</strong> (Stempeluhr und Schichten), <strong>Archiv</strong> (frühere Monate und der Versand) und <strong>Mehr</strong>.</p>
+                  <p>Unter <strong>Mehr</strong> liegt alles Übrige – darunter <strong>RV Analyse</strong> mit der Auswertung über mehrere Monate, das Jahreskonto, Meine Demogeräte, die Datensicherung, der Geräteabgleich und diese Hilfe.</p>
+                  <p>Die Beschriftungen sind kurz, weil sie bei der Schriftgröße <strong>Extra groß</strong> sonst abgeschnitten werden. Die Bereiche selbst heißen weiterhin RV Report, RV Zeit und RV Archiv.</p>
                 </FAQItem>
 
                 <FAQItem 
@@ -338,7 +347,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   icon={<Clock className="text-[var(--info-border)]" />}
                   title="Wie funktioniert die Stempeluhr (RV Zeit)?"
                 >
-                  <p>Der Reiter <strong>RV Zeit</strong> ersetzt einen Stundenzettel. Wenn Sie morgens anfangen, drücken Sie auf <strong>Einstempeln</strong>. Die Uhr beginnt zu laufen.</p>
+                  <p>Der Bereich <strong>RV Zeit</strong> – in der unteren Leiste <strong>Zeit</strong> – ersetzt einen Stundenzettel. Wenn Sie morgens anfangen, drücken Sie auf <strong>Einstempeln</strong>. Die Uhr beginnt zu laufen.</p>
                   <p>Wenn Sie Feierabend machen, drücken Sie auf <strong>Ausstempeln</strong>. Es öffnet sich ein Dialog, in dem Sie Ihre Pausenzeit anpassen und die gearbeitete Zeit auf Büro- und Außendienst aufteilen können. Bestätigen Sie dies, um den Eintrag zu speichern.</p>
                   <p className="mt-2 text-[var(--info-text)] font-bold">Automatisch übernommen werden: Ihre Arbeitsstunden (Büro und Außendienst) sowie die Anzahl der Arbeitstage – diese müssen Sie nicht doppelt eintragen.</p>
                   <p className="mt-2 text-[var(--warning-text)] font-bold">Bitte selbst eintragen: <strong>Urlaubs- und Krankheitstage</strong> tragen Sie im RV Report (Bereich 4 „Arbeitszeit &amp; Büro") von Hand ein. Die Stempeluhr erfasst diese nicht automatisch – sie rechnet damit aber in der Jahresübersicht weiter.</p>

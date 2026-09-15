@@ -9,6 +9,8 @@ interface BerichtsBereichProps {
   /** Bereits nach der Suche gefiltert — diese Komponente entscheidet nichts über Sichtbarkeit. */
   felder: FieldConfig[];
   werte: Record<string, number | "">;
+  /** Zeitstempel je Feld (`valuesUpdatedAt`) -- fuer "zuletzt: heute, 11:40". */
+  zeitstempel?: Record<string, string>;
   isDesktop: boolean;
   isCompact: boolean;
   audioFeedbackEnabled: boolean;
@@ -46,6 +48,7 @@ export default function BerichtsBereich({
   titel,
   felder,
   werte,
+  zeitstempel,
   isDesktop,
   isCompact,
   audioFeedbackEnabled,
@@ -102,6 +105,7 @@ export default function BerichtsBereich({
             key={field.id}
             config={field}
             value={werte[field.id] ?? ""}
+            zuletztISO={zeitstempel?.[field.id]}
             onChange={(val) => onChange(field.id, val)}
             onDelta={(delta) => onDelta(field.id, delta)}
             onAnnounce={onAnnounce}

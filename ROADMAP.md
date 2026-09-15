@@ -1,6 +1,6 @@
 # Roadmap — RV Monatsreport (RV Mobil)
 
-Stand: 2026-09-15, Version 0.9.44 (bis 0.9.43 ist veröffentlicht)
+Stand: 2026-09-15, Version 0.9.45 (bis 0.9.44 ist veröffentlicht)
 
 Diese Roadmap ist aus **gemessenen Befunden** entstanden, nicht aus Vermutungen.
 Wo eine Zahl steht, wurde sie nachgemessen. Punkte ohne Beleg sind als
@@ -1056,6 +1056,35 @@ reinen Prüfungen zu `verrechneSchicht` abgedeckt, über die Oberfläche **nicht
 > fachfremdes Zählerfeld bleibt unberührt. Als Prüfung im Gate festgehalten,
 > weil zwischen der reinen Funktion und dem Bericht der Dialog, der Hook, der
 > Zeitstempel und der Schreibvorgang nach IndexedDB liegen.
+
+---
+
+## 0.9.45 — Vier Stationen, und der Zeitstempel wird gezeigt — ERLEDIGT (2026-09-15)
+
+Umsetzung von [KONZEPT-NAVIGATION.md](KONZEPT-NAVIGATION.md), entstanden aus
+einer Durchsicht „aus Sicht eines Außendienstlers".
+
+**Der Befund, der die Leiste entschieden hat:** Bei „Extra groß" war **jede**
+der fünf Beschriftungen der unteren Leiste abgeschnitten — 44 px Taste bei
+320 px Breite gegen 57–88 px Bedarf. Unbemerkt über 1.086 Prüfungen hinweg,
+weil `truncate` nichts überlaufen lässt und der zugängliche Name vollständig
+bleibt. Betroffen war genau die Gruppe, die die große Schrift einstellt.
+
+Umgesetzt: `Report · Zeit · Archiv · Mehr`; RV Analyse steht jetzt in „Mehr"
+unter „Meine Sachen", die Stempeluhr bleibt (zweimal täglich gebraucht).
+Dazu „zuletzt: heute, 11:40" an jedem Zähler aus dem vorhandenen
+`valuesUpdatedAt`, und eine Löschabfrage, die die Zeile im Firmenformular
+nennt.
+
+**Gehalten wird das von zwei neuen Wächtern:** keine abgeschnittene
+Beschriftung bei 320/360 px über die Schriftgrößen, und höchstens vier
+Stationen.
+
+**Offen geblieben:** Ist die Stempeluhr abgeschaltet, hat die Leiste drei
+statt vier Stationen — die Form hängt weiterhin an einer Einstellung. Gelöst
+wäre das nur mit einer vierten Station, die es immer gibt; der Entwurf dafür
+(Tagesprotokoll und Ansicht „Heute") ist auf Entscheidung des Projektinhabers
+verworfen, mit Begründung im Konzept.
 
 ---
 

@@ -51,6 +51,20 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.45: Die Leiste unten ist jetzt lesbar – und jeder Zähler sagt, wann Sie zuletzt gezählt haben</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Neu an jedem Zähler: „zuletzt: heute, 11:40“.</strong> Wenn Sie nach einem Termin unterbrochen werden und sich fragen, ob Sie schon gezählt haben, steht die Antwort jetzt direkt unter der Kategorie. Die App wusste den Zeitpunkt längst – sie hat ihn nur nie gezeigt.</li>
+            <li><strong>Unten stehen jetzt vier statt fünf Schaltflächen: Report, Zeit, Archiv, Mehr.</strong> Grund: Bei der Schriftgröße „Extra groß“ war vorher <em>jede</em> der fünf Beschriftungen abgeschnitten – bei 320 Pixeln blieben 44 Pixel für ein Wort, das 88 braucht. Mit vier kurzen Wörtern passt alles.</li>
+            <li><strong>RV Analyse finden Sie jetzt unter „Mehr“.</strong> Die Auswertung über mehrere Monate öffnet man bewusst und nicht zwischen zwei Terminen; die Stempeluhr bleibt dafür unten stehen, weil Sie sie zweimal am Tag brauchen.</li>
+            <li><strong>Beim Löschen einer Kategorie sagt die Rückfrage jetzt, was das für den Bericht bedeutet</strong> – etwa: „Diese Kategorie füllt Zeile D22 im Firmenformular. Nach dem Löschen bleibt diese Zeile in jedem Bericht leer.“</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.44: Die App heißt überall „RV Mobil“</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>

@@ -3,6 +3,7 @@ import { AccessibilitySettings, AccessibilityTheme, SectionsConfig } from "../ty
 import {
   Type, Volume2, Sparkles, HelpCircle, Lock, Settings2, ChevronRight,
   ArrowLeft, Clock, Sliders, Smartphone, Bell, Monitor, Palette, CalendarDays, Package,
+  BarChart3,
 } from "lucide-react";
 
 interface A11yModalProps {
@@ -40,6 +41,13 @@ interface A11yModalProps {
   onSchichtenLoeschen?: () => void;
   /** Gerät zurückgeben: löscht beide Speicher vollständig -- fragt selbst zurück. */
   onAllesLoeschen?: () => void;
+  /**
+   * RV Analyse. Seit 0.9.45 nicht mehr in der unteren Leiste: Bei „Extra groß"
+   * war dort jede der fünf Beschriftungen abgeschnitten, und „RV Analyse" war
+   * mit 88 px die längste von allen. Vier Stationen tragen ihre Wörter, fünf
+   * nicht.
+   */
+  onOpenStats?: () => void;
 }
 
 /* ---------- Wiederverwendbare, kompakte Bausteine ---------- */
@@ -191,6 +199,7 @@ export default function A11yModal({
   schichtenAnzahl = 0,
   onSchichtenLoeschen,
   onAllesLoeschen,
+  onOpenStats,
 }: A11yModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeMenu, setActiveMenu] = useState<"main" | "a11y" | "form">("main");
@@ -296,6 +305,16 @@ export default function A11yModal({
       </SectionCard>
 
       <SectionCard title="Meine Sachen">
+        {onOpenStats && (
+          <MenuRow
+            icon={<BarChart3 className="w-5 h-5" />}
+            iconClass="bg-[var(--cat-2)] text-[var(--primary-text)]"
+            label="RV Analyse"
+            hint="Ihre Zahlen über mehrere Monate, mit Trends"
+            onClick={onOpenStats}
+            id="menu-stats"
+          />
+        )}
         {onOpenCarryover && (
           <MenuRow
             icon={<CalendarDays className="w-5 h-5" />}

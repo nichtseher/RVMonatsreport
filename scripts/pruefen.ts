@@ -27,6 +27,7 @@ import "./checks/zeigerabbruch";
 import "./checks/zustandsdeckung";
 import "./checks/rueckfrage";
 import "./checks/ansichtsfokus";
+import "./checks/zuletzt-geaendert";
 import { alleLaufen } from "./helfer";
 
 alleLaufen()

@@ -14,7 +14,6 @@ import {
   History,
   Volume2,
   Square,
-  BarChart3,
   LayoutGrid,
   Eye,
   GraduationCap,
@@ -42,6 +41,7 @@ import { useAnsichtsFokus } from "./hooks/useAnsichtsFokus";
 import BerichtsBereich from "./components/BerichtsBereich";
 import NotizBereich from "./components/NotizBereich";
 import { loescheAllesLokal } from "./utils/allesLoeschen";
+import { FELD_ZU_ZELLE } from "./utils/vorlageZellen";
 import { monthHasContent } from "./utils/monatInhalt";
 import { rueckfrageOffen } from "./utils/rueckfrage";
 import { stempeln, stempelNachtragen, stempelnGeaenderte } from "./utils/zeitstempel";
@@ -1376,9 +1376,23 @@ export default function App() {
     label: string,
   ) => {
     triggerHaptic(25);
+    /*
+      Die Zelle gehört in die Rückfrage (0.9.45). Vorher stand dort nur, dass
+      der Wert dieses Monats verlorengeht -- das ist das Kleinere. 15 der 19
+      Standardkategorien füllen eine feste Zeile der Firmenvorlage; wer eine
+      davon löscht, erzeugt eine Zeile, die in JEDEM künftigen Bericht leer
+      bleibt. Und eine leere Zeile sieht aus wie eine Null. Genau dieser
+      Fehler ist 0.9.11 schon einmal aufgetreten.
+    */
+    const zelle = FELD_ZU_ZELLE[fieldId];
     setConfirmRequest({
       title: "Kategorie löschen?",
       message: `„${label}“ wird endgültig aus dem Formular entfernt. Der bisher erfasste Wert für diesen Monat geht dabei verloren.`,
+      details: zelle
+        ? [
+            `Diese Kategorie füllt Zeile ${zelle} im Firmenformular. Nach dem Löschen bleibt diese Zeile in jedem Bericht leer.`,
+          ]
+        : undefined,
       confirmLabel: "Endgültig löschen",
       tone: "danger",
       onConfirm: () => {
@@ -1742,12 +1756,36 @@ export default function App() {
     Die Ansage steht mit in der Liste und nicht in einer if-Kette: So kann kein
     Eintrag ohne Ansage existieren.
   */
+  /*
+    VIER STATIONEN, KURZE WOERTER (0.9.45) -- und beides ist gemessen, nicht
+    gestaltet.
+
+    Bei "Extra gross" war bis 0.9.44 JEDE der fuenf Beschriftungen
+    abgeschnitten: 51 px Taste bei 360 px Breite, 44 px bei 320 px -- gegen
+    57 bis 88 px Bedarf. Lautlos, denn `truncate` laesst nichts ueberlaufen
+    und der zugaengliche Name bleibt vollstaendig: Keine der 1.086 Pruefungen
+    hat es je bemerkt. Betroffen war genau die Gruppe, die die grosse Schrift
+    einstellt -- fuer sie unterschieden sich fuenf Tasten namens "RV A...",
+    "RV R...", "RV Ar..." nur noch am Symbol.
+
+    Bei 320 px bleiben innen 292 px. Auf fuenf Eintraege sind das 49 px je
+    Taste, auf vier 62 px. Ohne das Praefix "RV" passt dann jedes Wort:
+    Report 53, Analyse 61, Archiv 49, Zeit 30, Mehr 42 px.
+
+    Gewichen ist RV Analyse -- ein Rueckblick ueber Monate, den man bewusst
+    oeffnet und nicht zwischen zwei Terminen, und mit 88 px die laengste
+    Beschriftung von allen. Sie steht jetzt in "Mehr" unter "Meine Sachen".
+    Die Stempeluhr bleibt: Sie ist eine Handlung, die zweimal taeglich
+    stattfindet.
+
+    `tests/oberflaeche.spec.ts` haelt beides fest -- keine abgeschnittene
+    Beschriftung bei 320 px und "Extra gross", und hoechstens vier Stationen.
+  */
   const hauptnavigation = [
-    { id: "form" as const, label: "RV Report", icon: LayoutGrid, ansage: "RV Report Hauptformular angezeigt", active: activeTab === "form", visible: true },
-    { id: "time" as const, label: "RV Zeit", icon: Clock, ansage: "RV Zeit und Stempeluhr geöffnet", active: activeTab === "time" || activeTab === "carryover", visible: accessibility.enableTimeTracking !== false },
-    { id: "stats" as const, label: "RV Analyse", icon: BarChart3, ansage: "RV Analyse und Statistiken geöffnet", active: activeTab === "stats", visible: true },
-    { id: "history" as const, label: "RV Archiv", icon: History, ansage: "RV Archiv geöffnet", active: activeTab === "history", visible: true },
-    { id: "options" as const, label: "Optionen", icon: Settings, ansage: "Anzeige-Optionen geöffnet", active: activeTab === "options" || activeTab === "help" || activeTab === "backup" || activeTab === "manage" || activeTab === "sync" || activeTab === "changelog", visible: true },
+    { id: "form" as const, label: "Report", icon: LayoutGrid, ansage: "RV Report Hauptformular angezeigt", active: activeTab === "form", visible: true },
+    { id: "time" as const, label: "Zeit", icon: Clock, ansage: "RV Zeit und Stempeluhr geöffnet", active: activeTab === "time" || activeTab === "carryover", visible: accessibility.enableTimeTracking !== false },
+    { id: "history" as const, label: "Archiv", icon: History, ansage: "RV Archiv geöffnet", active: activeTab === "history", visible: true },
+    { id: "options" as const, label: "Mehr", icon: Settings, ansage: "Weitere Ansichten und Optionen geöffnet", active: activeTab === "options" || activeTab === "help" || activeTab === "backup" || activeTab === "manage" || activeTab === "sync" || activeTab === "changelog" || activeTab === "stats" || activeTab === "bestand", visible: true },
   ];
 
   /** Ansicht wechseln aus der Hauptnavigation -- beide Leisten nutzen diesen Weg. */
@@ -2874,6 +2912,7 @@ export default function App() {
               titel={b.titel}
               felder={filterFields(b.felder)}
               werte={reportData?.values || {}}
+              zeitstempel={reportData?.valuesUpdatedAt}
               isDesktop={isDesktop}
               isCompact={shouldUseCompactFields}
               audioFeedbackEnabled={accessibility.audioFeedback}
@@ -3207,6 +3246,7 @@ export default function App() {
             }
             onSchichtenLoeschen={handleSchichtenLoeschen}
             onAllesLoeschen={handleAllesLoeschen}
+            onOpenStats={() => setActiveTab("stats")}
           />
         </div>
       )}
@@ -3344,7 +3384,20 @@ export default function App() {
       */}
       {!focusedFieldId && (
         <div
-          className={`fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-xl z-[200] bg-[var(--card-bg)]/90 dark:bg-[var(--card-bg)]/95 backdrop-blur-md border border-[var(--border-color)] py-2.5 px-4 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.5)] transition-all ${isDesktop ? 'lg:hidden' : ''}`}
+          /*
+            UNDURCHSICHTIG seit 0.9.45, und das ist eine Kontrastfrage, keine
+            Geschmacksfrage. Die Leiste stand auf `bg-[var(--card-bg)]/90` mit
+            Weichzeichner; was hinter ihr liegt, ging damit in die wirksame
+            Hintergrundfarbe ein. Beim Umbau auf vier Stationen rutschte die
+            aktive Taste ueber anderen Seiteninhalt, und axe meldete die
+            Beschriftung mit 4,16:1 -- unter den geforderten 4,5:1 (gemessen
+            2026-09-15 in der Datensicherung).
+
+            Gegen die undurchsichtige Kartenflaeche sind es 5,02:1 im hellen
+            und 7,83:1 im dunklen Schema. Der Weichzeichner ist ersatzlos weg:
+            Hinter einer deckenden Flaeche tut er ohnehin nichts.
+          */
+          className={`fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-xl z-[200] bg-[var(--card-bg)] border border-[var(--border-color)] py-2.5 px-4 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.5)] transition-all ${isDesktop ? 'lg:hidden' : ''}`}
           role="navigation"
           aria-label="Hauptnavigation"
         >

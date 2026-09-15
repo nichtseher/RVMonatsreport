@@ -10,6 +10,125 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-15 — v0.9.45: Vier Stationen, und der Zeitstempel wird endlich gezeigt
+
+Umsetzung von `KONZEPT-NAVIGATION.md`, Punkt für Punkt. Das Konzept entstand
+aus einer Durchsicht der App „aus Sicht eines Außendienstlers" und aus zwei
+Korrekturen des Projektinhabers: Der Rückblick über den Tag ist verworfen, und
+das Tagesprotokoll wäre ohnehin nur für den Nutzer selbst gewesen.
+
+### Der Befund, der die Leiste entschieden hat
+
+Nicht aus dem Entwurf, sondern aus der Messung — und er hat meinen eigenen
+ersten Vorschlag umgeworfen:
+
+| Breite / Schrift | Taste | Beschriftung braucht | Ergebnis |
+|---|---|---|---|
+| 360 px, normal | 56 px | 38–59 px | nur „RV Analyse" abgeschnitten |
+| 360 px, **Extra groß** | 51 px | 57–88 px | **alle fünf abgeschnitten** |
+| 320 px, **Extra groß** | 44 px | 57–88 px | **alle fünf abgeschnitten** |
+
+Bei 320 px bleiben innen 292 px: 49 px je Taste bei fünf Stationen, 62 px bei
+vier. „RV Analyse" braucht 88 px, „RV Report" 80, „Optionen" 75.
+
+**Warum das zwei Jahre unbemerkt blieb, obwohl 1.086 Prüfungen laufen:**
+`truncate` kappt mit Auslassungspunkten, es ragt also nichts heraus — der
+Überlauf-Wächter schweigt. Der zugängliche Name bleibt vollständig — axe
+schweigt. Die Tasten sind groß genug — die Trefferflächen-Prüfung schweigt.
+Betroffen war genau die Gruppe, die die große Schrift einstellt: sehbehinderte
+Nutzer, die noch **lesen**. Für sie unterschieden sich fünf Tasten namens
+„RV A…", „RV R…", „RV Ar…" nur noch am Symbol.
+
+### Was gebaut wurde
+
+**1. „zuletzt: heute, 11:40" an jedem Zähler.** Die App schreibt seit 0.9.0
+einen Zeitstempel je Feld (`valuesUpdatedAt`) und hat ihn ausschließlich für
+den Geräteabgleich benutzt. Jetzt beantwortet er die Frage, die im Auto
+entsteht.
+
+Zwei Fassungen je Zeitpunkt, und das ist kein Zierrat: sichtbar „heute, 11:40",
+gesprochen „zuletzt geändert heute um 11 Uhr 40". Screenreader lesen „11:40"
+je nach Stimme als Datum oder als „Doppelpunkt"; „11 Uhr 40" wird überall als
+Uhrzeit gesprochen. Die sichtbare Zeile trägt deshalb `aria-hidden`, die
+gesprochene hängt am Eingabefeld — zweimal vorgelesen wäre Ballast.
+
+**2. Vier Stationen: `Report · Zeit · Archiv · Mehr`.** Gewichen ist RV
+Analyse — ein Rückblick über Monate, den man bewusst öffnet, und mit 88 px die
+längste Beschriftung von allen. Sie steht jetzt in „Mehr" unter „Meine
+Sachen". **Die Stempeluhr bleibt**, weil sie zweimal täglich gebraucht wird.
+
+**3. Die Löschabfrage nennt die Zeile.** 15 der 19 Standardkategorien füllen
+eine feste Zelle der Firmenvorlage. Wer eine davon löscht, erzeugte bisher
+eine Zeile, die in **jedem** künftigen Bericht leer bleibt — und eine leere
+Zeile sieht aus wie eine Null. Genau dieser Fehler ist 0.9.11 schon einmal
+aufgetreten. Die Rückfrage sagt es jetzt.
+
+Dafür ist `FELD_ZU_ZELLE` in eine eigene Datei gewandert
+(`utils/vorlageZellen.ts`). Der Grund ist derselbe wie bei `VORLAGE_STAND` in
+0.9.35: Ein statischer Import aus `App.tsx` hätte die eingebettete Vorlage
+(16 KB base64) ins Startbündel gezogen.
+
+### Die Wächter, die das halten
+
+Der eigentliche Gewinn, denn der Befund oben war jahrelang unsichtbar:
+
+- **`check:ui`: keine abgeschnittene Beschriftung** in der Hauptnavigation bei
+  360 px normal, 360 px „Extra groß" und 320 px „Extra groß".
+- **`check:ui`: höchstens vier Stationen.** Wer eine fünfte ergänzt, liest die
+  gemessene Begründung in der Fehlermeldung.
+- **`npm run check`: acht Fälle für `formatiereZuletzt`** — darunter „gestern,
+  obwohl keine 24 Stunden vergangen sind" (gezählt werden Kalendertage) und
+  eine Uhr aus der Zukunft, die nicht „heute" behaupten darf.
+- **Ein Prüffall für die eingetippte Zahl.** Der ist wichtiger, als er
+  aussieht: Der verworfene Entwurf hätte ein Protokoll über die `+1`-Tipps
+  geführt und wäre genau hier unvollständig gewesen — und hätte dabei
+  vollständig ausgesehen. Der Zeitstempel kennt diesen Unterschied nicht.
+
+### Was das Tor gefangen hat — und was die Pipe fast durchgelassen hätte
+
+Der erste volle Lauf meldete **einen Fehler**: die Beschriftung der aktiven
+Station mit **4,16:1** statt der geforderten 4,5:1 (axe, Ansicht
+Datensicherung, Standardschema).
+
+Die Ursache hängt an meiner eigenen Änderung, aber anders als es aussieht: Die
+Leiste stand auf `bg-[var(--card-bg)]/90` mit Weichzeichner — **was hinter ihr
+liegt, ging in die wirksame Hintergrundfarbe ein**. Mit vier statt fünf
+Stationen rutschte die aktive Taste über anderen Seiteninhalt, und derselbe
+Grünton kippte von „reicht" auf „reicht nicht". Nachgemessen gegen eine
+undurchsichtige Fläche: **5,02:1 im hellen, 7,83:1 im dunklen Schema.**
+
+Die Leiste ist deshalb jetzt deckend. Das behebt nicht nur diesen einen Wert,
+sondern eine ganze Klasse von Unberechenbarkeit — dieselbe, wegen der axe in
+Dialogen `incomplete` statt `violation` meldet (CLAUDE.md, „color-contrast is
+silently unavailable inside a modal"). Der Weichzeichner ist ersatzlos
+entfallen; hinter einer deckenden Fläche tut er nichts.
+
+**Und beinahe hätte ich es nicht gesehen.** Der Lauf lief im Hintergrund mit
+`npm run check:ui 2>&1 | tail -30`, und die Aufgabe meldete **exit code 0** —
+den Rückgabewert von `tail`, nicht den des Laufs. Die Zusammenfassungszeile
+sagte `1 failed`. Genau die Falle steht seit 0.9.22 in CLAUDE.md, und sie hat
+heute wieder zugeschlagen. Der Wiederholungslauf geht ohne Pipe.
+
+### Verworfen, mit Begründung im Konzept
+
+Tagesprotokoll und eine Ansicht „Heute". Entscheidung des Projektinhabers.
+Was mit ihnen entfällt, steht in `KONZEPT-NAVIGATION.md`: die Wochentabelle,
+die Taste zum Zurücknehmen eines Doppeltipps — und eine feste Form der Leiste.
+**Ist die Stempeluhr abgeschaltet, hat die Leiste jetzt drei statt vier
+Stationen.** Besser als vorher (fünf oder vier), aber nicht gelöst.
+
+### Prüfstand
+
+| | 0.9.44 | 0.9.45 |
+|---|---|---|
+| `lint` | grün | grün |
+| `check` | 178 | **186** |
+| `check:ui` | 575 | **594** (zwei Wächter für die Leiste, zwei Fälle für den Zeitstempel, ein Einstieg für die Analyse) |
+| Stationen in der Leiste | 5 (oder 4) | **4 (oder 3)** |
+| abgeschnittene Beschriftungen bei „Extra groß" | **5 von 5** | **0** |
+
+---
+
 ## 2026-09-15 — v0.9.44: Dieselbe App unter drei Namen
 
 Korrektur des Projektinhabers zu 0.9.43: Die Umbenennung der Startseite in
@@ -52,7 +171,7 @@ dem Symbol, bis er sie neu ablegt. Das steht so im Changelog, statt eine
 |---|---|---|
 | `lint` | grün | grün |
 | `check` | 178 | 178 (inkl. Kodierungsprüfung über die geänderten Dateien) |
-| `check:ui` | 575 | siehe Lauf |
+| `check:ui` | 575 | 575 (die Umbenennung berührt keine Prüfung) |
 
 ---
 

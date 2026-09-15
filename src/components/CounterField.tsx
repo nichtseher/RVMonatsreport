@@ -3,6 +3,7 @@ import { FieldConfig } from "../types";
 import { Plus, Minus } from "lucide-react";
 import { getIconForString } from "../utils/iconMap";
 import { playAudioFeedback as playAudioFeedbackShared } from "../utils/audioFeedback";
+import { formatiereZuletzt } from "../utils/zuletztGeaendert";
 
 interface CounterFieldProps {
   key?: React.Key;
@@ -16,6 +17,8 @@ interface CounterFieldProps {
   isCompact?: boolean;
   onFocus?: () => void;
   onBlur?: () => void;
+  /** Zeitstempel der letzten Aenderung (`valuesUpdatedAt`), roh als ISO-Text. */
+  zuletztISO?: string;
 }
 
 export default React.memo(function CounterField({
@@ -27,9 +30,11 @@ export default React.memo(function CounterField({
   audioFeedbackEnabled,
   isCompact = false,
   onFocus,
-  onBlur
+  onBlur,
+  zuletztISO
 }: CounterFieldProps) {
   const inputId = `input-${config.id}`;
+  const zuletzt = formatiereZuletzt(zuletztISO);
   const instructionsId = `${inputId}-instructions`;
   const displayVal = value === "" ? "" : value;
 
@@ -191,6 +196,25 @@ export default React.memo(function CounterField({
             Eigene Kategorie
           </span>
         )}
+        {/*
+          „zuletzt: heute, 11:40" (0.9.45) -- die Antwort auf den Zweifel, der
+          nach einem unterbrochenen Termin entsteht: Habe ich das schon
+          gezählt? Die App wusste es seit 0.9.0 (`valuesUpdatedAt`) und hat es
+          nie gesagt.
+
+          `aria-hidden`, weil dieselbe Auskunft gesprochen im Beschreibungstext
+          des Eingabefelds steht -- dort in einer Form, die jede Stimme als
+          Uhrzeit liest („11 Uhr 40" statt „11:40"). Zweimal vorgelesen wäre
+          sie Ballast.
+        */}
+        {zuletzt && (
+          <span
+            className="block mt-1 text-[0.75rem] font-bold text-[var(--text-muted)] [overflow-wrap:anywhere]"
+            aria-hidden="true"
+          >
+            {zuletzt.sichtbar}
+          </span>
+        )}
       </div>
 
       {/*
@@ -252,6 +276,7 @@ export default React.memo(function CounterField({
           />
           <p id={instructionsId} className="sr-only">
             {`Eingabefeld für ${config.label}. Sie können die Zahl direkt eintippen. Verwenden Sie sonst die Pfeiltasten oder die Plus- und Minus-Tasten. Mit Enter springen Sie zum nächsten Feld.`}
+            {zuletzt ? ` ${zuletzt.gesprochen}.` : ""}
           </p>
         </div>
 
