@@ -51,6 +51,19 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.44: Die App heißt überall „RV Mobil“</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Das Symbol auf Ihrem Startbildschirm heißt jetzt „RV Mobil“.</strong> Vorher stand dort „RV Report“, im Browser-Tab „RV Monatsreport“ und in der Fußzeile „RV Mobil“ – dieselbe App unter drei Namen. Wenn Sie die App schon auf dem Startbildschirm haben, ändert sich die Beschriftung erst, wenn Sie sie dort neu ablegen.</li>
+            <li><strong>„RV Report“ ist der Name der ersten Seite</strong>, auf der Sie Ihre Zählerstände eintragen – so wie RV Zeit, RV Analyse und RV Archiv. Die App selbst heißt RV Mobil.</li>
+            <li>Auch die Erinnerung zum Monatsende und die Eigenschaften der Excel-Datei nennen jetzt „RV Mobil“.</li>
+          </ul>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.43: Alle Daten löschen – für die Rückgabe des Geräts</span>
             <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>

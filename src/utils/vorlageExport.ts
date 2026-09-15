@@ -267,7 +267,9 @@ export const erzeugeVorlagenDatei = async (
     einzige Ort, der unabhaengig vom Blattumfang existiert; Blatt 1 selbst
     bleibt unangetastet, das ist die Zusage.
   */
-  wb.title = `RV Monatsreport ${data.month || ""}`.trim();
+  // „RV Mobil" und nicht „RV Monatsreport": Die App heisst seit 0.9.44
+  // ueberall gleich -- Fenstertitel, Startbildschirm, Systemmeldung und hier.
+  wb.title = `RV Mobil ${data.month || ""}`.trim();
   wb.subject = `Formularfassung ${VORLAGE_STAND}`;
   wb.company = "Reinecker Vision GmbH";
   wb.description =

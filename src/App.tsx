@@ -1626,7 +1626,7 @@ export default function App() {
     if ("Notification" in window && Notification.permission === "granted" && "serviceWorker" in navigator) {
       navigator.serviceWorker.ready
         .then((reg) =>
-          reg.showNotification("RV Monatsreport", {
+          reg.showNotification("RV Mobil", {
             body: reminderText,
             icon: "./icon-192.png",
             badge: "./icon-192.png",
@@ -1919,7 +1919,7 @@ export default function App() {
              {/* Ohne `opacity-70`: Damit lag der Kontrast bei 3,59:1 statt der
                  geforderten 4,5:1 (WCAG 1.4.3, gemessen von axe-core). */}
              <p className="text-[0.75rem] text-[var(--text-muted)] font-bold">
-               © 2026 Reinecker Vision
+               © 2026 Reinecker Vision GmbH | RV Mobil
              </p>
           </div>
         </aside>

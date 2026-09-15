@@ -1,6 +1,6 @@
 # Roadmap — RV Monatsreport (RV Mobil)
 
-Stand: 2026-09-15, Version 0.9.43 (bis 0.9.42 ist veröffentlicht)
+Stand: 2026-09-15, Version 0.9.44 (bis 0.9.43 ist veröffentlicht)
 
 Diese Roadmap ist aus **gemessenen Befunden** entstanden, nicht aus Vermutungen.
 Wo eine Zahl steht, wurde sie nachgemessen. Punkte ohne Beleg sind als
@@ -1056,6 +1056,33 @@ reinen Prüfungen zu `verrechneSchicht` abgedeckt, über die Oberfläche **nicht
 > fachfremdes Zählerfeld bleibt unberührt. Als Prüfung im Gate festgehalten,
 > weil zwischen der reinen Funktion und dem Bericht der Dialog, der Hook, der
 > Zeitstempel und der Schreibvorgang nach IndexedDB liegen.
+
+---
+
+## 0.9.44 — Dieselbe App unter drei Namen — ERLEDIGT (2026-09-15)
+
+Korrektur des Projektinhabers zu 0.9.43: Die Startseite heißt richtig
+„RV Report" — dann muss die App aber überall „RV Mobil" heißen, auch in der
+Fußzeile.
+
+Nachgesehen: Sie hieß an sechs Stellen drei verschiedene Dinge. Am
+schwersten wog `short_name` im Manifest, denn das ist die Beschriftung unter
+dem Symbol auf dem Startbildschirm — dort hieß die App ausgerechnet wie ihre
+erste Seite („RV Report"), im Browser-Tab dagegen „RV Monatsreport" und in
+ihrer eigenen Fußzeile „RV Mobil".
+
+Vereinheitlicht sind: Fenstertitel, iOS-Titel, Manifest (`name` und
+`short_name`), die Systemmeldung der Monatserinnerung, die
+Dokumenteigenschaften der Excel-Datei und die Fußzeile der Seitenleiste.
+
+Unberührt bleibt „Monatsreport" als Wort für die Sache selbst, und das
+Code-Verzeichnis `RVMonatsreport` — es umzubenennen hiesse, jede Adresse zu
+brechen, unter der die App veröffentlicht ist.
+
+**Was ein Nutzer davon nicht merkt:** Das Symbol auf dem Startbildschirm
+behält seinen alten Namen, bis die App dort neu abgelegt wird — iOS und
+Android lesen das Manifest beim Installieren, nicht bei jedem Start. Der
+Changelog sagt das, statt eine Änderung zu versprechen, die nicht eintritt.
 
 ---
 

@@ -1,6 +1,6 @@
 {
-  "name": "RV Monatsreport",
-  "short_name": "RV Report",
+  "name": "RV Mobil",
+  "short_name": "RV Mobil",
   "description": "Barrierefreier Monatsreport für den Außendienst. Alle Daten bleiben lokal auf dem Gerät (DSGVO-konform).",
   "lang": "de",
   "start_url": ".",

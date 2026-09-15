@@ -10,6 +10,52 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-15 — v0.9.44: Dieselbe App unter drei Namen
+
+Korrektur des Projektinhabers zu 0.9.43: Die Umbenennung der Startseite in
+„RV Report" war richtig — aber dann muss die **App** überall „RV Mobil"
+heißen, auch in der Fußzeile.
+
+Nachgesehen, statt es zu glauben: Sie hieß an sechs Stellen drei
+verschiedene Dinge.
+
+| Ort | vorher | jetzt |
+|---|---|---|
+| Fenstertitel / Browser-Tab | RV Monatsreport - Barrierefrei | **RV Mobil – Barrierefrei** |
+| Symbol auf dem Startbildschirm (`short_name`) | **RV Report** | RV Mobil |
+| Name im Manifest | RV Monatsreport | RV Mobil |
+| iOS-Titel (`apple-mobile-web-app-title`) | RV Monatsreport | RV Mobil |
+| Systemmeldung der Monatserinnerung | RV Monatsreport | RV Mobil |
+| Eigenschaften der Excel-Datei (`wb.title`) | RV Monatsreport 2026-09 | RV Mobil 2026-09 |
+| Fußzeile der Seitenleiste | © 2026 Reinecker Vision | © 2026 Reinecker Vision GmbH \| RV Mobil |
+
+Der schwerwiegendste Eintrag ist der zweite: `short_name` ist genau das, was
+unter dem Symbol auf dem Startbildschirm steht. Die App hieß dort ausgerechnet
+wie ihre erste Seite — und damit anders als im Tab, anders als in der
+Systemmeldung und anders als in ihrer eigenen Fußzeile.
+
+Unberührt bleibt „Monatsreport" als **Wort**: „geht nicht in den
+Monatsreport", „ersetzt den Monatsreport in Excel". Das ist die Sache, nicht
+der Name der App. Ebenso das Code-Verzeichnis `RVMonatsreport` — das umzubenennen
+hiesse, jede Adresse zu brechen, an der die App veröffentlicht ist.
+
+**Was ein Nutzer davon merkt und was nicht:** Der Browser-Tab und die
+Systemmeldung ändern sich sofort. Das Symbol auf dem Startbildschirm **nicht**
+— iOS und Android übernehmen den Namen aus dem Manifest beim Ablegen, nicht
+bei jedem Start. Wer die App schon installiert hat, behält „RV Report" unter
+dem Symbol, bis er sie neu ablegt. Das steht so im Changelog, statt eine
+Änderung zu versprechen, die nicht eintritt.
+
+### Prüfstand
+
+| | 0.9.43 | 0.9.44 |
+|---|---|---|
+| `lint` | grün | grün |
+| `check` | 178 | 178 (inkl. Kodierungsprüfung über die geänderten Dateien) |
+| `check:ui` | 575 | siehe Lauf |
+
+---
+
 ## 2026-09-15 — v0.9.43: Das Gerät leeren, den Rückweg finden, schneller starten
 
 Vier Punkte in einer Fassung, auf Wunsch des Projektinhabers. Sie hängen

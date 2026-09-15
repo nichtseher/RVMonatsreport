@@ -1,7 +1,13 @@
-# RV Monatsreport (RV Mobil)
+# RV Mobil
 
 Barrierefreie Progressive Web App (PWA) für den Monatsbericht im Außendienst –
 optimiert für blinde und sehbehinderte Mitarbeitende.
+
+Die App heißt **RV Mobil** — im Fenstertitel, unter dem Symbol auf dem
+Startbildschirm, in Systemmeldungen und in der Fußzeile. **RV Report** ist der
+Name der ersten Seite, auf der die Zählerstände eingetragen werden; daneben
+gibt es RV Zeit, RV Analyse und RV Archiv. Das Code-Verzeichnis heißt aus
+historischen Gründen weiterhin `RVMonatsreport`.
 
 ## Datenschutz & Architektur (DSGVO)
 
