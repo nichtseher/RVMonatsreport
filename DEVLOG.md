@@ -109,6 +109,42 @@ den Rückgabewert von `tail`, nicht den des Laufs. Die Zusammenfassungszeile
 sagte `1 failed`. Genau die Falle steht seit 0.9.22 in CLAUDE.md, und sie hat
 heute wieder zugeschlagen. Der Wiederholungslauf geht ohne Pipe.
 
+### Der Deploy war rot — und der eigene Wächter hatte recht
+
+Der Lauf zu `3101833` scheiterte am **neu gebauten Wächter**:
+
+```
+320 px / extra-large: Beschriftung abgeschnitten — "Report" braucht 60px, hat 57px
+```
+
+Also genau der Fehler, gegen den er geschrieben wurde — nur auf dem Läufer,
+nicht hier. `ubuntu-latest` kennt weder „Segoe UI" noch „Segoe UI Variable
+Text"; „Report" braucht dort 60 px statt der 53, die dieselbe Messung lokal
+ergab.
+
+**Und meine Nachstellung war wertlos, ohne dass ich es gemerkt hätte.** Ich
+habe dreimal „mit erzwungener Breitschrift" gemessen und dabei jedes Mal Segoe
+UI gemessen: Das Init-Skript starb im Browser mit `__name is not defined` —
+dem Helfer, den esbuild für benannte Funktionen einspritzt und den es dort
+nicht gibt. Sichtbar wurde das erst, als ich die Konsole der Seite mitlas.
+
+**Die wichtigere Frage war danach, ob das auch das Prüfnetz trifft** — die
+Hilfsfunktion `erzwingeBreiteSchrift` ist Wort für Wort dieselbe und trägt
+rund hundert Prüfungen. Nachgemessen mit einer Wegwerf-Prüfdatei **im echten
+Läufer**: Dort greift sie (ein Stil-Element, wirksame Schrift
+`Verdana, "DejaVu Sans"`, keine Seitenfehler). Kaputt war allein mein
+Einzelskript unter `tsx`. Das Gate ist nicht blind.
+
+**Behoben in zwei Schritten:**
+
+1. **Der Wächter misst jetzt selbst mit Breitschrift.** Damit gilt überall der
+   schlechteste Fall, und die Lücke zwischen „hier grün" und „dort rot" ist
+   für diese Prüfung geschlossen.
+2. **Die Leiste hat Platz bekommen:** `w-[92%]` → `w-[96%]`, `px-4` → `px-2`,
+   `gap-1` → `gap-0.5`. Gemessen im Läufer mit Breitschrift, 320 px, „Extra
+   groß": „Report" braucht 60 px und hat **68** — 8 px Luft; bei 360 px sind
+   es 18.
+
 ### Verworfen, mit Begründung im Konzept
 
 Tagesprotokoll und eine Ansicht „Heute". Entscheidung des Projektinhabers.

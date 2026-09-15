@@ -4604,6 +4604,14 @@ test.describe("Untere Navigationsleiste", () => {
       page,
     }, testInfo) => {
       test.skip(testInfo.project.name !== "handy", "Eine Engine genuegt; die Leiste haengt nicht am Motor");
+      /*
+        MIT erzwungener Breitschrift, und das ist hier keine Verschaerfung um
+        ihrer selbst willen: Der CI-Laeufer kennt weder "Segoe UI" noch "Segoe
+        UI Variable Text" und faellt auf eine breitere Schrift zurueck. Genau
+        daran ist der Deploy von 0.9.45 im ersten Anlauf gescheitert -- "Report"
+        brauchte dort 60 px und hatte 57, waehrend lokal alles passte.
+      */
+      await erzwingeBreiteSchrift(page);
       await oeffne(page, "form");
       await page.setViewportSize({ width: breite, height: 780 });
       await setzeSchriftgroesse(page, groesse);

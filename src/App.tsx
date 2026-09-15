@@ -3397,11 +3397,11 @@ export default function App() {
             und 7,83:1 im dunklen Schema. Der Weichzeichner ist ersatzlos weg:
             Hinter einer deckenden Flaeche tut er ohnehin nichts.
           */
-          className={`fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-xl z-[200] bg-[var(--card-bg)] border border-[var(--border-color)] py-2.5 px-4 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.5)] transition-all ${isDesktop ? 'lg:hidden' : ''}`}
+          className={`fixed bottom-4 left-1/2 -translate-x-1/2 w-[96%] max-w-xl z-[200] bg-[var(--card-bg)] border border-[var(--border-color)] py-2.5 px-2 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.5)] transition-all ${isDesktop ? 'lg:hidden' : ''}`}
           role="navigation"
           aria-label="Hauptnavigation"
         >
-          <div className="flex items-center justify-between gap-1">
+          <div className="flex items-center justify-between gap-0.5">
             {hauptnavigation
             .filter((tab) => tab.visible)
             .map((tab) => {
