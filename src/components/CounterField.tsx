@@ -36,6 +36,7 @@ export default React.memo(function CounterField({
   const inputId = `input-${config.id}`;
   const zuletzt = formatiereZuletzt(zuletztISO);
   const instructionsId = `${inputId}-instructions`;
+  const zuletztId = `${inputId}-zuletzt`;
   const displayVal = value === "" ? "" : value;
 
   const triggerHaptic = () => {
@@ -259,7 +260,16 @@ export default React.memo(function CounterField({
             max="999"
             value={displayVal}
             aria-label={config.label}
-            aria-describedby={instructionsId}
+            /*
+              Der Zeitstempel steht VOR der Anleitung (0.9.46). Hilfstechniken
+              lesen die in `aria-describedby` genannten Elemente in dieser
+              Reihenfolge vor -- vorher hing er hinten an einem rund
+              dreissig Woerter langen Anleitungstext, den man jedes Mal
+              abwarten musste, um die eine Frage beantwortet zu bekommen:
+              Habe ich das schon gezaehlt? Die Anleitung aendert sich nie,
+              der Zeitpunkt ist das Neue.
+            */
+            aria-describedby={zuletzt ? `${zuletztId} ${instructionsId}` : instructionsId}
             aria-valuemin={0}
             aria-valuemax={999}
             aria-valuenow={typeof value === "number" ? value : undefined}
@@ -274,9 +284,13 @@ export default React.memo(function CounterField({
             placeholder="0"
             className={`${inputSize} w-full text-center font-black border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] focus:border-[var(--border-focus)] outline-none touch-manipulation`}
           />
+          {zuletzt && (
+            <p id={zuletztId} className="sr-only">
+              {`${zuletzt.gesprochen}.`}
+            </p>
+          )}
           <p id={instructionsId} className="sr-only">
             {`Eingabefeld für ${config.label}. Sie können die Zahl direkt eintippen. Verwenden Sie sonst die Pfeiltasten oder die Plus- und Minus-Tasten. Mit Enter springen Sie zum nächsten Feld.`}
-            {zuletzt ? ` ${zuletzt.gesprochen}.` : ""}
           </p>
         </div>
 

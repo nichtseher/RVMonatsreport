@@ -4721,12 +4721,28 @@ test.describe("Zuletzt geändert am Zähler", () => {
     await page.getByRole("button", { name: "Erhöhen" }).first().click();
     await page.waitForTimeout(400);
 
+    /*
+      `aria-describedby` kann MEHRERE Kennungen nennen, und Hilfstechniken
+      lesen sie in genau dieser Reihenfolge vor. Seit 0.9.46 steht der
+      Zeitstempel deshalb vorn und die Anleitung dahinter -- vorher musste man
+      rund dreissig Woerter Anleitung abwarten, um die eine Frage beantwortet
+      zu bekommen.
+    */
     const beschreibung = await page.evaluate(() => {
       const feld = document.querySelector('input[role="spinbutton"]');
-      const id = feld?.getAttribute("aria-describedby");
-      if (!id) return "(kein aria-describedby)";
-      return document.getElementById(id)?.textContent ?? "(kein Element zur id)";
+      const roh = feld?.getAttribute("aria-describedby");
+      if (!roh) return "(kein aria-describedby)";
+      return roh
+        .split(/\s+/)
+        .map((id) => document.getElementById(id)?.textContent?.trim() ?? `(kein Element zu ${id})`)
+        .join(" ");
     });
+
+    expect(
+      beschreibung.startsWith("zuletzt geändert"),
+      `Der Zeitpunkt steht nicht am Anfang der Beschreibung, sondern hier: "${beschreibung.slice(0, 120)}". ` +
+        `Wer nur wissen will, ob er schon gezaehlt hat, wartet sonst die ganze Anleitung ab.`,
+    ).toBe(true);
 
     expect(
       beschreibung,

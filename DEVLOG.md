@@ -10,6 +10,58 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-15 — v0.9.46: Die Antwort zuerst, die Anleitung danach
+
+Frage des Projektinhabers zu 0.9.45: Ist der Wert „zuletzt geändert" auch mit
+VoiceOver zu lesen? Nachgemessen statt beantwortet — im
+Barrierefreiheits-Baum, den die Hilfstechniken wirklich lesen.
+
+**Die Antwort war: ja, aber an der falschen Stelle.**
+
+```
+spinbutton "Anzahl Vorführungen Schule/Bildung": "1"
+Beschreibung: "Eingabefeld für Anzahl Vorführungen Schule/Bildung. Sie können
+die Zahl direkt eintippen. Verwenden Sie sonst die Pfeiltasten oder die Plus-
+und Minus-Tasten. Mit Enter springen Sie zum nächsten Feld. zuletzt geändert
+heute um 22 Uhr 04."
+```
+
+Der Zeitpunkt kam an — als Letztes, nach rund dreißig Wörtern Bedienanleitung.
+Wer nur wissen will, ob er den Termin schon gezählt hat, wartet das bei
+**jedem** Feld ab. Die Anleitung ändert sich nie; der Zeitpunkt ist das Neue.
+
+Umgestellt: Der Zeitstempel steht in einem eigenen Element und wird in
+`aria-describedby` **vor** der Anleitung genannt. Hilfstechniken lesen die dort
+genannten Elemente in genau dieser Reihenfolge.
+
+Vorher: *„… 1 Einheiten. Eingabefeld für … Mit Enter springen Sie zum nächsten
+Feld. Zuletzt geändert heute um 22 Uhr 04."*
+Nachher: *„… 1 Einheiten. **Zuletzt geändert heute um 22 Uhr 04.** Eingabefeld
+für …"*
+
+Für sehende Nutzer ändert sich nichts; die kleine Zeile unter der Kategorie
+bleibt, wo sie war, und ist weiterhin `aria-hidden` — sonst käme sie doppelt.
+
+**Zwei Feststellungen aus derselben Messung, die nicht geändert wurden:**
+
+- `page.accessibility.snapshot()` gibt es in dieser Playwright-Fassung nicht
+  mehr; der aktuelle Weg ist `locator.ariaSnapshot()`.
+- Der Anleitungsabsatz taucht beim Wischen mit VoiceOver **zusätzlich als
+  eigenes Element** auf und wird dann ganze dreißig Wörter lang erneut
+  vorgelesen — für jedes der neunzehn Felder. Das ist älter als diese Fassung
+  und gehört in den Screenreader-Durchlauf, nicht in eine Nachbesserung am
+  selben Abend.
+
+### Prüfstand
+
+| | 0.9.45 | 0.9.46 |
+|---|---|---|
+| `lint` | grün | grün |
+| `check` | 186 | 186 |
+| `check:ui` | 594 | siehe Lauf (der Prüffall verlangt jetzt zusätzlich, dass der Zeitpunkt **am Anfang** der Beschreibung steht) |
+
+---
+
 ## 2026-09-15 — v0.9.45: Vier Stationen, und der Zeitstempel wird endlich gezeigt
 
 Umsetzung von `KONZEPT-NAVIGATION.md`, Punkt für Punkt. Das Konzept entstand
