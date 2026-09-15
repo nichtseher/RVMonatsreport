@@ -10,6 +10,108 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-15 — v0.9.42: Dreimal dasselbe JSX, jetzt einmal
+
+Vorgabe des Projektinhabers: die Entzerrung von `App.tsx`, die 0.9.34 als
+einer von drei Hebeln benannt und ausdrücklich abgewählt hatte.
+
+Auch hier stimmte die notierte Zahl nicht mehr: Die ROADMAP führte **3.264
+Zeilen**, tatsächlich waren es **3.441** — die Datei ist seit 0.9.34 um 177
+Zeilen gewachsen, ohne dass das jemandem aufgefallen wäre.
+
+### Der Nachweis kommt zuerst, weil es hier keinen neuen Zustand gibt
+
+Ein Umbau, der nichts ändern soll, ist genau deshalb heikel: Es gibt nichts
+Neues anzusehen, und **jede** Abweichung ist ein Fehler. `tsc` findet
+Typfehler, nicht verlorene Klassen; `check` prüft reine Funktionen, kein JSX;
+`check:ui` misst Überlauf, Kontrast, Trefferflächen und axe — ein
+verschwundenes `aria-live` am Summenkasten oder ein nicht mehr gerenderter
+Hinweis fiele keinem davon zwingend auf.
+
+Also ein **Vorher-Nachher-Vergleich des erzeugten DOM**: `#root` als Text
+abholen, ein Element je Zeile, in fünf Zuständen — Formular bei 360 px,
+Formular bei 360 px **mit abgeschalteter Stempeluhr**, Optionen bei 360 px,
+Formular bei 1280 px (Seitenleiste statt unterer Leiste) und Archiv bei
+1280 px. Der Fall „Stempeluhr aus" steht da nicht zufällig: An ihm hängen der
+Hinweiskasten in Bereich 4 und die Sichtbarkeit des Eintrags „RV Zeit".
+
+Ergebnis nach jedem der drei Schritte: **0 Unterschiede** in allen fünf
+Zuständen. Die einzige Abweichung im ersten Lauf war die Uhrzeit im Hinweis
+„Automatisch lokal gesichert (09:54:25)" — genau die zeitabhängige Stelle, mit
+der ich gerechnet hatte, und kein Befund.
+
+### Was zusammengefasst wurde
+
+**Die vier Bereichsblöcke → `BerichtsBereich`.** 201 Zeilen JSX wurden zu 33.
+Die vier Blöcke unterschieden sich in genau drei Dingen: Bereich 1 trug die
+Bereichssumme, Bereich 4 einen Hinweiskasten über dem Raster, die Bereiche 2
+und 3 nichts davon. Diese Unterschiede sind als Einschübe (`hinweis`, `fuss`)
+erhalten — sie sind echt, und sie wegzuvereinheitlichen wäre der eigentliche
+Fehler gewesen. Alles andere, bis hin zu den neun Eigenschaften je
+`CounterField` einschließlich des `onBlur` mit 120 ms Verzögerung, war
+wortgleich.
+
+**Die Navigationsliste → eine Liste, ein Wechsel.** Sie stand zweimal da,
+einmal in der Seitenleiste, einmal in der unteren Leiste, wortgleich bis auf
+die Darstellung — samt der fünf Ansage-Zweige im Klickblock. Das ist kein
+hypothetisches Risiko: 0.9.41 hat gestern gemessen, dass die beiden Leisten
+auseinandergelaufen waren, die eine gab sich als Reitersatz aus, die andere
+markierte den aktuellen Eintrag überhaupt nicht. Die Ansage steht jetzt **in**
+der Liste, nicht in einer `if`-Kette; ein Eintrag ohne Ansage ist damit nicht
+mehr möglich.
+
+Nebenbefund: Mit einer typisierten Liste sind beide `setActiveTab(tab.id as
+any)` entfallen. `as any` war dort nie nötig, nur bequem.
+
+**Der Notiz-Bereich → `NotizBereich`.** 121 Zeilen, sieben Eigenschaften, kein
+weiterer Zustand. Er ist der einzige Teil der Formularansicht, der sich ohne
+Umwege herauslösen ließ.
+
+### Zwei Fehler im eigenen Umbau — beide von einem Wächter gefunden
+
+**`noUnusedLocals` meldete zwei verwaiste Importe** (`CounterField`, dann
+`Mic`/`MicOff`), nachdem ihr letzter Verwender umgezogen war. Genau der
+Zweck des Schalters, der seit 0.9.34 im Tor steht.
+
+**Und mein Skript hat den Sichtbarkeitsfilter verschluckt.** Beim Ersetzen der
+Listenliterale schnitt es `.filter(tab => tab.visible)` mit heraus — ohne ihn
+wäre „RV Zeit" auch bei abgeschalteter Stempeluhr in der Navigation
+erschienen. Aufgefallen ist es an einem Syntaxfehler (`..map`), nicht am
+fehlenden Filter; der Fehler war ein Glücksfall, der Filter die eigentliche
+Gefahr. Der DOM-Vergleich hätte ihn ebenfalls gezeigt — der Zustand
+„Stempeluhr aus" steht deshalb in der Messreihe.
+
+### Was das gebracht hat, ehrlich gerechnet
+
+| | 0.9.41 | 0.9.42 |
+|---|---|---|
+| `App.tsx` | 3.441 Zeilen | **3.227** |
+| JSX im Haupt-`return` | ~1.790 Zeilen | **~1.482** |
+| Bereichsblöcke | 4 × ~50 Zeilen | **1 Komponente, 1 Schleife** |
+| Navigationsliste | 2 × | **1 ×** |
+| `as any` in `App.tsx` | 2 | **0** |
+| Startbündel | 565,01 kB | **563,67 kB** |
+| Erzeugtes DOM | — | **unverändert, fünf Zustände** |
+
+**Was es nicht gebracht hat:** weniger Zeilen im Projekt. Rund 274 Zeilen sind
+in zwei neue Dateien gewandert, die zusammen etwas mehr wiegen als der
+gesparte Text — Schnittstelle und Begründung kosten Platz. Der Gewinn liegt
+woanders: Eine Änderung an einem Bereich trifft jetzt alle vier, eine
+Änderung an der Navigation beide Leisten.
+
+### Benannt, nicht geändert
+
+**Die Formularansicht selbst bleibt der Klotz.** Rund 1.100 Zeilen JSX von
+Kopfbereich über Stammdaten und Schnell-Erfassung bis zur Tastenreihe am Ende.
+Sie herauszulösen hieße, etwa dreißig Eigenschaften durchzureichen — das ist
+keine Aufräumfrage mehr, sondern eine Entwurfsentscheidung über den
+Zustandsbehälter (Kontext? Reduzierer?), und die gehört dem Projektinhaber.
+
+Ebenfalls offen und unverändert: das Nachladen der elf noch fest eingebauten
+Ansichten.
+
+---
+
 ## 2026-09-15 — v0.9.41: Nach dem Wechsel steht die Tastatur in der neuen Ansicht
 
 Vorgabe des Projektinhabers aus einer Auswahl von vier offenen Punkten. Die

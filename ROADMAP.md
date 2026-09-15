@@ -1,6 +1,6 @@
 # Roadmap — RV Monatsreport (RV Mobil)
 
-Stand: 2026-09-15, Version 0.9.41 (bis 0.9.40 ist veröffentlicht)
+Stand: 2026-09-15, Version 0.9.42 (bis 0.9.41 ist veröffentlicht)
 
 Diese Roadmap ist aus **gemessenen Befunden** entstanden, nicht aus Vermutungen.
 Wo eine Zahl steht, wurde sie nachgemessen. Punkte ohne Beleg sind als
@@ -1059,6 +1059,30 @@ reinen Prüfungen zu `verrechneSchicht` abgedeckt, über die Oberfläche **nicht
 
 ---
 
+## 0.9.42 — Dreimal dasselbe JSX, jetzt einmal — ERLEDIGT (2026-09-15)
+
+Der dritte der drei Hebel aus 0.9.34, zur Hälfte gezogen. Zusammengefasst
+sind die vier fast gleichen Bereichsblöcke (201 Zeilen JSX → 33, plus die
+Komponente `BerichtsBereich`) und die Navigationsliste, die zweimal dastand —
+letzteres nicht aus Ordnungssinn: 0.9.41 hatte tags zuvor gemessen, dass die
+beiden Leisten auseinandergelaufen waren. Dazu ist der Notiz-Bereich als
+`NotizBereich` herausgelöst. `App.tsx`: 3.441 → **3.227** Zeilen, JSX im
+Haupt-`return` ~1.790 → **~1.482**, zwei `as any` entfallen.
+
+**Der Nachweis ist hier die eigentliche Arbeit.** Ein Umbau ohne gewollte
+Wirkung hat keinen neuen Zustand, den man ansehen könnte; jede Abweichung ist
+ein Fehler. Gemessen wurde deshalb das **erzeugte DOM** vor und nach jedem
+Schritt, in fünf Zuständen (Formular 360 px, Formular 360 px mit
+abgeschalteter Stempeluhr, Optionen, Formular 1280 px mit Seitenleiste, Archiv
+1280 px): **0 Unterschiede**, einzige Abweichung eine Uhrzeit im
+Speicherhinweis.
+
+Offen bleibt die Formularansicht selbst (~1.100 Zeilen JSX). Sie herauszulösen
+heißt, rund dreißig Eigenschaften durchzureichen — eine Entwurfsentscheidung
+über den Zustandsbehälter, keine Aufräumfrage.
+
+---
+
 ## 0.9.41 — Der Fokus beim Ansichtswechsel — ERLEDIGT (2026-09-15)
 
 Der Punkt stand seit 0.9.34 als „benannt, nicht geändert" in dieser Datei, mit
@@ -1414,6 +1438,17 @@ fast gleiches JSX, die Navigationsliste steht zweimal).
 
 Diese drei bleiben die nächsten Hebel, wenn „schlank und wendig" wieder auf der
 Tagesordnung steht.
+
+> **Nachtrag 2026-09-15 (0.9.42):** Der dritte Hebel ist zur Hälfte gezogen —
+> die beiden hier genannten Doppelungen (vier fast gleiche Bereichsblöcke, die
+> zweimal stehende Navigationsliste) sind zusammengefasst, dazu ist der
+> Notiz-Bereich herausgelöst. `App.tsx` steht bei 3.227 statt 3.441 Zeilen.
+> Die Zahl „3.264" oben war überholt: Die Datei war seit 0.9.34 gewachsen.
+> **Nicht gezogen** sind die verbliebenen ~1.100 Zeilen der Formularansicht —
+> sie herauszulösen hieße rund dreißig Eigenschaften durchzureichen, und das
+> ist eine Entwurfsentscheidung über den Zustandsbehälter, keine
+> Aufräumfrage. Das Nachladen der elf fest eingebauten Ansichten ist ebenfalls
+> unverändert offen.
 
 ---
 

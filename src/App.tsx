@@ -8,8 +8,6 @@ import {
   Target,
   Share2,
   User,
-  Mic,
-  MicOff,
   Settings,
   Info,
   Sparkles,
@@ -41,6 +39,8 @@ import { useEinstellungen } from "./hooks/useEinstellungen";
 import { useStempeluhr } from "./hooks/useStempeluhr";
 import { useBerichtsdaten } from "./hooks/useBerichtsdaten";
 import { useAnsichtsFokus } from "./hooks/useAnsichtsFokus";
+import BerichtsBereich from "./components/BerichtsBereich";
+import NotizBereich from "./components/NotizBereich";
 import { monthHasContent } from "./utils/monatInhalt";
 import { rueckfrageOffen } from "./utils/rueckfrage";
 import { stempeln, stempelNachtragen, stempelnGeaenderte } from "./utils/zeitstempel";
@@ -58,7 +58,6 @@ import {
 import { formatMonthGerman } from "./utils/dateUtils";
 import { subscribeLiveSync, getLiveSyncSnapshot } from "./utils/liveSync";
 import A11yModal from "./components/A11yModal";
-import CounterField from "./components/CounterField";
 import QuickEntryPanel from "./components/QuickEntryPanel";
 import ConfirmDialog, { ConfirmRequest } from "./components/ConfirmDialog";
 import OnboardingModal from "./components/OnboardingModal";
@@ -1589,6 +1588,103 @@ export default function App() {
   };
 
   /*
+    Verzögertes Aufheben des Feldfokus. Die 120 ms sind unverändert aus dem
+    vorherigen Inline-Rückruf übernommen: Ohne sie verschwindet die untere
+    Navigationsleiste (`!focusedFieldId`) für einen Lidschlag, sobald der
+    Fokus von einem Zählerfeld zum nächsten wandert.
+  */
+  /*
+    Die Hauptnavigation als EINE Liste (0.9.42).
+
+    Bis dahin stand sie zweimal da -- einmal in der Seitenleiste, einmal in der
+    unteren Leiste --, wortgleich bis auf die Darstellung, samt der fünf
+    Ansage-Zweige im Klickblock. Dass das nicht bloss unschön war, zeigt 0.9.41:
+    Die beiden Leisten waren auseinandergelaufen, die eine gab sich als
+    Reitersatz aus, die andere markierte den aktuellen Eintrag gar nicht. Wer
+    hier etwas ändert, ändert es jetzt an einer Stelle für beide.
+
+    Die Ansage steht mit in der Liste und nicht in einer if-Kette: So kann kein
+    Eintrag ohne Ansage existieren.
+  */
+  const hauptnavigation = [
+    { id: "form" as const, label: "RV Report", icon: LayoutGrid, ansage: "RV Report Hauptformular angezeigt", active: activeTab === "form", visible: true },
+    { id: "time" as const, label: "RV Zeit", icon: Clock, ansage: "RV Zeit und Stempeluhr geöffnet", active: activeTab === "time" || activeTab === "carryover", visible: accessibility.enableTimeTracking !== false },
+    { id: "stats" as const, label: "RV Analyse", icon: BarChart3, ansage: "RV Analyse und Statistiken geöffnet", active: activeTab === "stats", visible: true },
+    { id: "history" as const, label: "RV Archiv", icon: History, ansage: "RV Archiv geöffnet", active: activeTab === "history", visible: true },
+    { id: "options" as const, label: "Optionen", icon: Settings, ansage: "Anzeige-Optionen geöffnet", active: activeTab === "options" || activeTab === "help" || activeTab === "backup" || activeTab === "manage" || activeTab === "sync" || activeTab === "changelog", visible: true },
+  ];
+
+  /** Ansicht wechseln aus der Hauptnavigation -- beide Leisten nutzen diesen Weg. */
+  const wechsleHauptansicht = (
+    id: "form" | "time" | "stats" | "history" | "options",
+    ansage: string,
+  ) => {
+    triggerHaptic(12);
+    setActiveTab(id);
+    announceToAriaAndSpeech(ansage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleFeldBlur = useCallback((fieldId: string) => {
+    setTimeout(() => {
+      setFocusedFieldId((prev) => (prev === fieldId ? null : prev));
+    }, 120);
+  }, []);
+
+  /*
+    Die vier Bereiche des Berichts als Daten. `hinweis` und `fuss` sind die
+    einzigen zwei Stellen, an denen sich die Bereiche wirklich unterscheiden --
+    sie stehen deshalb je Bereich da und nicht als Bedingung in der Komponente.
+  */
+  const bereiche = [
+    {
+      nr: 1,
+      schluessel: "s1" as const,
+      titel: "1. Vorführungen & Auslieferungen",
+      felder: appFields.s1,
+      hinweis: null as React.ReactNode,
+      fuss: (
+        <div
+          className="mt-6 p-4 rounded-xl bg-[var(--total-bg)] text-[var(--total-text)] font-black text-right text-lg border border-[var(--border-color)]"
+          aria-live="polite"
+        >
+          <span>Bereichs-Gesamtsumme: </span>
+          <span className="text-xl md:text-2xl ml-1">{s1Total}</span>
+        </div>
+      ) as React.ReactNode,
+    },
+    {
+      nr: 2,
+      schluessel: "s2" as const,
+      titel: "2. Schulung, Support & Akquise",
+      felder: appFields.s2,
+      hinweis: null as React.ReactNode,
+      fuss: null as React.ReactNode,
+    },
+    {
+      nr: 3,
+      schluessel: "s3" as const,
+      titel: "3. Spezialprodukte (Fokus)",
+      felder: appFields.s3,
+      hinweis: null as React.ReactNode,
+      fuss: null as React.ReactNode,
+    },
+    {
+      nr: 4,
+      schluessel: "s4" as const,
+      titel: "4. Arbeitszeit & Büro",
+      felder: appFields.s4,
+      hinweis: (accessibility.enableTimeTracking !== false ? (
+        <div className="mb-4 p-3 rounded-xl bg-[var(--info-bg)] border border-[var(--info-border)] text-[var(--info-text)] text-xs font-bold flex items-start gap-2">
+          <Clock className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <p>Diese Werte werden automatisch aus Ihrer Stempeluhr (RV Zeit) berechnet und beim Ausstempeln hier eingetragen.</p>
+        </div>
+      ) : null) as React.ReactNode,
+      fuss: null as React.ReactNode,
+    },
+  ];
+
+  /*
     LESEFEHLER BEIM START -- eigene Ansicht statt Formular.
 
     Warum kein Formular: Ein Lesefehler heißt nicht, dass die Daten weg sind,
@@ -1661,14 +1757,8 @@ export default function App() {
              <p className="text-xs text-[var(--text-muted)] font-bold mt-1 uppercase tracking-wider">Desktop Ansicht</p>
           </div>
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            {[
-              { id: "form", label: "RV Report", icon: LayoutGrid, active: activeTab === "form", visible: true },
-              { id: "time", label: "RV Zeit", icon: Clock, active: activeTab === "time" || activeTab === "carryover", visible: accessibility.enableTimeTracking !== false },
-              { id: "stats", label: "RV Analyse", icon: BarChart3, active: activeTab === "stats", visible: true },
-              { id: "history", label: "RV Archiv", icon: History, active: activeTab === "history", visible: true },
-              { id: "options", label: "Optionen", icon: Settings, active: activeTab === "options" || activeTab === "help" || activeTab === "backup" || activeTab === "manage" || activeTab === "sync" || activeTab === "changelog", visible: true },
-            ]
-            .filter(tab => tab.visible)
+            {hauptnavigation
+            .filter((tab) => tab.visible)
             .map((tab) => {
               const IconComp = tab.icon;
               const isSelected = tab.active;
@@ -1677,14 +1767,7 @@ export default function App() {
                   key={tab.id}
                   aria-current={isSelected ? "page" : undefined}
                   onClick={() => {
-                     triggerHaptic(12);
-                     setActiveTab(tab.id as any);
-                     if (tab.id === "form") announceToAriaAndSpeech("RV Report Hauptformular angezeigt");
-                     else if (tab.id === "time") announceToAriaAndSpeech("RV Zeit und Stempeluhr geöffnet");
-                     else if (tab.id === "stats") announceToAriaAndSpeech("RV Analyse und Statistiken geöffnet");
-                     else if (tab.id === "history") announceToAriaAndSpeech("RV Archiv geöffnet");
-                     else if (tab.id === "options") announceToAriaAndSpeech("Anzeige-Optionen geöffnet");
-                     window.scrollTo({ top: 0, behavior: "smooth" });
+                     wechsleHauptansicht(tab.id, tab.ansage);
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all cursor-pointer font-bold ${
                     isSelected ? "bg-[var(--accent)] text-[var(--accent-text)] shadow-md" : "text-[var(--text-muted)] hover:bg-[var(--input-bg)] hover:text-[var(--text-color)]"
@@ -2628,205 +2711,37 @@ export default function App() {
           </span>
         </p>
 
-        {/* SECTION 1: VORFÜHRUNGEN & AUSLIEFERUNGEN */}
-        {(activeSectionTab === "all" || activeSectionTab === "s1") &&
-          hasVisibleFields(appFields.s1) && (
-          <section
-            className="p-4 sm:p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]"
-            aria-labelledby="section1-heading"
-          >
-            <h2
-              id="section1-heading"
-              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] text-[var(--text-color)]"
-            >
-              1. Vorführungen & Auslieferungen
-            </h2>
-            {/*
-              `auto-fit` statt fester zwei Spalten -- gemessen am 2026-09-01 bei
-              1280 px Fensterbreite:
-
-                Schriftgröße   Bedienzeile braucht   Karte bot
-                normal         336 px                418 px
-                large          364 px                364 px   <- genau null Reserve
-                extra-large    392 px                311 px   <- 81 px zu wenig
-
-              Bei „Extra groß" schnitt die Spalte die Zählertasten ab (neun
-              „+5"-Tasten standen bei 1270..1318 in einem 1280 px breiten
-              Fenster, 10 px blieben sichtbar). Die Seitenprüfung sah davon
-              nichts, weil der Überlauf in einem Container mit `overflow-x:
-              auto` steckt.
-
-              Der Grund ist strukturell: Die Zeile enthält Tasten in festen
-              Pixeln, aber Polsterung und Zahlenfeld wachsen mit der Schrift --
-              die Karte schrumpft also genau dann, wenn ihr Inhalt wächst. Mit
-              `minmax(20rem, 1fr)` entscheidet die verfügbare Breite selbst über
-              die Spaltenzahl. Nachgemessen bei 1280 px:
-
-                normal        Raster 855 px  ->  2 Spalten à 417 px
-                large         Raster 753 px  ->  1 Spalte
-                extra-large   Raster 651 px  ->  1 Spalte
-
-              Dass „Groß" auf eine Spalte fällt, ist Absicht und kein
-              Kollateralschaden: Zwei Spalten ergäben dort je 364 px — exakt
-              den Bedarf der Zeile, also wieder null Reserve. Auf einem
-              breiteren Bildschirm bleiben es dort zwei.
-            */}
-            <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-[repeat(auto-fit,minmax(20rem,1fr))] lg:gap-5' : 'gap-3'}`}>
-              {filterFields(appFields.s1).map((field) => (
-                <CounterField
-                  key={field.id}
-                  config={field}
-                  value={(reportData?.values || {})[field.id] ?? ""}
-                  onChange={(val) => handleValueInput(field.id, val)}
-                  onDelta={(delta) => applyValueDelta(field.id, delta)}
-                  onAnnounce={announceToAriaAndSpeech}
-                  audioFeedbackEnabled={accessibility.audioFeedback}
-                  isCompact={shouldUseCompactFields}
-                  onFocus={() => setFocusedFieldId(field.id)}
-                  onBlur={() => {
-                    setTimeout(() => {
-                      setFocusedFieldId((prev) =>
-                        prev === field.id ? null : prev,
-                      );
-                    }, 120);
-                  }}
-                />
-              ))}
-            </div>
-
-            {/* Dynamic section total box with aria live attribute */}
-            <div
-              className="mt-6 p-4 rounded-xl bg-[var(--total-bg)] text-[var(--total-text)] font-black text-right text-lg border border-[var(--border-color)]"
-              aria-live="polite"
-            >
-              <span>Bereichs-Gesamtsumme: </span>
-              <span className="text-xl md:text-2xl ml-1">
-                {s1Total}
-              </span>
-            </div>
-          </section>
-
-        )}
-
-      {/* SECTION 2: SCHULUNG, SUPPORT & AKQUISE */}
-      {(activeSectionTab === "all" || activeSectionTab === "s2") &&
-        hasVisibleFields(appFields.s2) && (
-          <section
-            className="p-4 sm:p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]"
-            aria-labelledby="section2-heading"
-          >
-            <h2
-              id="section2-heading"
-              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] text-[var(--text-color)]"
-            >
-              2. Schulung, Support & Akquise
-            </h2>
-            <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-[repeat(auto-fit,minmax(20rem,1fr))] lg:gap-5' : 'gap-3'}`}>
-              {filterFields(appFields.s2).map((field) => (
-                <CounterField
-                  key={field.id}
-                  config={field}
-                  value={(reportData?.values || {})[field.id] ?? ""}
-                  onChange={(val) => handleValueInput(field.id, val)}
-                  onDelta={(delta) => applyValueDelta(field.id, delta)}
-                  onAnnounce={announceToAriaAndSpeech}
-                  audioFeedbackEnabled={accessibility.audioFeedback}
-                  isCompact={shouldUseCompactFields}
-                  onFocus={() => setFocusedFieldId(field.id)}
-                  onBlur={() => {
-                    setTimeout(() => {
-                      setFocusedFieldId((prev) =>
-                        prev === field.id ? null : prev,
-                      );
-                    }, 120);
-                  }}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-      {/* SECTION 3: SPEZIALPRODUKTE (FOKUS) */}
-      {(activeSectionTab === "all" || activeSectionTab === "s3") &&
-        hasVisibleFields(appFields.s3) && (
-          <section
-            className="p-4 sm:p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]"
-            aria-labelledby="section3-heading"
-          >
-            <h2
-              id="section3-heading"
-              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] text-[var(--text-color)]"
-            >
-              3. Spezialprodukte (Fokus)
-            </h2>
-            <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-[repeat(auto-fit,minmax(20rem,1fr))] lg:gap-5' : 'gap-3'}`}>
-              {filterFields(appFields.s3).map((field) => (
-                <CounterField
-                  key={field.id}
-                  config={field}
-                  value={(reportData?.values || {})[field.id] ?? ""}
-                  onChange={(val) => handleValueInput(field.id, val)}
-                  onDelta={(delta) => applyValueDelta(field.id, delta)}
-                  onAnnounce={announceToAriaAndSpeech}
-                  audioFeedbackEnabled={accessibility.audioFeedback}
-                  isCompact={shouldUseCompactFields}
-                  onFocus={() => setFocusedFieldId(field.id)}
-                  onBlur={() => {
-                    setTimeout(() => {
-                      setFocusedFieldId((prev) =>
-                        prev === field.id ? null : prev,
-                      );
-                    }, 120);
-                  }}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-      {/* SECTION 4: ARBEITSZEIT & BÜRO */}
-      {(activeSectionTab === "all" || activeSectionTab === "s4") &&
-        hasVisibleFields(appFields.s4) && (
-          <section
-            className="p-4 sm:p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]"
-            aria-labelledby="section4-heading"
-          >
-            <h2
-              id="section4-heading"
-              className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] text-[var(--text-color)]"
-            >
-              4. Arbeitszeit & Büro
-            </h2>
-            {accessibility.enableTimeTracking !== false && (
-              <div className="mb-4 p-3 rounded-xl bg-[var(--info-bg)] border border-[var(--info-border)] text-[var(--info-text)] text-xs font-bold flex items-start gap-2">
-                <Clock className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <p>Diese Werte werden automatisch aus Ihrer Stempeluhr (RV Zeit) berechnet und beim Ausstempeln hier eingetragen.</p>
-              </div>
-            )}
-            <div className={`grid grid-cols-1 ${isDesktop ? 'lg:grid-cols-[repeat(auto-fit,minmax(20rem,1fr))] lg:gap-5' : 'gap-3'}`}>
-              {filterFields(appFields.s4).map((field) => (
-                <CounterField
-                  key={field.id}
-                  config={field}
-                  value={(reportData?.values || {})[field.id] ?? ""}
-                  onChange={(val) => handleValueInput(field.id, val)}
-                  onDelta={(delta) => applyValueDelta(field.id, delta)}
-                  onAnnounce={announceToAriaAndSpeech}
-                  audioFeedbackEnabled={accessibility.audioFeedback}
-                  isCompact={shouldUseCompactFields}
-                  onFocus={() => setFocusedFieldId(field.id)}
-                  onBlur={() => {
-                    setTimeout(() => {
-                      setFocusedFieldId((prev) =>
-                        prev === field.id ? null : prev,
-                      );
-                    }, 120);
-                  }}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+        {/*
+          Die vier Bereiche als Daten statt als vier fast gleiche JSX-Blöcke
+          (0.9.42). Die Unterschiede stehen dort, wo sie gelten: Bereich 1 hat
+          die Bereichssumme, Bereich 4 den Hinweis zur Stempeluhr. Der Rest ist
+          wortgleich und liegt jetzt in `BerichtsBereich`.
+        */}
+        {bereiche
+          .filter(
+            (b) =>
+              (activeSectionTab === "all" || activeSectionTab === b.schluessel) &&
+              hasVisibleFields(b.felder),
+          )
+          .map((b) => (
+            <BerichtsBereich
+              key={b.nr}
+              nummer={b.nr}
+              titel={b.titel}
+              felder={filterFields(b.felder)}
+              werte={reportData?.values || {}}
+              isDesktop={isDesktop}
+              isCompact={shouldUseCompactFields}
+              audioFeedbackEnabled={accessibility.audioFeedback}
+              onChange={handleValueInput}
+              onDelta={applyValueDelta}
+              onAnnounce={announceToAriaAndSpeech}
+              onFocusField={setFocusedFieldId}
+              onBlurField={handleFeldBlur}
+              hinweis={b.hinweis}
+              fuss={b.fuss}
+            />
+          ))}
 
       {/* SEARCH EMPTY STATE */}
       {searchQuery &&
@@ -2849,129 +2764,19 @@ export default function App() {
         )}
       </div>
 
-      {/* SECTION 5: NOTES & ANMERKUNGEN */}
-      <section
-        className={`p-4 sm:p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]`}
-        aria-labelledby="notes-heading"
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b-2 border-[var(--border-color)]">
-          <h2
-            id="notes-heading"
-            className="text-lg md:text-xl font-black text-[var(--text-color)]"
-          >
-            Anmerkungen & Kommentare
-          </h2>
-          {/* flex-wrap: Bei grosser Schrift passten "Diktieren" und
-              "Datumstempel" nicht mehr nebeneinander und schoben die Seite
-              waagerecht aus dem Bildschirm (gemessen: 430 px Inhalt auf einem
-              360-px-Handy). */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Dictate Speech Input button */}
-            <button
-              type="button"
-              onClick={handleDiktat}
-              aria-label={
-                isDictating
-                  ? "Sprachaufnahme stoppen"
-                  : "Notiz per Sprache diktieren"
-              }
-              className={`py-2 px-3.5 rounded-xl border-2 transition-all cursor-pointer font-black text-sm flex items-center gap-1.5 focus-visible:ring-4 ${
-                isDictating
-                  ? "bg-[var(--danger-solid)] border-[var(--danger-border)] text-[var(--danger-solid-text)] animate-pulse"
-                  : "bg-[var(--bg-color)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
-              }`}
-            >
-              {isDictating ? (
-                <MicOff className="w-4 h-4" />
-              ) : (
-                <Mic className="w-4 h-4" />
-              )}
-              <span>{isDictating ? "Stopp" : "Diktieren"}</span>
-            </button>
-
-            {/* Timestamp */}
-            <button
-              type="button"
-              onClick={addTimestamp}
-              aria-label="Datumstempel in Kommentare einfügen"
-              className="py-2 px-3.5 rounded-xl border-2 border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:border-[var(--border-focus)] transition-all cursor-pointer font-black text-sm focus-visible:ring-4"
-            >
-              <Calendar className="w-4 h-4" aria-hidden="true" />
-              <span>Datumstempel</span>
-            </button>
-          </div>
-        </div>
-
-        <label
-          htmlFor="meta-notes-textarea"
-          className="text-xs font-bold text-[var(--text-muted)] block mb-2 leading-relaxed"
-        >
-          Tragen Sie hier wichtige Notizen ein:{" "}
-          {/* emerald-700 statt -600: erreicht auf weissem Grund 4,5:1 */}
-          <span className="text-[var(--success-text)] font-black">
-            Wird nur auf Ihrem Gerät gespeichert
-          </span>
-        </label>
-
-        {/* Quick templates for notes (excellent usability for sales reps on mobile) */}
-        <div
-          className="flex flex-wrap gap-1.5 mb-3"
-          aria-label="Schnell-Vorlagen für Notizen"
-        >
-          {[
-            {
-              label: "Alles planmäßig",
-              text: "Alles planmäßig verlaufen. Keine besonderen Vorkommnisse.",
-            },
-            {
-              label: "Messewoche",
-              text: "Fokus auf Repräsentanz, Messestand-Betreuung und Neukunden-Akquise vor Ort.",
-            },
-            {
-              label: "Erfolgreiche Schulungen",
-              text: "Kundenschulungen wurden sehr erfolgreich absolviert mit durchweg positivem Feedback.",
-            },
-            {
-              label: "Urlaubszeit",
-              text: "Erhöhte Abwesenheiten im Berichtszeitraum wegen Urlaubs-/Ferienzeit.",
-            },
-          ].map((tpl, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => handleApplyNoteTemplate(tpl.text)}
-              className="inline-flex items-center px-2.5 min-h-[44px] rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] hover:border-[var(--border-focus)] hover:bg-[var(--bg-color)] text-[0.75rem] font-black text-[var(--text-color)] transition-all cursor-pointer active:scale-95 focus-visible:ring-2"
-              /* Aus title wurde aria-label, und das ist mehr als ein Tausch:
-                 Der Tooltip zeigte den vollen Text nur sehenden Maus-Nutzern
-                 -- auf dem Handy erscheint er nie, und der Screenreader las
-                 bloss die Kurzform ("Messewoche"), ohne zu verraten, was
-                 eingefuegt wird. Jetzt hoert man es.
-
-                 Die sichtbare Beschriftung steht bewusst VORNE: WCAG 2.5.3
-                 verlangt, dass der zugaengliche Name die sichtbare Aufschrift
-                 enthaelt. Bei "Messewoche" kommt das Wort im eingefuegten Text
-                 gar nicht vor -- ohne das Voranstellen waere die
-                 Sprachsteuerung unbedienbar geworden. */
-              aria-label={`${tpl.label}. Text einfügen: "${tpl.text}"`}
-            >
-              {tpl.label}
-            </button>
-          ))}
-        </div>
-
-                  <textarea
-          ref={notesInputRef}
-          id="meta-notes-textarea"
-          value={
-            typeof reportData?.notes === "string"
-              ? reportData?.notes
-              : String(reportData?.notes || "")
-          }
-          onChange={(e) => handleMetaChange("notes", e.target.value)}
-          placeholder="Tragen Sie hier z.B. besondere Vorkommnisse oder Messeergebnisse ein..."
-          className="w-full h-36 p-4 border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-xl font-normal focus:border-[var(--border-focus)] outline-none resize-y leading-relaxed"
-        />
-      </section>
+      <NotizBereich
+        notizen={
+          typeof reportData?.notes === "string"
+            ? reportData?.notes
+            : String(reportData?.notes || "")
+        }
+        onNotizenChange={(wert) => handleMetaChange("notes", wert)}
+        isDictating={isDictating}
+        onDiktat={handleDiktat}
+        onDatumstempel={addTimestamp}
+        onVorlage={handleApplyNoteTemplate}
+        notesInputRef={notesInputRef}
+      />
 
       {/* FINAL ACTION AREA */}
       <section
@@ -3377,14 +3182,8 @@ export default function App() {
           aria-label="Hauptnavigation"
         >
           <div className="flex items-center justify-between gap-1">
-            {[
-              { id: "form", label: "RV Report", icon: LayoutGrid, active: activeTab === "form", visible: true },
-              { id: "time", label: "RV Zeit", icon: Clock, active: activeTab === "time" || activeTab === "carryover", visible: accessibility.enableTimeTracking !== false },
-              { id: "stats", label: "RV Analyse", icon: BarChart3, active: activeTab === "stats", visible: true },
-              { id: "history", label: "RV Archiv", icon: History, active: activeTab === "history", visible: true },
-              { id: "options", label: "Optionen", icon: Settings, active: activeTab === "options" || activeTab === "help" || activeTab === "backup" || activeTab === "manage" || activeTab === "sync" || activeTab === "changelog", visible: true },
-            ]
-            .filter(tab => tab.visible)
+            {hauptnavigation
+            .filter((tab) => tab.visible)
             .map((tab) => {
               const IconComp = tab.icon;
               const isSelected = tab.active;
@@ -3395,20 +3194,7 @@ export default function App() {
                   type="button"
                   aria-current={isSelected ? "page" : undefined}
                   onClick={() => {
-                    triggerHaptic(12);
-                    setActiveTab(tab.id as any);
-                    if (tab.id === "form") {
-                      announceToAriaAndSpeech("RV Report Hauptformular angezeigt");
-                    } else if (tab.id === "time") {
-                      announceToAriaAndSpeech("RV Zeit und Stempeluhr geöffnet");
-                    } else if (tab.id === "stats") {
-                      announceToAriaAndSpeech("RV Analyse und Statistiken geöffnet");
-                    } else if (tab.id === "history") {
-                      announceToAriaAndSpeech("RV Archiv geöffnet");
-                    } else if (tab.id === "options") {
-                      announceToAriaAndSpeech("Anzeige-Optionen geöffnet");
-                    }
-                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    wechsleHauptansicht(tab.id, tab.ansage);
                   }}
                   className={`flex-1 min-w-0 flex flex-col items-center justify-center py-1.5 rounded-xl relative transition-all active:scale-90 cursor-pointer ${
                     isSelected
