@@ -41,6 +41,7 @@ import { useBerichtsdaten } from "./hooks/useBerichtsdaten";
 import { useAnsichtsFokus } from "./hooks/useAnsichtsFokus";
 import BerichtsBereich from "./components/BerichtsBereich";
 import NotizBereich from "./components/NotizBereich";
+import { loescheAllesLokal } from "./utils/allesLoeschen";
 import { monthHasContent } from "./utils/monatInhalt";
 import { rueckfrageOffen } from "./utils/rueckfrage";
 import { stempeln, stempelNachtragen, stempelnGeaenderte } from "./utils/zeitstempel";
@@ -61,13 +62,7 @@ import A11yModal from "./components/A11yModal";
 import QuickEntryPanel from "./components/QuickEntryPanel";
 import ConfirmDialog, { ConfirmRequest } from "./components/ConfirmDialog";
 import OnboardingModal from "./components/OnboardingModal";
-import HelpModal from "./components/HelpModal";
-import ManageModal from "./components/ManageModal";
-import HistoryModal from "./components/HistoryModal";
-import StatsModal from "./components/StatsModal";
-import CarryoverModal from "./components/CarryoverModal";
-import BestandModal from "./components/BestandModal";
-import TimeModal from "./components/TimeModal";
+
 /*
   Geräte-Sync und Datensicherung werden erst geladen, wenn man sie öffnet.
   Beide ziehen schwere Bibliotheken nach (QR-Erzeugung, Kamera-Scanner,
@@ -77,6 +72,33 @@ import TimeModal from "./components/TimeModal";
 */
 const SecureBackupModal = React.lazy(() => import("./components/SecureBackupModal"));
 const DeviceSyncModal = React.lazy(() => import("./components/DeviceSyncModal"));
+
+/*
+  Seit 0.9.43 werden auch die uebrigen acht Ansichten nachgeladen. Vorher lagen
+  sie samt ClockInWidget (1.126 Zeilen, ueber TimeModal) fest im Startbuendel
+  -- auch fuer jemanden, der nur Zahlen eintippt.
+
+  DER HAKEN, DER DAS FAST VERHINDERT HAETTE: Nachgeladene Teile stehen NICHT in
+  der index.html, der Service Worker legt sie also beim Installieren nicht
+  vorab in den Cache (Begruendung steht in public/sw.js). Wer nach einem Update
+  offline geht, kaeme an eine Ansicht nicht heran, die er online nie geoeffnet
+  hat -- in einer App fuer den Aussendienst der schlechtere Tausch.
+
+  Deshalb steht unten `holeAnsichtenVor()`: Sobald der Browser Luft hat, holt
+  die Seite alle acht Teile im Hintergrund. Der Fetch-Handler des Service
+  Workers legt jede erfolgreiche Antwort derselben Herkunft in den Cache, also
+  sind sie danach offline da. Schneller Start UND offline vollstaendig.
+*/
+const HelpModal = React.lazy(() => import("./components/HelpModal"));
+const ManageModal = React.lazy(() => import("./components/ManageModal"));
+const HistoryModal = React.lazy(() => import("./components/HistoryModal"));
+const StatsModal = React.lazy(() => import("./components/StatsModal"));
+const CarryoverModal = React.lazy(() => import("./components/CarryoverModal"));
+const BestandModal = React.lazy(() => import("./components/BestandModal"));
+const TimeModal = React.lazy(() => import("./components/TimeModal"));
+const ChangelogModal = React.lazy(() =>
+  import("./components/ChangelogModal").then((m) => ({ default: m.ChangelogModal })),
+);
 
 /** Platzhalter, solange ein nachgeladener Bereich noch unterwegs ist. */
 function BereichLaedt({ name }: { name: string }) {
@@ -90,7 +112,6 @@ function BereichLaedt({ name }: { name: string }) {
     </div>
   );
 }
-import { ChangelogModal } from "./components/ChangelogModal";
 
 const ONBOARDING_KEY = "aussendienst_pwa_onboarding_v1";
 
@@ -258,8 +279,6 @@ const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
   ],
 };
 
-
-
 export default function App() {
   // --- ROUTING / NAVIGATION STATE ---
   // Start-Ansicht per URL-Parameter (für PWA-Shortcuts, z. B. ./?tab=time)
@@ -303,7 +322,54 @@ export default function App() {
     dem Inhalt steht) oder fiel auf den Dokumentanfang -- gemessen am 2026-09-15,
     Tabelle in useAnsichtsFokus.ts.
   */
-  useAnsichtsFokus(activeTab);
+  /*
+    Woher der Nutzer kam, wenn er eine Ansicht über ihre Zurück-Taste verlässt.
+
+    Ohne das landet der Fokus auf der Überschrift „Optionen", und wer die
+    siebte Menüzeile geöffnet hatte, tastet sich erneut durch sechs. Gesetzt
+    wird die Kennung NUR auf dem ausdrücklichen Rückweg -- wer die Ansicht über
+    die Navigationsleiste verlässt, hat etwas anderes gedrückt und bekommt
+    deshalb die Überschrift. Findet sich die Zeile nicht (das Untermenü
+    „Formular anpassen" klappt beim Schliessen zu), fällt es ebenfalls auf die
+    Überschrift zurück.
+  */
+  const rueckkehrRef = useRef<string | null>(null);
+  const zurueckZuOptionen = (menueId: string | null) => {
+    rueckkehrRef.current = menueId;
+    setActiveTab("options");
+  };
+
+  useAnsichtsFokus(activeTab, rueckkehrRef);
+
+  /*
+    Die nachgeladenen Ansichten im Hintergrund holen, sobald der Browser Luft
+    hat. Das ist die Gegenleistung fuer das Nachladen: Der Start bleibt
+    schlank, aber wer nach einem Update ins Funkloch faehrt, findet trotzdem
+    jede Ansicht -- der Service Worker legt jede geholte Datei in den Cache.
+  */
+  useEffect(() => {
+    const holen = () => {
+      void import("./components/TimeModal");
+      void import("./components/StatsModal");
+      void import("./components/HistoryModal");
+      void import("./components/HelpModal");
+      void import("./components/ManageModal");
+      void import("./components/CarryoverModal");
+      void import("./components/BestandModal");
+      void import("./components/ChangelogModal");
+    };
+    const fenster = window as Window & {
+      requestIdleCallback?: (r: () => void, o?: { timeout: number }) => number;
+    };
+    if (fenster.requestIdleCallback) {
+      fenster.requestIdleCallback(holen, { timeout: 4000 });
+      return;
+    }
+    // Safari kennt requestIdleCallback nicht -- und Safari ist genau der
+    // Browser der Kolleginnen und Kollegen.
+    const t = window.setTimeout(holen, 2500);
+    return () => window.clearTimeout(t);
+  }, []);
 
   // --- STATE ---
   const [appFields, setAppFields] = useState<SectionsConfig>(() => {
@@ -429,7 +495,6 @@ export default function App() {
     return fields;
   });
 
-
   const [accessibility, setAccessibility] = useState<AccessibilitySettings>(
     () => {
       const defaultSettings: AccessibilitySettings = {
@@ -539,7 +604,6 @@ export default function App() {
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);
-
 
   // Custom field creator inputs
   const [newFieldName, setNewFieldName] = useState("");
@@ -1021,6 +1085,78 @@ export default function App() {
   }, [
     setConfirmRequest, setReportData, setHistory,
     handleHistoryPersistFailure, triggerToast, announceToAriaAndSpeech,
+  ]);
+
+  /*
+    „Gerät geht zurück ans Haus" -- der Fall, den 0.9.38 benannt und nicht
+    bedient hat. Einzelne Monate, eigene Felder und Schichten liessen sich
+    löschen, das ganze Gerät nur über den Absturzbildschirm, den niemand
+    absichtlich aufsuchen kann.
+
+    Die dritte Taste ist hier kein Schmuck: Wer „alles löschen" liest, hat
+    meist genau eine Sorge -- dass etwas verlorengeht, das er noch braucht.
+    „Zuerst sichern" führt in die Datensicherung, statt ihm zu raten, sie
+    selbst zu finden. Es ist die zweite Rückfrage der App mit drei Antworten,
+    nach der Blattwahl vor dem Senden.
+  */
+  const handleAllesLoeschen = useCallback(() => {
+    const monate = Object.keys(history || {}).length;
+    const schichten = new Set([
+      ...(reportData?.timeLogs || []).map((s) => s.id),
+      ...Object.values(history || {}).flatMap((e) => (e.timeLogs || []).map((s) => s.id)),
+    ]).size;
+    const eigeneFelder = Object.values(appFields)
+      .flat()
+      .filter((f) => f.isCustom).length;
+
+    setConfirmRequest({
+      title: "Wirklich alle Daten von diesem Gerät löschen?",
+      message:
+        "Danach ist die App wie neu. Alles liegt nur auf diesem Gerät – es gibt keinen Server, von dem sich etwas zurückholen liesse.",
+      details: [
+        `RV Archiv: ${monate} ${monate === 1 ? "gespeicherter Monat" : "gespeicherte Monate"}`,
+        `Erfasste Schichten: ${schichten}`,
+        `Eigene Kategorien: ${eigeneFelder}`,
+        "Dazu der laufende Monat, alle Einstellungen, das Jahreskonto und die Liste Meine Demogeräte.",
+        "Das lässt sich nicht rückgängig machen.",
+      ],
+      confirmLabel: "Endgültig löschen",
+      cancelLabel: "Abbrechen",
+      tone: "danger",
+      alternative: {
+        label: "Zuerst Daten sichern",
+        onSelect: () => setActiveTab("backup"),
+      },
+      onConfirm: () => {
+        void (async () => {
+          try {
+            await loescheAllesLokal();
+          } catch {
+            /*
+              Ehrlich bleiben duerfen wir nur wegen der Reihenfolge in
+              loescheAllesLokal: IndexedDB zuerst. Schlaegt sie fehl, ist
+              localStorage unberuehrt -- es ist wirklich nichts weg.
+            */
+            triggerToast("Löschen fehlgeschlagen.");
+            announceToAriaAndSpeech(
+              "Das Löschen ist fehlgeschlagen. Es wurde nichts entfernt. Bitte versuchen Sie es erneut.",
+              true,
+            );
+            return;
+          }
+          announceToAriaAndSpeech(
+            "Alle Daten wurden von diesem Gerät gelöscht. Die App startet jetzt neu.",
+            true,
+          );
+          // Kurz warten, damit die Ansage noch gesprochen wird -- ein
+          // sofortiges Neuladen schneidet sie ab.
+          window.setTimeout(() => window.location.reload(), 1600);
+        })();
+      },
+    });
+  }, [
+    history, reportData, appFields, setConfirmRequest, setActiveTab,
+    triggerToast, announceToAriaAndSpeech,
   ]);
 
   const handleDeleteRecordFromHistory = (monthStr: string) => {
@@ -1806,8 +1942,16 @@ export default function App() {
           >
         <div className="space-y-1.5 flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
+            {/*
+              „RV Report" statt „RV Mobil" (0.9.43): Die Überschrift benennt
+              seit 0.9.41 die Ansicht, denn der Fokus landet nach jedem Wechsel
+              auf ihr. Wer in der Navigation „RV Report" drückt, hörte hier bis
+              dahin den Namen der APP -- als einzige der zwölf Ansichten. Der
+              Produktname steht weiterhin in der Seitenleiste am Rechner, im
+              Einstieg, im Fusszeilen-Hinweis und im Namen des Fensters.
+            */}
             <h1 tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black text-[var(--text-color)]">
-              RV Mobil
+              RV Report
             </h1>
             <span className="rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2.5 py-1 text-[0.75rem] font-black uppercase tracking-[0.2em] text-[var(--success-text)]">
               DSGVO & barrierefrei
@@ -2865,11 +3009,13 @@ export default function App() {
       {/* HELP & BACKUP MODAL */}
       {activeTab === "help" && (
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
-          <HelpModal
-            isOpen={true}
-            onClose={() => setActiveTab("options")}
-            appFields={appFields}
-          />
+          <React.Suspense fallback={<BereichLaedt name="Hilfe" />}>
+            <HelpModal
+              isOpen={true}
+              onClose={() => zurueckZuOptionen("menu-help")}
+              appFields={appFields}
+            />
+          </React.Suspense>
         </div>
       )}
 
@@ -2881,7 +3027,7 @@ export default function App() {
           <React.Suspense fallback={<BereichLaedt name="Datensicherung" />}>
           <SecureBackupModal
             isOpen={true}
-            onClose={() => setActiveTab("options")}
+            onClose={() => zurueckZuOptionen("menu-backup")}
             onExport={buildSyncPayload}
             onImport={(dataStr, strategie) => {
               try {
@@ -2928,7 +3074,7 @@ export default function App() {
         <React.Suspense fallback={<BereichLaedt name="Geräte-Sync" />}>
           <DeviceSyncModal
             isOpen={true}
-            onClose={() => setActiveTab("options")}
+            onClose={() => zurueckZuOptionen("menu-sync")}
             onExport={buildSyncPayload}
             onImport={(dataStr, strategy) => handleSyncImport(dataStr, strategy)}
             lokaleMonate={Object.keys(history || {}).length}
@@ -2939,67 +3085,75 @@ export default function App() {
       {/* TIME MODAL (ZEITBEREICH) */}
       {activeTab === "time" && (
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
-          <TimeModal
-            clockInTime={clockInTime}
-            onClockIn={handleClockIn}
-            onClockOut={handleClockOut}
-            timeLogs={reportData?.timeLogs || []}
-            onDeleteLog={handleDeleteLog}
-            announceToAriaAndSpeech={announceToAriaAndSpeech}
-            carryover={carryover}
-            onOpenCarryover={() => {
-              carryoverHerkunftRef.current = "time";
-              setActiveTab("carryover");
-            }}
-            onExportExcel={handleExportTimeLogsExcel}
-            selectedMonth={reportData?.month}
-            onAddManualLog={handleManualLogAdd}
-            history={history}
-            reportData={reportData}
-          />
+          <React.Suspense fallback={<BereichLaedt name="RV Zeit" />}>
+            <TimeModal
+              clockInTime={clockInTime}
+              onClockIn={handleClockIn}
+              onClockOut={handleClockOut}
+              timeLogs={reportData?.timeLogs || []}
+              onDeleteLog={handleDeleteLog}
+              announceToAriaAndSpeech={announceToAriaAndSpeech}
+              carryover={carryover}
+              onOpenCarryover={() => {
+                carryoverHerkunftRef.current = "time";
+                setActiveTab("carryover");
+              }}
+              onExportExcel={handleExportTimeLogsExcel}
+              selectedMonth={reportData?.month}
+              onAddManualLog={handleManualLogAdd}
+              history={history}
+              reportData={reportData}
+            />
+          </React.Suspense>
         </div>
       )}
 
       {/* MANAGEMENT MODAL */}
       {activeTab === "manage" && (
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
-          <ManageModal
-            isOpen={true}
-            onClose={() => setActiveTab("options")}
-            appFields={appFields}
-            onDeleteField={handleDeleteField}
-            onFactoryReset={handleFactoryResetFields}
-          />
+          <React.Suspense fallback={<BereichLaedt name="Formularfelder" />}>
+            <ManageModal
+              isOpen={true}
+              onClose={() => zurueckZuOptionen(null)}
+              appFields={appFields}
+              onDeleteField={handleDeleteField}
+              onFactoryReset={handleFactoryResetFields}
+            />
+          </React.Suspense>
         </div>
       )}
 
       {/* HISTORY MODAL */}
       {activeTab === "history" && (
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
-          <HistoryModal
-            appFields={appFields}
-            history={history}
-            onLoadMonth={handleLoadMonthFromHistory}
-            onDeleteRecord={handleDeleteRecordFromHistory}
-            announceToAriaAndSpeech={announceToAriaAndSpeech}
-            triggerToast={triggerToast}
-            onToggleVersand={handleToggleVersandStatus}
-            onVersandGemeldet={(monat) => setzeVersandStatus(monat, true)}
-            setConfirmRequest={setConfirmRequest}
-            stempeluhrAktiv={accessibility.enableTimeTracking !== false}
-          />
+          <React.Suspense fallback={<BereichLaedt name="RV Archiv" />}>
+            <HistoryModal
+              appFields={appFields}
+              history={history}
+              onLoadMonth={handleLoadMonthFromHistory}
+              onDeleteRecord={handleDeleteRecordFromHistory}
+              announceToAriaAndSpeech={announceToAriaAndSpeech}
+              triggerToast={triggerToast}
+              onToggleVersand={handleToggleVersandStatus}
+              onVersandGemeldet={(monat) => setzeVersandStatus(monat, true)}
+              setConfirmRequest={setConfirmRequest}
+              stempeluhrAktiv={accessibility.enableTimeTracking !== false}
+            />
+          </React.Suspense>
         </div>
       )}
 
       {/* STATS & TRENDS MODAL */}
       {activeTab === "stats" && (
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
-          <StatsModal
-            reportData={reportData}
-            appFields={appFields}
-            history={history}
-            announceToAriaAndSpeech={announceToAriaAndSpeech}
-          />
+          <React.Suspense fallback={<BereichLaedt name="RV Analyse" />}>
+            <StatsModal
+              reportData={reportData}
+              appFields={appFields}
+              history={history}
+              announceToAriaAndSpeech={announceToAriaAndSpeech}
+            />
+          </React.Suspense>
         </div>
       )}
 
@@ -3052,38 +3206,51 @@ export default function App() {
               ]).size
             }
             onSchichtenLoeschen={handleSchichtenLoeschen}
+            onAllesLoeschen={handleAllesLoeschen}
           />
         </div>
       )}
       
       {activeTab === "changelog" && (
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
-          <ChangelogModal onClose={() => setActiveTab("options")} />
+          <React.Suspense fallback={<BereichLaedt name="Neuigkeiten" />}>
+            <ChangelogModal onClose={() => zurueckZuOptionen("menu-changelog")} />
+          </React.Suspense>
         </div>
       )}
       {/* MEIN BESTAND -- freiwillige Liste der Vorfuehrgeraete */}
       {activeTab === "bestand" && (
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
-          <BestandModal
-            isOpen={true}
-            onClose={() => setActiveTab("options")}
-            posten={bestand}
-            onSave={setBestand}
-            announceToAriaAndSpeech={announceToAriaAndSpeech}
-            setConfirmRequest={setConfirmRequest}
-          />
+          <React.Suspense fallback={<BereichLaedt name="Meine Demogeräte" />}>
+            <BestandModal
+              isOpen={true}
+              onClose={() => zurueckZuOptionen("menu-bestand")}
+              posten={bestand}
+              onSave={setBestand}
+              announceToAriaAndSpeech={announceToAriaAndSpeech}
+              setConfirmRequest={setConfirmRequest}
+            />
+          </React.Suspense>
         </div>
       )}
 
       {activeTab === "carryover" && (
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
-          <CarryoverModal
-            isOpen={true}
-            onClose={() => setActiveTab(carryoverHerkunftRef.current)}
-            carryover={carryover}
-            onSave={updateCarryover}
-            announceToAriaAndSpeech={announceToAriaAndSpeech}
-          />
+          <React.Suspense fallback={<BereichLaedt name="Jahreskonto" />}>
+            <CarryoverModal
+              isOpen={true}
+              onClose={() => {
+                // Aus der Zeit-Ansicht heraus gibt es keine Menüzeile, auf die
+                // zurückzukehren wäre -- dort bleibt es bei der Überschrift.
+                rueckkehrRef.current =
+                  carryoverHerkunftRef.current === "options" ? "menu-carryover" : null;
+                setActiveTab(carryoverHerkunftRef.current);
+              }}
+              carryover={carryover}
+              onSave={updateCarryover}
+              announceToAriaAndSpeech={announceToAriaAndSpeech}
+            />
+          </React.Suspense>
         </div>
       )}
 

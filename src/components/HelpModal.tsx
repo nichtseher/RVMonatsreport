@@ -254,7 +254,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   </ul>
                   <p className="mt-2">In den Zähler-Eingabefeldern gilt zusätzlich: Sie können die <strong>Zahl direkt eintippen</strong>, <strong>Pfeil hoch/runter</strong> ändert den Wert, <strong>Enter</strong> springt zum nächsten Feld, <strong>Umschalt+Enter</strong> zum vorherigen.</p>
                   <p>Ganz oben auf der Seite liegt außerdem ein Sprunglink <strong>„Zum Hauptinhalt springen“</strong>, den Sie mit der Tabulatortaste erreichen.</p>
-                  <p><strong>Beim Wechsel der Ansicht wandert der Fokus mit:</strong> Öffnen Sie eine andere Ansicht, steht die Tastatur anschließend auf deren Überschrift. Ihr Screenreader liest sie vor, und die Tabulatortaste führt von dort weiter in den Inhalt – Sie müssen nicht rückwärts suchen.</p>
+                  <p><strong>Beim Wechsel der Ansicht wandert der Fokus mit:</strong> Öffnen Sie eine andere Ansicht, steht die Tastatur anschließend auf deren Überschrift. Ihr Screenreader liest sie vor, und die Tabulatortaste führt von dort weiter in den Inhalt – Sie müssen nicht rückwärts suchen. Gehen Sie über „Zurück“ wieder hinaus, stehen Sie erneut auf der Menüzeile, mit der Sie die Ansicht geöffnet haben.</p>
                 </FAQItem>
 
                 <FAQItem
@@ -388,6 +388,15 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <p>Ebenfalls unter <strong>Optionen &gt; Datensicherung</strong> finden Sie den Knopf <strong>Backup wiederherstellen</strong>.</p>
                   <p>Wählen Sie Ihre Backup-Datei aus (<code>.json</code> oder <code>.json.enc</code>). Bei einer verschlüsselten Datei tragen Sie <strong>vorher</strong> das Passwort in das Feld <strong>„Passwort“</strong> ein – sonst meldet die App, dass das Passwort fehlt. Es ist dasselbe Feld, mit dem Sie auch ein neues Backup schützen.</p>
                   <p>Alle Ihre Daten (Zählerstände, Archiv, Zeiterfassung, Jahreskonto) werden dann wiederhergestellt.</p>
+                </FAQItem>
+
+                <FAQItem
+                  icon={<Lock className="text-[var(--danger-text)]" />}
+                  title="Wie lösche ich alle Daten – zum Beispiel, wenn ich das Gerät zurückgebe?"
+                >
+                  <p>Ganz unten in den <strong>Optionen</strong> steht <strong>„Alle Daten von diesem Gerät löschen“</strong>. Damit ist die App danach wie neu: Zählerstände, RV Archiv, erfasste Schichten, eigene Kategorien, Einstellungen, Jahreskonto und die Liste „Meine Demogeräte“ sind weg.</p>
+                  <p>Die App fragt vorher nach und zeigt Ihnen, was betroffen ist – wie viele Monate im Archiv liegen, wie viele Schichten erfasst sind und wie viele eigene Kategorien es gibt. In derselben Rückfrage können Sie auch <strong>„Zuerst Daten sichern“</strong> wählen; das führt Sie in die Datensicherung, ohne etwas zu löschen.</p>
+                  <p><strong>Es gibt keine Kopie auf einem Server</strong>, aus der sich etwas zurückholen liesse – gelöscht ist gelöscht. Wenn Sie die Daten noch einmal brauchen könnten, legen Sie vorher ein Backup an und bewahren Sie die Datei außerhalb des Geräts auf.</p>
                 </FAQItem>
               </div>
             </div>

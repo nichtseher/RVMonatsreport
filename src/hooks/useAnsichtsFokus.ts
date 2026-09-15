@@ -57,12 +57,23 @@ export const ANSICHTS_TITEL = "data-ansicht-titel";
  *    unabhängig und sagt ausserdem genau das, was gemeint ist: Fokus wandert
  *    bei einem WECHSEL, nicht bei einem Durchlauf.
  */
-export function useAnsichtsFokus(activeTab: string) {
+export function useAnsichtsFokus(
+  activeTab: string,
+  /**
+   * Kennung des Bedienelements, auf das der Fokus **stattdessen** gehört —
+   * gesetzt, wenn der Nutzer eine Ansicht über ihre Zurück-Taste verlässt
+   * (0.9.43). Existiert das Element nicht, gilt wieder die Überschrift; die
+   * Kennung wird in jedem Fall nur einmal verbraucht.
+   */
+  rueckkehrRef?: React.RefObject<string | null>,
+) {
   const vorigeAnsicht = useRef<string | null>(null);
 
   useEffect(() => {
     const vorher = vorigeAnsicht.current;
     vorigeAnsicht.current = activeTab;
+    const rueckkehr = rueckkehrRef?.current ?? null;
+    if (rueckkehrRef) rueckkehrRef.current = null;
     // null = Seitenaufbau; gleich = derselbe Effekt lief erneut, ohne dass sich
     // die Ansicht geändert hat.
     if (vorher === null || vorher === activeTab) return;
@@ -73,6 +84,15 @@ export function useAnsichtsFokus(activeTab: string) {
 
     const suche = () => {
       if (abgebrochen) return;
+      // Der Rückweg zuerst: Wer aus der Hilfe zurückkommt, soll wieder auf der
+      // Zeile „Hilfe & Anleitung" stehen, nicht am Anfang des Menüs.
+      if (rueckkehr) {
+        const zeile = document.getElementById(rueckkehr);
+        if (zeile) {
+          zeile.focus();
+          return;
+        }
+      }
       const titel = document.querySelector<HTMLElement>(`[${ANSICHTS_TITEL}]`);
       if (titel) {
         // Ohne preventScroll: Die Überschrift soll auch sichtbar sein, nicht nur

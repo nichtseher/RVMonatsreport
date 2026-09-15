@@ -915,7 +915,7 @@ async function erzwingeTextabstand(page: Page) {
  */
 const FOKUS_WEGE = [
   // Ueber die untere Navigationsleiste (bzw. die Seitenleiste am Schreibtisch).
-  { name: "Formular", start: "options", nav: "RV Report", titel: /RV Mobil/ },
+  { name: "Formular", start: "options", nav: "RV Report", titel: /^RV Report$/ },
   { name: "Zeit", start: "form", nav: "RV Zeit", titel: /Zeiterfassung/ },
   { name: "Analyse", start: "form", nav: "RV Analyse", titel: /RV Analyse & Trends/ },
   { name: "Archiv", start: "form", nav: "RV Archiv", titel: /RV Archiv/ },
@@ -988,7 +988,7 @@ test.describe("Fokus beim Ansichtswechsel", () => {
     });
   }
 
-  test("und zurueck: die Zurueck-Taste der Hilfe fuehrt auf die Ueberschrift der Optionen", async ({
+  test("und zurueck: die Zurueck-Taste fuehrt auf die Menuezeile, die geoeffnet hat", async ({
     page,
   }) => {
     await oeffne(page, "options");
@@ -999,17 +999,44 @@ test.describe("Fokus beim Ansichtswechsel", () => {
     await page.getByRole("heading", { name: /^Optionen$/ }).first().waitFor({ state: "visible", timeout: 20_000 });
 
     /*
-      Bis 0.9.40 landete der Fokus hier auf document.body: Die Ansichten werden
+      Drei Stufen hat dieser eine Weg durchlaufen:
+
+      Bis 0.9.40 landete der Fokus auf document.body -- die Ansichten werden
       bedingt gerendert, das beim Oeffnen gemerkte Element haengt beim
-      Schliessen also nicht mehr im Dokument, und focus() auf einen
-      abgehaengten Knoten tut nichts (gemessen: document.contains(...) ===
-      false). Fuenf Ansichten trugen diese wirkungslose Wiederherstellung.
+      Schliessen nicht mehr im Dokument, und focus() auf einen abgehaengten
+      Knoten tut nichts (gemessen: document.contains(...) === false).
+
+      0.9.41 brachte ihn auf die Ueberschrift „Optionen". Besser, aber wer die
+      siebte Menuezeile geoeffnet hatte, tastete sich erneut durch sechs.
+
+      Seit 0.9.43 steht er wieder auf der Zeile, die geoeffnet hat. Gesetzt
+      wird das NUR auf dem ausdruecklichen Rueckweg; wer ueber die
+      Navigationsleiste geht, bekommt weiter die Ueberschrift.
     */
+    await expect
+      .poll(async () => await page.evaluate(() => document.activeElement?.id ?? ""), { timeout: 5_000 })
+      .toBe("menu-help");
+  });
+
+  test("ueber die Navigationsleiste zurueck gibt es die Ueberschrift, nicht die Menuezeile", async ({
+    page,
+  }) => {
+    /*
+      Die Kehrseite derselben Regel, und der Grund, warum die Rueckkehr an der
+      Zurueck-Taste haengt und nicht am Ansichtswechsel: Wer „Optionen" in der
+      Navigationsleiste drueckt, hat NICHT „zurueck" gedrueckt. Ihn auf eine
+      Menuezeile zu setzen, waere eine Antwort auf eine andere Frage.
+    */
+    await oeffne(page, "options");
+    await page.getByRole("button", { name: /Hilfe & Anleitung/ }).locator("visible=true").first().click();
+    await page.getByRole("heading", { name: /Hilfe & Handbuch/ }).first().waitFor({ state: "visible", timeout: 20_000 });
+
+    await page.getByRole("button", { name: "Optionen", exact: true }).locator("visible=true").first().click();
+    await page.getByRole("heading", { name: /^Optionen$/ }).first().waitFor({ state: "visible", timeout: 20_000 });
+
     await expect
       .poll(async () => (await fokusLage(page)).istTitel, { timeout: 5_000 })
       .toBe(true);
-    const lage = await fokusLage(page);
-    expect(lage.text, "Der Rueckweg landet nicht auf der Ueberschrift der Optionen").toContain("Optionen");
   });
 
   test("beim Seitenaufbau wird der Fokus NICHT versetzt", async ({ page }) => {
@@ -2956,6 +2983,30 @@ const RUECKFRAGEN = [
       await p.getByRole("button", { name: /Notiz per Sprache diktieren/ }).first().click();
     },
   },
+  {
+    /*
+      Die dreizehnte (0.9.43) und die zerstörendste der App: Sie leert beide
+      Speicher vollständig. Der Fall dahinter ist „Gerät geht zurück ans
+      Haus" -- bis dahin gab es dafür nur den Absturzbildschirm.
+
+      Sie ist ausserdem erst die ZWEITE Rückfrage mit drei Antworten, nach der
+      Blattwahl vor dem Senden: „Zuerst Daten sichern" führt in die
+      Datensicherung, statt dem Nutzer zu raten, sie selbst zu suchen. Der
+      Dialog stapelt seine Tasten deshalb auf jeder Breite -- drei
+      nebeneinander unterschreiten in `max-w-md` bei „Extra gross" die 44 px.
+
+      Ein Archiv wird bewusst angelegt: Die Rückfrage zählt Monate, Schichten
+      und eigene Kategorien auf, und diese Zeilen sollen nicht nur mit Nullen
+      gemessen werden.
+    */
+    name: "Rückfrage: Alle Daten löschen",
+    ausloeser: /Alle Daten von diesem Gerät löschen/,
+    oeffne: async (p: Page) => {
+      await legeArchivAn(p);
+      await oeffne(p, "options");
+      await p.getByRole("button", { name: /Alle Daten von diesem Gerät löschen/ }).first().click();
+    },
+  },
 ] as const;
 
 /**
@@ -4411,5 +4462,95 @@ test.describe("Grenze der abgeschalteten Stempeluhr", () => {
     expect(rest.zaehlerLaufend, "Zählerstand wurde still verändert").toBe(3.75);
     expect(rest.zaehlerArchiv, "Archiv-Zählerstand wurde still verändert").toBe(2);
     expect(rest.laufendeSchicht, "laufende Schicht nicht zurückgesetzt").toBeNull();
+  });
+});
+
+
+/*
+  Alle Daten löschen -- „Gerät geht zurück ans Haus" (0.9.43).
+
+  Dass der Dialog gut aussieht, misst die Liste RUECKFRAGEN. Hier geht es um
+  die Frage, die in diesem Projekt schon zweimal teuer war: Passiert auch
+  wirklich, was die App behauptet? Die Daten liegen in ZWEI Speichern, und wer
+  nur localStorage leert, hinterlässt Bericht und Archiv -- die Zusage „alles
+  gelöscht" wäre dann falsch.
+
+  Der Einstieg läuft bewusst NICHT über `oeffne()`: Das dortige
+  `addInitScript` setzt die Onboarding-Marke bei JEDER Navigation neu, also
+  auch nach dem Neustart, den das Löschen auslöst. Der Einstiegs-Assistent
+  wäre damit unsichtbar -- und genau sein Erscheinen ist der sichtbare Beweis,
+  dass das Gerät leer ist.
+*/
+test.describe("Alle Daten löschen", () => {
+  test("leert beide Speicher und startet als frisches Gerät neu", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Datenhaltung haengt nicht am Geraeteprofil");
+
+    // Archiv in die IndexedDB, danach die Onboarding-Marke auf derselben
+    // Herkunft setzen -- ohne Init-Skript, damit sie das Neuladen NICHT
+    // übersteht.
+    await legeArchivAn(page);
+    await page.evaluate(() => localStorage.setItem("aussendienst_pwa_onboarding_v1", "1"));
+    await page.goto("/?tab=options", { waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: /^Optionen$/ }).first().waitFor({ timeout: 20_000 });
+
+    const stand = () =>
+      page.evaluate(async () => {
+        const db = await new Promise<IDBDatabase>((res, rej) => {
+          const r = indexedDB.open("keyval-store", 1);
+          r.onupgradeneeded = () => {
+            if (!r.result.objectStoreNames.contains("keyval")) r.result.createObjectStore("keyval");
+          };
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => rej(r.error);
+        });
+        const lies = (schluessel: string) =>
+          new Promise<unknown>((res) => {
+            const t = db.transaction("keyval", "readonly");
+            const a = t.objectStore("keyval").get(schluessel);
+            a.onsuccess = () => res(a.result);
+            a.onerror = () => res(undefined);
+          });
+        const archiv = (await lies("aussendienst_pwa_history")) as Record<string, unknown> | undefined;
+        return {
+          monate: archiv ? Object.keys(archiv).length : 0,
+          onboarding: localStorage.getItem("aussendienst_pwa_onboarding_v1"),
+          schluessel: Object.keys(localStorage).filter((k) => k.startsWith("aussendienst_pwa_")).length,
+        };
+      });
+
+    const vorher = await stand();
+    expect(vorher.monate, "Die Vorbedingung stimmt nicht: kein Archiv angelegt").toBeGreaterThan(0);
+    expect(vorher.schluessel, "Die Vorbedingung stimmt nicht: nichts in localStorage").toBeGreaterThan(0);
+
+    // --- Die dritte Antwort darf NICHTS löschen ---------------------------
+    await page.getByRole("button", { name: /Alle Daten von diesem Gerät löschen/ }).click();
+    const dialog = page.getByRole("alertdialog");
+    await dialog.waitFor({ state: "visible", timeout: 20_000 });
+    await dialog.getByRole("button", { name: /Zuerst Daten sichern/ }).click();
+    await page.getByRole("heading", { name: /Datensicherung/ }).first().waitFor({ timeout: 20_000 });
+
+    const nachAusweichen = await stand();
+    expect(
+      nachAusweichen.monate,
+      "„Zuerst Daten sichern\" hat gelöscht -- es ist die Ausweichantwort, nicht die Bestätigung",
+    ).toBe(vorher.monate);
+
+    // --- Und jetzt wirklich ----------------------------------------------
+    await page.goto("/?tab=options", { waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: /^Optionen$/ }).first().waitFor({ timeout: 20_000 });
+    await page.getByRole("button", { name: /Alle Daten von diesem Gerät löschen/ }).click();
+    await dialog.waitFor({ state: "visible", timeout: 20_000 });
+    await dialog.getByRole("button", { name: /Endgültig löschen/ }).click();
+
+    // Die App lädt nach ~1,6 s selbst neu; der Einstiegs-Assistent ist der
+    // sichtbare Beweis, dass nichts mehr da ist.
+    await page
+      .getByRole("heading", { name: /Willkommen bei RV Mobil/ })
+      .first()
+      .waitFor({ state: "visible", timeout: 20_000 });
+
+    const nachher = await stand();
+    expect(nachher.monate, "Das Archiv liegt nach dem Löschen noch in der IndexedDB").toBe(0);
+    expect(nachher.onboarding, "Die Onboarding-Marke hat das Löschen überlebt").toBeNull();
   });
 });

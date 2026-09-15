@@ -48,6 +48,20 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           die Erklaerung fuer etwas vorzuenthalten, das er an seinem Geraet
           bemerkt.
         */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.43: Alle Daten löschen – für die Rückgabe des Geräts</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Neu: „Alle Daten von diesem Gerät löschen“.</strong> Ganz unten in den Optionen. Damit ist die App wieder wie neu – Zählerstände, Archiv, Schichten, eigene Kategorien und alle Einstellungen sind weg. Die Rückfrage zeigt vorher, was betroffen ist, und bietet „Zuerst Daten sichern“ an. Bisher ging das nur über den Fehlerbildschirm, den man nicht absichtlich aufrufen kann.</li>
+            <li><strong>„Zurück“ bringt Sie dorthin zurück, wo Sie waren.</strong> Verlassen Sie eine Ansicht über „Zurück“, steht die Tastatur wieder auf der Menüzeile, mit der Sie die Ansicht geöffnet haben – nicht mehr am Anfang des Menüs.</li>
+            <li><strong>Die Startseite heißt jetzt „RV Report“</strong> statt „RV Mobil“, wie die Schaltfläche in der Navigation. Der Name der App steht weiterhin im Einstieg, in der Fußzeile und am Rechner in der Seitenleiste.</li>
+            <li><strong>Die App startet schneller</strong>, weil sie nur noch lädt, was Sie gerade brauchen. Die übrigen Bereiche holt sie im Hintergrund nach, damit sie auch ohne Netz bereitstehen.</li>
+          </ul>
+        </div>
+
         {/*
           Knapp, und das ist hier die richtige Einordnung: 0.9.42 fasst
           dreifach vorhandenes JSX zusammen. Gemessen ist, dass die App danach

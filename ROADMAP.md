@@ -1,6 +1,6 @@
 # Roadmap — RV Monatsreport (RV Mobil)
 
-Stand: 2026-09-15, Version 0.9.42 (bis 0.9.41 ist veröffentlicht)
+Stand: 2026-09-15, Version 0.9.43 (bis 0.9.42 ist veröffentlicht)
 
 Diese Roadmap ist aus **gemessenen Befunden** entstanden, nicht aus Vermutungen.
 Wo eine Zahl steht, wurde sie nachgemessen. Punkte ohne Beleg sind als
@@ -1059,6 +1059,45 @@ reinen Prüfungen zu `verrechneSchicht` abgedeckt, über die Oberfläche **nicht
 
 ---
 
+## 0.9.43 — Das Gerät leeren, den Rückweg finden, schneller starten — ERLEDIGT (2026-09-15)
+
+Vier Punkte, auf Wunsch des Projektinhabers in einer Fassung.
+
+**„Alle Daten von diesem Gerät löschen"** schliesst den Punkt, der seit 0.9.38
+als benannt und unbehoben dastand: Einzelne Monate, Felder und Schichten
+liessen sich löschen, das ganze Gerät nur über den Absturzbildschirm. Die
+Rückfrage zählt auf, was betroffen ist, und bietet als dritte Antwort „Zuerst
+Daten sichern" an. Beide Speicher werden geleert, IndexedDB zuerst — schlägt
+sie fehl, ist nichts weg und die Meldung darf das auch sagen.
+
+**Der Rückweg** landet wieder auf der Menüzeile, die geöffnet hat; über die
+Navigationsleiste bleibt es bei der Überschrift. Damit ist die Verfeinerung
+umgesetzt, die 0.9.41 ausdrücklich offengelassen hatte.
+
+**Die Formularansicht** meldet sich jetzt mit „RV Report" statt mit dem Namen
+der App — als einzige der zwölf nannte sie nicht sich selbst.
+
+**Acht weitere Ansichten werden nachgeladen**: Startbündel 563,67 → 382,26 kB
+(gzip 145,77 → 111,34). Der zweite Hebel aus 0.9.34 ist damit gezogen — aber
+nur, weil die Gegenleistung daneben steht: Nachgeladene Teile liegen nicht im
+Vorrat des Service Workers, deshalb holt die Seite sie im Leerlauf im
+Hintergrund. Ohne das wäre eine Ansicht nach einem Update im Funkloch
+unerreichbar gewesen, und für eine Aussendienst-App wäre das der schlechtere
+Tausch.
+
+**Der Konformitätsbericht** ist auf 0.9.43 nachgetragen — ausdrücklich
+nachgetragen, nicht neu erhoben; was gemessen wurde und was übernommen ist,
+steht im Kopf des Dokuments.
+
+### Offen geblieben
+
+Die doppelte Ansage bei den fünf Hauptansichten (Live-Region **und**
+Überschrift). Die App kann nicht feststellen, ob ein Screenreader läuft; die
+Ansage ist zugleich das Einzige, was Nutzer mit App-Sprachausgabe hören. Ob
+die Doppelung stört, entscheidet der Screenreader-Durchlauf.
+
+---
+
 ## 0.9.42 — Dreimal dasselbe JSX, jetzt einmal — ERLEDIGT (2026-09-15)
 
 Der dritte der drei Hebel aus 0.9.34, zur Hälfte gezogen. Zusammengefasst
@@ -1439,6 +1478,14 @@ fast gleiches JSX, die Navigationsliste steht zweimal).
 Diese drei bleiben die nächsten Hebel, wenn „schlank und wendig" wieder auf der
 Tagesordnung steht.
 
+> **Nachtrag 2026-09-15 (0.9.43):** Der zweite Hebel — das Nachladen der
+> Ansichten — ist gezogen: Startbündel 563,67 → **382,26 kB**, zehn von zwölf
+> Ansichten werden nachgeladen. Entscheidend war nicht der Umbau, sondern die
+> Gegenleistung: Nachgeladene Teile stehen nicht im Vorrat des Service
+> Workers, also holt die Seite sie im Leerlauf im Hintergrund. Ohne das wäre
+> eine Ansicht nach einem Update im Funkloch unerreichbar — der schlechtere
+> Tausch für eine Aussendienst-App.
+>
 > **Nachtrag 2026-09-15 (0.9.42):** Der dritte Hebel ist zur Hälfte gezogen —
 > die beiden hier genannten Doppelungen (vier fast gleiche Bereichsblöcke, die
 > zweimal stehende Navigationsliste) sind zusammengefasst, dazu ist der

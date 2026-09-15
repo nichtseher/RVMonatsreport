@@ -1,7 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Trash2, Download } from "lucide-react";
-import { clear as clearIndexedDb } from "idb-keyval";
 import { ladeRettungsPaketHerunter } from "./utils/speicherSchutz";
+import { loescheAllesLokal } from "./utils/allesLoeschen";
 
 interface Props {
   children?: ReactNode;
@@ -57,15 +57,17 @@ export class ErrorBoundary extends Component<Props, State> {
 
   private handleHardReset = async () => {
     if (confirm("Möchten Sie die App wirklich komplett zurücksetzen? Alle gespeicherten Daten (inkl. RV Archiv) werden gelöscht! Sichern Sie vorher Ihre Daten über die Schaltfläche \"Daten als Datei sichern\".")) {
-      // Der Bericht und das RV Archiv liegen in IndexedDB (idb-keyval), nicht
-      // in localStorage -- ohne clearIndexedDb() waere diese Meldung falsch
-      // UND ein Absturz durch beschaedigte Archivdaten wuerde nach dem Reset
-      // sofort wiederkehren.
-      localStorage.clear();
+      /*
+        Beide Speicher, über `loescheAllesLokal` -- dieselbe Funktion, die seit
+        0.9.43 auch hinter „Alle Daten löschen" in den Optionen steht. Der
+        Bericht und das RV Archiv liegen in IndexedDB, nicht in localStorage;
+        ohne das Leeren der IndexedDB waere diese Meldung falsch UND ein
+        Absturz durch beschaedigte Archivdaten kaeme sofort wieder.
+      */
       try {
-        await clearIndexedDb();
-      } catch (err) {
-        console.error("IndexedDB-Reset fehlgeschlagen", err);
+        await loescheAllesLokal();
+      } catch {
+        /* Gemeldet ist der Fehler bereits; der Neustart hilft trotzdem. */
       }
       window.location.reload();
     }

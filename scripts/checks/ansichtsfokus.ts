@@ -171,8 +171,10 @@ pruefe("die markierte Überschrift ist fokussierbar", () => {
 
 pruefe("der Haken wird in App.tsx auch aufgerufen", () => {
   const app = readFileSync(join(WURZEL, "App.tsx"), "utf8");
+  // Das zweite Argument (die Rückkehr-Kennung, 0.9.43) ist freigestellt --
+  // geprüft wird, DASS der Haken mit der aktuellen Ansicht aufgerufen wird.
   wahr(
-    /useAnsichtsFokus\(activeTab\)/.test(app),
+    /useAnsichtsFokus\(activeTab[,)]/.test(app),
     "App.tsx ruft useAnsichtsFokus(activeTab) nicht mehr auf. Damit sind alle " +
       "Markierungen wirkungslos und der Fokus bleibt beim Wechsel stehen.",
   );

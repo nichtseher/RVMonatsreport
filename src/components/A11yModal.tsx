@@ -38,6 +38,8 @@ interface A11yModalProps {
   schichtenAnzahl?: number;
   /** Alle erfassten Schichten löschen -- fragt selbst zurück. */
   onSchichtenLoeschen?: () => void;
+  /** Gerät zurückgeben: löscht beide Speicher vollständig -- fragt selbst zurück. */
+  onAllesLoeschen?: () => void;
 }
 
 /* ---------- Wiederverwendbare, kompakte Bausteine ---------- */
@@ -49,16 +51,25 @@ function MenuRow({
   label,
   hint,
   onClick,
+  id,
 }: {
   icon: React.ReactNode;
   iconClass: string;
   label: string;
   hint: string;
   onClick: () => void;
+  /*
+    Die Kennung ist kein Schmuck: Kehrt der Nutzer aus der geöffneten Ansicht
+    zurück, sucht `useAnsichtsFokus` genau diese Zeile und stellt den Fokus
+    darauf. Ohne sie landet er auf der Überschrift „Optionen" und muss sich
+    erneut durch das Menü tasten (0.9.43).
+  */
+  id?: string;
 }) {
   return (
     <button
       type="button"
+      id={id}
       onClick={onClick}
       className="w-full flex items-center gap-3 px-4 py-3.5 text-left group hover:bg-[var(--input-bg)] transition-colors active:scale-[0.99] cursor-pointer first:rounded-t-2xl last:rounded-b-2xl"
     >
@@ -179,6 +190,7 @@ export default function A11yModal({
   onOpenBestand,
   schichtenAnzahl = 0,
   onSchichtenLoeschen,
+  onAllesLoeschen,
 }: A11yModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeMenu, setActiveMenu] = useState<"main" | "a11y" | "form">("main");
@@ -250,6 +262,7 @@ export default function A11yModal({
           <button
             type="button"
             onClick={onOpenChangelog}
+            id="menu-changelog"
             className="text-xs font-black px-3 min-h-[44px] inline-flex items-center rounded-full bg-[var(--success-bg)] text-[var(--success-text)] border border-[var(--success-border)] hover:bg-[var(--bg-color)] transition-colors cursor-pointer flex-shrink-0"
           >
             Was gibt's Neues?
@@ -290,6 +303,7 @@ export default function A11yModal({
             label="Jahreskonto"
             hint="Resturlaub und Überstunden aus dem Vorjahr"
             onClick={onOpenCarryover}
+            id="menu-carryover"
           />
         )}
         {onOpenBestand && (
@@ -299,6 +313,7 @@ export default function A11yModal({
             label="Meine Demogeräte"
             hint="Welche Vorführgeräte haben Sie gerade dabei? Freiwillig."
             onClick={onOpenBestand}
+            id="menu-bestand"
           />
         )}
       </SectionCard>
@@ -311,6 +326,7 @@ export default function A11yModal({
             label="Geräte-Sync"
             hint="Daten offline auf ein zweites Gerät übertragen – auch ohne Kamera"
             onClick={onOpenSync}
+            id="menu-sync"
           />
         )}
         {onOpenBackup && (
@@ -320,6 +336,7 @@ export default function A11yModal({
             label="Datensicherung"
             hint="Verschlüsseltes Backup erstellen & einspielen"
             onClick={onOpenBackup}
+            id="menu-backup"
           />
         )}
         {onOpenHelp && (
@@ -335,9 +352,37 @@ export default function A11yModal({
             label="Hilfe & Anleitung"
             hint="Handbuch, FAQ und Richtlinien"
             onClick={onOpenHelp}
+            id="menu-help"
           />
         )}
       </SectionCard>
+
+      {onAllesLoeschen && (
+        /*
+          Bewusst KEINE Menüzeile, sondern eine eigene Taste unterhalb der
+          Karte: Menüzeilen führen in eine Ansicht, das hier tut sofort etwas
+          Endgültiges. Dieselbe Bauform wie „Erfasste Schichten löschen" in den
+          Einstellungen.
+
+          Warum es die Taste überhaupt gibt (0.9.43): Einzelne Monate, eigene
+          Felder und Schichten liessen sich löschen, das GANZE Gerät nicht --
+          ausser über den Absturzbildschirm, den man nicht aufsuchen kann. Der
+          Fall „Gerät geht zurück ans Haus" war damit nicht bedient.
+        */
+        <div className="px-1 pt-2">
+          <button
+            type="button"
+            onClick={onAllesLoeschen}
+            className="w-full min-h-[44px] py-3 px-4 rounded-xl font-bold border-2 border-[var(--danger-text)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--danger-bg)] transition-all cursor-pointer"
+          >
+            Alle Daten von diesem Gerät löschen
+          </button>
+          <p className="mt-1.5 text-xs text-[var(--text-muted)]">
+            Für die Rückgabe des Geräts: entfernt Bericht, Archiv, Schichten,
+            eigene Felder und alle Einstellungen. Fragt vorher nach.
+          </p>
+        </div>
+      )}
     </div>
   );
 

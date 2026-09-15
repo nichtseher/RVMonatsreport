@@ -10,6 +10,164 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-15 — v0.9.43: Das Gerät leeren, den Rückweg finden, schneller starten
+
+Vier Punkte in einer Fassung, auf Wunsch des Projektinhabers. Sie hängen
+sachlich nicht zusammen, aber drei davon sind klein und der vierte ist eine
+Fortschreibung — sie einzeln zu veröffentlichen hiesse vier Deploy-Tore à
+19 Minuten für drei Zeilen Changelog.
+
+### 1. „Alle Daten von diesem Gerät löschen"
+
+Der Fall stand seit 0.9.38 als benannt und unbehoben da: Einzelne Monate,
+eigene Felder und Schichten liessen sich löschen — das ganze Gerät nur über
+den **Absturzbildschirm**, den niemand absichtlich aufsucht. „Gerät geht
+zurück ans Haus" war damit nicht bedient, und das ist der einzige offene Punkt
+mit Datenschutzbezug gewesen.
+
+**Zwei Speicher, nicht einer.** Die Einstellungen liegen in `localStorage`,
+Bericht und Archiv in IndexedDB. Wer nur den ersten leert, hinterlässt die
+eigentlichen Daten — die Zusage „alles gelöscht" wäre falsch. Beides liegt
+jetzt in `src/utils/allesLoeschen.ts`, und der Absturzbildschirm ruft dieselbe
+Funktion auf. Zwei Wege, eine Implementierung.
+
+**Die Reihenfolge darin ist kein Zufall:** erst IndexedDB, dann localStorage.
+IndexedDB ist der Teil, der scheitern kann (gesperrte Datenbank, privater
+Modus). Schlägt er fehl, ist noch nichts weg, und die Fehlermeldung darf
+ehrlich „es wurde nichts entfernt" sagen. Andersherum stünde die App ohne
+Einstellungen, aber mit vollem Archiv da — und die Meldung wäre in beiden
+Richtungen falsch.
+
+**Die dritte Taste.** Die Rückfrage ist erst die zweite der App mit drei
+Antworten (nach der Blattwahl vor dem Senden): „Zuerst Daten sichern" führt in
+die Datensicherung, statt dem Nutzer zu raten, sie selbst zu finden. Wer
+„alles löschen" liest, hat meist genau diese eine Sorge.
+
+Sie zählt ausserdem auf, was betroffen ist — Monate im Archiv, erfasste
+Schichten, eigene Kategorien. Zahlen statt „alle Daten".
+
+**Gemessen, nicht angenommen.** Der Prüffall geht den ganzen Weg: Archiv
+anlegen, Rückfrage öffnen, erst die Ausweichantwort (es darf nichts
+verschwinden), dann wirklich löschen — und danach nachsehen, ob beide Speicher
+leer sind und der Einstiegs-Assistent wieder erscheint. Letzteres ist der
+sichtbare Beweis, dass das Gerät leer ist.
+
+Eine Feinheit, die den Test sonst blind gemacht hätte: Der Standardeinstieg
+`oeffne()` setzt die Onboarding-Marke über `addInitScript` — und das läuft bei
+**jeder** Navigation, also auch nach dem Neustart, den das Löschen auslöst.
+Der Assistent wäre nie erschienen, der Test grün und wertlos.
+
+### 2. Der Rückweg landet wieder auf der Menüzeile
+
+0.9.41 brachte den Fokus beim Ansichtswechsel auf die Überschrift. Für den
+Rückweg war das nur die halbe Antwort: Wer die siebte Menüzeile geöffnet
+hatte, stand nach „Zurück" wieder oben und tastete sich erneut durch sechs.
+
+Jetzt merkt sich die App die Kennung der auslösenden Zeile — **nur auf dem
+ausdrücklichen Rückweg**. Wer die Ansicht über die Navigationsleiste verlässt,
+hat etwas anderes gedrückt und bekommt weiter die Überschrift. Beide Fälle
+stehen als Prüfung im Netz, der zweite ausdrücklich als Kehrseite des ersten.
+
+Findet sich die Zeile nicht — das Untermenü „Formular anpassen" klappt beim
+Schliessen zu —, fällt es auf die Überschrift zurück.
+
+### 3. Die Formularansicht hiess „RV Mobil"
+
+Seit 0.9.41 landet der Fokus auf der Überschrift, also liest der Screenreader
+sie nach jedem Wechsel vor. Elf Ansichten nannten dabei sich selbst; eine
+nannte die **App**. Wer „RV Report" drückte, hörte „RV Mobil".
+
+Geändert wurde die sichtbare Überschrift. Der Produktname steht weiterhin in
+der Seitenleiste am Rechner, im Einstieg, in der Fusszeile und im Fenstertitel.
+
+### 4. Acht Ansichten werden nachgeladen — mit Gegenleistung
+
+Vorher lagen zehn der zwölf Ansichten fest im Startbündel, darunter
+`ClockInWidget` mit 1.126 Zeilen über `TimeModal`. Auch für jemanden, der nur
+Zahlen eintippt.
+
+| | vorher | nachher |
+|---|---|---|
+| Startbündel | 563,67 kB | **382,26 kB** |
+| davon gzip | 145,77 kB | **111,34 kB** |
+| nachgeladene Ansichten | 2 von 12 | **10 von 12** |
+
+**Der Haken, der das fast verhindert hätte.** Nachgeladene Teile stehen nicht
+in der `index.html`, der Service Worker legt sie beim Installieren also nicht
+vorab in den Cache — das steht seit 0.9.20 als bewusste Lücke in `sw.js`. Wer
+nach einem Update ins Funkloch fährt, käme an eine Ansicht nicht heran, die er
+online nie geöffnet hat. Für eine Aussendienst-App ist das der schlechtere
+Tausch, und „schlankeres Bündel" wäre ihn nicht wert gewesen.
+
+Die Gegenleistung steht deshalb daneben: Sobald der Browser Luft hat, holt die
+Seite alle acht Teile im Hintergrund (`requestIdleCallback`, bei Safari ein
+Zeitgeber — und Safari ist der Browser der Kolleginnen und Kollegen). Der
+Fetch-Handler des Service Workers legt jede erfolgreiche Antwort derselben
+Herkunft in den Cache. Schneller Start **und** offline vollständig.
+
+Nachgemessen gegen den gebauten Stand: Nach sechs Sekunden Leerlauf sind alle
+acht Teile geholt.
+
+**Und dabei fast die falsche Sache gemessen.** Der erste Lauf meldete null
+geholte Teile — weil auf Port 3000 noch ein Dev-Server lag und die Anfragen an
+`/node_modules/.vite/deps/` gingen. Der zweite Lauf traf den Produktionsserver,
+aber der lief ohne `NODE_ENV=production` und lieferte wieder die
+Entwicklungsfassung. Erst der dritte Lauf mass, was er messen sollte.
+
+### 5. Der Konformitätsbericht ist nachgetragen — und sagt das auch
+
+Er stand auf 0.9.32, also elf Fassungen zurück. **Nachgetragen, nicht neu
+erhoben**, und genau so steht es jetzt im Kopf des Dokuments: Nachgemessen
+sind die Prüfläufe und die drei Kriterien, an denen seit 0.9.32 gearbeitet
+wurde (2.4.3 Fokus-Reihenfolge, 4.1.2 Name/Rolle/Wert, 3.2.3 konsistente
+Navigation). Die übrigen 31 Einstufungen sind übernommen.
+
+Berichtigt sind dabei die Zahlen, die still veraltet waren: fünf Ansichten →
+zwölf, sieben Rückfragen → dreizehn, 163 Funktionsprüfungen → 178, 843
+angemeldete Oberflächenprüfungen → 1.086.
+
+### Was die Wächter gemeldet haben
+
+Zwei Meldungen, beide unaufgefordert und beide berechtigt:
+
+- **Rückfrage-Wache:** „Im Quelltext stehen 13 Rückfragen, im Prüfnetz 12."
+  Genau der Zweck. `RUECKFRAGEN` steht jetzt bei dreizehn.
+- **Fokus-Wache:** „App.tsx ruft useAnsichtsFokus(activeTab) nicht mehr auf."
+  Hier lag der Wächter formal richtig und sachlich daneben: Der Aufruf hat
+  jetzt ein zweites Argument. Die Prüfung war zu eng gefasst, nicht der Code
+  falsch — der Ausdruck lässt das zweite Argument jetzt zu.
+
+### Ein Fehler im eigenen Umbau
+
+Das Skript, das die acht Ansichten in `Suspense` einpackt, hat bei
+`ChangelogModal` danebengegriffen: Es ist die einzige einzeilige,
+selbstschliessende Stelle, die Ende-Erkennung lief ins Leere und verschluckte
+den nächsten Block. `tsc` meldete es sofort („no corresponding closing tag"),
+die Sicherungskopie machte die Korrektur billig — dieselbe Lehre wie in
+0.9.40.
+
+### Benannt, nicht geändert: die doppelte Ansage
+
+Bei den fünf Hauptansichten meldet die Live-Region weiterhin „RV Archiv
+geöffnet", und der Screenreader liest zusätzlich die Überschrift. Das ist
+doppelt, und es bleibt vorerst so: Die Ansage ist das **Einzige**, was Nutzer
+mit App-Sprachausgabe ohne Screenreader hören, und die App kann nicht
+feststellen, ob ein Screenreader läuft — das ist keine Nachlässigkeit, sondern
+eine Eigenschaft der Plattform. Ob die Doppelung stört, entscheidet ein Ohr.
+
+### Prüfstand
+
+| | 0.9.42 | 0.9.43 |
+|---|---|---|
+| `lint` | grün | grün |
+| `check` | 178 | 178 |
+| `check:ui` | 563 | siehe Lauf (neu: Rückfrage, Wirkungstest, zwei Fokus-Fälle) |
+| Rückfragen | 12 | **13** |
+| Startbündel | 563,67 kB | **382,26 kB** |
+| nachgeladene Ansichten | 2 von 12 | **10 von 12** |
+
+---
+
 ## 2026-09-15 — v0.9.42: Dreimal dasselbe JSX, jetzt einmal
 
 Vorgabe des Projektinhabers: die Entzerrung von `App.tsx`, die 0.9.34 als

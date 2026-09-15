@@ -2,12 +2,12 @@
 
 | | |
 |---|---|
-| **Stand** | 2026-09-12 |
-| **Geprüfte Fassung** | 0.9.32, Commit `75f0564` (veröffentlicht und live nachgewiesen) |
+| **Stand** | 2026-09-15 |
+| **Geprüfte Fassung** | 0.9.43 |
 | **Maßstab** | EN 301 549 V3.2.1 (2021-03), Abschnitt 9 → WCAG 2.1 Stufe A und AA |
 | **Zusätzlich dokumentiert** | die neun Erfolgskriterien aus WCAG 2.2, die der Entwurf EN 301 549 V4.1.0 aufnimmt |
 | **Art des Dokuments** | technische Selbstauskunft |
-| **Vorfassung** | 2026-09-02 für 0.9.19, mit Nachtrag vom 2026-09-07. Dieser Stand ist **neu erhoben**, nicht nachgetragen: Zwischen 0.9.19 und 0.9.32 liegen dreizehn Fassungen, und der größte Teil davon hat genau an den hier bewerteten Kriterien gearbeitet |
+| **Vorfassung** | 2026-09-12 für 0.9.32. Dieser Stand ist **nachgetragen, nicht neu erhoben** — und das steht hier, damit niemand mehr hineinliest, als drin ist: Nachgemessen sind die Prüfläufe und die Kriterien, an denen zwischen 0.9.33 und 0.9.43 tatsächlich gearbeitet wurde (2.4.3, 4.1.2, 3.2.3). Die übrigen Einstufungen sind aus 0.9.32 übernommen; wo eine Zahl dort stand und heute anders lautet, ist sie hier berichtigt |
 
 ---
 
@@ -33,7 +33,7 @@ Gegenprüfung.
 ## 2. Gegenstand
 
 Progressive Web App zur Erfassung des monatlichen Außendienstberichts
-(Zählwerte, Notizen, Arbeitszeit). Fünf Ansichten, keine Anmeldung, kein
+(Zählwerte, Notizen, Arbeitszeit). Zwölf Ansichten, keine Anmeldung, kein
 Server: Alle Daten liegen ausschließlich im Browser des Geräts
 (`localStorage`, IndexedDB). Der Geräteabgleich läuft ohne Vermittlungsserver.
 
@@ -61,29 +61,29 @@ Barrierefreiheit ist hier keine Auflage, sondern die Funktionsvoraussetzung.
 
 Im Deploy-Tor vor jedem Bauen. Zwei Läufe, beide müssen bestehen:
 
-- **`npm run check` — 163 Prüfungen reiner Funktionen.** Zusammenführen beim
+- **`npm run check` — 178 Prüfungen reiner Funktionen.** Zusammenführen beim
   Geräteabgleich samt Zeitstempeln je Feld, Excel-Summen, Arbeitszeit über
   Mitternacht, Verschlüsselung der Sicherung, doppelt kodierte Zeichen.
-- **`npm run check:ui` — 843 angemeldete Prüfungen, davon 426 ausgeführt**
+- **`npm run check:ui` — 1.086 angemeldete Prüfungen, davon 563 ausgeführt**
   (der Rest wird durch Profil- und Schemafilter ausdrücklich übersprungen),
-  Laufzeit rund 15 Minuten, drei Geräteprofile: 360 × 780 Chromium,
+  Laufzeit rund 19 Minuten, drei Geräteprofile: 360 × 780 Chromium,
   360 × 780 WebKit, 1280 × 900 Chromium.
 
 Zum Vergleich: In der Vorfassung dieses Berichts (0.9.19) waren es 63.
 
 | Prüfung | Deckung |
 |---|---|
-| Waagerechter Überlauf | fünf Ansichten × drei Schriftgrößen × drei Profile, inkl. Containern mit `overflow-x: auto`, die für die Seitenprüfung unsichtbar bleiben. Zusätzlich **320 px** (iPhone SE) bei „Extra groß" |
+| Waagerechter Überlauf | sechs Ansichten × drei Schriftgrößen × drei Profile, inkl. Containern mit `overflow-x: auto`, die für die Seitenprüfung unsichtbar bleiben. Zusätzlich **320 px** (iPhone SE) bei „Extra groß" |
 | Trefferflächen | dieselbe Matrix, **eine einzige Schwelle: 44 px**, gemessen über den Layout-Kasten (`offsetWidth`/`offsetHeight`), nicht über `getBoundingClientRect` — Letzteres rechnet Eintritts-Transformationen mit und meldete eine 44-px-Taste im kopflosen Lauf als 41,8 px. Seit 0.9.22 gibt es **keine Ausnahme mehr** (siehe 2.5.5 in Abschnitt 4) |
 | axe-core | alle Ansichten **und die Zustände darunter**, Regelsätze `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa` |
-| Kontrast je Farbschema | fünf Ansichten × drei weitere Schemata (dunkel, Kontrast dunkel, Kontrast gelb) × zwei Profile, Regel `color-contrast`. Jede Prüfung weist zuvor nach, dass das Schema wirklich anliegt (`data-theme` **und** `data-dark`) und dass axe die Regel überhaupt ausgeführt hat |
+| Kontrast je Farbschema | sechs Ansichten × drei weitere Schemata (dunkel, Kontrast dunkel, Kontrast gelb) × zwei Profile, Regel `color-contrast`. Jede Prüfung weist zuvor nach, dass das Schema wirklich anliegt (`data-theme` **und** `data-dark`) und dass axe die Regel überhaupt ausgeführt hat |
 | **Kontrast in den Rückfragen, selbst gerechnet** | zwei Rückfragen × vier Schemata. Eigene Rechnung statt axe, weil axe durch die halbdurchsichtige Abdunklung hindurch den wirksamen Hintergrund nicht bestimmen kann und `incomplete` meldet — siehe 3.2, Punkt 7 |
 | Ansichten hinter den Einstiegen | die sechs Ansichten, die nicht über `?tab=` erreichbar sind (Formular anpassen, **Formularfelder verwalten**, Geräte-Sync, Datensicherung, Hilfe, Jahreskonto, Was gibt's Neues): Überlauf und Trefferflächen bei „normal" und „Extra groß" in drei Profilen, axe in zwei |
-| **Zustände innerhalb der Ansichten** | Ein `?tab=` erreicht die Ansicht, nicht ihre Zustände — dort saßen zwischen 0.9.22 und 0.9.32 acht Fundstellen. Abgedeckt sind jetzt: Formularzustände, Formulare der Stempeluhr, Schicht-Protokoll mit Einträgen, Archiv mit Bestand (Liste, aufgeklappt, Löschabfrage, Suche), die sechs Zustände des Geräteabgleichs, die fünf Schritte des Ersteinstiegs und **alle sieben Rückfragen** |
+| **Zustände innerhalb der Ansichten** | Ein `?tab=` erreicht die Ansicht, nicht ihre Zustände — dort saßen zwischen 0.9.22 und 0.9.32 acht Fundstellen. Abgedeckt sind jetzt: Formularzustände, Formulare der Stempeluhr, Schicht-Protokoll mit Einträgen, Archiv mit Bestand (Liste, aufgeklappt, Löschabfrage, Suche), die sechs Zustände des Geräteabgleichs, die fünf Schritte des Ersteinstiegs und **alle dreizehn Rückfragen** |
 | **Zwei Geräte, echt gekoppelt** | Textcode, Live-Verbindung (WebRTC ohne ICE-Server) und **QR-Weg mit gestellter Kamera**. Geprüft werden Kopplung, Zusammenführen in beide Richtungen, die Stille einer ruhenden Verbindung und der Bestand danach |
-| Tabulator-Durchlauf | alle elf Ansichten, mit **echten Tastendrücken**: Erreichbarkeit jedes sichtbaren Bedienelements, Reihenfolge in Dokumentordnung, geschlossene Runde. In den Rückfragen zusätzlich: Startfokus, Verbleib im Dialog, Fokus-Rückgabe und die Wirkung von Escape |
+| Tabulator-Durchlauf | alle zwölf Ansichten, mit **echten Tastendrücken**: Erreichbarkeit jedes sichtbaren Bedienelements, Reihenfolge in Dokumentordnung, geschlossene Runde. In den Rückfragen zusätzlich: Startfokus, Verbleib im Dialog, Fokus-Rückgabe und die Wirkung von Escape |
 | WCAG 2.5.3 (Beschriftung im Namen) | über alle Ansichten und Zustände: ein `aria-label`, das die sichtbare Aufschrift **ersetzt** statt sie zu enthalten, lässt den Lauf scheitern |
-| Textabstand nach 1.4.12 | die vier Normwerte werden erzwungen, danach Überlauf und Trefferflächen über alle elf Ansichten |
+| Textabstand nach 1.4.12 | die vier Normwerte werden erzwungen, danach Überlauf und Trefferflächen über alle zwölf Ansichten |
 | Breitere Schrift als hier installiert | alle Ansichten **und Zustände** bei „Extra groß" mit erzwungener Verdana bzw. DejaVu Sans — stellt nach, dass der Schriftstapel je nach Gerät ein anderes Glied greift |
 | Lesefehler beim Start | ein vorübergehender Lesefehler darf weder Archiv noch laufenden Bericht löschen (Regressionsprüfung zum Datenverlust aus 0.9.22) |
 | Medienabfrage `pointer: coarse` | Nachweis, dass die Touch-Zweige im Prüflauf wirklich greifen |
@@ -221,6 +221,47 @@ weil sie damals noch da war. Die Korrektur ist gemessen, aber **nicht gehört**.
 
 **Für die Abnahme heißt das: Ein Durchlauf auf 0.9.32 steht aus, und er sollte
 die Rückfragen und den Geräteabgleich ausdrücklich einschließen.**
+
+### 3.3a Was seit 0.9.32 hinzugekommen ist und hier neu bewertet wurde
+
+Elf Fassungen liegen zwischen der Vorfassung und diesem Stand. Vier davon
+haben an Kriterien dieses Berichts gearbeitet; sie sind einzeln nachgemessen,
+alles Übrige ist übernommen.
+
+| Fassung | Änderung | Wirkung auf diesen Bericht |
+|---|---|---|
+| 0.9.36 | Neue Ansicht „Meine Demogeräte" | Zwölfte Ansicht; läuft im vollen Prüfnetz mit (Überlauf, axe, Kontrast in vier Schemata, Tastatur, 2.5.3) |
+| 0.9.38 | Rückfrage vor der ersten Nutzung des Diktats | Zwölfte Rückfrage. Sie legt offen, dass die Spracherkennung die Aufnahme an Google bzw. Apple überträgt — die Hilfe behauptete zuvor das Gegenteil |
+| 0.9.41 | **Fokus beim Ansichtswechsel**, Navigation als Navigation statt als Reitersatz | 2.4.3 und 4.1.2 neu belegt, siehe unten |
+| 0.9.43 | „Alle Daten von diesem Gerät löschen", Rückkehr zum auslösenden Menüeintrag | Dreizehnte Rückfrage; 2.4.3 zusätzlich für den Rückweg belegt |
+
+**2.4.3 Fokus-Reihenfolge — neu gemessen.** Bis 0.9.40 stand der Fokus nach
+einem Ansichtswechsel nirgends Sinnvollem: bei den fünf Hauptansichten blieb
+er auf der Navigationstaste, die im Dokument **hinter** dem Inhalt steht (die
+neue Ansicht war vorwärts also gar nicht erreichbar), bei zwei Ansichten auf
+`document.body`, bei fünf auf deren Zurück-Taste. Seit 0.9.41 landet er auf
+der Überschrift der neuen Ansicht, seit 0.9.43 auf dem Rückweg wieder auf der
+Menüzeile, die geöffnet hat. 45 Prüfungen im Gate über drei Geräteprofile.
+
+**4.1.2 Name, Rolle, Wert — ein Befund behoben.** Die untere Navigationsleiste
+trug `role="tablist"` mit `role="tab"` und `aria-selected`, ohne
+`role="tabpanel"`, ohne Pfeiltastenbedienung und ohne gemeinsamen
+Tabulatorhalt: eine Rolle, die eine Bedienung verspricht, die es nicht gab.
+Dieselbe Navigation trat am Schreibtisch als schlichtes `<nav>` ganz ohne
+Markierung des aktuellen Eintrags auf. Beides ist jetzt Navigation mit
+`aria-current="page"`. **axe-core hat das nie gemeldet** — ein `tablist` mit
+`tab`-Kindern ist strukturell vollständig, das fehlende Panel ist keine seiner
+Regeln. Gefunden wurde es beim Nachsehen, nicht vom Werkzeug.
+
+**3.2.3 Konsistente Navigation — Nebenwirkung derselben Änderung.** Vorher
+kündigte sich dieselbe Navigation je nach Bildschirmbreite als zwei
+verschiedene Bedienmuster an. Das ist seit 0.9.41 nicht mehr so.
+
+**Was dabei ausdrücklich NICHT neu erhoben wurde:** die 31 Kriterien, an denen
+seit 0.9.32 nichts geändert wurde. Sie stehen unverändert mit ihrem Beleg von
+damals. Wer eine vollständige Neuerhebung braucht, bekommt hier keine.
+
+---
 
 ### 3.4 Test auf echten Geräten
 
