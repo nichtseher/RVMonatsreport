@@ -113,7 +113,7 @@ export default function StatsModal({
             <BarChart3 className="w-5 h-5" />
           </div>
           <div>
-            <h2 id="stats-title" className="text-lg font-black text-[var(--text-color)]">
+            <h2 id="stats-title" tabIndex={-1} data-ansicht-titel="" className="text-lg font-black text-[var(--text-color)]">
               RV Analyse & Trends
             </h2>
             <p className="text-xs text-[var(--text-muted)] font-bold">

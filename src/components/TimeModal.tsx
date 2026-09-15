@@ -193,6 +193,8 @@ export default function TimeModal({
               deshalb kein Doppel, sondern der Boden darunter.
             */}
             <h2
+              tabIndex={-1}
+              data-ansicht-titel=""
               id="time-modal-title"
               className="text-xl sm:text-2xl font-black hyphens-auto break-words"
             >

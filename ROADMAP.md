@@ -1,6 +1,6 @@
 # Roadmap — RV Monatsreport (RV Mobil)
 
-Stand: 2026-09-12, Version 0.9.32 (bis 0.9.31 ist veröffentlicht)
+Stand: 2026-09-15, Version 0.9.41 (bis 0.9.40 ist veröffentlicht)
 
 Diese Roadmap ist aus **gemessenen Befunden** entstanden, nicht aus Vermutungen.
 Wo eine Zahl steht, wurde sie nachgemessen. Punkte ohne Beleg sind als
@@ -1059,6 +1059,69 @@ reinen Prüfungen zu `verrechneSchicht` abgedeckt, über die Oberfläche **nicht
 
 ---
 
+## 0.9.41 — Der Fokus beim Ansichtswechsel — ERLEDIGT (2026-09-15)
+
+Der Punkt stand seit 0.9.34 als „benannt, nicht geändert" in dieser Datei, mit
+der Zahl „nur 4 von 15 Komponenten setzen beim Öffnen Fokus". **Beide Zahlen
+waren falsch: Es sind 5 von 12 Ansichten** — `BestandModal` kam mit 0.9.36
+dazu, und „15" zählte Komponentendateien statt Ansichten. Der Eintrag stammte
+aus einer Codelesung; die Messung stand aus.
+
+### Was gemessen wurde, bevor etwas geändert wurde
+
+Wo steht `document.activeElement` nach einem Wechsel? Alle zwölf Ansichten
+über echte Klicks, 360 × 780:
+
+| Weg | Fokus danach |
+|---|---|
+| untere Leiste → alle fünf Hauptansichten | blieb auf der Navigationstaste |
+| Optionen → Changelog, Datensicherung | `document.body` |
+| Optionen → fünf weitere Ansichten | auf „Zurück zu den Optionen" |
+| „Zurück" aus der Hilfe | `document.body` |
+
+Der erste Fall ist der schwerwiegendste und der unauffälligste: Die
+Navigationsleiste steht im Dokument **hinter** dem Inhalt. Wer dort
+stehenbleibt, erreicht die neue Ansicht per Tabulator gar nicht, sondern nur
+rückwärts durch die ganze Seite.
+
+### Zwei Befunde, die nicht Teil der Aufgabe waren
+
+**Die Fokus-Wiederherstellung in fünf Ansichten war wirkungslos.** Sie merkten
+sich beim Öffnen das aktive Element und fokussierten es beim Schließen wieder
+— nur werden die Ansichten bedingt gerendert, das Element hängt dann nicht
+mehr im Dokument (`document.contains(...) === false`). Entfernt.
+
+**Die untere Navigationsleiste versprach ein Reiter-Muster, das die App nicht
+hat**: `role="tablist"`/`role="tab"`/`aria-selected`, aber kein
+`role="tabpanel"`, keine Pfeiltastenbedienung, kein gemeinsamer
+Tabulatorhalt. Am Schreibtisch trat dieselbe Navigation zugleich als
+gewöhnliches `<nav>` ganz ohne Markierung des aktuellen Eintrags auf. Beides
+ist jetzt eine Navigation mit `aria-current="page"`. axe-core hat das nie
+gemeldet — ein `tablist` mit `tab`-Kindern ist strukturell vollständig.
+
+### Was jetzt gilt
+
+`useAnsichtsFokus` setzt den Fokus zentral auf die Überschrift der neuen
+Ansicht; jede Ansicht markiert ihre oberste Überschrift. Zwei Wächter halten
+das: `scripts/checks/ansichtsfokus.ts` zählt `activeTab`-Werte gegen die
+Zuordnungsliste und verlangt je Ansicht genau eine fokussierbare Überschrift,
+und 14 neue Fälle im Oberflächen-Gate messen für jeden Weg, wo der Fokus
+wirklich landet.
+
+### Offen geblieben, mit Absicht
+
+**Die Rückkehr zum auslösenden Menüeintrag** (Optionen → Hilfe → „Zurück"
+landet wieder auf der Zeile „Hilfe" statt auf der Überschrift „Optionen").
+Das wäre die bessere Rückkehr, ist aber eine zweite Regel mit eigenem Zustand
+— und sie hat eine unsaubere Kante: Wer die Ansicht über die
+Navigationsleiste verlässt, bekäme denselben Sprung, obwohl er etwas anderes
+gedrückt hat. Gehört in den Screenreader-Durchlauf.
+
+Ebenfalls offen: Die Formularansicht meldet sich mit „RV Mobil" — die einzige
+`h1` der Seite ist der Name der App, nicht der der Ansicht.
+
+---
+
 ## 0.9.37–0.9.39 — Benennung, Hilfe, und eine gebrochene Zusage — ERLEDIGT (2026-09-14)
 
 ### Die Zusage, die an einer Stelle nicht stimmte (0.9.38)
@@ -1255,7 +1318,7 @@ nennt den Hash, den es erwartet.
 `noUnusedParameters` stehen jetzt in `tsconfig.json` und damit im Deploy-Tor.
 Eine Aufräumrunde wirkt einmal, ein Schalter wirkt weiter.
 
-### Benannt, nicht geändert: der Fokus beim Ansichtswechsel
+### Benannt, nicht geändert: der Fokus beim Ansichtswechsel — ERLEDIGT (0.9.41)
 
 Nur **4 von 15** Komponenten setzen beim Öffnen Fokus (`CarryoverModal`,
 `DeviceSyncModal`, `ManageModal`, `OnboardingModal`). `TimeModal`,
@@ -1266,6 +1329,15 @@ Ob ein Ansichtswechsel den Fokus mitnehmen sollte, ist eine Entwurfsfrage über
 sieben Komponenten und gehört in den **Screenreader-Durchlauf**, nicht in eine
 Aufräumrunde. Hier wäre sie eine stille Verhaltensänderung an sieben Stellen
 gewesen.
+
+> **Nachtrag 2026-09-15 (0.9.41):** Die Zahl oben ist falsch, in beiden
+> Teilen. Es waren **5 von 12 Ansichten** — `BestandModal` kam mit 0.9.36
+> dazu, und „15" zählte Komponentendateien statt Ansichten. Der Absatz
+> entstand aus einer Codelesung; die Messung hat den Fall dann anders
+> gezeigt, als er hier stand: Die fünf setzten den Fokus nämlich alle auf
+> ihre **Zurück-Taste**, nicht auf ihren Inhalt. Umgesetzt ist der Punkt
+> jetzt oben unter 0.9.41; die Entwurfsfrage, die wirklich ans Ohr gehört,
+> ist die Rückkehr zum auslösenden Menüeintrag, und die ist offen.
 
 ---
 

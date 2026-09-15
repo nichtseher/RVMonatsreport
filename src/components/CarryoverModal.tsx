@@ -44,11 +44,12 @@ export default function CarryoverModal({
   useEffect(() => {
     if (!isOpen) return;
 
-    const previouslyActive = document.activeElement as HTMLElement;
-
-    setTimeout(() => {
-      closeButtonRef.current?.focus();
-    }, 50);
+    /*
+      Startfokus und Wiederherstellung sind mit 0.9.41 entfallen -- den Fokus
+      setzt jetzt zentral `useAnsichtsFokus` auf die Ueberschrift dieser
+      Ansicht, und die Wiederherstellung war wirkungslos: Das gemerkte Element
+      haengt beim Schliessen nicht mehr im Dokument (gemessen).
+    */
 
     const handleKeyDown = (e: KeyboardEvent) => {
       /*
@@ -79,17 +80,14 @@ export default function CarryoverModal({
         inset-0`, abgedunkelt, `aria-modal="true"`) -- dort ist die Falle
         richtig und bleibt.
 
-        Escape schliesst weiterhin, und der Fokus startet weiterhin auf der
-        Zurueck-Taste.
+        Escape schliesst weiterhin; der Startfokus liegt seit 0.9.41 auf der
+        Ueberschrift dieser Ansicht (`useAnsichtsFokus`).
       */
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      if (previouslyActive) {
-        previouslyActive.focus();
-      }
     };
   }, [isOpen]);
 
@@ -132,6 +130,8 @@ export default function CarryoverModal({
             Seite auf 456 px in einem 360-px-Fenster -- eine echte waagerechte
             Bildlaufleiste, WCAG 1.4.10. Mit min-w-0 bricht sie um. */}
         <h2
+          tabIndex={-1}
+          data-ansicht-titel=""
           id="carryover-modal-title"
           className="text-2xl md:text-3xl font-black min-w-0 break-words"
         >

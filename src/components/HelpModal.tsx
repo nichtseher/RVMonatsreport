@@ -36,11 +36,13 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
   // Escape schliesst; Startfokus auf die erste Taste der Ansicht.
   useEffect(() => {
     if (!isOpen) return;
-    const previouslyActive = document.activeElement as HTMLElement;
-    setTimeout(() => {
-      const firstFocusable = modalRef.current?.querySelector('button');
-      firstFocusable?.focus();
-    }, 50);
+    /*
+      Startfokus und Wiederherstellung sind mit 0.9.41 entfallen -- den Fokus
+      setzt jetzt zentral `useAnsichtsFokus` auf die Ueberschrift dieser
+      Ansicht. Hier stand zuvor "erste Taste im Container", also die
+      Zurueck-Taste: Der Screenreader las damit ausgerechnet den Weg hinaus
+      vor, nicht den Ort, an dem der Nutzer gelandet ist.
+    */
     const handleKeyDown = (e: KeyboardEvent) => {
       /*
         Solange eine Rueckfrage steht, ruhen die Tastenkuerzel dieser Ansicht.
@@ -57,7 +59,6 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      previouslyActive?.focus();
     };
   }, [isOpen]);
 
@@ -105,7 +106,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
               <HelpCircle className="w-6 h-6" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <h2 id="help-modal-title" className="text-xl md:text-2xl font-black text-[var(--text-color)]">
+              <h2 id="help-modal-title" tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black text-[var(--text-color)]">
                 Hilfe & Handbuch
               </h2>
               <p className="text-sm font-bold text-[var(--text-muted)] mt-1">Ausführliche Erklärungen zur RV Mobil App</p>
@@ -253,6 +254,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   </ul>
                   <p className="mt-2">In den Zähler-Eingabefeldern gilt zusätzlich: Sie können die <strong>Zahl direkt eintippen</strong>, <strong>Pfeil hoch/runter</strong> ändert den Wert, <strong>Enter</strong> springt zum nächsten Feld, <strong>Umschalt+Enter</strong> zum vorherigen.</p>
                   <p>Ganz oben auf der Seite liegt außerdem ein Sprunglink <strong>„Zum Hauptinhalt springen“</strong>, den Sie mit der Tabulatortaste erreichen.</p>
+                  <p><strong>Beim Wechsel der Ansicht wandert der Fokus mit:</strong> Öffnen Sie eine andere Ansicht, steht die Tastatur anschließend auf deren Überschrift. Ihr Screenreader liest sie vor, und die Tabulatortaste führt von dort weiter in den Inhalt – Sie müssen nicht rückwärts suchen.</p>
                 </FAQItem>
 
                 <FAQItem

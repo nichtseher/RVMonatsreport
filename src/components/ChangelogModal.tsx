@@ -29,7 +29,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div>
-          <h2 className="text-2xl md:text-3xl font-black flex items-center gap-2">
+          <h2 tabIndex={-1} data-ansicht-titel="" className="text-2xl md:text-3xl font-black flex items-center gap-2">
             <Sparkles className="w-7 h-7 text-[var(--accent)]" />
             Was gibt's Neues?
           </h2>
@@ -40,6 +40,26 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       </div>
 
       <div className="space-y-6">
+        {/*
+          Ausfuehrlich, obwohl es keine neue Funktion ist -- dieselbe Abwaegung
+          wie bei 0.9.38: Wer mit Tastatur oder Screenreader arbeitet, merkt
+          die Aenderung sofort, weil sich sein eigener Ablauf aendert. Das
+          stillschweigend unter "Verbesserungen" zu fuehren hiesse, jemandem
+          die Erklaerung fuer etwas vorzuenthalten, das er an seinem Geraet
+          bemerkt.
+        */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.41: Nach dem Wechsel stehen Sie in der neuen Ansicht</span>
+            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li><strong>Der Fokus wandert mit.</strong> Wenn Sie eine andere Ansicht öffnen – etwa „RV Archiv" oder die Hilfe –, springt die Tastatur jetzt auf deren Überschrift. Der Screenreader liest sie vor, und die Tabulatortaste führt von dort weiter in den Inhalt. Bisher blieb der Fokus auf der Taste, die Sie gedrückt haben, oder ging ganz an den Seitenanfang verloren; um zum Inhalt zu kommen, mussten Sie rückwärts tabben.</li>
+            <li><strong>Die Navigationsleiste meldet sich jetzt als das, was sie ist.</strong> Sie nannte sich dem Screenreader gegenüber „Registerkarten" und versprach damit eine Bedienung mit den Pfeiltasten, die es hier nie gab. Jetzt sagt sie „aktuelle Seite" für die Ansicht, in der Sie gerade sind – auf dem Handy und am Rechner gleich.</li>
+          </ul>
+        </div>
+
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />

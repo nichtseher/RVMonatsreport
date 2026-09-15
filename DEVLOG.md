@@ -10,6 +10,160 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-15 — v0.9.41: Nach dem Wechsel steht die Tastatur in der neuen Ansicht
+
+Vorgabe des Projektinhabers aus einer Auswahl von vier offenen Punkten. Die
+ROADMAP führte ihn als „benannt, nicht geändert" (0.9.34) mit der Zahl
+**4 von 15 Ansichten setzen beim Öffnen Fokus**.
+
+Beide Zahlen stimmten nicht: Es sind **5 von 12**. `BestandModal` kam mit
+0.9.36 dazu und setzte von Anfang an Fokus; „15" zählte Komponentendateien
+statt Ansichten (`ConfirmDialog`, `CounterField`, `QuickEntryPanel` und der
+Ersteinstieg sind keine). Der Eintrag stammte aus einer Codelesung, nicht aus
+einer Messung — und genau das ist der Unterschied, um den es hier geht.
+
+### Der Ist-Zustand, gemessen statt gelesen
+
+Vor jeder Änderung: Wo steht `document.activeElement` nach einem Wechsel?
+Chromium, 360 × 780, alle zwölf Ansichten über echte Klicks.
+
+| Weg | Fokus danach |
+|---|---|
+| untere Leiste → alle fünf Hauptansichten | blieb auf der Navigationstaste |
+| Optionen → Changelog, Datensicherung | `document.body` — gar kein Fokus |
+| Optionen → fünf weitere Ansichten | auf „Zurück zu den Optionen" |
+| „Zurück" aus der Hilfe | `document.body` — gar kein Fokus |
+
+Alle drei Ergebnisse sind schlecht, jedes anders. Das erste ist das
+unauffälligste und das schlimmste: **Die Navigationsleiste steht im Dokument
+hinter dem Inhalt.** Wer dort stehenbleibt, erreicht die neu geöffnete Ansicht
+mit der Tabulatortaste überhaupt nicht — nur rückwärts, durch die ganze Seite.
+Das dritte ist die Zurück-Taste, also ausgerechnet der Weg hinaus.
+
+### Zwei Befunde, die nicht in der Aufgabe standen
+
+**Die Wiederherstellung des Fokus war in fünf Ansichten wirkungslos.** Alle
+fünf merkten sich beim Öffnen `document.activeElement` und riefen beim
+Schließen `.focus()` darauf. Die Ansichten werden aber bedingt gerendert: Wer
+in den Optionen „Hilfe" drückt, baut `A11yModal` samt der geklickten Menüzeile
+ab. Gemessen: `document.contains(gemerkteZeile) === false`. `.focus()` auf
+einen abgehängten Knoten tut nichts — deshalb `document.body` in der Tabelle
+oben. Fünf Ansichten trugen Code, der aussah wie eine Rückkehr und keine war.
+
+**Die untere Navigationsleiste versprach ein Bedienmuster, das die App nicht
+hat.** Sie trug `role="tablist"` mit `role="tab"` und `aria-selected` — ohne
+`role="tabpanel"` (kein einziges im ganzen Quelltext), ohne Pfeiltasten und
+ohne gemeinsamen Tabulatorhalt. Der Screenreader sagte „Registerkarte", die
+Pfeiltasten taten nichts. Dazu kam, dass **dieselbe** Navigation am Schreibtisch
+als gewöhnliches `<nav>` ohne jede Markierung des aktuellen Eintrags auftrat:
+zwei verschiedene Zusagen für dieselbe Sache, je nach Bildschirmbreite.
+
+axe-core meldet das nicht — ein `tablist` mit `tab`-Kindern ist strukturell
+vollständig, das fehlende Panel ist keine seiner Regeln. Wieder ein Beleg für
+den Satz in CLAUDE.md, dass ein grüner axe-Lauf keine Konformitätsaussage ist.
+
+### Was gebaut wurde
+
+Ein Mechanismus an **einer** Stelle statt zwölf Einzellösungen:
+`src/hooks/useAnsichtsFokus.ts` setzt nach jedem Wechsel den Fokus auf die
+Überschrift der neuen Ansicht. Jede Ansicht markiert ihre oberste Überschrift
+mit `data-ansicht-titel` und `tabIndex={-1}`; das sind zwölf kleine Eingriffe
+und kein Verhalten, das man je Datei nachbauen kann.
+
+Zwei Dinge daran sind nicht offensichtlich:
+
+**Kein fester Zeitwert.** Die fünf alten Fokus-Setzungen benutzten
+`setTimeout(…, 50)`. `DeviceSyncModal` und `SecureBackupModal` werden aber
+nachgeladen; beim ersten Öffnen steht 50 ms später der Ladeplatzhalter im
+Dokument, nicht die Ansicht. Gesucht wird deshalb über
+`requestAnimationFrame`, bis die Überschrift da ist, mit zwei Sekunden Frist
+und Abbruch, sobald die Ansicht schon wieder gewechselt hat.
+
+**Die Fokusfalle des Sync-Fensters musste mitwachsen.** Es ist die einzige
+Ansicht der App, die ein echter Dialog ist (`fixed inset-0`, abgedunkelt,
+`aria-modal`), und seine Falle verglich nur gegen erstes und letztes
+Bedienelement. Eine Überschrift mit `tabIndex={-1}` steht in keiner der
+beiden Listen — Umschalt+Tab von dort hätte aus dem Dialog herausgeführt.
+Das ist derselbe Fehler, den CLAUDE.md für `ConfirmDialog` beschreibt; das
+Gegenmittel steht in `OnboardingModal` und ist übernommen. Gemessen danach:
+40 Tabulatorschritte, 0 davon außerhalb des Dialogs; Umschalt+Tab von der
+Überschrift landet auf dem letzten Bedienelement innerhalb.
+
+Die Navigationsleiste ist jetzt in beiden Breiten eine Navigation mit
+`aria-current="page"`.
+
+### Was das Prüfnetz sofort widerlegt hat
+
+Der erste Entwurf merkte sich mit einem Schalter (`ersterLauf`), ob der Effekt
+schon einmal gelaufen war — damit beim Seitenaufbau kein Fokus versetzt wird.
+Der neue Prüffall meldete in allen drei Profilen: **Beim Seitenaufbau wird der
+Fokus doch versetzt.**
+
+Ursache: `StrictMode` führt Effekte in der Entwicklung zweimal aus. Der erste
+Lauf verbrauchte den Schalter, der zweite setzte den Fokus. In der gebauten
+Fassung gibt es kein StrictMode — der Fehler wäre also **nur in der
+Entwicklung** aufgetreten und hätte Entwicklung und Produktion dauerhaft
+auseinanderlaufen lassen. Gemerkt wird jetzt die **vorige Ansicht** statt
+eines Schalters: unabhängig davon, wie oft ein Effekt läuft, und zugleich
+genau das, was gemeint ist — der Fokus wandert bei einem Wechsel.
+
+### Und der neue Wächter hat sich selbst korrigiert
+
+`scripts/checks/ansichtsfokus.ts` zählt die `activeTab`-Werte gegen eine Liste
+und verlangt je Ansicht genau eine markierte Überschrift. Beim ersten Lauf
+meldete er drei Fehler — zwei Markierungen in `DeviceSyncModal`.
+
+Der Befund war falsch: Die zweite Fundstelle war das
+`querySelector("[data-ansicht-titel]")` der Fokusfalle. Im Dokument steht
+nachweislich genau eine Markierung (im Browser nachgezählt). Gezählt wird
+seither die Attributform `data-ansicht-titel="`. Eine Prüfung, die den
+Quelltext nach Zeichenketten durchsucht, misst eben Zeichenketten.
+
+### Benannt, nicht geändert
+
+- **Die Rückkehr zum auslösenden Menüeintrag.** Optionen → Hilfe → „Zurück"
+  landet jetzt auf der Überschrift „Optionen", nicht wieder auf der Zeile
+  „Hilfe". Das wäre die bessere Rückkehr, ist aber eine zweite Regel mit
+  eigenem Zustand und eigenen ids — und sie hat eine unsaubere Kante: Wer die
+  Ansicht über die Navigationsleiste statt über „Zurück" verlässt, bekäme
+  denselben Sprung, obwohl er etwas anderes gedrückt hat. Gehört in den
+  Screenreader-Durchlauf, nicht in diese Runde.
+- **Die Formularansicht meldet sich mit „RV Mobil".** Das ist die einzige `h1`
+  der Seite und steht im `banner`. Wer „RV Report" drückt, hört also den
+  Namen der App, nicht den der Ansicht. Eine bessere Überschrift wäre eine
+  inhaltliche Entscheidung über den Kopfbereich, keine Fokusfrage.
+- **Doppelte Ansage bei den fünf Hauptansichten.** Die Leiste meldet weiterhin
+  über die Live-Region („RV Archiv geöffnet"), und der Screenreader liest
+  zusätzlich die Überschrift. Die Ansage bleibt, weil sie das Einzige ist, was
+  Nutzer mit App-Sprachausgabe **ohne** Screenreader hören. Ob die Doppelung
+  stört, entscheidet ein Ohr, nicht eine Messung.
+
+### Einordnung im Changelog
+
+Ausführlich, obwohl es keine neue Funktion ist — dieselbe Abwägung wie bei
+0.9.38. Die Regel aus 0.9.40 lautet „ausführlich, wenn der Nutzer etwas neu
+wissen muss, um zu handeln". Hier ändert sich der Ablauf der Zielgruppe
+unmittelbar: Wer bisher nach dem Wechsel rückwärts zum Inhalt tabben musste,
+tut das ab jetzt nicht mehr. Das unter „Verbesserungen" zu verstecken hieße,
+die Erklärung für etwas vorzuenthalten, das am eigenen Gerät auffällt.
+
+### Prüfstand
+
+| | 0.9.40 | 0.9.41 |
+|---|---|---|
+| `lint` | grün | grün |
+| `check` | 172 | **178** (neu: Fokus beim Ansichtswechsel, 6 Fälle) |
+| `check:ui` | 521 | **563** (neu: 14 Fälle × 3 Profile) |
+| Ansichten mit Startfokus | 5 von 12, alle auf der Zurück-Taste | **12 von 12, auf der Überschrift** |
+| wirkungslose Fokus-Wiederherstellungen | 5 | **0** |
+| Reiter-Rollen ohne Reiter-Bedienung | 6 Stellen | **0** |
+
+Nicht gemessen und ausdrücklich offen: wie sich das **anhört**. Der
+Screenreader-Durchlauf steht weiterhin aus (ROADMAP, 1.0) und ist jetzt
+dreizehn Fassungen alt.
+
+---
+
 ## 2026-09-14 — v0.9.40: Der Changelog sagt nur noch bei neuen Funktionen, was los ist
 
 Vorgabe des Projektinhabers: Ausführlich nur, wenn es eine neue Funktion gibt;

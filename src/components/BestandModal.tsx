@@ -63,8 +63,15 @@ export default function BestandModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    const previouslyActive = document.activeElement as HTMLElement | null;
-    const timer = setTimeout(() => closeButtonRef.current?.focus(), 50);
+    /*
+      Hier stand bis 0.9.40 ein Startfokus auf der Zurueck-Taste und in der
+      Aufraeumfunktion eine Wiederherstellung auf das zuvor aktive Element.
+      Beides ist mit 0.9.41 entfallen: Den Startfokus setzt jetzt zentral
+      `useAnsichtsFokus` auf die Ueberschrift, und die Wiederherstellung war
+      nachweislich wirkungslos -- die Ansichten werden bedingt gerendert, das
+      gemerkte Element haengt beim Schliessen nicht mehr im Dokument
+      (gemessen: document.contains(...) === false).
+    */
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Solange eine Rueckfrage steht, ruhen die Tastenkuerzel dieser Ansicht.
@@ -80,9 +87,7 @@ export default function BestandModal({
     */
     window.addEventListener("keydown", handleKeyDown);
     return () => {
-      clearTimeout(timer);
       window.removeEventListener("keydown", handleKeyDown);
-      previouslyActive?.focus();
     };
   }, [isOpen]);
 
@@ -172,7 +177,7 @@ export default function BestandModal({
         <Package className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
         {/* min-w-0: sonst gibt das Flex-Element seine Breite nicht unter den
             Inhalt preis und die Überschrift schiebt die Seite waagerecht auf. */}
-        <h2 className="text-2xl md:text-3xl font-black min-w-0 break-words">Meine Demogeräte</h2>
+        <h2 tabIndex={-1} data-ansicht-titel="" className="text-2xl md:text-3xl font-black min-w-0 break-words">Meine Demogeräte</h2>
       </div>
 
       <div className="p-3.5 mb-5 rounded-xl bg-[var(--cat-4-soft)] border border-[var(--cat-4)]/10 flex gap-2.5 items-start text-xs font-bold leading-relaxed">

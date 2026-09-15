@@ -43,11 +43,12 @@ export default function ManageModal({
   useEffect(() => {
     if (!isOpen) return;
 
-    const previouslyActive = document.activeElement as HTMLElement;
-
-    setTimeout(() => {
-      closeButtonRef.current?.focus();
-    }, 50);
+    /*
+      Startfokus und Wiederherstellung sind mit 0.9.41 entfallen -- den Fokus
+      setzt jetzt zentral `useAnsichtsFokus` auf die Ueberschrift dieser
+      Ansicht, und die Wiederherstellung war wirkungslos: Das gemerkte Element
+      haengt beim Schliessen nicht mehr im Dokument (gemessen).
+    */
 
     const handleKeyDown = (e: KeyboardEvent) => {
       /*
@@ -80,9 +81,6 @@ export default function ManageModal({
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      if (previouslyActive) {
-        previouslyActive.focus();
-      }
     };
   }, [isOpen]);
 
@@ -128,6 +126,8 @@ export default function ManageModal({
           Ansicht, die vorher keine Prüfung erreichte.
         */}
         <h2
+          tabIndex={-1}
+          data-ansicht-titel=""
           id="manage-modal-title"
           className="text-2xl md:text-3xl font-black min-w-0 [overflow-wrap:anywhere]"
         >

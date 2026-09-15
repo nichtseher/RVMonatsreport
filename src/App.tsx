@@ -40,6 +40,7 @@ import { useSprachausgabe } from "./hooks/useSprachausgabe";
 import { useEinstellungen } from "./hooks/useEinstellungen";
 import { useStempeluhr } from "./hooks/useStempeluhr";
 import { useBerichtsdaten } from "./hooks/useBerichtsdaten";
+import { useAnsichtsFokus } from "./hooks/useAnsichtsFokus";
 import { monthHasContent } from "./utils/monatInhalt";
 import { rueckfrageOffen } from "./utils/rueckfrage";
 import { stempeln, stempelNachtragen, stempelnGeaenderte } from "./utils/zeitstempel";
@@ -296,6 +297,14 @@ export default function App() {
     }
     return "form";
   });
+
+  /*
+    Nach jedem Ansichtswechsel wandert der Fokus auf die Ueberschrift der neuen
+    Ansicht. Vorher blieb er auf der Navigationstaste (die im Dokument HINTER
+    dem Inhalt steht) oder fiel auf den Dokumentanfang -- gemessen am 2026-09-15,
+    Tabelle in useAnsichtsFokus.ts.
+  */
+  useAnsichtsFokus(activeTab);
 
   // --- STATE ---
   const [appFields, setAppFields] = useState<SectionsConfig>(() => {
@@ -1666,6 +1675,7 @@ export default function App() {
               return (
                 <button
                   key={tab.id}
+                  aria-current={isSelected ? "page" : undefined}
                   onClick={() => {
                      triggerHaptic(12);
                      setActiveTab(tab.id as any);
@@ -1713,7 +1723,7 @@ export default function App() {
           >
         <div className="space-y-1.5 flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl md:text-2xl font-black text-[var(--text-color)]">
+            <h1 tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black text-[var(--text-color)]">
               RV Mobil
             </h1>
             <span className="rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2.5 py-1 text-[0.75rem] font-black uppercase tracking-[0.2em] text-[var(--success-text)]">
@@ -3341,11 +3351,29 @@ export default function App() {
           );
         })()}
 
-      {/* RESPONSIVE BOTTOM NAVIGATION DOCK (FLOATING PILL DOCK FOR ERGONOMY & WCAG ACCESS) */}
+      {/*
+        Untere Navigationsleiste.
+
+        Bis 0.9.40 trug sie `role="tablist"` mit `role="tab"` und
+        `aria-selected` -- und versprach damit ein Bedienmuster, das die App
+        nicht hat: Ein Reitersatz verlangt Pfeiltasten zum Wechseln, einen
+        einzigen Tabulatorhalt fuer die ganze Gruppe und ein `role="tabpanel"`,
+        auf das die Reiter zeigen. Nichts davon war da (gemessen 2026-09-15:
+        kein tabpanel im gesamten Quelltext, keine Pfeiltastenbehandlung, alle
+        fuenf Tasten einzeln im Tabulatorlauf). Wer den Ansagen seines
+        Screenreaders folgte, versuchte also Pfeiltasten, die nichts tun.
+
+        Dazu kam, dass dieselbe Navigation auf dem Desktop als gewoehnliches
+        `<nav>` ohne jede Markierung des aktuellen Eintrags auftrat -- zwei
+        verschiedene Zusagen fuer dieselbe Sache, je nach Bildschirmbreite.
+
+        Jetzt ist beides eine Navigation mit `aria-current="page"`. Das ist
+        das, was die Leiste wirklich tut, und es traegt in beiden Breiten.
+      */}
       {!focusedFieldId && (
         <div
           className={`fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-xl z-[200] bg-[var(--card-bg)]/90 dark:bg-[var(--card-bg)]/95 backdrop-blur-md border border-[var(--border-color)] py-2.5 px-4 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.5)] transition-all ${isDesktop ? 'lg:hidden' : ''}`}
-          role="tablist"
+          role="navigation"
           aria-label="Hauptnavigation"
         >
           <div className="flex items-center justify-between gap-1">
@@ -3365,8 +3393,7 @@ export default function App() {
                 <button
                   key={tab.id}
                   type="button"
-                  role="tab"
-                  aria-selected={isSelected}
+                  aria-current={isSelected ? "page" : undefined}
                   onClick={() => {
                     triggerHaptic(12);
                     setActiveTab(tab.id as any);

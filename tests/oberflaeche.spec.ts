@@ -891,6 +891,146 @@ async function erzwingeTextabstand(page: Page) {
 }
 
 /**
+ * Fokus beim Ansichtswechsel (0.9.41).
+ *
+ * Warum es diesen Block gibt: Am 2026-09-15 wurde auf 0.9.40 gemessen, wo der
+ * Fokus nach einem Wechsel wirklich steht. Das Ergebnis war in allen zwoelf
+ * Ansichten falsch, nur auf drei verschiedene Arten:
+ *
+ * | Weg                                   | Fokus danach                      |
+ * |---------------------------------------|-----------------------------------|
+ * | untere Leiste -> alle fuenf Ansichten | blieb auf der Navigationstaste    |
+ * | Optionen -> Changelog, Datensicherung | document.body, also gar kein Fokus|
+ * | Optionen -> fuenf weitere Ansichten   | auf „Zurueck zu den Optionen"     |
+ * | „Zurueck" aus der Hilfe               | document.body                     |
+ *
+ * Die Navigationsleiste steht im Dokument HINTER dem Inhalt. Wer dort
+ * stehenbleibt, erreicht die neue Ansicht per Tabulator also gar nicht mehr,
+ * sondern nur rueckwaerts -- und das trifft genau die Nutzer, um die es hier
+ * geht.
+ *
+ * Gemessen wird ueber KLICKS, nie ueber ?tab=: Der Haken greift bewusst nur
+ * beim Wechsel, nicht beim Seitenaufbau. Der letzte Fall unten prueft genau
+ * das.
+ */
+const FOKUS_WEGE = [
+  // Ueber die untere Navigationsleiste (bzw. die Seitenleiste am Schreibtisch).
+  { name: "Formular", start: "options", nav: "RV Report", titel: /RV Mobil/ },
+  { name: "Zeit", start: "form", nav: "RV Zeit", titel: /Zeiterfassung/ },
+  { name: "Analyse", start: "form", nav: "RV Analyse", titel: /RV Analyse & Trends/ },
+  { name: "Archiv", start: "form", nav: "RV Archiv", titel: /RV Archiv/ },
+  { name: "Optionen", start: "form", nav: "Optionen", titel: /^Optionen$/ },
+  // Ueber das Optionen-Menue.
+  { name: "Was gibt's Neues", start: "options", menue: /Was gibt.s Neues/, titel: /Was gibt.s Neues/ },
+  { name: "Jahreskonto", start: "options", menue: /Jahreskonto/, titel: /Jahreskonto & Einstellungen/ },
+  { name: "Demogeraete", start: "options", menue: /Demogeräte/, titel: /Meine Demogeräte/ },
+  { name: "Geraete-Sync", start: "options", menue: /Geräte-Sync/, titel: /Geräte-Synchronisation/ },
+  { name: "Datensicherung", start: "options", menue: /Datensicherung/, titel: /Datensicherung/ },
+  { name: "Hilfe", start: "options", menue: /Hilfe & Anleitung/, titel: /Hilfe & Handbuch/ },
+  {
+    name: "Felder verwalten",
+    start: "options",
+    menue: /Formular anpassen/,
+    dann: /Eigene Felder löschen/,
+    titel: /Formularfelder verwalten/,
+  },
+] as const;
+
+/** Wo steht der Fokus, und ist das die Ueberschrift der Ansicht? */
+async function fokusLage(page: Page) {
+  return await page.evaluate(() => {
+    const a = document.activeElement as HTMLElement | null;
+    return {
+      istTitel: !!a?.hasAttribute("data-ansicht-titel"),
+      tag: a?.tagName ?? "(nichts)",
+      text: (a?.textContent || "").replace(/\s+/g, " ").trim().slice(0, 60),
+      marken: document.querySelectorAll("[data-ansicht-titel]").length,
+    };
+  });
+}
+
+test.describe("Fokus beim Ansichtswechsel", () => {
+  for (const weg of FOKUS_WEGE) {
+    test(`${weg.name}: der Fokus landet auf der Ueberschrift`, async ({ page }) => {
+      await oeffne(page, weg.start);
+
+      const nav = (weg as { nav?: string }).nav;
+      if (nav) {
+        await page.getByRole("button", { name: nav, exact: true }).locator("visible=true").first().click();
+      } else {
+        const menue = (weg as { menue?: RegExp }).menue!;
+        await page.getByRole("button", { name: menue }).locator("visible=true").first().click();
+        const weiter = (weg as { dann?: RegExp }).dann;
+        if (weiter) {
+          await page.getByRole("button", { name: weiter }).locator("visible=true").first().click();
+        }
+      }
+
+      // Erst warten, bis die Ansicht wirklich da ist -- sonst misst der Block
+      // die alte Ansicht und meldet gruen. Zwei der zwoelf (Sync,
+      // Datensicherung) werden ausserdem nachgeladen und brauchen laenger.
+      await page.getByRole("heading", { name: weg.titel }).first().waitFor({ state: "visible", timeout: 20_000 });
+
+      await expect
+        .poll(async () => (await fokusLage(page)).istTitel, { timeout: 5_000 })
+        .toBe(true);
+
+      const lage = await fokusLage(page);
+      expect(
+        lage.marken,
+        `${weg.name}: ${lage.marken} markierte Ueberschriften im Dokument. Der ` +
+          `Haken nimmt die erste -- bei zweien landet der Fokus irgendwo.`,
+      ).toBe(1);
+      expect(
+        lage.tag,
+        `${weg.name}: Fokus steht auf <${lage.tag}> "${lage.text}", nicht auf einer Ueberschrift`,
+      ).toMatch(/^H[1-6]$/);
+    });
+  }
+
+  test("und zurueck: die Zurueck-Taste der Hilfe fuehrt auf die Ueberschrift der Optionen", async ({
+    page,
+  }) => {
+    await oeffne(page, "options");
+    await page.getByRole("button", { name: /Hilfe & Anleitung/ }).locator("visible=true").first().click();
+    await page.getByRole("heading", { name: /Hilfe & Handbuch/ }).first().waitFor({ state: "visible", timeout: 20_000 });
+
+    await page.getByRole("button", { name: /Zurück zu den Optionen/ }).locator("visible=true").first().click();
+    await page.getByRole("heading", { name: /^Optionen$/ }).first().waitFor({ state: "visible", timeout: 20_000 });
+
+    /*
+      Bis 0.9.40 landete der Fokus hier auf document.body: Die Ansichten werden
+      bedingt gerendert, das beim Oeffnen gemerkte Element haengt beim
+      Schliessen also nicht mehr im Dokument, und focus() auf einen
+      abgehaengten Knoten tut nichts (gemessen: document.contains(...) ===
+      false). Fuenf Ansichten trugen diese wirkungslose Wiederherstellung.
+    */
+    await expect
+      .poll(async () => (await fokusLage(page)).istTitel, { timeout: 5_000 })
+      .toBe(true);
+    const lage = await fokusLage(page);
+    expect(lage.text, "Der Rueckweg landet nicht auf der Ueberschrift der Optionen").toContain("Optionen");
+  });
+
+  test("beim Seitenaufbau wird der Fokus NICHT versetzt", async ({ page }) => {
+    /*
+      Absicht, nicht Luecke: Eine Schnellzugriff-Verknuepfung oeffnet die App
+      direkt in einer Ansicht (?tab=history). Dort den Fokus zu versetzen waere
+      ein Eingriff in den normalen Seitenaufbau und nicht die Antwort auf eine
+      Handlung des Nutzers.
+    */
+    await oeffne(page, "history");
+    await page.waitForTimeout(1_200);
+    const lage = await fokusLage(page);
+    expect(
+      lage.istTitel,
+      "Beim Seitenaufbau wurde der Fokus auf die Ueberschrift versetzt -- " +
+        "der erste Lauf soll ausbleiben (useAnsichtsFokus, ersterLauf).",
+    ).toBe(false);
+  });
+});
+
+/**
  * 320 px — die schmalste Breite, die noch im Einsatz ist.
  *
  * Das entspricht dem iPhone SE der 1. und 2. Generation. Die ROADMAP führte

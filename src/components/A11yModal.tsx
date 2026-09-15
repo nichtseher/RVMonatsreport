@@ -242,7 +242,7 @@ export default function A11yModal({
       <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3 px-1">
         <Settings2 className="w-7 h-7 text-[var(--accent)]" aria-hidden="true" />
         <div className="flex-1 min-w-0">
-          <h2 id="a11y-modal-title" className="text-xl md:text-2xl font-black">
+          <h2 id="a11y-modal-title" tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black">
             Optionen
           </h2>
         </div>

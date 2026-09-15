@@ -128,7 +128,6 @@ export default function DeviceSyncModal({
   const receivedRef = useRef<Map<number, ParsedChunk>>(new Map());
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const previouslyActiveRef = useRef<HTMLElement | null>(null);
 
   const stopScanner = useCallback(() => {
     if (scannerRef.current) {
@@ -200,8 +199,12 @@ export default function DeviceSyncModal({
   // Fokus-Falle + Escape (Barrierefreiheit)
   useEffect(() => {
     if (!isOpen) return;
-    previouslyActiveRef.current = document.activeElement as HTMLElement | null;
-    setTimeout(() => closeButtonRef.current?.focus(), 50);
+    /*
+      Startfokus und Wiederherstellung sind mit 0.9.41 entfallen -- den Fokus
+      setzt jetzt zentral `useAnsichtsFokus` auf die Ueberschrift, und die
+      Wiederherstellung war wirkungslos: Das gemerkte Element haengt beim
+      Schliessen nicht mehr im Dokument (gemessen).
+    */
 
     const handleKeyDown = (e: KeyboardEvent) => {
       /*
@@ -222,10 +225,27 @@ export default function DeviceSyncModal({
         if (focusable.length === 0) return;
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
+        const active = document.activeElement as HTMLElement | null;
+        const ueberschrift = modalRef.current.querySelector<HTMLElement>("[data-ansicht-titel]");
+
+        /*
+          Der Startfokus liegt seit 0.9.41 auf der Ueberschrift (tabindex="-1"),
+          und die steht selbst nicht in `focusable`. Ohne die beiden folgenden
+          Zweige fuehrte Shift+Tab von dort geradewegs in den Hintergrund --
+          bei diesem Fenster besonders schlecht, weil es als einziges der App
+          ein echter Dialog ist (fixed inset-0, abgedunkelt, aria-modal) und
+          der Screenreader dort draussen nichts vorliest. Muster uebernommen
+          aus OnboardingModal, laut CLAUDE.md die Referenz fuer Fokusarbeit.
+        */
+        if (!active || !modalRef.current.contains(active)) {
+          (e.shiftKey ? last : first).focus();
+          e.preventDefault();
+          return;
+        }
+        if (e.shiftKey && (active === first || active === ueberschrift)) {
           last.focus();
           e.preventDefault();
-        } else if (!e.shiftKey && document.activeElement === last) {
+        } else if (!e.shiftKey && active === last) {
           first.focus();
           e.preventDefault();
         }
@@ -235,7 +255,6 @@ export default function DeviceSyncModal({
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      previouslyActiveRef.current?.focus();
     };
   }, [isOpen]);
 
@@ -1003,7 +1022,7 @@ export default function DeviceSyncModal({
           >
             <ArrowLeft className="w-5 h-5" aria-hidden="true" />
           </button>
-          <h2 id="sync-modal-title" className="font-bold text-lg flex items-center gap-2 min-w-0">
+          <h2 id="sync-modal-title" tabIndex={-1} data-ansicht-titel="" className="font-bold text-lg flex items-center gap-2 min-w-0">
             <ArrowRightLeft className="w-5 h-5 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
             <span className="truncate">Geräte-Synchronisation</span>
           </h2>

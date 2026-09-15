@@ -160,7 +160,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
         <div className="p-3 bg-[var(--info-bg)] text-[var(--cat-4-text)] rounded-xl flex-shrink-0">
           <Lock className="w-6 h-6" aria-hidden="true" />
         </div>
-        <h2 id="backup-title" className="text-2xl md:text-3xl font-black text-[var(--text-color)]">Datensicherung</h2>
+        <h2 id="backup-title" tabIndex={-1} data-ansicht-titel="" className="text-2xl md:text-3xl font-black text-[var(--text-color)]">Datensicherung</h2>
       </div>
 
       {/* overflow-x-hidden + break-words: `overflow-y-auto` zieht die x-Achse
