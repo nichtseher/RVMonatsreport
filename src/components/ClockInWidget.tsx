@@ -331,12 +331,12 @@ export default React.memo(function ClockInWidget({
           Gemessen bei 360 px und "Extra gross": 415 px Inhalt, ohne diese Zeile
           exakt 360. Elfter Fall der Klasse "min-width: auto an Flex-Elementen". */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-color)] pb-2.5">
-        <h3 className="text-xs font-black uppercase tracking-wider text-[var(--text-color)] flex items-center gap-2 min-w-0">
+        <h3 className="text-xs font-black text-[var(--text-color)] flex items-center gap-2 min-w-0">
           <Clock className="w-4 h-4 text-[var(--accent)] flex-shrink-0" />
           <span className="min-w-0 [overflow-wrap:anywhere]">⏱️ Echtzeit-Stempeluhr</span>
         </h3>
         {clockInTime && (
-          <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--danger-bg)] text-[var(--danger-text)] border border-[var(--danger-border)] text-[0.6875rem] font-black tracking-wide uppercase flex-shrink-0">
+          <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--danger-bg)] text-[var(--danger-text)] border border-[var(--danger-border)] text-[0.75rem] font-black flex-shrink-0">
             {/* Nur der Punkt pulsiert, nicht die Schrift. Mit `animate-pulse`
                 am ganzen Abzeichen sinkt die Deckkraft des TEXTES mit --
                 gemessen 2,82:1 gegen die geforderten 4,5:1 (WCAG 1.4.3).
@@ -375,7 +375,7 @@ export default React.memo(function ClockInWidget({
           {!isFormOpen ? (
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-3 rounded-xl bg-[var(--bg-color)] border border-[var(--border-color)]">
               <div className="text-center md:text-left space-y-1">
-                <span className="text-[0.75rem] font-black uppercase text-[var(--text-muted)] tracking-wider">
+                <span className="text-[0.75rem] font-black text-[var(--text-muted)]">
                   Laufende Arbeitszeit
                 </span>
                 <div className="text-3xl font-black font-mono text-[var(--text-color)]">
@@ -405,7 +405,7 @@ export default React.memo(function ClockInWidget({
               onSubmit={handleSaveShift}
               className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] space-y-4 animate-slide-up"
             >
-              <h4 className="text-xs font-black uppercase text-[var(--accent)] tracking-wider">
+              <h4 className="text-xs font-black text-[var(--accent)]">
                 Arbeitszeit verbuchen
               </h4>
 
@@ -454,7 +454,7 @@ export default React.memo(function ClockInWidget({
                       +15
                     </button>
                   </div>
-                  <span className="text-[0.6875rem] text-[var(--text-muted)] block font-normal">
+                  <span className="text-[0.75rem] text-[var(--text-muted)] block font-normal">
                     (Vorgeschrieben: 30 Min ab 6h, 45 Min ab 9h)
                   </span>
                 </div>
@@ -507,7 +507,7 @@ export default React.memo(function ClockInWidget({
                 <div className="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] space-y-2 animate-slide-up">
                   <label
                     htmlFor="custom-ratio-slider"
-                    className="text-[0.75rem] font-black uppercase text-[var(--text-muted)] tracking-wider flex justify-between"
+                    className="text-[0.75rem] font-black text-[var(--text-muted)] flex justify-between"
                   >
                     <span>
                       Aufteilung: {customRatio}% Büro / {100 - customRatio}%
@@ -538,7 +538,7 @@ export default React.memo(function ClockInWidget({
               {/* Direct manual hours entry */}
               <div className="p-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[0.75rem] font-black uppercase text-[var(--text-color)] tracking-wide flex items-center gap-1">
+                  <span className="text-[0.75rem] font-black text-[var(--text-color)] flex items-center gap-1">
                     Büro vs. Außendienst h
                   </span>
                   {(typedOfficeHours !== "" || typedFieldHours !== "") && (
@@ -696,11 +696,11 @@ export default React.memo(function ClockInWidget({
               gross": ohne diese Zeile fiel die Seite von 407 auf 360 px.
               Zehnter Fall dieser Klasse in diesem Projekt. */}
           <div className="flex items-center justify-between gap-2">
-            <h4 className="text-xs font-black uppercase text-[var(--accent)] tracking-wider flex items-center gap-1.5 min-w-0">
+            <h4 className="text-xs font-black text-[var(--accent)] flex items-center gap-1.5 min-w-0">
               <Plus className="w-4 h-4 flex-shrink-0" />
               <span className="min-w-0 [overflow-wrap:anywhere]">Schicht manuell nachtragen</span>
             </h4>
-            <span className="text-[0.75rem] bg-[var(--success-bg)] text-[var(--success-text)] px-2 py-0.5 rounded-full font-black uppercase flex-shrink-0">
+            <span className="text-[0.75rem] bg-[var(--success-bg)] text-[var(--success-text)] px-2 py-0.5 rounded-full font-black flex-shrink-0">
               Manuell
             </span>
           </div>
@@ -858,7 +858,7 @@ export default React.memo(function ClockInWidget({
             <div className="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] space-y-2 animate-slide-up">
               <label
                 htmlFor="manual-custom-ratio-slider"
-                className="text-[0.75rem] font-black uppercase text-[var(--text-muted)] tracking-wider flex justify-between"
+                className="text-[0.75rem] font-black text-[var(--text-muted)] flex justify-between"
               >
                 <span>
                   Aufteilung: {manualCustomRatio}% Büro /{" "}
@@ -889,7 +889,7 @@ export default React.memo(function ClockInWidget({
           {/* Direct manual hours entry */}
           <div className="p-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-[0.75rem] font-black uppercase text-[var(--text-color)] tracking-wide flex items-center gap-1">
+              <span className="text-[0.75rem] font-black text-[var(--text-color)] flex items-center gap-1">
                 Büro vs. Außendienst h
               </span>
               {(typedManualOfficeHours !== "" ||
@@ -1023,7 +1023,7 @@ export default React.memo(function ClockInWidget({
       */}
       {timeLogs.length > 0 && (
         <div className="pt-2 border-t border-[var(--border-color)]">
-          <h3 className="py-1.5 text-xs font-black text-[var(--text-muted)] uppercase tracking-wider min-w-0 [overflow-wrap:anywhere]">
+          <h3 className="py-1.5 text-xs font-black text-[var(--text-muted)] min-w-0 [overflow-wrap:anywhere]">
             Schicht-Protokoll ({timeLogs.length}{" "}
             {timeLogs.length === 1 ? "Eintrag" : "Einträge"})
           </h3>

@@ -10,6 +10,225 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-17 — v0.9.47: Eine Landmarke, ein ruhigeres Schriftbild, eine Erklärung im Entwurf
+
+Frage des Projektinhabers: „Was ist außer dem Screenreader-Durchlauf noch zu
+tun?" Die Antwort war eine Liste aus zehn Punkten; vier davon sind hier
+umgesetzt, einer ist blockiert, einer bleibt Handarbeit an echten Geräten.
+
+### Der Hauptbereich war keiner
+
+`#main-content` war ein `<div>` mit einer Kennung. Der Sprunglink „Zum
+Hauptinhalt springen" funktionierte damit — die **Landmarke** fehlte trotzdem,
+und das ist ein anderer Bedienweg: NVDA springt mit `D` durch die Bereiche
+einer Seite, VoiceOver bietet sie im Rotor unter „Orientierungshilfen" an. Wer
+diesen Weg nutzt (und er ist bei geübten Nutzern der schnellere), fand hier
+nichts, weil es nichts zu finden gab. Genau das stand im Konformitätsbericht
+als Lücke zu 1.3.1.
+
+Jetzt ist es ein `<main>`. Damit fielen zwei Rollen weg, die daneben nicht
+stehen bleiben durften:
+
+- `role="banner"` an der Kopfkarte des Formulars,
+- `role="contentinfo"` an der Fußzeile.
+
+Beide sind Landmarken der **Seite**; innerhalb von `main` sind sie laut ARIA
+fehl am Platz, und axe führt beides als eigene Regel (`landmark-banner-is-
+top-level`). Die Elemente selbst bleiben — `<header>` und `<footer>` sind dort
+als Abschnittsgliederung richtig, nur eben ohne Landmarkenrolle.
+
+**Benannt, nicht geändert:** Die Bedienleiste unten liegt weiterhin im DOM
+innerhalb von `main`, die Seitenleiste am Rechner außerhalb. Beides ist
+zulässig (eine Navigation darf in `main` stehen), aber es ist asymmetrisch.
+Sie herauszuziehen wäre ein Umbau ohne sichtbare Wirkung — der gehört in eine
+Fassung, in der die gerenderte Ausgabe vorher/nachher verglichen wird, nicht
+an den Rand dieser.
+
+Die Hilfe nennt den neuen Weg jetzt mit beiden Tastenkürzeln. Ein Satz mehr,
+und er stimmt — die Hilfe macht in diesem Projekt konkrete Zusagen, und vier
+davon waren bis 0.9.3 veraltet.
+
+### Sprachauszeichnung: gemessen und bewusst NICHT geändert
+
+Der Konformitätsbericht führte 3.1.2 als „teilweise": englische Fachwörter
+(Sync, Backup) seien nicht ausgezeichnet. Der naheliegende Schritt wäre
+`lang="en"` an diesen Wörtern. Nachgesehen, was das bewirken würde:
+
+- **Die Ausnahme in 3.1.2 greift.** Das Kriterium nimmt Wörter aus, „die Teil
+  des allgemeinen Sprachgebrauchs der umgebenden Sprache geworden sind".
+  *Backup*, *Update*, *Download* und *live* stehen als deutsche Stichwörter im
+  Duden.
+- **Die Auszeichnung wäre hörbar schlechter.** Ein deutscher Screenreader
+  schaltet an einem `lang="en"` auf eine englische Stimme um — mitten im Satz,
+  für ein Wort, das die Kollegen deutsch aussprechen.
+- **Die Grundlagen stimmen:** `<html lang="de">` ist gesetzt, und die
+  Sprachausgabe der App setzt `utterance.lang = "de-DE"` an beiden Stellen, an
+  denen sie spricht. Wäre das offen, hätte die App auf einem englisch
+  eingestellten Gerät englisch vorgelesen — das wäre der echte Fehler dieser
+  Klasse gewesen.
+
+**Ein Grenzfall bleibt und ist keiner von der Sorte, die man still abhakt:**
+*Sync* ist als Kurzform kein Duden-Stichwort (dort stehen *synchronisieren*
+und *Synchronisation*). Die Ansicht heißt bereits „Geräte-Synchronisation",
+der Menüeintrag „Geräte-Sync" — zwei Namen für dieselbe Sache. Das ist eine
+Benennungsfrage, keine Sprachauszeichnungsfrage, und Umbenennungen entscheidet
+in diesem Projekt der Projektinhaber (zuletzt 0.9.37–0.9.39). Notiert, nicht
+eigenmächtig geändert.
+
+3.1.2 steht damit als **erfüllt, mit begründeter Ausnahme** — nicht mehr als
+„teilweise". Eine Lücke, die nach Prüfung keine ist, gehört nicht als Lücke
+stehengelassen; sonst behebt sie beim nächsten Mal jemand, ohne sie zu prüfen.
+
+### Typografie: die eigene Bestandsaufnahme war überholt
+
+Die ROADMAP führte seit dem 2026-09-02 eine Bestandsaufnahme mit drei Achsen
+und der Bemerkung, die Entscheidung stehe aus. Vor der Entscheidung wurde neu
+gemessen — über dieselben sechs Ansichten, 182 Elemente mit eigenem
+sichtbaren Text. **Zwei der drei Achsen stimmten nicht mehr:**
+
+Gemeldet waren „sieben Sperrungswerte, davon vier negative". Gemessen wurden
+vier, **alle positiv**. Die negativen sind mit dem JSX-Umbau in 0.9.42
+verschwunden, ohne dass es jemandem aufgefallen wäre — der Befund, auf dem
+eine Entscheidung fußen sollte, hatte sich von selbst erledigt.
+
+Was blieb, war das Eigentliche. Drei Entscheidungen, vom Projektinhaber
+delegiert („mach alles"):
+
+| Achse | 0.9.46 | 0.9.47 |
+|---|---|---|
+| Schriftgrößen | 8 Werte, darunter 11 px (9×) **und** 12 px (76×) | **7** — die 11-px-Stufe ist auf 12 px zusammengelegt |
+| Schriftgewichte | 3 (400 / 700 / 900) | 3 — unverändert, die Achse war sauber |
+| Sperrung | 4 Werte auf 20 Elementen (0,6 px 14×, 0,55 px 5×, 2,4 px 1×) | **1** — `normal`, kein gesperrtes Element mehr |
+| Versalien | 19 Elemente | **0** |
+
+Im Quelltext entfernt: **115** `uppercase`, **111** `tracking-*`, **81**
+`text-[0.6875rem]` → `text-[0.75rem]`, verteilt auf 13 Dateien.
+
+**Warum überhaupt:** Großbuchstaben nehmen einem Wort die Umrissform, an der
+geübte Leser es erkennen. Für blinde Nutzer ist das folgenlos —
+`text-transform` ändert die Darstellung, nicht den Text, den ein Screenreader
+liest. Es trifft ausschließlich die sehbehinderten Kollegen, also genau die
+Hälfte der Zielgruppe, die tatsächlich liest. Die Sperrung stand fast überall
+dort, wo Versalien standen; sie ist deren übliches Gegenmittel und macht
+gemischte Schreibweise nur schlechter lesbar. Und zwei kleine Stufen, die sich
+um ein Pixel unterscheiden, sind keine Skala, sondern eine Verwechslung.
+
+**Ein Fund, den erst die Messung danach hergab:** An einer Stelle stand
+`lowercase` — als Gegengift zum `uppercase` der Elternzeile. Ohne diese
+Elternzeile schrieb es ein deutsches Substantiv klein: „(bereich anklicken zum
+filtern)". Eine Änderung, die eine andere Stelle kaputtmacht, ohne dass
+irgendein Prüflauf davon wüsste — gefunden, weil nach dem Umbau noch einmal im
+Browser gemessen wurde statt im Quelltext.
+
+**Der Wächter dazu:** `scripts/checks/typografie.ts` lehnt `uppercase`,
+`lowercase`, `capitalize`, jedes `tracking-*` und `text-[0.6875rem]` in
+Klassenlisten ab. Gegenprobe gefahren: Mit den drei Klassen an einer einzigen
+Stelle wieder eingesetzt, melden drei der fünf Prüfungen den Verstoß, und
+zwar mit Dateinamen. Ohne diese Gegenprobe wäre der Wächter eine Behauptung.
+
+Zwei Dinge, die der erste Entwurf dieses Wächters falsch machte und die
+festgehalten gehören:
+
+1. **Er suchte im ganzen Quelltext statt in Klassenlisten** — und schlug
+   sofort an seinem eigenen Anlass fehl: Der Kommentar, der erklärt, warum
+   `lowercase` entfallen ist, enthält das Wort. Eine Prüfung, die ihre eigene
+   Begründung als Verstoß meldet, bringt jeden dazu, die Begründung zu
+   löschen.
+2. **Die Gegenprobe zur Gegenprobe fehlte.** Die Prüfung stellt jetzt zuerst
+   fest, dass sie überhaupt Klassenlisten sieht (`font-black` muss vorkommen).
+   Eine leere Trefferliste aus einem Suchmuster, das nichts finden kann, ist
+   in diesem Projekt schon einmal als Erfolg durchgegangen.
+
+### Nebenbefund: die eigene Messung lag um 41 Elemente daneben
+
+Der erste Lauf des Wegwerf-Skripts zählte 182 Elemente, der zweite 141 — bei
+angeblich derselben App. Ursache: Zehn der zwölf Ansichten werden seit 0.9.43
+nachgeladen, und 250 ms nach dem Aufruf steht dort noch der Platzhalter. Erst
+das Warten auf `[data-ansicht-titel]` machte die Läufe vergleichbar. Vorher
+hätte die Vorher/Nachher-Tabelle oben eine Verbesserung ausgewiesen, die zur
+Hälfte aus nicht geladenen Ansichten bestanden hätte.
+
+### Nebenbefund: Die Zeilenenden gehören nicht der Datei, sondern dem letzten Schreiber
+
+`CLAUDE.md` warnt seit dem 2026-09-07, mehrzeilige Anker mit `\n` fänden in
+`App.tsx` nichts, weil die Datei CRLF benutze. Nachgezählt, und zwar zweimal
+am selben Tag:
+
+- direkt nach einer Bearbeitungsrunde: **0 von 3.447 Zeilen** mit `\r`,
+- nach einem einzigen `git stash push` / `git stash pop`: **3.467 von 3.467**.
+
+Die Ursache steht in der Konfiguration, nicht in der Datei: `core.autocrlf`
+ist `true` und es gibt keine `.gitattributes`. Alles, was git in den
+Arbeitsbaum schreibt, kommt als CRLF an; alles, was ein Editor oder ein Skript
+schreibt, als LF. Beides im selben Verzeichnis, gleichzeitig — die Dateien
+unter `src/` waren nach dem Stash CRLF, `package.json` und `scripts/` blieben
+LF.
+
+Der Hinweis bleibt also richtig, seine Begründung war falsch — und die falsche
+Begründung ist die gefährlichere Hälfte: Wer glaubt, die Eigenschaft hänge an
+der Datei, prüft sie einmal und verlässt sich darauf. Der Hinweis sagt jetzt,
+dass sie an der letzten Schreiboperation hängt, und dass eine Bearbeitung eine
+Datei auch **gemischt** zurücklassen kann.
+
+### Die Erklärung zur Barrierefreiheit
+
+`BARRIEREFREIHEITSERKLAERUNG.md` liegt als **Entwurf** vor, im Aufbau von
+§ 12b BITV 2.0. Fünf Angaben fehlen und können nur vom Unternehmen kommen;
+sie stehen im Text in eckigen Klammern, damit niemand das Dokument für
+vollständig hält.
+
+Die wichtigste davon ist die erste: **Gilt die App als Arbeitsmittel für
+Beschäftigte oder als Dienstleistung?** Davon hängt ab, ob überhaupt eine
+Pflicht besteht (BFSG gilt für Verbraucher-Dienstleistungen, BITV für
+öffentliche Stellen — auf ein internes Werkzeug trifft beides nicht zu; dann
+greifen § 164 Abs. 4 SGB IX und § 3a Abs. 2 ArbStättV) und wer als
+Durchsetzungsstelle zu nennen ist. Eine erfundene Zuständigkeit wäre schlechter
+als eine sichtbare Lücke: Wer sich darauf verlässt, wendet sich an die falsche
+Stelle.
+
+Der Stand der Vereinbarkeit ist mit **„teilweise vereinbar"** angegeben, und
+zwar nicht wegen einer bekannten Barriere — auf AA-Ebene ist keine bekannt —,
+sondern wegen dreier fehlender Nachweise: der ausstehende
+Screenreader-Durchlauf auf aktueller Fassung, die zwei nicht erhobenen
+Kriterien (1.3.2, 1.3.3) und TalkBack.
+
+### Blockiert: die offene Fehlermeldung auf GitHub
+
+Der Melder aus 0.9.35 hat am 2026-09-15 zum ersten Mal wirklich ausgelöst:
+Ausgabe #1 „Deploy fehlgeschlagen" für `3101833`, Etikett `deploy-fehler`,
+null Kommentare, **weiterhin offen**. Damit ist er belegt — ROADMAP und
+`CLAUDE.md` führten ihn bis heute als unverifiziert, weil er sich nur an einem
+echten Fehler zeigen kann.
+
+Sie gehört geschlossen, und zwar nicht aus Ordnungsliebe: Der Workflow
+kommentiert bei einem Fehler an der **offenen** Ausgabe mit diesem Etikett,
+statt eine neue zu öffnen. Bleibt sie offen, meldet sich der nächste Fehler
+unter einer Überschrift, die längst gelesen ist.
+
+Das Schließen selbst hat der Auto-Modus abgelehnt (externe Schreibzugriffe).
+Der vorbereitete Kommentartext liegt bereit; es sind zwei API-Aufrufe oder ein
+Klick.
+
+### Was live ist, nachgemessen statt angenommen
+
+0.9.46 ist veröffentlicht: Das ausgelieferte Startbündel
+`assets/index-Dv2nhYrV.js` enthält die Kennung `-zuletzt` aus 0.9.46. Damit ist
+die Produktion auf dem Stand des Quelltextes — die Frage war berechtigt, weil
+genau das am 2026-09-07 fünf Tage lang nicht stimmte.
+
+### Prüfstand
+
+| | 0.9.46 | 0.9.47 |
+|---|---|---|
+| `lint` | grün | grün |
+| `check` | 186 | **191** (fünf Fälle für die Typografie-Regeln) |
+| `check:ui` | 594 | **594 bestanden, 0 fehlgeschlagen**, 558 je Profil übersprungen (19,4 min, ohne Pipe gemessen) |
+| Versalien in der Oberfläche | 19 Elemente | **0** |
+| gesperrte Elemente | 20 | **0** |
+| Landmarken in der Seite | keine `main` | `main`, `navigation`, `complementary` |
+
+---
+
 ## 2026-09-15 — v0.9.46: Die Antwort zuerst, die Anleitung danach
 
 Frage des Projektinhabers zu 0.9.45: Ist der Wert „zuletzt geändert" auch mit

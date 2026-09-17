@@ -28,6 +28,7 @@ import "./checks/zustandsdeckung";
 import "./checks/rueckfrage";
 import "./checks/ansichtsfokus";
 import "./checks/zuletzt-geaendert";
+import "./checks/typografie";
 import { alleLaufen } from "./helfer";
 
 alleLaufen()

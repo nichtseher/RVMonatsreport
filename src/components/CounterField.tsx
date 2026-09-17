@@ -193,7 +193,7 @@ export default React.memo(function CounterField({
           <span className="min-w-0 break-words">{config.label}</span>
         </label>
         {config.isCustom && (
-          <span className="inline-block mt-1 text-[0.75rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--cat-3-soft)] text-[var(--cat-3-text)]">
+          <span className="inline-block mt-1 text-[0.75rem] font-bold px-2 py-0.5 rounded-full bg-[var(--cat-3-soft)] text-[var(--cat-3-text)]">
             Eigene Kategorie
           </span>
         )}

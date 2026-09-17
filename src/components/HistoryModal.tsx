@@ -358,7 +358,7 @@ export default function HistoryModal({
                         alles ist sichtbar. */}
                     {searchQuery ? (
                       <div className="w-full flex items-center min-h-[44px] px-3 bg-[var(--bg-color)]/60 rounded-xl border border-[var(--border-color)] select-none">
-                        <span className="text-xs font-black tracking-wider text-[var(--text-color)] uppercase flex items-center gap-1.5">
+                        <span className="text-xs font-black text-[var(--text-color)] flex items-center gap-1.5">
                           <Filter className="w-3 h-3 text-[var(--accent)]" aria-hidden="true" />
                           Jahr {year} ({yearRecords.length} {yearRecords.length === 1 ? "Treffer" : "Treffer"})
                         </span>
@@ -370,7 +370,7 @@ export default function HistoryModal({
                         aria-expanded={!isYearCollapsed}
                         className="w-full flex items-center justify-between min-h-[44px] px-3 bg-[var(--bg-color)]/60 rounded-xl border border-[var(--border-color)] text-left cursor-pointer hover:bg-[var(--bg-color)] transition-all select-none"
                       >
-                        <span className="text-xs font-black tracking-wider text-[var(--text-color)] uppercase flex items-center gap-1.5">
+                        <span className="text-xs font-black text-[var(--text-color)] flex items-center gap-1.5">
                           <Filter className="w-3 h-3 text-[var(--accent)]" aria-hidden="true" />
                           Jahr {year} ({yearRecords.length} {yearRecords.length === 1 ? "Monat" : "Monate"})
                         </span>
@@ -422,7 +422,7 @@ export default function HistoryModal({
                                       <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" aria-hidden="true" />
                                       {formatMonthGerman(record.month)}
                                     </span>
-                                    <span className="text-[0.6875rem] font-mono font-bold bg-[var(--bg-color)] px-2 py-0.5 rounded-full text-[var(--text-muted)]">
+                                    <span className="text-[0.75rem] font-mono font-bold bg-[var(--bg-color)] px-2 py-0.5 rounded-full text-[var(--text-muted)]">
                                       Zähler: {totalCount}
                                     </span>
                                     {/* Bewusst in der Kopfzeile und NICHT im ausklappbaren
@@ -431,13 +431,13 @@ export default function HistoryModal({
                                         Fuer Screenreader steht derselbe Text zusaetzlich
                                         im aria-label der Zeile. */}
                                     {record.sentAt ? (
-                                      <span className="text-[0.6875rem] font-black px-2 py-0.5 rounded-full bg-[var(--success-bg)] text-[var(--success-text)] border border-[var(--success-border)] flex items-center gap-1">
+                                      <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--success-bg)] text-[var(--success-text)] border border-[var(--success-border)] flex items-center gap-1">
                                         <Check className="w-3 h-3" aria-hidden="true" />
                                         Gesendet {kurzesDatum(record.sentAt)}
                                         <span className="sr-only"> an die Vertriebsleitung</span>
                                       </span>
                                     ) : (
-                                      <span className="text-[0.6875rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">
+                                      <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">
                                         Noch offen
                                         <span className="sr-only">
                                           {" "}

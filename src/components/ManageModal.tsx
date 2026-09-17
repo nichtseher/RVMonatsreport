@@ -166,7 +166,7 @@ export default function ManageModal({
                       zur Verfügung standen -- der Bereich wurde damit still
                       seitwärts scrollbar. `break-words` genügt dagegen nicht,
                       es ändert die intrinsische Mindestbreite nicht. */}
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border-color)] pb-1 [overflow-wrap:anywhere]">
+                  <h3 className="text-sm font-bold text-[var(--text-muted)] border-b border-[var(--border-color)] pb-1 [overflow-wrap:anywhere]">
                     {sectionLabels[secKey]}
                   </h3>
                   <div className="space-y-1.5">

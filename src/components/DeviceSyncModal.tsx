@@ -715,7 +715,7 @@ export default function DeviceSyncModal({
   const renderSyncSteps = () => {
     const currentStep = mode === "select" ? 1 : mode === "confirm" ? 3 : 2;
     return (
-      <ol className="mb-5 grid grid-cols-3 gap-2 text-[0.75rem] uppercase font-black tracking-wider text-[var(--text-muted)] list-none p-0">
+      <ol className="mb-5 grid grid-cols-3 gap-2 text-[0.75rem] font-black text-[var(--text-muted)] list-none p-0">
         {[
           { label: "1. Wahl", help: "Senden oder Empfangen" },
           { label: "2. QR-Code", help: "Zeigen & Scannen" },
@@ -730,7 +730,7 @@ export default function DeviceSyncModal({
                 : "border-[var(--border-color)] bg-[var(--bg-color)]"
             }`}
           >
-            <div className="text-[0.6875rem] font-black mb-1">{step.label}</div>
+            <div className="text-[0.75rem] font-black mb-1">{step.label}</div>
             <div className="text-[0.75rem] font-bold">{step.help}</div>
           </li>
         ))}
@@ -823,7 +823,7 @@ export default function DeviceSyncModal({
                 className="w-full px-3 min-h-[44px] rounded-lg border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm focus:border-[var(--border-focus)] outline-none"
                 aria-describedby="sync-passwort-hinweis"
               />
-              <p id="sync-passwort-hinweis" className="text-[0.6875rem] text-[var(--text-muted)] leading-snug">
+              <p id="sync-passwort-hinweis" className="text-[0.75rem] text-[var(--text-muted)] leading-snug">
                 Mit Passwort wird der Textcode verschlüsselt. Am anderen Gerät muss
                 dasselbe Passwort eingegeben werden – ohne es sind die Daten verloren.
               </p>
@@ -1080,7 +1080,7 @@ export default function DeviceSyncModal({
                   bzw. "scannt mit der Kamera" -- der kameralose Weg lag damit
                   innerhalb von etwas, das sich ausdruecklich "per QR-Code"
                   nennt. Wer linear liest, uebersprang ihn zu Recht. */}
-              <p className="text-[0.75rem] font-black uppercase tracking-wider text-[var(--text-muted)]">
+              <p className="text-[0.75rem] font-black text-[var(--text-muted)]">
                 Einmal übertragen — auch ohne Kamera
               </p>
 
@@ -1114,7 +1114,7 @@ export default function DeviceSyncModal({
                 </div>
               </button>
 
-              <p className="text-[0.75rem] font-black uppercase tracking-wider text-[var(--text-muted)] pt-2">
+              <p className="text-[0.75rem] font-black text-[var(--text-muted)] pt-2">
                 Live-Verbindung (beide Geräte gleichzeitig)
               </p>
 

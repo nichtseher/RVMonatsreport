@@ -2,12 +2,12 @@
 
 | | |
 |---|---|
-| **Stand** | 2026-09-15 |
-| **Geprüfte Fassung** | 0.9.43 |
+| **Stand** | 2026-09-17 |
+| **Geprüfte Fassung** | 0.9.47 |
 | **Maßstab** | EN 301 549 V3.2.1 (2021-03), Abschnitt 9 → WCAG 2.1 Stufe A und AA |
 | **Zusätzlich dokumentiert** | die neun Erfolgskriterien aus WCAG 2.2, die der Entwurf EN 301 549 V4.1.0 aufnimmt |
 | **Art des Dokuments** | technische Selbstauskunft |
-| **Vorfassung** | 2026-09-12 für 0.9.32. Dieser Stand ist **nachgetragen, nicht neu erhoben** — und das steht hier, damit niemand mehr hineinliest, als drin ist: Nachgemessen sind die Prüfläufe und die Kriterien, an denen zwischen 0.9.33 und 0.9.43 tatsächlich gearbeitet wurde (2.4.3, 4.1.2, 3.2.3). Die übrigen Einstufungen sind aus 0.9.32 übernommen; wo eine Zahl dort stand und heute anders lautet, ist sie hier berichtigt |
+| **Vorfassung** | 2026-09-15 für 0.9.43, davor 2026-09-12 für 0.9.32. Dieser Stand ist **nachgetragen, nicht neu erhoben** — und das steht hier, damit niemand mehr hineinliest, als drin ist: Nachgemessen sind die Prüfläufe und die Kriterien, an denen zwischen 0.9.33 und 0.9.43 tatsächlich gearbeitet wurde (2.4.3, 4.1.2, 3.2.3). Die übrigen Einstufungen sind aus 0.9.32 übernommen; wo eine Zahl dort stand und heute anders lautet, ist sie hier berichtigt |
 
 ---
 
@@ -224,9 +224,59 @@ die Rückfragen und den Geräteabgleich ausdrücklich einschließen.**
 
 ### 3.3a Was seit 0.9.32 hinzugekommen ist und hier neu bewertet wurde
 
-Elf Fassungen liegen zwischen der Vorfassung und diesem Stand. Vier davon
-haben an Kriterien dieses Berichts gearbeitet; sie sind einzeln nachgemessen,
-alles Übrige ist übernommen.
+Elf Fassungen liegen zwischen der Vorfassung 0.9.32 und dem Stand 0.9.43.
+Vier davon haben an Kriterien dieses Berichts gearbeitet; sie sind einzeln
+nachgemessen, alles Übrige ist übernommen.
+
+**Nachtrag 2026-09-17 (0.9.44 bis 0.9.47).** Vier weitere Fassungen, und eine
+davon hat eine Einstufung dieses Berichts widerlegt — deshalb steht sie hier
+zuerst.
+
+**1.4.4 stand als „erfüllt", während der Verstoß in der Anwendung war.** Bei
+der Schriftgröße „Extra groß" waren in der unteren Bedienleiste **alle fünf
+Beschriftungen abgeschnitten** — „RV A…", „RV R…", „RV Ar…", bei 360 px
+Gerätebreite 51 px Platz je Taste gegen 57 bis 88 px Bedarf. Behoben mit
+0.9.45 (vier Stationen statt fünf, kürzere Namen), belegt mit zwei eigenen
+Wächtern im Prüfnetz.
+
+Bemerkenswert ist nicht der Fehler, sondern **warum ihn 1.086 automatische
+Prüfungen nicht sahen**: `truncate` erzeugt keinen Überlauf (der Überlauf-
+Wächter bleibt still), der zugängliche Name bleibt vollständig (axe bleibt
+still), und die Tasten selbst sind groß genug (der Trefferflächen-Wächter
+bleibt still). Getroffen hat es ausschließlich, wer die große Schrift
+einstellt — also sehbehinderte Nutzer. Für diesen Bericht heißt das: Eine
+Einstufung „erfüllt, automatisiert über alle Ansichten und Profile" sagt
+genau so viel, wie die Wächter messen, und kein Wort mehr.
+
+| Fassung | Änderung | Wirkung auf diesen Bericht |
+|---|---|---|
+| 0.9.44 | Einheitliche Benennung der App | keine Wirkung auf Kriterien |
+| 0.9.45 | Vier Stationen in der Leiste, Zeitstempel am Zähler | **1.4.4 neu belegt** (siehe oben); 4.1.2 um den Zeitpunkt der letzten Änderung erweitert |
+| 0.9.46 | Reihenfolge in `aria-describedby` | 4.1.2: Der Zeitpunkt wird **vor** der 30 Wörter langen Bedienanleitung genannt, nicht dahinter |
+| 0.9.47 | `<main>`-Landmarke, Sprachauszeichnung entschieden, Typografie | **1.3.1 und 3.1.2 geschlossen** (siehe unten), 1.4.12 um zwei Achsen bereinigt |
+
+**1.3.1 — die benannte Lücke ist geschlossen.** Der Inhaltsbereich war ein
+`<div>` mit einer Kennung; der Sprunglink funktionierte, die Landmarke fehlte.
+Damit lief der zweite Weg zum Hauptinhalt ins Leere — NVDA `D`, VoiceOver-Rotor
+„Orientierungshilfen". Seit 0.9.47 ist es ein `<main>`; `role="banner"` und
+`role="contentinfo"`, die innerhalb von `main` nicht stehen dürfen, sind
+entfallen (die Elemente selbst bleiben).
+
+**3.1.2 — geprüft, und die Lücke war keine.** Englische Fachwörter mit
+`lang="en"` auszuzeichnen wäre hier ein Rückschritt: *Backup*, *Update*,
+*Download* und *live* sind Duden-Stichwörter des Deutschen, die Ausnahme des
+Kriteriums für den allgemeinen Sprachgebrauch greift — und ein deutscher
+Screenreader schaltete an einer solchen Auszeichnung mitten im Satz auf eine
+englische Stimme um. Nachgesehen wurde zugleich das, was wirklich trägt:
+`<html lang="de">` ist gesetzt, und die Sprachausgabe der App setzt
+`utterance.lang = "de-DE"` an beiden Stellen, an denen sie spricht. Offen
+bleibt eine Benennungsfrage, keine Auszeichnungsfrage: *Sync* ist als Kurzform
+kein deutsches Stichwort, und die Ansicht heißt „Geräte-Synchronisation",
+während der Menüeintrag „Geräte-Sync" heißt.
+
+**Zur Zahl der Ansichten:** Die App hat seit 0.9.36 **zwölf**. Wo in den
+Tabellen unten „elf Ansichten" steht, bezieht sich das auf den Stand am
+genannten Messdatum und ist nicht nachträglich hochgerechnet worden.
 
 | Fassung | Änderung | Wirkung auf diesen Bericht |
 |---|---|---|
@@ -316,7 +366,7 @@ anwendbar
 |---|---|---|---|
 | 1.1.1 Nicht-Text-Inhalt | A | plausibel | Symbole sind `aria-hidden`, Schaltflächen tragen `aria-label`; axe prüft `image-alt`. Seit 0.9.6 **0 sichtbare Emojis** in allen fünf Ansichten (vorher 14) |
 | 1.2.1 – 1.2.5 Zeitbasierte Medien | A/AA | **n. a.** | keine Audio- oder Videoinhalte. Die Sprachausgabe ist eine Ausgabefunktion, kein Medieninhalt |
-| 1.3.1 Info und Beziehungen | A | **teilweise** | Beschriftungen und ARIA von axe gedeckt. **Lücke:** Der Sprungziel-Bereich `#main-content` ist ein `<div>` ohne `main`-Rolle; Landmarkenregeln laufen nicht mit |
+| 1.3.1 Info und Beziehungen | A | **erfüllt** | Beschriftungen und ARIA von axe gedeckt. **Die bis 0.9.46 benannte Lücke ist geschlossen:** Der Inhaltsbereich ist seit 0.9.47 ein `<main>` statt eines `<div>` mit Kennung, damit greifen die Landmarkenregeln. `role="banner"` und `role="contentinfo"` sind dabei entfallen — innerhalb von `main` sind sie laut ARIA fehl am Platz |
 | 1.3.2 Bedeutungstragende Reihenfolge | A | nicht geprüft | entscheidet der Screenreader-Durchlauf |
 | 1.3.3 Sensorische Eigenschaften | A | nicht geprüft | |
 | 1.3.4 Ausrichtung | AA | plausibel | das Manifest sperrt die Ausrichtung nicht (`orientation` nicht gesetzt) |
@@ -324,9 +374,9 @@ anwendbar
 | 1.4.1 Benutzung von Farbe | A | plausibel | die vier Kategoriefarben sind bedeutungstragend; in den Kontrastschemata fallen sie bewusst zusammen, dort tragen Beschriftung und Symbol die Unterscheidung |
 | 1.4.2 Audio-Steuerung | A | erfüllt | Sprachansagen sind abschaltbar, Geschwindigkeit einstellbar; kein selbsttätig startender Ton über 3 s |
 | 1.4.3 Kontrast (Minimum) | AA | **erfüllt** | fortlaufend geprüft in **allen vier Farbschemata** über fünf Ansichten und zwei Geräteprofile. Zwei echte Verstöße wurden so gefunden und behoben (Fußzeile 4,41:1, Seitenleiste **3,59:1**). **Die Rückfragen sind seit 0.9.32 mitgeprüft** — und zwar mit einer eigenen Rechnung, weil axe sie gar nicht messen kann (siehe 3.2, Punkt 7). Genau dort lag der schwerste Kontrastfehler der Projektgeschichte: die bestätigende Taste mit 1,00:1 bzw. 1,07:1 in den beiden Hochkontrast-Schemata, in allen vier zerstörenden Rückfragen, behoben mit 0.9.22 |
-| 1.4.4 Textgröße ändern | AA | **erfüllt** | drei Schriftstufen (100 / 125 / 150 %) über alle Ansichten und Profile automatisiert; Browser-Zoom auf 200 % ist **nicht** gesondert geprüft |
+| 1.4.4 Textgröße ändern | AA | **erfüllt** | drei Schriftstufen (100 / 125 / 150 %) über alle Ansichten und Profile automatisiert; Browser-Zoom auf 200 % ist **nicht** gesondert geprüft. **Diese Einstufung war bis 0.9.44 zu großzügig:** In der Bedienleiste waren bei „Extra groß" alle fünf Beschriftungen abgeschnitten, ohne dass ein Wächter anschlug (siehe 3.3a). Behoben mit 0.9.45, seither eigens geprüft |
 | 1.4.5 Bilder eines Textes | AA | erfüllt | keine Texte als Bild |
-| 1.4.10 Reflow | AA | **erfüllt** | 360 px **und 320 px** × Schriftgrößen × alle elf Ansichten **und die Zustände darunter** × drei Profile, einschließlich verdeckten Überlaufs in scrollbaren Containern und mit erzwungener Breitschrift. **Der häufigste Layoutfehler dieses Projekts, mit Abstand:** `min-width: auto` an Flex-Elementen — ein Flex-Kind gibt seine Breite standardmäßig nicht unter seinen Inhalt preis und sprengt dann die Zeile, statt umzubrechen. **Bis 0.9.31 acht gefundene Fälle**, jeder einzeln nachgemessen; die auffälligsten: Jahreskonto 456 px, Feldverwaltung 531 px und das Abzeichen „Live verbunden" mit 385 px — alle in einem 360-px-Fenster. Der letzte erscheint nur bei bestehender Live-Verbindung und war deshalb nie jemandem aufgefallen |
+| 1.4.10 Reflow | AA | **erfüllt** | 360 px **und 320 px** × Schriftgrößen × alle zwölf Ansichten **und die Zustände darunter** × drei Profile, einschließlich verdeckten Überlaufs in scrollbaren Containern und mit erzwungener Breitschrift. **Der häufigste Layoutfehler dieses Projekts, mit Abstand:** `min-width: auto` an Flex-Elementen — ein Flex-Kind gibt seine Breite standardmäßig nicht unter seinen Inhalt preis und sprengt dann die Zeile, statt umzubrechen. **Bis 0.9.31 acht gefundene Fälle**, jeder einzeln nachgemessen; die auffälligsten: Jahreskonto 456 px, Feldverwaltung 531 px und das Abzeichen „Live verbunden" mit 385 px — alle in einem 360-px-Fenster. Der letzte erscheint nur bei bestehender Live-Verbindung und war deshalb nie jemandem aufgefallen |
 | 1.4.11 Kontrast von Nicht-Text | AA | **teilweise** | Rahmenfarben gezielt gemessen: 3,24:1 gegen die Karte, 3,10:1 gegen den Grund, im dunklen Schema 3,09:1. Nicht für alle Bedienelemente einzeln nachgewiesen |
 | 1.4.12 Textabstand | AA | **erfüllt** | seit 2026-09-02 geprüft: Die vier von der Norm genannten Werte werden erzwungen (Zeilenhöhe 1,5×, Absatzabstand 2×, Sperrung 0,12×, Wortabstand 0,16×) und danach über alle elf Ansichten auf Überlauf und Trefferflächen gemessen. Bestanden ohne Befund. **Was das nicht abdeckt:** Text, der innerhalb eines Kastens abgeschnitten wird, ohne den Kasten zu sprengen — das braucht ein Auge. Zusätzlich wurde die eigene Sperrung bereinigt: 21 negative Werte entfernt, die Ausreißer vereinheitlicht, von sieben Werten auf zwei |
 | 1.4.13 Inhalt bei Hover oder Fokus | AA | **erfüllt** | **acht Verstöße am 2026-09-02 gefunden und behoben.** Native Tooltips aus dem `title`-Attribut erfüllen keine der drei Bedingungen des Kriteriums: nicht schließbar ohne Zeigerbewegung, nicht überfahrbar, nicht dauerhaft — auf dem Handy erscheinen sie ohnehin nie. Drei Stellen dublierten nur einen vorhandenen `aria-label` und sind entfernt; **fünf weitere fand erst die Prüfung**, darunter vier Schnelltext-Tasten, die den einzufügenden Text ausschließlich im Tooltip trugen. Deren Inhalt ist jetzt im `aria-label` — mit der sichtbaren Aufschrift voran, damit 2.5.3 gewahrt bleibt. Eine Prüfung hält `title`-Attribute künftig draußen |
@@ -341,7 +391,7 @@ anwendbar
 | 2.2.1 Zeitliche Einstellbarkeit | A | **erfüllt** | die Ein-Minuten-Frist war ein Zeitlimit ohne Verlängerung und ist entfernt |
 | 2.2.2 Pausieren, Stoppen, Ausblenden | A | plausibel | `prefers-reduced-motion` schaltet Animationen global ab |
 | 2.3.1 Blitzen | A | erfüllt | keine blinkenden Inhalte |
-| 2.4.1 Blöcke umgehen | A | **erfüllt** | Sprunglink „Zum Hauptinhalt springen" vorhanden, Ziel existiert. Siehe Einschränkung zu 1.3.1 |
+| 2.4.1 Blöcke umgehen | A | **erfüllt** | Sprunglink „Zum Hauptinhalt springen" vorhanden, Ziel existiert. Seit 0.9.47 zusätzlich als Landmarke erreichbar (siehe 1.3.1) |
 | 2.4.2 Seite mit Titel | A | erfüllt | „RV Monatsreport – Barrierefrei" |
 | 2.4.3 Fokus-Reihenfolge | A | **erfüllt** | seit 2026-09-02 geprüft: Der Tabulator läuft in allen elf Ansichten in Dokumentreihenfolge vorwärts, mit genau einem Rückschritt je Runde — dem Umlauf. Mehrere Rückschritte wären eine Umsortierung, in der Praxis ein positives `tabindex`. **Was das nicht sagt:** ob die Reihenfolge *sinnvoll* ist. Dokumentreihenfolge ist notwendig, nicht hinreichend; ob das Vorgelesene trägt, entscheidet der Screenreader-Durchlauf |
 | 2.4.4 Linkzweck | A | plausibel | die Anwendung arbeitet fast ausschließlich mit Schaltflächen |
@@ -358,7 +408,7 @@ anwendbar
 | Kriterium | Stufe | Stand | Anmerkung |
 |---|---|---|---|
 | 3.1.1 Sprache der Seite | A | **erfüllt** | `<html lang="de">`, Manifest `"lang": "de"` |
-| 3.1.2 Sprache von Teilen | AA | **teilweise** | durchgehend deutsch; einzelne englische Fachwörter (Sync, Backup) sind nicht ausgezeichnet |
+| 3.1.2 Sprache von Teilen | AA | **erfüllt, mit begründeter Ausnahme** | durchgehend deutsch. Die englischen Fachwörter (Backup, Update, Download, live) sind bewusst **nicht** mit `lang="en"` ausgezeichnet: Sie sind Duden-Stichwörter des Deutschen, die Ausnahme des Kriteriums für den allgemeinen Sprachgebrauch greift, und eine Auszeichnung würde einen deutschen Screenreader mitten im Satz auf eine englische Stimme umschalten lassen. Geprüft am 2026-09-17, Einzelheiten in 3.3a. `<html lang="de">` und `utterance.lang = "de-DE"` sind gesetzt |
 | 3.2.1 Bei Fokus | A | plausibel | kein Kontextwechsel bei Fokussierung bekannt |
 | 3.2.2 Bei Eingabe | A | plausibel | |
 | 3.2.3 Konsistente Navigation | AA | **erfüllt** | mit dem Nachweis zu 3.2.6 belegt |
@@ -384,8 +434,8 @@ Ausgezählt über Abschnitt 4 und 5:
 
 | | Anzahl | davon |
 |---|---|---|
-| **erfüllt, mit Beleg** | **31** | 26 aus WCAG 2.1 A/AA, 5 aus WCAG 2.2 |
-| teilweise erfüllt | 4 | 1.3.1, 1.4.11, 3.1.2, 4.1.2 |
+| **erfüllt, mit Beleg** | **33** | 28 aus WCAG 2.1 A/AA, 5 aus WCAG 2.2 |
+| teilweise erfüllt | 2 | 1.4.11, 4.1.2 |
 | plausibel, ohne Einzelnachweis | 10 | |
 | **nicht erfüllt** | **0** | auf dem geltenden Maßstab (A/AA). 2.4.12 ist bewusst offen, liegt aber auf Stufe AAA und zählt hier deshalb nicht mit |
 | **nicht geprüft** | **2** | 1.3.2 und 1.3.3 — bedeutungstragende Reihenfolge und sensorische Eigenschaften. Beide entscheidet ein Mensch, kein Prüflauf |
@@ -393,15 +443,16 @@ Ausgezählt über Abschnitt 4 und 5:
 | entfällt | 1 | 4.1.1 (in WCAG 2.2 gestrichen) |
 | außerhalb des Maßstabs (AAA) | 2 | 2.4.12 (nicht erfüllt, bewusst) und 2.4.13 (nicht bewertet). Diese Zeile fehlte bis zum 2026-09-12: Die Bilanz summierte sich auf 57 statt 59, und 2.4.13 kam in keiner Zeile vor — aufgefallen beim Nachzählen der eigenen Tabelle |
 
-**Die aussagekräftigste Zahl steht in der Mitte:** 14 von 50 Kriterien des
+**Die aussagekräftigste Zahl steht in der Mitte:** 12 von 50 Kriterien des
 geltenden Sockels sind zwar nicht beanstandet, aber auch nicht einzeln
 nachgewiesen. Sie sind kein Mangel — aber sie sind auch kein Nachweis.
 
 Der Verlauf dieser Zahl ist aussagekräftiger als ihr Wert: **19** am Morgen
 des 2026-09-02, **16** am Abend (die drei Tastatur-Kriterien wurden belegt),
-**14** mit 0.9.32 (2.5.3 und 3.3.4 sind vom Wort auf die Messung gewechselt).
-Jeder dieser Schritte hat beim ersten Lauf echte Verstöße gefunden — zehn bei
-2.5.3, zwei bei 3.3.4. Das ist das Argument gegen die Zwischenkategorie
+**14** mit 0.9.32 (2.5.3 und 3.3.4 sind vom Wort auf die Messung gewechselt),
+**12** mit 0.9.47 (1.3.1 behoben, 3.1.2 entschieden). Jeder dieser Schritte hat
+beim ersten Lauf echte Verstöße gefunden — zehn bei 2.5.3, zwei bei 3.3.4;
+bei 1.3.1 war es eine fehlende Landmarke, bei 3.1.2 ausnahmsweise keiner. Das ist das Argument gegen die Zwischenkategorie
 „plausibel": Sie hat sich noch nie als leer erwiesen.
 
 ### Die Lücken, nach Gewicht
@@ -409,8 +460,8 @@ Jeder dieser Schritte hat beim ersten Lauf echte Verstöße gefunden — zehn be
 **Dieser Bericht belegt keinen Verstoß auf AA-Ebene.** Was er belegt, ist
 etwas anderes: wie viel nicht geprüft ist.
 
-1. **Der Screenreader-Durchlauf ist zehn Fassungen alt.** Er fand auf 0.9.22
-   statt; bewertet wird 0.9.32. Dazwischen sind die Rückfragen umgebaut
+1. **Der Screenreader-Durchlauf ist fünfundzwanzig Fassungen alt.** Er fand
+   auf 0.9.22 statt; bewertet wird 0.9.47. Dazwischen sind die Rückfragen umgebaut
    worden — und zwar, weil bei zweien von fünf der Fokus gar nicht im Dialog
    ankam. Die Korrektur ist gemessen, aber nicht gehört. **Das ist die
    größte Lücke dieses Berichts**, und sie ist von hier aus nicht zu

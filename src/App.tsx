@@ -1928,7 +1928,7 @@ export default function App() {
              <h1 className="text-2xl font-black text-[var(--text-color)] flex items-center gap-2">
                RV Mobil
              </h1>
-             <p className="text-xs text-[var(--text-muted)] font-bold mt-1 uppercase tracking-wider">Desktop Ansicht</p>
+             <p className="text-xs text-[var(--text-muted)] font-bold mt-1">Desktop Ansicht</p>
           </div>
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             {hauptnavigation
@@ -1963,8 +1963,24 @@ export default function App() {
         </aside>
       )}
 
-      {/* MAIN CONTENT WRAPPER */}
-      <div id="main-content" className={`w-full relative ${isDesktop ? 'lg:flex-1 lg:overflow-y-auto lg:h-screen lg:px-6' : ''}`}>
+      {/*
+        MAIN CONTENT WRAPPER -- seit 0.9.47 ein echtes `<main>`.
+
+        Vorher war das ein `<div>` mit einer Kennung, auf die der Sprunglink
+        zeigte. Der Sprunglink funktionierte damit, die Landmarke fehlte
+        trotzdem: NVDA und VoiceOver bieten einen eigenen Weg zum Hauptbereich
+        an (NVDA `D` durch die Landmarken, VoiceOver-Rotor "Orientierungshilfen")
+        -- und der fand hier nichts, weil es nichts zu finden gab. Das war die
+        im Konformitaetsbericht als Luecke benannte Stelle zu 1.3.1.
+
+        Mit der Landmarke fallen zwei Rollen weg, die hier nicht mehr stehen
+        duerfen: `role="banner"` an der Kopfkarte des Formulars und
+        `role="contentinfo"` an der Fusszeile. Beide sind Landmarken der
+        SEITE; innerhalb von `main` sind sie laut ARIA fehl am Platz. Die
+        Elemente selbst (`<header>`, `<footer>`) bleiben, sie sind dort als
+        Abschnittsgliederung richtig.
+      */}
+      <main id="main-content" className={`w-full relative ${isDesktop ? 'lg:flex-1 lg:overflow-y-auto lg:h-screen lg:px-6' : ''}`}>
         <div className={`mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative ${isDesktop ? 'lg:max-w-5xl lg:pb-12 xl:max-w-6xl' : 'max-w-2xl'}`}>
       {/* Off-screen live announcer region for screen readers */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">
@@ -1976,7 +1992,6 @@ export default function App() {
           {/* HEADER SECTION (Accessible, modern responsive layout, removed duplicate buttons for clean tidiness) */}
           <header
             className="p-3 sm:p-5 mb-3 sm:mb-4 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)] flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-5 shadow-sm"
-            role="banner"
           >
         <div className="space-y-1.5 flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -1991,7 +2006,7 @@ export default function App() {
             <h1 tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black text-[var(--text-color)]">
               RV Report
             </h1>
-            <span className="rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2.5 py-1 text-[0.75rem] font-black uppercase tracking-[0.2em] text-[var(--success-text)]">
+            <span className="rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2.5 py-1 text-[0.75rem] font-black text-[var(--success-text)]">
               DSGVO & barrierefrei
             </span>
           </div>
@@ -2002,7 +2017,7 @@ export default function App() {
               Fenster (gemessen 2026-09-09: 385 px in 360, 384 px in 320 --
               ohne Abzeichen jeweils genau die Fensterbreite). Kein Geschwister
               traegt hier flex-1, deshalb greift der Umbruch auch wirklich. */}
-          <div className="flex flex-wrap items-center gap-1.5 text-[0.75rem] font-bold text-[var(--text-muted)] uppercase tracking-wider pt-1">
+          <div className="flex flex-wrap items-center gap-1.5 text-[0.75rem] font-bold text-[var(--text-muted)] pt-1">
             {saveStatus === "saving" ? (
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--warning-border)] animate-pulse"></span>
@@ -2042,7 +2057,7 @@ export default function App() {
           <div className="flex-1 min-w-0 space-y-1">
             <label
               htmlFor="meta-month-input"
-              className="text-[0.75rem] font-black text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1"
+              className="text-[0.75rem] font-black text-[var(--text-muted)] flex items-center gap-1"
             >
               <Calendar className="w-3 h-3 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
               <span className="truncate">Monat:</span>
@@ -2062,7 +2077,7 @@ export default function App() {
           <div className="flex-1 min-w-0 space-y-1">
             <label
               htmlFor="meta-name-input"
-              className="text-[0.75rem] font-black text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1"
+              className="text-[0.75rem] font-black text-[var(--text-muted)] flex items-center gap-1"
             >
               <User className="w-3 h-3 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
               <span className="truncate">Mitarbeiter/in:</span>
@@ -2339,9 +2354,14 @@ export default function App() {
 
       {/* Bento Header title & interactive filter toggle */}
       <div className="flex items-center justify-between mb-2 px-1">
-        <span className="text-[0.75rem] font-black text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+        <span className="text-[0.75rem] font-black text-[var(--text-muted)] flex items-center gap-1.5">
           Monats-Fortschritt{" "}
-          <span className="font-bold text-xs text-[var(--text-muted)] lowercase">
+          {/*
+            `lowercase` ist mit 0.9.47 entfallen -- es war das Gegengift zum
+            `uppercase` der Elternzeile und hätte ohne sie "(bereich anklicken
+            zum filtern)" ergeben, also ein kleingeschriebenes Substantiv.
+          */}
+          <span className="font-bold text-xs text-[var(--text-muted)]">
             (Bereich anklicken zum Filtern)
           </span>
         </span>
@@ -2398,7 +2418,7 @@ export default function App() {
               <Eye className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="block text-[0.6875rem] font-bold text-[var(--text-muted)] uppercase tracking-wider leading-tight">
+              <span className="block text-[0.75rem] font-bold text-[var(--text-muted)] leading-tight">
                 Vorführungen
               </span>
               <span className="text-lg font-black text-[var(--text-color)] leading-none">
@@ -2457,7 +2477,7 @@ export default function App() {
               <GraduationCap className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="block text-[0.6875rem] font-bold text-[var(--text-muted)] uppercase tracking-wider leading-tight">
+              <span className="block text-[0.75rem] font-bold text-[var(--text-muted)] leading-tight">
                 Schulungen
               </span>
               <span className="text-lg font-black text-[var(--text-color)] leading-none">
@@ -2516,7 +2536,7 @@ export default function App() {
               <Sparkles className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="block text-[0.6875rem] font-bold text-[var(--text-muted)] uppercase tracking-wider leading-tight">
+              <span className="block text-[0.75rem] font-bold text-[var(--text-muted)] leading-tight">
                 Spezial
               </span>
               <span className="text-lg font-black text-[var(--text-color)] leading-none">
@@ -2575,7 +2595,7 @@ export default function App() {
               <Clock className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="block text-[0.6875rem] font-bold text-[var(--text-muted)] uppercase tracking-wider leading-tight">
+              <span className="block text-[0.75rem] font-bold text-[var(--text-muted)] leading-tight">
                 Bürozeit
               </span>
               <span className="text-lg font-black text-[var(--text-color)] leading-none">
@@ -2756,7 +2776,7 @@ export default function App() {
                   className="sr-only peer"
                 />
                 <div className="w-8 h-4 bg-[var(--border-color)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--card-bg)] after:border-[var(--border-color)] after:border after:rounded-full after:h-3 after:w-3.5 after:transition-all peer-checked:bg-[var(--accent)]"></div>
-                <span className="ml-1.5 text-[0.75rem] font-bold text-[var(--text-muted)] uppercase">
+                <span className="ml-1.5 text-[0.75rem] font-bold text-[var(--text-muted)]">
                   {goalsConfig.enabled ? "Aktiviert" : "Deaktiviert"}
                 </span>
               </label>
@@ -2770,7 +2790,7 @@ export default function App() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div>
-                <label className="block text-[0.6875rem] font-bold text-[var(--text-muted)] mb-1 uppercase tracking-wider">
+                <label className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
                   Vorführungen
                 </label>
                 <input
@@ -2787,7 +2807,7 @@ export default function App() {
                 />
               </div>
               <div>
-                <label className="block text-[0.6875rem] font-bold text-[var(--text-muted)] mb-1 uppercase tracking-wider">
+                <label className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
                   Schulungen
                 </label>
                 <input
@@ -2804,7 +2824,7 @@ export default function App() {
                 />
               </div>
               <div>
-                <label className="block text-[0.6875rem] font-bold text-[var(--text-muted)] mb-1 uppercase tracking-wider">
+                <label className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
                   Spezialprodukte
                 </label>
                 <input
@@ -2821,7 +2841,7 @@ export default function App() {
                 />
               </div>
               <div>
-                <label className="block text-[0.6875rem] font-bold text-[var(--text-muted)] mb-1 uppercase tracking-wider">
+                <label className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
                   Bürozeit (h)
                 </label>
                 <input
@@ -3000,7 +3020,6 @@ export default function App() {
       {/* FOOTER */}
       <footer
         className="mt-12 pt-6 pb-2 border-t border-[var(--border-color)] text-center text-xs font-bold text-[var(--text-muted)] space-y-4"
-        role="contentinfo"
       >
         {/* Kein `opacity-80` mehr: Auf --text-muted angewandt ergab das einen
             Kontrast von 4,41:1 gegen die geforderten 4,5:1 (WCAG 1.4.3) --
@@ -3329,7 +3348,7 @@ export default function App() {
                 </button>
 
                 <div className="flex-1 min-w-0 text-center px-1">
-                  <span className="block text-[0.75rem] font-black uppercase tracking-wider text-[var(--accent)] truncate">
+                  <span className="block text-[0.75rem] font-black text-[var(--accent)] truncate">
                     Bereich {secInfo.num}: {secInfo.name} ({activeIndex + 1}/
                     {visibleFields.length})
                   </span>
@@ -3440,7 +3459,7 @@ export default function App() {
         </div>
       )}
         </div>
-      </div>
+      </main>
       </div>
     </>
   );

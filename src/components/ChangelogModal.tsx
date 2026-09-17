@@ -49,6 +49,33 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           bemerkt.
         */}
         {/*
+          Ausfuehrlich, und zwar nach beiden Haelften der Regel aus 0.9.40: Der
+          Hauptbereich laesst sich neu ANSTEUERN (etwas, das man koennen muss,
+          um es zu nutzen), und das Schriftbild aendert sich SICHTBAR. Wer die
+          Grossbuchstaben verschwinden sieht und keine Zeile dazu findet, haelt
+          es fuer einen Fehler.
+        */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.47: Direkt zum Hauptbereich, und ein ruhigeres Schriftbild</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>
+              <strong>Mit dem Screenreader direkt in den Hauptbereich:</strong> Der Inhaltsbereich ist jetzt als solcher
+              ausgezeichnet. In NVDA kommen Sie mit <strong>D</strong> dorthin, in VoiceOver über den Rotor unter
+              „Orientierungshilfen“. Der Sprunglink „Zum Hauptinhalt springen“ bleibt zusätzlich bestehen.
+            </li>
+            <li>
+              <strong>Beschriftungen stehen nicht mehr in Großbuchstaben</strong> („Vorführungen“ statt „VORFÜHRUNGEN“) und
+              sind nicht mehr gesperrt. Großbuchstaben nehmen einem Wort seine Umrissform – genau die, an der man es beim
+              Lesen erkennt. Die kleinste Schrift der App ist dabei etwas größer geworden.
+            </li>
+          </ul>
+        </div>
+
+        {/*
           Knapp: Es ist dieselbe Auskunft an derselben Stelle, nur frueher im
           Vorlesen. Wer sie sehen kann, merkt nichts.
         */}
@@ -56,7 +83,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.46: Verbesserungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Am Zähler wird „zuletzt geändert …" jetzt <strong>zuerst</strong> vorgelesen, vor der Bedienanleitung.</li>
@@ -67,7 +94,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.45: Die Leiste unten ist jetzt lesbar – und jeder Zähler sagt, wann Sie zuletzt gezählt haben</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Neu an jedem Zähler: „zuletzt: heute, 11:40“.</strong> Wenn Sie nach einem Termin unterbrochen werden und sich fragen, ob Sie schon gezählt haben, steht die Antwort jetzt direkt unter der Kategorie. Die App wusste den Zeitpunkt längst – sie hat ihn nur nie gezeigt.</li>
@@ -81,7 +108,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.44: Die App heißt überall „RV Mobil“</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Das Symbol auf Ihrem Startbildschirm heißt jetzt „RV Mobil“.</strong> Vorher stand dort „RV Report“, im Browser-Tab „RV Monatsreport“ und in der Fußzeile „RV Mobil“ – dieselbe App unter drei Namen. Wenn Sie die App schon auf dem Startbildschirm haben, ändert sich die Beschriftung erst, wenn Sie sie dort neu ablegen.</li>
@@ -94,7 +121,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.43: Alle Daten löschen – für die Rückgabe des Geräts</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Neu: „Alle Daten von diesem Gerät löschen“.</strong> Ganz unten in den Optionen. Damit ist die App wieder wie neu – Zählerstände, Archiv, Schichten, eigene Kategorien und alle Einstellungen sind weg. Die Rückfrage zeigt vorher, was betroffen ist, und bietet „Zuerst Daten sichern“ an. Bisher ging das nur über den Fehlerbildschirm, den man nicht absichtlich aufrufen kann.</li>
@@ -114,7 +141,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.42: Wartung</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Interne Aufräumarbeiten ohne sichtbare Änderung.</li>
@@ -125,7 +152,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.41: Nach dem Wechsel stehen Sie in der neuen Ansicht</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Der Fokus wandert mit.</strong> Wenn Sie eine andere Ansicht öffnen – etwa „RV Archiv" oder die Hilfe –, springt die Tastatur jetzt auf deren Überschrift. Der Screenreader liest sie vor, und die Tabulatortaste führt von dort weiter in den Inhalt. Bisher blieb der Fokus auf der Taste, die Sie gedrückt haben, oder ging ganz an den Seitenanfang verloren; um zum Inhalt zu kommen, mussten Sie rückwärts tabben.</li>
@@ -137,7 +164,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.40: Wartung</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
@@ -148,7 +175,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.39: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -159,7 +186,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.38: Das Diktat fragt jetzt, bevor es einen fremden Dienst nutzt</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Wichtig, und wir hätten es früher sagen müssen:</strong> Das <strong>Diktat</strong> im Notizfeld läuft <strong>nicht</strong> auf Ihrem Gerät. Die Spracherkennung gehört zu Ihrem Browser, und Ihre Aufnahme wird dorthin übertragen – bei Chrome an Google, bei Safari an Apple. Die App hatte bisher an mehreren Stellen behauptet, sie nutze keine externen Dienste. Das stimmte für diesen einen Fall nicht.</li>
@@ -172,7 +199,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.37: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -183,7 +210,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.36: Meine Demogeräte – Ihre eigene Geräteliste</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Neu unter Optionen → Meine Demogeräte:</strong> eine Liste der Vorführgeräte, die Sie gerade dabeihaben. Damit Sie nachsehen können, wenn jemand fragt – etwa weil ein Gerät weitergeschickt werden soll.</li>
@@ -196,7 +223,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.35: Jede Datei sagt jetzt, welches Formular drinsteckt</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Die App bringt das Formular der Vertriebsleitung in einer bestimmten Fassung mit – und sagt Ihnen jetzt, in welcher.</strong> Sie steht vor dem Senden in der Rückfrage, in der Hilfe, und in jeder erzeugten Datei: in den Dateieigenschaften und, wenn Sie alle Blätter mitschicken, sichtbar auf dem Blatt <strong>Zusatzangaben</strong>.</li>
@@ -208,7 +235,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.34: Wartung</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
@@ -219,7 +246,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.33: Sie entscheiden jetzt, was die Vertriebsleitung bekommt</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Vor jedem Senden fragt die App, welche Tabellenblätter mitgehen sollen.</strong> <strong>Nur Vorlage senden</strong> schickt allein das gewohnte Formular der Vertriebsleitung – das ist die vorgeschlagene Antwort und reicht dort völlig. Mit <strong>Alle drei Blätter</strong> gehen zusätzlich Ihre Zusatzangaben und Ihre einzelnen Schichten mit. Bisher gingen immer alle drei Blätter mit, ohne dass jemand gefragt wurde. Die Frage kommt auf beiden Wegen – im Formular und beim Direkt-Export aus dem RV Archiv.</li>
@@ -235,7 +262,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.32: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -246,7 +273,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.31: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -256,7 +283,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.30: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -266,7 +293,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.29: Verbesserungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Bedienung verbessert.</li>
@@ -276,7 +303,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.28: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -286,7 +313,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.27: Wartung</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
@@ -296,7 +323,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.26: Die Schnell-Erfassung und der Ein-Hand-Modus</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Die Kategorienliste unter „Anpassen" war kaum zu treffen.</strong> Jede Zeile war nur 34 Pixel hoch – bei einer Liste, in der Sie mit dem Finger genau die richtige Kategorie erwischen müssen. Jetzt sind alle Zeilen mindestens 44 Pixel hoch, ebenso die Schaltfläche „Automatisch (meistgenutzt)".</li>
@@ -309,7 +336,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.25: Verbesserungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Bedienung verbessert.</li>
@@ -319,7 +346,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.24: Verbesserungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Bedienung verbessert.</li>
@@ -329,7 +356,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.23: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -339,7 +366,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.22: Verbesserungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Bedienung verbessert.</li>
@@ -350,7 +377,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.21: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -361,7 +388,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.20: Verbesserungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Bedienung verbessert.</li>
@@ -380,7 +407,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.19: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -391,7 +418,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.18: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -402,7 +429,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.17: Der Geräte-Abgleich ohne Kamera</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Das Feld zum Einfügen des Codes steht jetzt ganz oben.</strong> Bisher war es der vierte Abschnitt – unter Kamerabild, Fortschrittsbalken und Hinweistext. Wer sich die Seite vorlesen lässt, hatte dort längst aufgegeben, obwohl der Weg ohne Kamera vollständig vorhanden war.</li>
@@ -417,7 +444,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--danger)]" />
             <span>Version 0.9.16: Schutz vor Datenverlust</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Die App bittet den Browser jetzt darum, Ihre Daten dauerhaft zu behalten.</strong> Das hat sie vorher nie getan. Auf dem iPhone bedeutet das konkret: Wenn Sie RV Mobil nur über ein Lesezeichen benutzen, löscht Safari nach sieben Tagen ohne Nutzung alles – Bericht und Archiv. Die App sagt Ihnen das jetzt und bittet Sie, sie zum Home-Bildschirm hinzuzufügen. Danach bleiben die Daten erhalten.</li>
@@ -431,7 +458,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.15: Wartung</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
@@ -442,7 +469,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.14: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -453,7 +480,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.13: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -464,7 +491,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.12: Sie sehen jetzt, welcher Monat noch offen ist</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Jeder Monat im RV Archiv trägt jetzt ein Abzeichen:</strong> „Gesendet" mit Datum oder „Noch offen". Es steht direkt in der Zeile – Sie müssen keinen Monat aufklappen, um zu sehen, was noch aussteht.</li>
@@ -478,7 +505,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.11: Der Export ist jetzt das Formular der Vertriebsleitung</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Das erste Tabellenblatt IST die Vorlage Ihrer Vertriebsleitung</strong> – nicht mehr eine eigene Darstellung davon. Gleiche Zeilen, gleiche Reihenfolge, gleiche gelbe Eingabefelder, gleiche Summenformel. Ihr Chef bekommt genau das Blatt, das er kennt.</li>
@@ -493,7 +520,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.10: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -504,7 +531,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.9: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -515,7 +542,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.8: Verbesserungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Darstellung verbessert.</li>
@@ -526,7 +553,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.7: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -537,7 +564,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.6: Verbesserungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Darstellung verbessert.</li>
@@ -548,7 +575,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.5: Wartung</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
@@ -559,7 +586,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.4: Wartung</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
@@ -570,7 +597,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.3: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -581,7 +608,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.2: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -592,7 +619,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.1: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -603,7 +630,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--info-border)]" />
             <span>Version 0.9.0: Zähler bleiben erreichbar & Monatsabschluss mit Rückfrage</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Wichtiger Fehler behoben – Minus-Taste war nicht erreichbar:</strong> Mit „Große Schrift“ liefen die Zähler-Tasten auf schmalen Handys seitlich aus dem Bildschirm heraus; die Minus-Taste war dort gar nicht mehr zu sehen. Betroffen war ausgerechnet die Einstellung, die bei eingeschränktem Sehen gebraucht wird. Die Tastenreihe passt sich jetzt an und rückt bei Bedarf um.</li>
@@ -619,7 +646,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.8.1: Fehlerbehebungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Fehler behoben.</li>
@@ -630,7 +657,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.8.0: Mehr Platz auf dem Handy & geführter Einstieg</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Deutlich mehr Platz auf dem Handy:</strong> Der Kopfbereich ist nur noch halb so hoch. Dadurch sind jetzt <strong>alle Schnell-Erfassungs-Tasten sofort sichtbar</strong>, ohne zu scrollen – vorher musste man dafür erst nach unten wischen.</li>
@@ -644,7 +671,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.7.0: Verbesserungen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Darstellung verbessert.</li>
@@ -655,7 +682,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.6.0: Verlässlicheres Zählen & Sync im Hintergrund</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Wichtiger Fehler behoben:</strong> Bei schnellem mehrfachem Tippen auf die Plus- oder Minus-Tasten gingen Zählungen verloren (fünf Tipps zählten teilweise nur eins). Jetzt wird jeder einzelne Tipp zuverlässig erfasst – in der Schnell-Erfassung wie im Formular.</li>
@@ -669,7 +696,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.5.0: Sync ohne Kamera & Abschluss-Check</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Sync ohne Kamera:</strong> Jeder Kopplungs- und Datencode lässt sich jetzt auch kopieren und am anderen Gerät einfügen – ideal für PCs ohne Webcam (z. B. über die geteilte Zwischenablage der Windows-Handy-Kopplung).</li>
@@ -682,7 +709,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.4.0: Schnell-Erfassung</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Schnell-Erfassung:</strong> Ihre meistgenutzten Kategorien als große Tasten ganz oben im Report – ein Tipp direkt nach dem Termin genügt (+1 mit Ton und Vibration). Kein Suchen, kein Scrollen.</li>
@@ -695,7 +722,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.3.0: Live-Sync & Zusammenführen</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Live-Verbindung:</strong> PC und Handy koppeln sich per QR-Code und gleichen sich dann automatisch ab – Sie können an beiden Geräten gleichzeitig arbeiten (gleiches WLAN, direkt von Gerät zu Gerät, ohne Server).</li>
@@ -708,7 +735,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.2.0: Geräte-Synchronisation</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li><strong>Sichere Datenübertragung:</strong> Neue direkte Geräte-Synchronisation zwischen Smartphone und PC über QR-Code.</li>
@@ -721,7 +748,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.1.0: Wartung</span>
-            <span className="text-[0.6875rem] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
             <li>Interne Verbesserungen ohne sichtbare Änderung.</li>

@@ -253,7 +253,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                     <li><strong>Alt+Umschalt+L</strong> – Ein-Hand-Modus ein- oder ausschalten</li>
                   </ul>
                   <p className="mt-2">In den Zähler-Eingabefeldern gilt zusätzlich: Sie können die <strong>Zahl direkt eintippen</strong>, <strong>Pfeil hoch/runter</strong> ändert den Wert, <strong>Enter</strong> springt zum nächsten Feld, <strong>Umschalt+Enter</strong> zum vorherigen.</p>
-                  <p>Ganz oben auf der Seite liegt außerdem ein Sprunglink <strong>„Zum Hauptinhalt springen“</strong>, den Sie mit der Tabulatortaste erreichen.</p>
+                  <p>Ganz oben auf der Seite liegt außerdem ein Sprunglink <strong>„Zum Hauptinhalt springen“</strong>, den Sie mit der Tabulatortaste erreichen. Seit Fassung 0.9.47 ist der Hauptbereich zusätzlich als solcher ausgezeichnet: In <strong>NVDA</strong> springen Sie mit <strong>D</strong> durch die Bereiche der Seite, in <strong>VoiceOver</strong> über den Rotor unter „Orientierungshilfen“.</p>
                   <p><strong>Beim Wechsel der Ansicht wandert der Fokus mit:</strong> Öffnen Sie eine andere Ansicht, steht die Tastatur anschließend auf deren Überschrift. Ihr Screenreader liest sie vor, und die Tabulatortaste führt von dort weiter in den Inhalt – Sie müssen nicht rückwärts suchen. Gehen Sie über „Zurück“ wieder hinaus, stehen Sie erneut auf der Menüzeile, mit der Sie die Ansicht geöffnet haben.</p>
                 </FAQItem>
 

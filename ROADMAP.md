@@ -1,6 +1,6 @@
 # Roadmap — RV Monatsreport (RV Mobil)
 
-Stand: 2026-09-15, Version 0.9.45 (bis 0.9.44 ist veröffentlicht)
+Stand: 2026-09-17, Version 0.9.47 (bis 0.9.46 ist veröffentlicht)
 
 Diese Roadmap ist aus **gemessenen Befunden** entstanden, nicht aus Vermutungen.
 Wo eine Zahl steht, wurde sie nachgemessen. Punkte ohne Beleg sind als
@@ -483,7 +483,7 @@ können, ist der belegte Konformitätsstand.
   Bei „Normal" und „Groß" war 320 px durchgehend sauber. Die Breite läuft
   jetzt als eigene Zeile im Prüfnetz mit (elf Ansichten, „Extra groß", rund
   22 Sekunden).
-- **Typografie: Bestandsaufnahme liegt vor, Entscheidung steht aus.** Gemessen
+- ~~**Typografie: Bestandsaufnahme liegt vor, Entscheidung steht aus.**~~ **Entschieden und umgesetzt am 2026-09-17 (0.9.47) — und die Bestandsaufnahme war dabei in zwei von drei Achsen überholt.** Die negativen Sperrungswerte gab es nicht mehr (JSX-Umbau 0.9.42), die 11-px-Stufe und die Versalien schon. Ergebnis: Versalien 19 → **0**, gesperrte Elemente 20 → **0**, Schriftgrößen 8 → **7**. Gehalten von `scripts/checks/typografie.ts`. Die ursprüngliche Erhebung bleibt unten stehen, weil sie zeigt, wie schnell eine Messung veraltet, die nicht in einem Wächter steht. Gemessen
   am 2026-09-02 über alle fünf Ansichten im Handy-Profil, 202 Elemente mit
   eigenem sichtbaren Text (`sr-only` ausgenommen). Drei Achsen, drei sehr
   unterschiedliche Ergebnisse:
@@ -1056,6 +1056,58 @@ reinen Prüfungen zu `verrechneSchicht` abgedeckt, über die Oberfläche **nicht
 > fachfremdes Zählerfeld bleibt unberührt. Als Prüfung im Gate festgehalten,
 > weil zwischen der reinen Funktion und dem Bericht der Dialog, der Hook, der
 > Zeitstempel und der Schreibvorgang nach IndexedDB liegen.
+
+---
+
+## 0.9.47 — Eine Landmarke, ein ruhigeres Schriftbild, eine Erklärung — ERLEDIGT (2026-09-17)
+
+Vier Punkte aus der Antwort auf die Frage „Was ist außer dem
+Screenreader-Durchlauf noch zu tun?".
+
+**Der Hauptbereich ist eine Landmarke.** `#main-content` war ein `<div>` mit
+einer Kennung: Der Sprunglink funktionierte, der zweite Weg dorthin nicht —
+NVDA `D`, VoiceOver-Rotor „Orientierungshilfen". Das war die im
+Konformitätsbericht benannte Lücke zu 1.3.1, und sie ist geschlossen.
+`role="banner"` und `role="contentinfo"` sind mit entfallen; innerhalb von
+`main` sind sie laut ARIA fehl am Platz.
+
+**Die Sprachauszeichnung ist geprüft und bewusst nicht geändert.** `lang="en"`
+an *Backup* oder *Update* wäre ein Rückschritt: Beides sind Duden-Stichwörter
+des Deutschen, die Ausnahme in 3.1.2 greift, und ein deutscher Screenreader
+schaltete dort mitten im Satz auf eine englische Stimme um. Was wirklich
+trägt, ist geprüft und gesetzt: `<html lang="de">` und `utterance.lang =
+"de-DE"`.
+
+**Typografie — und die eigene Bestandsaufnahme war überholt.** Der Punkt unten
+in 0.9.20 meldete sieben Sperrungswerte, davon vier negative. Neu gemessen am
+2026-09-17 über dieselben sechs Ansichten und 182 Elemente: vier Werte, alle
+positiv. Die negativen waren mit dem JSX-Umbau in 0.9.42 verschwunden, ohne
+dass es jemand bemerkt hatte.
+
+Entschieden und umgesetzt (Vorgabe: „mach alles"): **keine Versalien mehr**
+(19 sichtbare Elemente → 0, im Quelltext 115 Klassen), **keine Sperrung mehr**
+(20 Elemente → 0, 111 Klassen), **die 11-px-Stufe auf 12 px zusammengelegt**
+(81 Stellen). Ein Wächter mit fünf Fällen hält das; die Gegenprobe wurde
+gefahren, drei Prüfungen schlagen bei einem Rückfall an.
+
+Warum überhaupt: Großbuchstaben nehmen einem Wort die Umrissform. Für blinde
+Nutzer ist das folgenlos — `text-transform` ändert nicht den Text, den ein
+Screenreader liest. Es trifft ausschließlich die sehbehinderten Kollegen.
+
+**Die Erklärung zur Barrierefreiheit liegt als Entwurf vor**
+([BARRIEREFREIHEITSERKLAERUNG.md](BARRIEREFREIHEITSERKLAERUNG.md)), im Aufbau
+von § 12b BITV 2.0, mit fünf offenen Angaben in eckigen Klammern. Siehe 1.0.
+
+**Belegt, nebenbei:** Der Fehlermelder aus 0.9.35 funktioniert. Am 2026-09-15
+hat er für `3101833` die Ausgabe #1 „Deploy fehlgeschlagen" geöffnet. Sie steht
+noch offen — und das ist kein Schönheitsfehler: Der Workflow kommentiert bei
+einem Fehler an der offenen Ausgabe, statt eine neue zu öffnen. Der nächste
+Fehler meldete sich also unter einer Überschrift, die längst gelesen ist.
+
+**Offen geblieben:** Die Bedienleiste liegt im DOM innerhalb von `main`, die
+Seitenleiste am Rechner außerhalb. Zulässig, aber asymmetrisch; ein Umbau ohne
+sichtbare Wirkung gehört in eine Fassung, die die gerenderte Ausgabe vorher
+und nachher vergleicht.
 
 ---
 
@@ -1713,24 +1765,45 @@ Ab hier hängt alles an Menschen und Geräten. Kein Werkzeug ersetzt das.
   für 0.9.32** ([KONFORMITAET.md](KONFORMITAET.md)). Die Vorfassung galt für
   0.9.19 und war dreizehn Fassungen alt.
 
-  Stand: **31 Kriterien erfüllt mit Beleg**, 4 teilweise, 10 plausibel ohne
-  Einzelnachweis, **0 nicht erfüllt** auf AA-Ebene, 2 nicht erhoben (1.3.2,
-  1.3.3 — beides Menschenurteil). Die Zahl, auf die es ankommt, ist die
-  mittlere: Sie war 19, dann 16, jetzt 14 — und **jeder** dieser Schritte hat
-  beim ersten Lauf echte Verstöße gefunden.
+  **Nachgetragen am 2026-09-17 auf 0.9.47.** Stand: **33 Kriterien erfüllt
+  mit Beleg**, 2 teilweise (1.4.11, 4.1.2), 10 plausibel ohne Einzelnachweis,
+  **0 nicht erfüllt** auf AA-Ebene, 2 nicht erhoben (1.3.2, 1.3.3 — beides
+  Menschenurteil). Die Zahl, auf die es ankommt, ist die mittlere: Sie war 19,
+  dann 16, dann 14, jetzt **12** — und **jeder** dieser Schritte hat beim
+  ersten Lauf echte Verstöße gefunden, mit einer Ausnahme: 3.1.2 erwies sich
+  bei der Prüfung als Nicht-Lücke.
+
+  **Eine Einstufung des Berichts ist dabei widerlegt worden**, und das ist der
+  wichtigere Teil: 1.4.4 stand als „erfüllt, automatisiert über alle Ansichten
+  und Profile", während bei „Extra groß" alle fünf Beschriftungen der
+  Bedienleiste abgeschnitten waren (behoben in 0.9.45). Kein Wächter hat
+  angeschlagen — `truncate` überläuft nicht, der zugängliche Name bleibt
+  vollständig, die Tasten sind groß genug. Eine Einstufung sagt genau so viel,
+  wie die Wächter messen.
 
   Zwei Lücken des Berichts sind ausdrücklich benannt und von hier aus nicht zu
   schließen: der Screenreader-Durchlauf (siehe oben) und die Tatsache, dass
   eine gestellte Kamera kein Telefon in der Hand ist.
 
-  **Was weiterhin aussteht, ist die Barrierefreiheitserklärung im Rechtssinn.**
-  Der Bericht ist eine technische Selbstauskunft und sagt das auch; eine
-  Erklärung nach BFSG/BITV ist ein anderes Dokument mit anderen Pflichtangaben
-  (Feedback-Mechanismus, Durchsetzungsverfahren, Datum der Erstellung). Ob und
-  in welcher Form sie nötig ist, hängt daran, ob die App als
-  Beschäftigtenwerkzeug oder als Dienstleistung gilt — das ist eine
-  Rechtsfrage und gehört nicht hierher. Sie ist der letzte offene Punkt dieser
-  Liste, der kein Gerät und keinen Menschen am Screenreader braucht.
+  ~~**Was weiterhin aussteht, ist die Barrierefreiheitserklärung im
+  Rechtssinn.**~~ **Entwurf liegt seit 2026-09-17 vor**
+  ([BARRIEREFREIHEITSERKLAERUNG.md](BARRIEREFREIHEITSERKLAERUNG.md)), im
+  Aufbau von § 12b BITV 2.0: Stand der Vereinbarkeit („teilweise vereinbar",
+  begründet), nicht barrierefreie Inhalte mit Alternativen, Prüfmethode,
+  Rückmeldeweg, Überprüfungsrhythmus, Durchsetzungsverfahren.
+
+  **Fünf Angaben fehlen und können nur vom Unternehmen kommen**; sie stehen im
+  Dokument in eckigen Klammern. Die erste entscheidet über zwei weitere:
+  **Gilt die App als Arbeitsmittel für Beschäftigte oder als Dienstleistung?**
+  Davon hängt ab, ob überhaupt eine Pflicht besteht (BFSG gilt für
+  Verbraucher-Dienstleistungen, BITV für öffentliche Stellen; auf ein
+  internes Werkzeug trifft beides nicht zu — dann greifen § 164 Abs. 4 SGB IX
+  und § 3a Abs. 2 ArbStättV) und welche Durchsetzungsstelle zu nennen ist. Das
+  bleibt eine Rechtsfrage und wird hier nicht beantwortet.
+
+  **Noch nicht in der App verlinkt**, und zwar mit Absicht: Eine veröffentlichte
+  Erklärung mit Platzhaltern wäre schlechter als keine. Sobald die fünf Angaben
+  stehen, gehört sie in die Hilfe.
 
 ---
 

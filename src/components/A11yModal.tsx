@@ -166,7 +166,7 @@ function SectionCard({ title, children }: { title?: string; children: React.Reac
   return (
     <section className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-color)] shadow-sm overflow-hidden">
       {title && (
-        <h3 className="px-4 pt-3 pb-1 text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">
+        <h3 className="px-4 pt-3 pb-1 text-xs font-black text-[var(--text-muted)]">
           {title}
         </h3>
       )}
@@ -504,7 +504,7 @@ export default function A11yModal({
             </span>
           </label>
           <div className="flex items-center gap-3 mt-2">
-            <span className="text-[0.75rem] font-black uppercase text-[var(--text-muted)]">Langsam</span>
+            <span className="text-[0.75rem] font-black text-[var(--text-muted)]">Langsam</span>
             <input
               id="speech-rate-range"
               type="range"
@@ -515,7 +515,7 @@ export default function A11yModal({
               onChange={(e) => updateSetting("speechRate", parseFloat(e.target.value))}
               className="rv-slider flex-1 accent-[var(--accent)]"
             />
-            <span className="text-[0.75rem] font-black uppercase text-[var(--text-muted)]">Schnell</span>
+            <span className="text-[0.75rem] font-black text-[var(--text-muted)]">Schnell</span>
           </div>
         </div>
       </SectionCard>
@@ -599,7 +599,7 @@ export default function A11yModal({
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label htmlFor="new-field-name" className="text-xs font-black text-[var(--text-muted)] block uppercase tracking-wider">
+              <label htmlFor="new-field-name" className="text-xs font-black text-[var(--text-muted)] block">
                 Kategorie-Name:
               </label>
               <input
@@ -613,7 +613,7 @@ export default function A11yModal({
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="new-field-section" className="text-xs font-black text-[var(--text-muted)] block uppercase tracking-wider">
+              <label htmlFor="new-field-section" className="text-xs font-black text-[var(--text-muted)] block">
                 Bereich:
               </label>
               <select
@@ -630,7 +630,7 @@ export default function A11yModal({
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="new-field-step" className="text-xs font-black text-[var(--text-muted)] block uppercase tracking-wider">
+              <label htmlFor="new-field-step" className="text-xs font-black text-[var(--text-muted)] block">
                 Schrittweite:
               </label>
               <select
@@ -645,7 +645,7 @@ export default function A11yModal({
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="new-field-icon" className="text-xs font-black text-[var(--text-muted)] block uppercase tracking-wider">
+              <label htmlFor="new-field-icon" className="text-xs font-black text-[var(--text-muted)] block">
                 Symbol / Icon:
               </label>
               <select

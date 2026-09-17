@@ -296,7 +296,7 @@ export default function TimeModal({
                     <div className="w-8 h-8 rounded-xl bg-[var(--cat-4-soft)] text-[var(--cat-4-text)] flex items-center justify-center" aria-hidden="true">
                       <Clock className="w-4 h-4" />
                     </div>
-                    <h3 className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">Überstundenkonto</h3>
+                    <h3 className="text-xs font-black text-[var(--text-muted)]">Überstundenkonto</h3>
                   </div>
 
                   <div className="space-y-2 mt-1">
@@ -340,7 +340,7 @@ export default function TimeModal({
                     <div className="w-8 h-8 rounded-xl bg-[var(--cat-1-soft)] text-[var(--cat-1-text)] flex items-center justify-center" aria-hidden="true">
                       <Umbrella className="w-4 h-4" />
                     </div>
-                    <h3 className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">Urlaubskonto</h3>
+                    <h3 className="text-xs font-black text-[var(--text-muted)]">Urlaubskonto</h3>
                   </div>
 
                   <div className="space-y-2 mt-1">
@@ -383,7 +383,7 @@ export default function TimeModal({
 
             {/* Monthly Table list */}
             <div className="space-y-2 pt-2">
-              <h4 className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1.5">
+              <h4 className="text-xs font-black text-[var(--text-muted)] flex items-center gap-1.5">
                 <Table className="w-3.5 h-3.5" />
                 <span>Monatlicher Stunden-Verlauf ({activeYear})</span>
               </h4>

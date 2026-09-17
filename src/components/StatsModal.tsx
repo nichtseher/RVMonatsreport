@@ -208,49 +208,49 @@ export default function StatsModal({
               */}
               <div className="grid grid-cols-[repeat(auto-fit,minmax(7.5rem,1fr))] md:grid-cols-4 gap-3">
                 <div className="p-3 sm:p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-3-soft)] text-center">
-                  <span className="block text-[0.75rem] font-black uppercase hyphens-auto break-words text-[var(--cat-3-text)] tracking-wider mb-1">
+                  <span className="block text-[0.75rem] font-black hyphens-auto break-words text-[var(--cat-3-text)] mb-1">
                     Aktivitäten
                   </span>
                   <span className="text-3xl font-black text-[var(--cat-3-text)]">
                     {totalActions}
                   </span>
-                  <span className="block text-[0.6875rem] text-[var(--text-muted)] font-bold mt-1">
+                  <span className="block text-[0.75rem] text-[var(--text-muted)] font-bold mt-1">
                     Gesamtaktionen
                   </span>
                 </div>
 
                 <div className="p-3 sm:p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-1-soft)] text-center">
-                  <span className="block text-[0.75rem] font-black uppercase hyphens-auto break-words text-[var(--cat-1-text)] tracking-wider mb-1">
+                  <span className="block text-[0.75rem] font-black hyphens-auto break-words text-[var(--cat-1-text)] mb-1">
                     Vorführungen
                   </span>
                   <span className="text-3xl font-black text-[var(--cat-1-text)]">
                     {currentS1}
                   </span>
-                  <span className="block text-[0.6875rem] text-[var(--text-muted)] font-bold mt-1">
+                  <span className="block text-[0.75rem] text-[var(--text-muted)] font-bold mt-1">
                     Bereich 1
                   </span>
                 </div>
 
                 <div className="p-3 sm:p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-2-soft)] text-center">
-                  <span className="block text-[0.75rem] font-black uppercase hyphens-auto break-words text-[var(--cat-2-text)] tracking-wider mb-1">
+                  <span className="block text-[0.75rem] font-black hyphens-auto break-words text-[var(--cat-2-text)] mb-1">
                     Schulungen
                   </span>
                   <span className="text-3xl font-black text-[var(--cat-2-text)]">
                     {currentS2}
                   </span>
-                  <span className="block text-[0.6875rem] text-[var(--text-muted)] font-bold mt-1">
+                  <span className="block text-[0.75rem] text-[var(--text-muted)] font-bold mt-1">
                     Bereich 2
                   </span>
                 </div>
 
                 <div className="p-3 sm:p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--cat-4-soft)] text-center">
-                  <span className="block text-[0.75rem] font-black uppercase hyphens-auto break-words text-[var(--cat-4-text)] tracking-wider mb-1">
+                  <span className="block text-[0.75rem] font-black hyphens-auto break-words text-[var(--cat-4-text)] mb-1">
                     Bürozeit
                   </span>
                   <span className="text-3xl font-black text-[var(--cat-4-text)]">
                     {currentHours}h
                   </span>
-                  <span className="block text-[0.6875rem] text-[var(--text-muted)] font-bold mt-1">
+                  <span className="block text-[0.75rem] text-[var(--text-muted)] font-bold mt-1">
                     Arbeitszeit ca.
                   </span>
                 </div>
@@ -259,7 +259,7 @@ export default function StatsModal({
               {/* Graphical View (Donut Chart representation) */}
               {viewType === "visual" && (
                 <div className="p-5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-color)] space-y-4">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">
+                  <h3 className="text-xs font-black text-[var(--text-muted)]">
                     Verteilung der Aktivitäten dieses Monats
                   </h3>
 
@@ -330,7 +330,7 @@ export default function StatsModal({
                         </svg>
                         <div className="absolute text-center">
                           <span className="block text-2xl font-black text-[var(--text-color)]">{totalActions}</span>
-                          <span className="block text-[0.6875rem] font-black text-[var(--text-muted)] uppercase tracking-wider">Aktionen</span>
+                          <span className="block text-[0.75rem] font-black text-[var(--text-muted)]">Aktionen</span>
                         </div>
                       </div>
 
@@ -419,7 +419,7 @@ export default function StatsModal({
                   {/* Visual Trend Chart */}
                   {viewType === "visual" && (
                     <div className="p-5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-color)] space-y-4">
-                      <h3 className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)] flex items-center justify-between">
+                      <h3 className="text-xs font-black text-[var(--text-muted)] flex items-center justify-between">
                         <span>Aktivitätsvergleich über {sortedMonths.length} Monate</span>
                         <span className="text-[0.75rem] font-bold text-[var(--cat-1-text)] flex items-center gap-1">
                           <TrendingUp className="w-3.5 h-3.5" /> Trend
@@ -475,7 +475,7 @@ export default function StatsModal({
                                     return (
                                       <g key={i} className="opacity-30 dark:opacity-20">
                                         <line x1={paddingLeft} y1={y} x2={500 - paddingRight} y2={y} stroke="var(--text-muted)" strokeWidth="1" strokeDasharray="4 4" />
-                                        <text x={paddingLeft - 8} y={y + 4} textAnchor="end" fill="var(--text-color)" className="text-[0.6875rem] font-bold font-mono">{labelVal}</text>
+                                        <text x={paddingLeft - 8} y={y + 4} textAnchor="end" fill="var(--text-color)" className="text-[0.75rem] font-bold font-mono">{labelVal}</text>
                                       </g>
                                     );
                                   })}

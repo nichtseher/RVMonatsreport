@@ -145,7 +145,7 @@ export default function OnboardingModal({
       >
         {/* Fortschritt: als Text UND als Balken, nicht nur als Punkte */}
         <div className="px-5 pt-5 pb-3">
-          <p className="text-[0.75rem] font-black uppercase tracking-wider text-[var(--text-muted)] mb-2">
+          <p className="text-[0.75rem] font-black text-[var(--text-muted)] mb-2">
             Schritt {step + 1} von {STEP_COUNT}
           </p>
           <div
@@ -209,7 +209,7 @@ export default function OnboardingModal({
               </p>
               <label
                 htmlFor="onboarding-name"
-                className="block text-[0.75rem] font-black uppercase tracking-wider text-[var(--text-muted)]"
+                className="block text-[0.75rem] font-black text-[var(--text-muted)]"
               >
                 Name (Mitarbeiter/in)
               </label>
@@ -236,7 +236,7 @@ export default function OnboardingModal({
               </p>
 
               <div>
-                <p className="text-[0.75rem] font-black uppercase tracking-wider text-[var(--text-muted)] mb-2 flex items-center gap-1.5">
+                <p className="text-[0.75rem] font-black text-[var(--text-muted)] mb-2 flex items-center gap-1.5">
                   <Type className="w-3.5 h-3.5" aria-hidden="true" /> Schriftgröße
                 </p>
                 <div className="grid grid-cols-3 gap-2" role="group" aria-label="Schriftgröße wählen">
@@ -260,7 +260,7 @@ export default function OnboardingModal({
               </div>
 
               <div>
-                <p className="text-[0.75rem] font-black uppercase tracking-wider text-[var(--text-muted)] mb-2 flex items-center gap-1.5">
+                <p className="text-[0.75rem] font-black text-[var(--text-muted)] mb-2 flex items-center gap-1.5">
                   <Eye className="w-3.5 h-3.5" aria-hidden="true" /> Farben
                 </p>
                 <div className="grid grid-cols-2 gap-2" role="group" aria-label="Farbschema wählen">
@@ -285,7 +285,7 @@ export default function OnboardingModal({
               </div>
 
               <div>
-                <p className="text-[0.75rem] font-black uppercase tracking-wider text-[var(--text-muted)] mb-2 flex items-center gap-1.5">
+                <p className="text-[0.75rem] font-black text-[var(--text-muted)] mb-2 flex items-center gap-1.5">
                   <Volume2 className="w-3.5 h-3.5" aria-hidden="true" /> Sprachansagen
                 </p>
                 <div className="grid grid-cols-2 gap-2" role="group" aria-label="Sprachansagen wählen">
