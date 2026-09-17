@@ -241,6 +241,37 @@ Klick.
 die Produktion auf dem Stand des Quelltextes — die Frage war berechtigt, weil
 genau das am 2026-09-07 fünf Tage lang nicht stimmte.
 
+### Veröffentlicht, und zwar nachgemessen
+
+`bd81f97` ist am 2026-09-17 live gegangen. Geprüft wurde nicht, dass ein Lauf
+existiert, sondern **was ausgeliefert wird** — das Startbündel
+`assets/index-BLxWEjys.js`, gezählt gegen den Quelltext:
+
+| Merkmal | live | Quelltext |
+|---|---|---|
+| `menu-erklaerung` | 2 | 2 (Kennung der Menüzeile + Rückweg) |
+| `main-content` | 2 | 2 (Sprunglink + Landmarke) |
+| `uppercase` | **0** | 0 |
+| `tracking-wider` | **0** | 0 |
+| `role="banner"` | **0** | 0 |
+
+**Zwei Fehlalarme dabei, beide hausgemacht, beide festgehalten:**
+
+1. **Nach acht Minuten lag noch das alte Bündel aus** — das sieht exakt aus wie
+   der verlorene Deploy vom 2026-08-08. War es nicht: Das Tor fährt seit 0.9.18
+   `check:ui` mit, und der Lauf dauert **rund 23 Minuten** (gemessen an
+   `e74c579`: 20:28:25 bis 20:51:57). Die „~33 Sekunden" in `CLAUDE.md` stammen
+   vom 2026-08-02, also aus der Zeit davor. Berichtigt.
+2. **Das eigene Wartungsskript meldete „API-Antwort unbrauchbar"** für einen
+   Deploy, der normal lief. Ursache: `python -c "...open(r'/c/Users/...')"` —
+   MSYS schreibt solche Pfade für seine eigenen Programme um, das
+   Windows-Python sieht nie ein Laufwerk und bricht ab. Die Antwort geht jetzt
+   über die Standardeingabe. Merksatz, der in `CLAUDE.md` steht: Meldet ein
+   Wächter ein Infrastrukturproblem, zuerst seine eigene Verkabelung prüfen.
+
+Beides ist dieselbe Fehlerklasse wie der Rest dieses Eintrags — ein Messwerkzeug,
+das etwas anderes misst als das, was es zu messen behauptet.
+
 ### Prüfstand
 
 | | 0.9.46 | 0.9.47 |
