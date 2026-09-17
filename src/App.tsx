@@ -99,6 +99,7 @@ const TimeModal = React.lazy(() => import("./components/TimeModal"));
 const ChangelogModal = React.lazy(() =>
   import("./components/ChangelogModal").then((m) => ({ default: m.ChangelogModal })),
 );
+const BarrierefreiheitModal = React.lazy(() => import("./components/BarrierefreiheitModal"));
 
 /** Platzhalter, solange ein nachgeladener Bereich noch unterwegs ist. */
 function BereichLaedt({ name }: { name: string }) {
@@ -282,7 +283,7 @@ const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
 export default function App() {
   // --- ROUTING / NAVIGATION STATE ---
   // Start-Ansicht per URL-Parameter (für PWA-Shortcuts, z. B. ./?tab=time)
-  const [activeTab, setActiveTab] = useState<"form" | "time" | "stats" | "history" | "options" | "help" | "backup" | "manage" | "carryover" | "bestand" | "sync" | "changelog">(() => {
+  const [activeTab, setActiveTab] = useState<"form" | "time" | "stats" | "history" | "options" | "help" | "backup" | "manage" | "carryover" | "bestand" | "sync" | "changelog" | "erklaerung">(() => {
     try {
       const tab = new URLSearchParams(window.location.search).get("tab");
       // "form" steht hier, obwohl es auch der Standard unten ist: Die
@@ -357,6 +358,7 @@ export default function App() {
       void import("./components/CarryoverModal");
       void import("./components/BestandModal");
       void import("./components/ChangelogModal");
+      void import("./components/BarrierefreiheitModal");
     };
     const fenster = window as Window & {
       requestIdleCallback?: (r: () => void, o?: { timeout: number }) => number;
@@ -3248,6 +3250,7 @@ export default function App() {
               setActiveTab("carryover");
             }}
             onOpenBestand={() => setActiveTab("bestand")}
+            onOpenErklaerung={() => setActiveTab("erklaerung")}
             /*
               Ueber die Kennung zaehlen, nicht addieren: Der laufende Monat
               steht zugleich im Archiv (die Selbstsicherung legt ihn dort ab),
@@ -3274,6 +3277,15 @@ export default function App() {
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
           <React.Suspense fallback={<BereichLaedt name="Neuigkeiten" />}>
             <ChangelogModal onClose={() => zurueckZuOptionen("menu-changelog")} />
+          </React.Suspense>
+        </div>
+      )}
+
+      {/* ERKLAERUNG ZUR BARRIEREFREIHEIT -- eigene Ansicht, siehe Kopf der Datei dort */}
+      {activeTab === "erklaerung" && (
+        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
+          <React.Suspense fallback={<BereichLaedt name="Erklärung zur Barrierefreiheit" />}>
+            <BarrierefreiheitModal onClose={() => zurueckZuOptionen("menu-erklaerung")} />
           </React.Suspense>
         </div>
       )}

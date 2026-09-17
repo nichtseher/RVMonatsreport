@@ -1094,9 +1094,16 @@ Warum überhaupt: Großbuchstaben nehmen einem Wort die Umrissform. Für blinde
 Nutzer ist das folgenlos — `text-transform` ändert nicht den Text, den ein
 Screenreader liest. Es trifft ausschließlich die sehbehinderten Kollegen.
 
-**Die Erklärung zur Barrierefreiheit liegt als Entwurf vor**
-([BARRIEREFREIHEITSERKLAERUNG.md](BARRIEREFREIHEITSERKLAERUNG.md)), im Aufbau
-von § 12b BITV 2.0, mit fünf offenen Angaben in eckigen Klammern. Siehe 1.0.
+**Die Erklärung zur Barrierefreiheit steht in der App** — eigene Ansicht unter
+*Optionen*, dazu die Fassung fürs Repository in
+[BARRIEREFREIHEITSERKLAERUNG.md](BARRIEREFREIHEITSERKLAERUNG.md). Die
+Einordnung ist entschieden (Arbeitsmittel für Beschäftigte), Ansprechpartner
+ist Marc Petry Stramov. Einzelheiten unter 1.0.
+
+**Und die Zählprüfung hat sich dabei selbst bewährt:** Der neue `activeTab`-Wert
+ließ `scripts/checks/ansichtsfokus.ts` sofort rot werden, bevor die Ansicht auch
+nur eine Überschrift hatte. Genau dafür zählt sie Quelltext gegen Liste, statt
+auf eine gepflegte Liste zu hoffen.
 
 **Belegt, nebenbei:** Der Fehlermelder aus 0.9.35 funktioniert. Am 2026-09-15
 hat er für `3101833` die Ausgabe #1 „Deploy fehlgeschlagen" geöffnet. Sie steht
@@ -1792,18 +1799,28 @@ Ab hier hängt alles an Menschen und Geräten. Kein Werkzeug ersetzt das.
   begründet), nicht barrierefreie Inhalte mit Alternativen, Prüfmethode,
   Rückmeldeweg, Überprüfungsrhythmus, Durchsetzungsverfahren.
 
-  **Fünf Angaben fehlen und können nur vom Unternehmen kommen**; sie stehen im
-  Dokument in eckigen Klammern. Die erste entscheidet über zwei weitere:
-  **Gilt die App als Arbeitsmittel für Beschäftigte oder als Dienstleistung?**
-  Davon hängt ab, ob überhaupt eine Pflicht besteht (BFSG gilt für
-  Verbraucher-Dienstleistungen, BITV für öffentliche Stellen; auf ein
-  internes Werkzeug trifft beides nicht zu — dann greifen § 164 Abs. 4 SGB IX
-  und § 3a Abs. 2 ArbStättV) und welche Durchsetzungsstelle zu nennen ist. Das
-  bleibt eine Rechtsfrage und wird hier nicht beantwortet.
+  **Die offenen Angaben sind am 2026-09-17 beantwortet worden.** Der
+  Projektinhaber hat festgelegt: **RV Mobil ist ein Arbeitsmittel für
+  Beschäftigte.** Damit gilt weder das BFSG (Verbraucher-Dienstleistungen)
+  noch die BITV 2.0 (öffentliche Stellen); maßgeblich sind § 164 Abs. 4 SGB IX
+  und § 3a Abs. 2 ArbStättV, eine veröffentlichte Erklärung ist dort **nicht
+  vorgeschrieben**. Sie steht trotzdem in der App — auf ausdrücklichen Wunsch.
+  Ansprechpartner für alle Belange der App ist **Marc Petry Stramov**; ein eigener
+  Meldekanal ist bewusst nicht eingerichtet, Rückmeldungen laufen
+  innerbetrieblich.
 
-  **Noch nicht in der App verlinkt**, und zwar mit Absicht: Eine veröffentlichte
-  Erklärung mit Platzhaltern wäre schlechter als keine. Sobald die fünf Angaben
-  stehen, gehört sie in die Hilfe.
+  **In der App seit 0.9.47:** eigene Ansicht unter *Optionen → Erklärung zur
+  Barrierefreiheit*, nicht als Abschnitt der Hilfe (Entscheidung des
+  Projektinhabers: Die Hilfe beantwortet Bedienfragen, dieses Dokument sagt
+  etwas zu). Der Text steht damit zweimal — Repository und App —, und
+  `scripts/checks/erklaerung.ts` vergleicht die tragenden Angaben bei jedem
+  Prüflauf, damit die beiden Fassungen nicht lautlos auseinanderlaufen.
+
+  **Was offen bleibt, ist die schwächere Stelle und steht im Dokument als
+  solche:** Ein benannter externer Beschwerdeweg existiert nicht, weil die
+  gesetzliche Grundlage dafür bei einem betrieblichen Arbeitsmittel fehlt.
+  Wird die App je Dritten zugänglich gemacht, ändert das die Einordnung — und
+  damit diesen Punkt.
 
 ---
 

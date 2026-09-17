@@ -3,7 +3,7 @@ import { AccessibilitySettings, AccessibilityTheme, SectionsConfig } from "../ty
 import {
   Type, Volume2, Sparkles, HelpCircle, Lock, Settings2, ChevronRight,
   ArrowLeft, Clock, Sliders, Smartphone, Bell, Monitor, Palette, CalendarDays, Package,
-  BarChart3,
+  BarChart3, Accessibility,
 } from "lucide-react";
 
 interface A11yModalProps {
@@ -35,6 +35,12 @@ interface A11yModalProps {
   onOpenCarryover?: () => void;
   /** Freiwillige Liste der Vorfuehrgeraete -- siehe KONZEPT-INVENTAR.md. */
   onOpenBestand?: () => void;
+  /**
+   * Erklaerung zur Barrierefreiheit (0.9.47). Eigene Ansicht, nicht ein
+   * Abschnitt der Hilfe: Die Hilfe beantwortet Bedienfragen, dieses Dokument
+   * sagt zu, was die App leistet und was nicht.
+   */
+  onOpenErklaerung?: () => void;
   /** Anzahl erfasster Schichten (laufender Monat und Archiv zusammen). */
   schichtenAnzahl?: number;
   /** Alle erfassten Schichten löschen -- fragt selbst zurück. */
@@ -196,6 +202,7 @@ export default function A11yModal({
   onOpenChangelog,
   onOpenCarryover,
   onOpenBestand,
+  onOpenErklaerung,
   schichtenAnzahl = 0,
   onSchichtenLoeschen,
   onAllesLoeschen,
@@ -356,6 +363,16 @@ export default function A11yModal({
             hint="Verschlüsseltes Backup erstellen & einspielen"
             onClick={onOpenBackup}
             id="menu-backup"
+          />
+        )}
+        {onOpenErklaerung && (
+          <MenuRow
+            icon={<Accessibility className="w-5 h-5" />}
+            iconClass="bg-[var(--cat-1)] text-[var(--primary-text)]"
+            label="Erklärung zur Barrierefreiheit"
+            hint="Was die App leistet, was nicht, und wohin Sie eine Barriere melden"
+            onClick={onOpenErklaerung}
+            id="menu-erklaerung"
           />
         )}
         {onOpenHelp && (

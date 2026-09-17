@@ -68,6 +68,11 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
               „Orientierungshilfen“. Der Sprunglink „Zum Hauptinhalt springen“ bleibt zusätzlich bestehen.
             </li>
             <li>
+              <strong>Neu unter Optionen: „Erklärung zur Barrierefreiheit“.</strong> Sie sagt, was die App für
+              Hilfsmittel leistet, was sie nicht leistet und wohin Sie eine Barriere melden können – und sie
+              benennt offen, was noch nicht geprüft ist.
+            </li>
+            <li>
               <strong>Beschriftungen stehen nicht mehr in Großbuchstaben</strong> („Vorführungen“ statt „VORFÜHRUNGEN“) und
               sind nicht mehr gesperrt. Großbuchstaben nehmen einem Wort seine Umrissform – genau die, an der man es beim
               Lesen erkennt. Die kleinste Schrift der App ist dabei etwas größer geworden.

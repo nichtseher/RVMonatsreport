@@ -170,21 +170,46 @@ der Datei, prüft sie einmal und verlässt sich darauf. Der Hinweis sagt jetzt,
 dass sie an der letzten Schreiboperation hängt, und dass eine Bearbeitung eine
 Datei auch **gemischt** zurücklassen kann.
 
-### Die Erklärung zur Barrierefreiheit
+### Die Erklärung zur Barrierefreiheit — erst Entwurf, dann Ansicht
 
-`BARRIEREFREIHEITSERKLAERUNG.md` liegt als **Entwurf** vor, im Aufbau von
-§ 12b BITV 2.0. Fünf Angaben fehlen und können nur vom Unternehmen kommen;
-sie stehen im Text in eckigen Klammern, damit niemand das Dokument für
-vollständig hält.
+Der Entwurf hatte fünf Angaben in eckigen Klammern, weil nur das Unternehmen
+sie liefern kann. Der Projektinhaber hat noch am selben Tag zwei davon
+entschieden, und die erste entschied den ganzen rechtlichen Teil:
 
-Die wichtigste davon ist die erste: **Gilt die App als Arbeitsmittel für
-Beschäftigte oder als Dienstleistung?** Davon hängt ab, ob überhaupt eine
-Pflicht besteht (BFSG gilt für Verbraucher-Dienstleistungen, BITV für
-öffentliche Stellen — auf ein internes Werkzeug trifft beides nicht zu; dann
-greifen § 164 Abs. 4 SGB IX und § 3a Abs. 2 ArbStättV) und wer als
-Durchsetzungsstelle zu nennen ist. Eine erfundene Zuständigkeit wäre schlechter
-als eine sichtbare Lücke: Wer sich darauf verlässt, wendet sich an die falsche
-Stelle.
+**RV Mobil ist ein Arbeitsmittel für Beschäftigte.** Damit gilt weder das BFSG
+(es betrifft Dienstleistungen für Verbraucher) noch die BITV 2.0 (öffentliche
+Stellen); maßgeblich sind § 164 Abs. 4 SGB IX und § 3a Abs. 2 ArbStättV — und
+dort ist eine veröffentlichte Erklärung **nicht vorgeschrieben**. Sie steht
+trotzdem in der App, ausdrücklich gewünscht. Das ist die interessante
+Entscheidung an dieser Fassung: Es gibt keine Pflicht, und die Erklärung kommt
+trotzdem.
+
+**Ansprechpartner ist Marc Petry Stramov, ohne eigenen Meldekanal** (ebenfalls
+entschieden). Das Dokument benennt das als seine schwächste Stelle, statt es zu
+verschweigen: Ein externer Beschwerdeweg fehlt, weil die gesetzliche Grundlage
+dafür bei einem betrieblichen Arbeitsmittel fehlt.
+
+**Eigene Ansicht, nicht ein Abschnitt der Hilfe** — auch das eine Entscheidung
+des Projektinhabers, und sie ist die richtige: Die Hilfe beantwortet
+Bedienfragen, dieses Dokument sagt etwas zu. Wer es sucht, sucht es nicht
+zwischen „Wie lege ich ein Backup an?".
+
+Damit hat die App **dreizehn Ansichten**. Der Weg dorthin hat unterwegs die
+eigenen Wächter geprüft:
+
+- **`ansichtsfokus.ts` wurde rot, bevor die Ansicht eine Überschrift hatte.**
+  Der neue `activeTab`-Wert allein genügte. Genau dafür zählt diese Prüfung
+  Quelltext gegen Liste, statt auf eine gepflegte Liste zu hoffen — dieselbe
+  Lücke hat in diesem Projekt schon dreimal zugeschlagen.
+- **Der Text steht jetzt zweimal**, im Repository und in der App. Das ist hier
+  Absicht (verschiedene Formen, verschiedene Leser) und anderswo ein Fehler,
+  den dieses Projekt kennt: Die Monatsformatierung stand einmal dreifach da.
+  Gefährlich ist nicht die Dopplung, sondern das lautlose Auseinanderlaufen —
+  eine Erklärung, die im Repository etwas anderes zusagt als in der App, ist
+  schlimmer als gar keine. `scripts/checks/erklaerung.ts` vergleicht deshalb
+  die tragenden Angaben (Einordnung, Stand der Vereinbarkeit, Ansprechpartner,
+  die drei offenen Nachweise) und lehnt Platzhalter ab. Die Formulierung
+  vergleicht es nicht: In der App darf derselbe Inhalt kürzer stehen.
 
 Der Stand der Vereinbarkeit ist mit **„teilweise vereinbar"** angegeben, und
 zwar nicht wegen einer bekannten Barriere — auf AA-Ebene ist keine bekannt —,
@@ -221,11 +246,12 @@ genau das am 2026-09-07 fünf Tage lang nicht stimmte.
 | | 0.9.46 | 0.9.47 |
 |---|---|---|
 | `lint` | grün | grün |
-| `check` | 186 | **191** (fünf Fälle für die Typografie-Regeln) |
-| `check:ui` | 594 | **594 bestanden, 0 fehlgeschlagen**, 558 je Profil übersprungen (19,4 min, ohne Pipe gemessen) |
+| `check` | 186 | **198** (fünf Fälle für die Typografie-Regeln, sieben für die Erklärung) |
+| `check:ui` | 594 | **607 bestanden, 0 fehlgeschlagen** (19,8 min, ohne Pipe gemessen) — 13 davon für die neue Ansicht |
 | Versalien in der Oberfläche | 19 Elemente | **0** |
 | gesperrte Elemente | 20 | **0** |
 | Landmarken in der Seite | keine `main` | `main`, `navigation`, `complementary` |
+| Ansichten | 12 | **13** |
 
 ---
 

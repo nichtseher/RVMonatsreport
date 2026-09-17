@@ -555,6 +555,24 @@ const EINSTIEGE = [
     einstieg: /Was gibt.s Neues/,
     ueberschrift: /Was gibt.s Neues/,
   },
+  {
+    /*
+      Die Erklaerung zur Barrierefreiheit (0.9.47). Eigene Ansicht unter
+      "Daten & Hilfe", auf Entscheidung des Projektinhabers -- und damit eine
+      Ansicht, die ohne Eintrag hier ungeprueft bliebe. Genau so ist `manage`
+      von 0.9.18 bis 0.9.21 durchs Netz gefallen.
+
+      Einstieg und Ueberschrift heissen hier gleich, und das ist ungefaehrlich:
+      `oeffneUeberEinstieg` klickt eine `button`-Rolle und wartet auf eine
+      `heading`-Rolle. Die Menuezeile ist eine Taste, die Ueberschrift gibt es
+      nur in der Ansicht selbst -- die Verwechslung aus 0.9.18 bis 0.9.21 kann
+      hier also nicht entstehen.
+    */
+    name: "Erklärung zur Barrierefreiheit",
+    start: "options",
+    einstieg: /Erklärung zur Barrierefreiheit/,
+    ueberschrift: /Erklärung zur Barrierefreiheit/,
+  },
 ] as const;
 
 async function oeffneUeberEinstieg(page: Page, eintrag: (typeof EINSTIEGE)[number]) {

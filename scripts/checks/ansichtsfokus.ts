@@ -61,6 +61,7 @@ const ANSICHT_DATEI: Record<string, string> = {
   bestand: "components/BestandModal.tsx",
   sync: "components/DeviceSyncModal.tsx",
   changelog: "components/ChangelogModal.tsx",
+  erklaerung: "components/BarrierefreiheitModal.tsx",
 };
 
 /** Die `activeTab`-Werte, wie sie in App.tsx wirklich deklariert sind. */
