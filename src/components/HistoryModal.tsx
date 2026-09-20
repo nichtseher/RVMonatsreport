@@ -20,6 +20,7 @@ import { formatMonthGerman } from "../utils/dateUtils";
 import { ConfirmRequest } from "./ConfirmDialog";
 import type { BlattUmfang } from "../utils/vorlageExport";
 import { VORLAGE_STAND } from "../utils/vorlageStand";
+import { pruefeMonatsabschluss } from "../utils/abschlussCheck";
 
 interface HistoryModalProps {
   appFields: SectionsConfig;
@@ -126,7 +127,15 @@ export default function HistoryModal({
     dasselbe versenden wie der aus dem Formular, nur rueckwirkend. Ein
     Sonderweg waere hier keine Bequemlichkeit, sondern eine Luecke.
   */
-  const handleDirectExport = (record: HistoryRecord) => {
+  /*
+    Bis 0.9.58 rief dieser Weg keinen Plausibilitaets-Check auf -- der
+    Formular-Export (App.tsx/useExport.ts) prueft vor jedem Senden auf
+    fehlenden Namen, leeren Report und Abweichungen zur Stempeluhr; der
+    Direkt-Export aus dem Archiv sprang direkt zur Blattwahl. Wer einen
+    Monat mit fehlendem Namen oder abweichenden Stunden aus dem Archiv
+    heraus verschickte, bekam denselben Hinweis nie zu sehen.
+  */
+  const frageNachUmfang = (record: HistoryRecord): true => {
     setConfirmRequest({
       title: "Was soll gesendet werden?",
       message: stempeluhrAktiv
@@ -144,6 +153,29 @@ export default function HistoryModal({
         void exportiereReport(record, "vorlage");
       },
     });
+    return true;
+  };
+
+  const handleDirectExport = (record: HistoryRecord) => {
+    const warnungen = pruefeMonatsabschluss(record, { enableTimeTracking: stempeluhrAktiv });
+    if (warnungen.length > 0) {
+      setConfirmRequest({
+        title: "Monatsabschluss-Check",
+        message:
+          warnungen.length === 1
+            ? "Vor dem Senden ist eine Sache aufgefallen:"
+            : `Vor dem Senden sind ${warnungen.length} Dinge aufgefallen:`,
+        details: warnungen,
+        confirmLabel: "Trotzdem senden",
+        cancelLabel: "Erst korrigieren",
+        // Gibt selbst `true` zurueck (siehe frageNachUmfang) -- haelt den
+        // Dialog offen und laesst ihn zur Blattwahl uebergehen, statt sie
+        // im selben Tick wieder zu schliessen (0.9.54, ConfirmDialog.tsx).
+        onConfirm: () => frageNachUmfang(record),
+      });
+      return;
+    }
+    frageNachUmfang(record);
   };
 
   const exportiereReport = async (record: HistoryRecord, umfang: BlattUmfang) => {

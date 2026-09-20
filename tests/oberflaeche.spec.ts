@@ -2025,7 +2025,12 @@ const ARCHIV_BESTAND = [
     name: "Marc Petry",
     notes:
       "Schwerpunkt Vorführungen bei Bestandskunden; Nachfassaktion Sonderveranstaltungsplanung läuft.",
-    values: { s1_1: 12, s1_2: 4, s2_1: 7 },
+    // tage_arbeit: 1 passend zur einen Schicht unten (2026-08-14) -- ohne das
+    // meldet pruefeMonatsabschluss() seit 0.9.58 "0 Arbeitstage, aber
+    // Schichten an 1 Tagen" und "Blattwahl im Archiv" saehe nicht mehr die
+    // Blattwahl, sondern den davor geschalteten Monatsabschluss-Check. Der
+    // hat seine eigene, eigens dafuer inkonsistente Rueckfrage weiter unten.
+    values: { s1_1: 12, s1_2: 4, s2_1: 7, tage_arbeit: 1 },
     valuesUpdatedAt: { s1_1: "2026-08-31T10:00:00.000Z" },
     fieldsSnapshot: {},
     savedAt: "2026-08-31T10:00:00.000Z",
@@ -2954,6 +2959,78 @@ const RUECKFRAGEN = [
     ausloeser: /Export RV Report/,
     oeffne: async (p: Page) => {
       await oeffneArchiv(p, "offen");
+      await p.getByRole("button", { name: /Export RV Report/ }).first().click();
+    },
+  },
+  {
+    /*
+      Die vierzehnte (0.9.58): Der Direkt-Export aus dem Archiv rief bis dahin
+      nie `pruefeMonatsabschluss()` auf -- der Monatsabschluss-Check vor
+      "Bericht an VL senden" im Formular hat ein Gegenstueck im Archiv
+      gebraucht, denn derselbe Report kann aus beiden Wegen verschickt werden.
+
+      Eigener, in sich abgeschlossener Bestand statt ARCHIV_BESTAND/
+      oeffneArchiv: Der geteilte Bestand ist bewusst in sich stimmig (siehe
+      Kommentar dort) -- diese Ruckfrage braucht das Gegenteil, eine
+      Schicht ohne passenden Arbeitstag.
+    */
+    name: "Rückfrage: Monatsabschluss-Check im Archiv",
+    ausloeser: /Export RV Report/,
+    abbrechen: "Erst korrigieren",
+    oeffne: async (p: Page) => {
+      await p.route("**/leerseite-fuer-archivabschlusscheck", (route) =>
+        route.fulfill({ contentType: "text/html", body: "<!doctype html><title>leer</title>" }),
+      );
+      await p.goto("/leerseite-fuer-archivabschlusscheck");
+      await p.evaluate(async () => {
+        const db = await new Promise<IDBDatabase>((res, rej) => {
+          const r = indexedDB.open("keyval-store", 1);
+          r.onupgradeneeded = () => {
+            if (!r.result.objectStoreNames.contains("keyval")) r.result.createObjectStore("keyval");
+          };
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => rej(r.error);
+        });
+        const archiv = {
+          "2026-05": {
+            month: "2026-05",
+            name: "Marc Petry",
+            notes: "",
+            // Zählerstand vorhanden, aber KEINE Arbeitstage bei einer
+            // erfassten Schicht -- dieselbe Auffälligkeit wie bei der
+            // Formular-Variante dieser Rückfrage, nur aus dem Archiv heraus.
+            values: { s1_1: 3, tage_arbeit: 0 },
+            valuesUpdatedAt: {},
+            fieldsSnapshot: { s1: [], s2: [], s3: [], s4: [] },
+            savedAt: "2026-05-31T10:00:00.000Z",
+            timeLogs: [
+              {
+                id: "archiv-abschluss-check",
+                date: "2026-05-14",
+                clockIn: "08:00",
+                clockOut: "16:00",
+                breakMinutes: 30,
+                duration: 7.5,
+                officeRatio: 1,
+                officeHours: 7.5,
+                fieldHours: 0,
+              },
+            ],
+          },
+        };
+        await new Promise<void>((res, rej) => {
+          const t = db.transaction("keyval", "readwrite");
+          t.objectStore("keyval").put(archiv, "aussendienst_pwa_history");
+          t.oncomplete = () => res();
+          t.onerror = () => rej(t.error);
+        });
+      });
+      await oeffne(p, "history");
+      await p.getByRole("button", { name: /Mai 2026/ }).first().click();
+      await p
+        .getByRole("button", { name: /Laden \/ Editieren/ })
+        .first()
+        .waitFor({ timeout: 15_000 });
       await p.getByRole("button", { name: /Export RV Report/ }).first().click();
     },
   },

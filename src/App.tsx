@@ -359,6 +359,19 @@ export default function App() {
       void import("./components/BestandModal");
       void import("./components/ChangelogModal");
       void import("./components/BarrierefreiheitModal");
+      /*
+        Bis 0.9.56 fehlten diese zwei -- neun von elf nachgeladenen Ansichten,
+        nicht "jede". Ausgerechnet Datensicherung und Geraete-Sync fehlten:
+        Wer nach einem Update ins Funkloch fuhr, fand dort keine Sicherung
+        und keinen Sync-Weg mehr -- der Fall, fuer den dieser ganze
+        Mechanismus existiert. DeviceSyncModal ist mit rund 116 KB (gzip,
+        ueberwiegend die QR-Bibliothek) das schwerste einzelne Buendel der
+        App; das kostet hier Netzwerk und Parse-Zeit im Leerlauf nach dem
+        Start, nicht die erste Eingabe. Eine leichtere QR-Bibliothek waere
+        eine eigene, groessere Aenderung.
+      */
+      void import("./components/SecureBackupModal");
+      void import("./components/DeviceSyncModal");
     };
     const fenster = window as Window & {
       requestIdleCallback?: (r: () => void, o?: { timeout: number }) => number;

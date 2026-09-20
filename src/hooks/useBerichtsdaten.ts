@@ -28,6 +28,17 @@ const SCHLUESSEL_NOTFALL = "aussendienst_pwa_emergency_data";
 
 /** Verzoegerung des Speicherns, damit nicht jeder Tastendruck schreibt. */
 const SPEICHER_VERZOEGERUNG_MS = 400;
+/**
+ * Dieselbe Bremse fuer den Archiv-Spiegel-Effekt darunter -- eigene,
+ * groessere Zahl, weil dort das GESAMTE Archiv serialisiert wird, nicht nur
+ * der laufende Monat. Bis 0.9.59 hatte dieser Effekt gar keine Verzoegerung:
+ * Der Inhalts-Fingerabdruck weiter unten verhindert nur das erneute
+ * Schreiben UNVERAENDERTEN Inhalts, nicht das Schreiben bei JEDEM
+ * Tastendruck im Notizfeld -- jede neue Zeicheneingabe AENDERT den Inhalt ja
+ * tatsaechlich. Gemessen: eine 200 Zeichen lange Notiz erzeugte 200 volle
+ * Archiv-Schreibvorgaenge.
+ */
+const ARCHIV_SPIEGEL_VERZOEGERUNG_MS = 1000;
 
 export type SaveStatus = "saving" | "saved" | "error";
 /** Zuletzt abgeschlossener Monat -- Grundlage fuer das Rueckgaengig-Angebot. */
@@ -354,47 +365,50 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
     if (!daten?.month) return;
     if (!monthHasContent(daten)) return;
 
-    setHistory((prev) => {
-      // `null` heisst "Archiv noch nicht geladen". Dann NICHT schreiben: Ein
-      // `prev || {}` ersetzte den gespeicherten Bestand durch einen einzelnen
-      // Monat.
-      if (!prev) return prev;
+    const t = setTimeout(() => {
+      setHistory((prev) => {
+        // `null` heisst "Archiv noch nicht geladen". Dann NICHT schreiben: Ein
+        // `prev || {}` ersetzte den gespeicherten Bestand durch einen einzelnen
+        // Monat.
+        if (!prev) return prev;
 
-      // Ohne inhaltliche Aenderung KEIN neues savedAt und kein Schreibvorgang.
-      // Vorher erzeugte jedes Zusammenfuehren neue Objekte, dadurch lief der
-      // Live-Abgleich endlos im Dreisekundentakt und schrieb dabei
-      // ununterbrochen in die IndexedDB (gemessen 2026-08-02).
-      const bestehend = prev[daten.month];
-      const inhalt = {
-        month: daten.month,
-        name: daten.name,
-        notes: daten.notes,
-        values: daten.values,
-        valuesUpdatedAt: daten.valuesUpdatedAt,
-        timeLogs: daten.timeLogs || [],
-        fieldsSnapshot: appFields,
-      };
-      if (bestehend && inhaltsFingerabdruck(bestehend) === inhaltsFingerabdruck(inhalt)) {
-        return prev;
-      }
+        // Ohne inhaltliche Aenderung KEIN neues savedAt und kein Schreibvorgang.
+        // Vorher erzeugte jedes Zusammenfuehren neue Objekte, dadurch lief der
+        // Live-Abgleich endlos im Dreisekundentakt und schrieb dabei
+        // ununterbrochen in die IndexedDB (gemessen 2026-08-02).
+        const bestehend = prev[daten.month];
+        const inhalt = {
+          month: daten.month,
+          name: daten.name,
+          notes: daten.notes,
+          values: daten.values,
+          valuesUpdatedAt: daten.valuesUpdatedAt,
+          timeLogs: daten.timeLogs || [],
+          fieldsSnapshot: appFields,
+        };
+        if (bestehend && inhaltsFingerabdruck(bestehend) === inhaltsFingerabdruck(inhalt)) {
+          return prev;
+        }
 
-      const updated = {
-        ...prev,
-        [daten.month]: baueArchivEintrag(
-          daten,
-          appFields,
-          bestehend,
-          new Date().toISOString(),
-        ),
-      };
-      // Der Erfolgsfall entwarnt die Archiv-Ebene. Ohne ihn bliebe das Banner
-      // stehen, bis die App neu geladen wird -- das Versprechen "bleibt
-      // sichtbar, bis ein Speichervorgang wieder klappt" waere dann falsch.
-      persistHistory(updated, handleHistoryPersistFailure, "auto-save", () =>
-        setArchivFehler(false),
-      );
-      return updated;
-    });
+        const updated = {
+          ...prev,
+          [daten.month]: baueArchivEintrag(
+            daten,
+            appFields,
+            bestehend,
+            new Date().toISOString(),
+          ),
+        };
+        // Der Erfolgsfall entwarnt die Archiv-Ebene. Ohne ihn bliebe das Banner
+        // stehen, bis die App neu geladen wird -- das Versprechen "bleibt
+        // sichtbar, bis ein Speichervorgang wieder klappt" waere dann falsch.
+        persistHistory(updated, handleHistoryPersistFailure, "auto-save", () =>
+          setArchivFehler(false),
+        );
+        return updated;
+      });
+    }, ARCHIV_SPIEGEL_VERZOEGERUNG_MS);
+    return () => clearTimeout(t);
   }, [
     reportData?.name,
     reportData?.notes,

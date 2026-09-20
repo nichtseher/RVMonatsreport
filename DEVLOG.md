@@ -10,6 +10,207 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-20 — v0.9.59: Jeder Tastendruck im Notizfeld schrieb das ganze Archiv
+
+Elfter Befund aus dem Neun-Agenten-Durchlauf. Der code-reviewer-Agent
+meldete: Der Berichts-Speicher-Effekt in `useBerichtsdaten.ts` ist mit
+`SPEICHER_VERZOEGERUNG_MS = 400` gebremst — der direkt darunter stehende
+Archiv-Spiegel-Effekt (derselbe Datei, derselbe Zweck: den aktuellen Monat
+laufend ins Archiv-Objekt spiegeln) hatte gar keine Bremse.
+
+### Warum der Inhalts-Fingerabdruck das nicht schon abfing
+
+Der Effekt vergleicht vor dem Schreiben einen Fingerabdruck des neuen
+Inhalts gegen den zuletzt gespeicherten (`inhaltsFingerabdruck`) — das
+verhindert **wiederholtes** Schreiben **unveränderten** Inhalts (der Grund,
+warum das eingeführt wurde: 2026-08-02, endlose Schreibvorgänge durch
+Zusammenführen ohne inhaltliche Änderung). Es verhindert nicht das Problem
+hier: Jeder Tastendruck in der Notiz ändert den Inhalt tatsächlich, der
+Fingerabdruck ist also bei jedem einzelnen Zeichen ein neuer — und der
+Effekt feuerte ungebremst bei jeder Änderung von `reportData?.notes`
+(Abhängigkeit des Effekts).
+
+### Behoben
+
+Derselbe Aufbau wie beim Berichts-Speicher-Effekt eine Zeile darüber:
+`setTimeout` um den eigentlichen Schreibvorgang, `clearTimeout` in der
+Cleanup-Funktion. Eigene Konstante `ARCHIV_SPIEGEL_VERZOEGERUNG_MS = 1000`
+statt der bestehenden 400 ms — hier wird das **gesamte** Archiv-Objekt
+serialisiert, nicht nur der laufende Monat, das rechtfertigt eine größere
+Bremse.
+
+**Geprüft, ob die Verzögerung eine neue Datenverlust-Lücke öffnet:** Nein.
+`reportData` selbst (der live bearbeitete Stand) bleibt über zwei
+unabhängige, unveränderte Wege geschützt — den 400-ms-Speicher-Effekt und
+die synchrone Notfallspeicherung bei `visibilitychange` (`localStorage` +
+direkter `set()`-Aufruf, beide ohne jede Verzögerung). Der Archiv-Spiegel
+ist eine abgeleitete Zweitkopie für die monatsübergreifende Ansicht
+(Jahreskonto, Archiv-Liste); ihre Verzögerung um bis zu 1000 ms heilt sich
+beim nächsten Tastendruck oder beim Monatswechsel selbst — Letzterer
+schreibt ohnehin synchron und unverzögert (`handleMonthChange`,
+unverändert).
+
+### Verifiziert
+
+IndexedDB-Schreibvorgänge auf den Schlüssel `aussendienst_pwa_history`
+mitgeschnitten (`IDBObjectStore.prototype.put` abgefangen), 20 Zeichen mit
+20 ms Tastenabstand ins Notizfeld getippt:
+
+```
+Waehrend des Tippens:        0 Schreibvorgaenge
+Nach Ablauf der Bremse (1s): 1 Schreibvorgang
+```
+
+Vorher (kein Timeout im Code) hätte dieselbe Eingabe rechnerisch bis zu 20
+Schreibvorgänge ausgelöst — einen pro Zeichen, exakt die 200-Zeichen-
+Notiz-Rechnung aus dem ursprünglichen Bericht. `npx tsc --noEmit`, `npm
+run check` (201/201) und `npm run build` bleiben grün.
+
+---
+
+## 2026-09-20 — v0.9.58: Der Archiv-Export prüfte nie, ob der Monat plausibel ist
+
+Zehnter Befund aus dem Neun-Agenten-Durchlauf. Der code-reviewer-Agent
+meldete: `pruefeMonatsabschluss()` (fehlender Name, leerer Report,
+Abweichung zwischen Stempeluhr und eingetragenen Stunden) läuft vor jedem
+Senden aus dem Formular (`useExport.ts`, `handleSendToVL`) — aber
+`HistoryModal.tsx`s `handleDirectExport` (der „Export RV Report"-Knopf im
+Archiv) sprang direkt zur Blattwahl. Derselbe Report lässt sich über beide
+Wege verschicken; nur einer davon prüfte ihn vorher.
+
+### Behoben
+
+`handleDirectExport` ruft jetzt zuerst `pruefeMonatsabschluss(record, {
+enableTimeTracking: stempeluhrAktiv })` auf. Bei Warnungen erscheint
+dieselbe „Monatsabschluss-Check"-Rückfrage wie beim Formular-Export
+(„Trotzdem senden" / „Erst korrigieren"); ohne Warnungen geht es wie bisher
+direkt zur Blattwahl. Der bisherige `handleDirectExport`-Rumpf wurde dafür
+zu `frageNachUmfang(record)`, das — wie `useExport.ts`s Pendant seit 0.9.54
+— `true` zurückgibt, damit `ConfirmDialog.tsx` den Dialog beim Verketten
+offen hält statt ihn im selben Tick zu schließen.
+
+### Prüfnetz nachgezogen
+
+Der neue `setConfirmRequest`-Aufruf ließ die Zählprüfung sofort anschlagen
+(„Im Quelltext stehen 14 Rückfragen, im Prüfnetz 13" — der Wächter
+funktioniert). Zwei Anpassungen in `tests/oberflaeche.spec.ts`:
+
+- Eine neue Rückfrage „Monatsabschluss-Check im Archiv" mit einem eigenen,
+  bewusst inkonsistenten Archivbestand (eine Schicht, aber 0 eingetragene
+  Arbeitstage) — unabhängig vom geteilten `ARCHIV_BESTAND`, um an dessen
+  anderen Verwendungsstellen nichts zu berühren.
+- `ARCHIV_BESTAND["2026-08"]` bekam `tage_arbeit: 1` (passend zu seiner
+  einen Schicht am 14.08.). Ohne das hätte derselbe Datensatz ab sofort
+  selbst eine Auffälligkeit ausgelöst, und die bestehende Rückfrage
+  „Blattwahl im Archiv" — die ausdrücklich die Blattwahl selbst prüfen soll
+  — hätte plötzlich den Monatsabschluss-Check gemessen, unbemerkt und ohne
+  dass ihr Name das noch verraten hätte. Geprüft: Kein anderer Test hängt
+  an der Abwesenheit von `tage_arbeit` in diesem Datensatz (drei weitere
+  Fundstellen für „August 2026" im Spec sind vollständig eigenständige,
+  separat geseedete Bestände).
+
+### Verifiziert
+
+Playwright gegen die gebaute Fassung, eigener Archivbestand mit der
+Auffälligkeit: „Export RV Report" → **„Monatsabschluss-Check"** (Tasten
+„Erst korrigieren"/„Trotzdem senden") → „Trotzdem senden" → **„Was soll
+gesendet werden?"** — die Kette trägt, genau wie beim Formular-Weg.
+`npx tsc --noEmit`, `npm run check` (201/201, Rückfragen-Zählprüfung jetzt
+14/14) und `npm run build` bleiben grün.
+
+---
+
+## 2026-09-20 — v0.9.57: Neun von elf vorgeladen, nicht „jede Ansicht"
+
+Neunter Befund aus dem Neun-Agenten-Durchlauf. Der performance-benchmarker-
+Agent meldete: Die Vorlade-Liste in `App.tsx` (der `useEffect`, der im
+Leerlauf per `requestIdleCallback` alle nachgeladenen Ansichten holt, damit
+der Service Worker sie cachen kann) hatte neun Einträge — `React.lazy` aber
+elf. Es fehlten ausgerechnet `SecureBackupModal` und `DeviceSyncModal`.
+
+Der Kommentar über dem `useEffect` verspricht ausdrücklich: „wer nach einem
+Update ins Funkloch fährt, findet trotzdem jede Ansicht". Für genau diese
+zwei stimmte das nicht — ein Kollege, der nach einem Update offline ging,
+hätte weder eine Datensicherung noch einen Geräteabgleich starten können.
+Das ist nicht irgendein Rand fall: Beides sind die Wege, über die man ohne
+Internetverbindung überhaupt an seine Daten kommt.
+
+### Behoben
+
+Beide Importe ergänzt. `DeviceSyncModal` ist mit rund 116 KB gzip
+(überwiegend die QR-Bibliothek, siehe Leistungsbericht) das schwerste
+einzelne Bündel der App — das kostet jetzt Netzwerk und Parse-Zeit im
+Leerlauf nach dem Start, nicht die erste Eingabe (der Effekt läuft erst
+nach `requestIdleCallback`/2500 ms). Eine leichtere QR-Bibliothek wäre eine
+eigene, größere Änderung und bleibt offen.
+
+### Verifiziert
+
+Netzwerkanfragen gegen die gebaute Fassung mitgeschnitten (nicht nur den
+Quelltext gelesen): Nach 6 Sekunden Leerlauf waren alle **elf** Bündel
+(`BarrierefreiheitModal`, `BestandModal`, `CarryoverModal`, `ChangelogModal`,
+`DeviceSyncModal`, `HelpModal`, `HistoryModal`, `ManageModal`,
+`SecureBackupModal`, `StatsModal`, `TimeModal`) geladen — vorher waren es
+neun. `npx tsc --noEmit`, `npm run check` (201/201) und `npm run build`
+bleiben grün.
+
+---
+
+## 2026-09-20 — v0.9.56: Das Jahreskonto rechnete den laufenden Monat, als wäre er schon vorbei
+
+Achter Befund aus dem Neun-Agenten-Durchlauf. Der code-reviewer-Agent
+meldete: `yearlyOvertime` in `TimeModal.tsx` verwendet
+`getWeekdaysInMonth(y, m)` — alle Werktage des GESAMTEN Monats — auch für
+den Monat, der gerade läuft und reicht das direkt in den „Gesamt-Saldo" auf
+der prominentesten Zahl des Jahreskontos.
+
+### Nachgerechnet, dann gemessen
+
+Am 1. eines Monats: Ist-Stunden 0 (noch nichts erfasst), Soll-Stunden schon
+der volle Monat (z. B. September: 22 Werktage × 8h = 176h) — macht
+„Gesamt-Saldo" −176h, rot dargestellt, für einen Mitarbeiter, der nichts
+falsch gemacht hat, sondern den Monat nur noch nicht beendet hat. Am
+heutigen 20.09. (Sonntag) zeigte die App vor der Korrektur weiterhin die
+vollen 176,00h Soll für September, obwohl erst 14 der 22 Werktage vergangen
+waren.
+
+### Behoben
+
+`getWeekdaysInMonth` bekommt einen optionalen dritten Parameter (`bisTag`)
+— zählt nur bis einschließlich diesem Tag statt bis zum Monatsende, per
+`Math.min` auf die tatsächliche Monatslänge begrenzt. `yearlyOvertime`
+vergleicht `mStr` gegen das **heutige Kalenderdatum** (nicht gegen
+`selectedMonth`!) und ruft für genau diesen einen Treffer die begrenzte
+Fassung auf, für jeden anderen Monat unverändert die volle.
+
+Der Unterschied `mStr === heutigerMonatSchluessel` statt
+`mStr === selectedMonth` ist kein Detail: `selectedMonth` ist der Monat, den
+das Formular gerade anzeigt — über den Monats-Wähler (`handleMonthChange`)
+kann das auch ein längst vergangener Monat sein, den jemand zur Korrektur
+geöffnet hat (siehe 0.9.52, „nachtragen"). Ein archivierter Monat bleibt mit
+dem vollen Monat gerechnet, ganz gleich, welchen Monat das Formular gerade
+zeigt.
+
+`yearlyVacation` (dieselbe Datei, der Urlaubs-/Krankheitstage-Block direkt
+darunter) wurde geprüft und ist nicht betroffen — er summiert nur eingetragene
+Werte, ohne Werktage-Bezug.
+
+### Verifiziert
+
+Playwright gegen die gebaute Fassung, Rechnerdatum 20.09.2026: Zeit → „Jahreskonto
+(2026)" → Tabellenzeile „September 2026":
+
+```
+vorher (voller Monat):        176.00h Soll
+jetzt (bis einschl. 20.09.):  112.00h Soll   [gelesen: 112.00h -- exakt]
+```
+
+14 Werktage bis einschließlich 20.09. × 8h = 112,00h, exakt der gelesene
+Wert. `npx tsc --noEmit`, `npm run check` (201/201, keine geprüfte reine
+Funktion berührt) und `npm run build` bleiben grün.
+
+---
+
 ## 2026-09-20 — v0.9.55: Ein Download galt der App genauso viel wie ein Versand
 
 Siebter Befund aus dem Neun-Agenten-Durchlauf; die Verifikation deckte

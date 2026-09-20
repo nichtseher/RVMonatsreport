@@ -47,10 +47,16 @@ export default function TimeModal({
   // Remove focus trap since this is now an inline page
   
   // --- COMPUTE YEARLY VACATION & OVERTIME LEDGERS ---
-  const getWeekdaysInMonth = (year: number, month: number): number => {
+  /*
+    `bisTag` (optional): zaehlt nur bis einschliesslich diesem Tag, statt bis
+    zum Monatsende. Gebraucht fuer den noch laufenden Monat -- siehe unten,
+    wo `yearlyOvertime` das aufruft.
+  */
+  const getWeekdaysInMonth = (year: number, month: number, bisTag?: number): number => {
     let count = 0;
     const daysInMonth = new Date(year, month, 0).getDate();
-    for (let day = 1; day <= daysInMonth; day++) {
+    const letzterTag = bisTag ? Math.min(bisTag, daysInMonth) : daysInMonth;
+    for (let day = 1; day <= letzterTag; day++) {
       const date = new Date(year, month - 1, day);
       const dayOfWeek = date.getDay();
       if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
@@ -78,14 +84,38 @@ export default function TimeModal({
       yearRecords[selectedMonth] = reportData;
     }
     
+    /*
+      Der noch laufende Monat zaehlt nur bis heute, nicht bis zum Monatsende.
+
+      Ohne das stand hier am 1. eines Monats ein Soll ueber den KOMPLETTEN
+      Monat (z. B. 22 Werktage x 8h = 176h) gegen ein Ist von 0h -- ein
+      Gesamtsaldo von rund -176h, rot dargestellt, fuer einen Mitarbeiter,
+      der nichts falsch gemacht hat, sondern nur noch nicht fertig ist.
+      Gemessen am 2026-09-20: mit "heute" = 2026-09-20 aendert sich das Soll
+      von 22 auf 14 Werktage fuer September.
+
+      Bewusst per KALENDERDATUM verglichen (`heutigerMonatSchluessel`), nicht
+      per `selectedMonth === mStr`: `selectedMonth` ist der Monat, den das
+      Formular gerade anzeigt, und das kann -- ueber den Monats-Waehler --
+      auch ein laengst vergangener sein. Ein archivierter Monat bleibt mit
+      dem vollen Monat gerechnet, ganz gleich, ob der Nutzer ihn gerade zur
+      Korrektur geoeffnet hat.
+    */
+    const heute = new Date();
+    const heutigerMonatSchluessel =
+      `${heute.getFullYear()}-${String(heute.getMonth() + 1).padStart(2, "0")}`;
+
     let totalOvertimeAccumulated = 0;
     const monthsCalculated: Array<{ month: string; ist: number; soll: number; diff: number }> = [];
-    
+
     Object.keys(yearRecords).sort().forEach((mStr) => {
       const record = yearRecords[mStr];
       const [y, m] = mStr.split("-").map(Number);
-      
-      const weekdays = getWeekdaysInMonth(y, m);
+
+      const weekdays =
+        mStr === heutigerMonatSchluessel
+          ? getWeekdaysInMonth(y, m, heute.getDate())
+          : getWeekdaysInMonth(y, m);
       const uDays = Number(record.values?.tage_urlaub) || 0;
       const kDays = Number(record.values?.tage_krank) || 0;
       const fDays = Number(record.values?.tage_feiertag) || 0;

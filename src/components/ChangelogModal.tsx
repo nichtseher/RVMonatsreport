@@ -64,6 +64,83 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         </div>
 
         {/*
+          Kategorie + Zeile: Rein intern, nichts zu wissen oder zu tun.
+        */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.59: Wartung</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
+          </ul>
+        </div>
+
+        {/*
+          Kurz ausgeschrieben statt Kategorie+Zeile: Wer den Direkt-Export aus
+          dem Archiv kennt, sieht ab jetzt gelegentlich eine zusaetzliche
+          Rueckfrage, die vorher nicht da war -- das soll nicht wie ein
+          Fehler wirken, sondern erklaert sein.
+        */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.58: Der Monatsabschluss-Check gilt jetzt auch im Archiv</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>
+              Der Prüfschritt vor dem Senden (fehlender Name, leerer Report, Abweichung zur Stempeluhr) lief
+              bisher nur, wenn Sie direkt aus dem Formular sendeten. Beim „Export RV Report" aus dem RV Archiv
+              fehlte er.
+            </li>
+            <li>Jetzt prüft die App auch dort zuerst – sehen Sie beim Archiv-Export künftig eine Rückfrage,
+            die vorher nicht erschien, ist das dieser Check, kein Fehler.</li>
+          </ul>
+        </div>
+
+        {/*
+          Kategorie + Zeile: Rein im Hintergrund, nichts zu wissen oder zu
+          tun -- die App ist nach einem Update im Funkloch jetzt vollstaendig
+          nutzbar statt neun von elf Ansichten.
+        */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.57: Fehlerbehebungen</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>Nach einem Update im Funkloch fehlten „Datensicherung" und „Geräte-Sync" – die zwei Wege, die
+            gerade dort am wichtigsten sind. Beide werden jetzt wie die anderen neun Ansichten im Hintergrund
+            vorgeladen.</li>
+          </ul>
+        </div>
+
+        {/*
+          Ausfuehrlich: Wer Anfang des Monats einen tief negativen,
+          rot dargestellten Gesamtsaldo gesehen hat, soll erfahren, dass
+          das eine Rechenungenauigkeit war und keine echte Abweichung.
+        */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.56: Das Jahreskonto rechnete den laufenden Monat als bereits beendet</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>
+              <strong>Im Jahreskonto (RV Zeit → „Jahreskonto") zeigte der aktuelle, noch laufende Monat ein
+              Soll für den kompletten Monat</strong> – Anfang des Monats stand der „Gesamt-Saldo" dadurch stark
+              im Minus, obwohl noch gar nicht viele Arbeitstage vergangen waren.
+            </li>
+            <li>Behoben: Der laufende Monat zählt jetzt nur bis zum heutigen Tag. Vergangene, bereits
+            abgeschlossene Monate waren nie betroffen und rechnen unverändert mit dem vollen Monat.</li>
+          </ul>
+        </div>
+
+        {/*
           Ebenfalls ausfuehrlich, und aus demselben Grund: Wer bisher einen
           Download fuer "erledigt" hielt, muss jetzt wissen, dass er selbst
           noch einen Schritt hat -- sonst bleibt ein Monat unbemerkt offen.
