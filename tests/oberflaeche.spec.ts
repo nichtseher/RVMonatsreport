@@ -2025,12 +2025,23 @@ const ARCHIV_BESTAND = [
     name: "Marc Petry",
     notes:
       "Schwerpunkt Vorführungen bei Bestandskunden; Nachfassaktion Sonderveranstaltungsplanung läuft.",
-    // tage_arbeit: 1 passend zur einen Schicht unten (2026-08-14) -- ohne das
-    // meldet pruefeMonatsabschluss() seit 0.9.58 "0 Arbeitstage, aber
-    // Schichten an 1 Tagen" und "Blattwahl im Archiv" saehe nicht mehr die
-    // Blattwahl, sondern den davor geschalteten Monatsabschluss-Check. Der
-    // hat seine eigene, eigens dafuer inkonsistente Rueckfrage weiter unten.
-    values: { s1_1: 12, s1_2: 4, s2_1: 7, tage_arbeit: 1 },
+    /*
+      tage_arbeit/std_buero/std_aussendienst passend zur einen Schicht unten
+      (2026-08-14, officeHours 3.88 + fieldHours 3.87 = 7.75h) -- ohne das
+      meldet pruefeMonatsabschluss() seit 0.9.58 eine Abweichung und
+      "Blattwahl im Archiv" saehe nicht mehr die Blattwahl, sondern den davor
+      geschalteten Monatsabschluss-Check. Der hat seine eigene, eigens dafuer
+      inkonsistente Rueckfrage weiter unten.
+
+      ERSTER VERSUCH (0.9.58) ergaenzte nur tage_arbeit:1 und uebersah die
+      ZWEITE Pruefregel (Stundenabweichung: 0h eingetragen gegen 7,75h
+      Schicht) -- lokal unsichtbar, weil `npm run check` die Funktion isoliert
+      prueft, nicht diesen Datensatz durch die echte Oberflaeche. Der
+      Deploy-Lauf (f87b18d, 2026-09-20) hat genau das gefangen: "Rückfrage:
+      Blattwahl im Archiv" landete auf dem Monatsabschluss-Check statt der
+      Blattwahl, mit Startfokus auf "Erst korrigieren" statt "Abbrechen".
+    */
+    values: { s1_1: 12, s1_2: 4, s2_1: 7, tage_arbeit: 1, std_buero: 3.88, std_aussendienst: 3.87 },
     valuesUpdatedAt: { s1_1: "2026-08-31T10:00:00.000Z" },
     fieldsSnapshot: {},
     savedAt: "2026-08-31T10:00:00.000Z",

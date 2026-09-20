@@ -3410,7 +3410,14 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => handleNavigateField("prev")}
-                  aria-label="Vorheriges Eingabefeld"
+                  /*
+                    War "Vorheriges Eingabefeld" -- ersetzte den sichtbaren
+                    Text "Zurück" komplett, statt ihn zu enthalten. Verstiess
+                    gegen WCAG 2.5.3 (Label in Name): Wer per Sprachsteuerung
+                    "Klicke Zurück" sagt, traf nichts. Der zugaengliche Name
+                    beginnt jetzt mit dem sichtbaren Wort.
+                  */
+                  aria-label="Zurück zum vorherigen Eingabefeld"
                   className="h-12 px-3 rounded-xl font-black border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
                 >
                   ◀ Zurück
@@ -3429,7 +3436,8 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => handleNavigateField("next")}
-                  aria-label="Nächstes Eingabefeld"
+                  // Gleiche Begruendung wie bei "Zurück" oben.
+                  aria-label="Weiter zum nächsten Eingabefeld"
                   className="h-12 px-3 rounded-xl font-black border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
                 >
                   Weiter ▶
@@ -3441,7 +3449,8 @@ export default function App() {
                     triggerHaptic(10);
                     (document.activeElement as HTMLElement)?.blur();
                   }}
-                  aria-label="Eingabe abschließen"
+                  // Gleiche Begruendung wie bei "Zurück" oben.
+                  aria-label="Fertig – Eingabe abschließen"
                   className="h-12 px-3.5 rounded-xl font-black bg-[var(--primary)] text-[var(--primary-text)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
                 >
                   Fertig

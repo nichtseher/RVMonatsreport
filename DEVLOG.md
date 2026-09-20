@@ -10,6 +10,187 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-20 — v0.9.62: Drei Tasten, deren Namen nicht enthielten, was draufstand
+
+Zwölfter Befund aus dem Neun-Agenten-Durchlauf. Der accessibility-auditor-
+Agent meldete: Die mobile Feld-Werkzeugleiste (erscheint, sobald ein
+Zählerfeld den Fokus hat — sie ersetzt dort die untere Hauptnavigation)
+hatte drei Tasten mit sichtbarem Text „◀ Zurück", „Weiter ▶", „Fertig", aber
+zugänglichen Namen „Vorheriges Eingabefeld", „Nächstes Eingabefeld",
+„Eingabe abschließen" — der Name enthielt den sichtbaren Text nicht, er
+ersetzte ihn.
+
+### Warum das mehr als Kosmetik ist
+
+WCAG 2.5.3 (Label in Name, Stufe A): Wer Sprachsteuerung nutzt und liest,
+was auf der Taste steht, muss mit genau diesem Wort auch treffen. „Klicke
+Zurück" traf hier nichts — das Wort kam im zugänglichen Namen nicht vor.
+CLAUDE.md führt die Regel dahinter selbst: „Wo eine sichtbare Beschriftung
+existiert, ist sie der Name … Ein aria-label, das die sichtbare
+Beschriftung ersetzt statt sie zu enthalten, verletzt WCAG 2.5.3."
+
+### Behoben
+
+Die drei `aria-label`-Werte beginnen jetzt mit dem sichtbaren Wort:
+„Zurück zum vorherigen Eingabefeld", „Weiter zum nächsten Eingabefeld",
+„Fertig – Eingabe abschließen". Der zusätzliche Kontext bleibt erhalten —
+nur die Reihenfolge zählt hier, der Name muss das sichtbare Wort enthalten,
+nicht nur sinngemäß dasselbe sagen.
+
+### Verifiziert
+
+Playwright gegen die gebaute Fassung, mobiles Profil, ein Zählerfeld
+angeklickt (nicht nur programmatisch fokussiert — das löste die
+React-`onFocus`-Kette beim ersten Versuch nicht zuverlässig aus, ein
+Klick schon), `ariaSnapshot()` der Werkzeugleiste:
+
+```
+- toolbar "Mobiles Navigations-Hilfe-Menü":
+  - button "Zurück zum vorherigen Eingabefeld": ◀ Zurück
+  - button "Weiter zum nächsten Eingabefeld": Weiter ▶
+  - button "Fertig – Eingabe abschließen": Fertig
+```
+
+Alle drei Namen enthalten jetzt das sichtbare Wort. `npx tsc --noEmit`,
+`npm run check` (201/201) bleiben grün; diese Änderung war außerdem Teil
+des vollständigen `check:ui`-Laufs, der vor diesem Push durchgeführt wurde
+(615 bestanden, 0 fehlgeschlagen) — inklusive der Testgruppe, die
+Bezeichnungen genau dieser Art prüft.
+
+---
+
+## 2026-09-20 — v0.9.61: Der eigene Deploy ist gescheitert — an einer Lücke von 0.9.58
+
+Kein neuer Befund aus dem Agenten-Durchlauf, sondern eine Korrektur an der
+eigenen Arbeit dieser Sitzung. Der Push von `f87b18d` (0.9.56–0.9.59) ist
+im Deploy-Gate gescheitert — die Produktion blieb auf dem vorherigen Stand,
+wie vorgesehen, aber der Fund gehört dokumentiert.
+
+### Was scheiterte, und warum lokal nichts davon zu sehen war
+
+`npm run check:ui` (Schritt „Oberfläche und Barrierefreiheit prüfen") schlug
+fehl:
+
+```
+Rückfrage: Blattwahl im Archiv: der Fokus liegt im Dialog und bleibt darin
+Error: Der Startfokus liegt nicht auf „Abbrechen" im Dialog,
+sondern auf „Erst korrigieren".
+```
+
+Ursache: 0.9.58 hatte `ARCHIV_BESTAND["2026-08"]` um `tage_arbeit: 1`
+ergänzt, um genau diesen Test wieder auf den erwarteten Weg (direkt zur
+Blattwahl, keine Auffälligkeit) zu bringen — dabei aber nur EINE der beiden
+Prüfregeln in `pruefeMonatsabschluss()` bedacht. Die zweite blieb übersehen:
+Die eine Schicht des Datensatzes (`officeHours: 3.88, fieldHours: 3.87` =
+7,75 h) hatte kein Gegenstück in `values` — `std_buero`/`std_aussendienst`
+fehlten komplett, also verglich die Prüfung 7,75 h Schicht gegen 0 h
+eingetragen und meldete eine Abweichung. Die Rückfrage „Blattwahl im Archiv"
+landete dadurch auf dem Monatsabschluss-Check statt auf der Blattwahl selbst
+— dem Test lag ein anderer Zustand vor, als sein Name behauptet.
+
+**Warum das lokal grün war:** `npm run check` prüft `pruefeMonatsabschluss()`
+als reine Funktion, isoliert von dieser Fixture. Die eigenen
+Playwright-Skripte dieser Sitzung prüften gezielt den NEUEN Befund
+(„Monatsabschluss-Check im Archiv"), nicht die BESTEHENDE „Blattwahl
+im Archiv" — genau die Lücke, die `npm run check:ui` als einziges schließt,
+weil es den echten Datensatz durch die echte Oberfläche schickt.
+
+### Behoben
+
+`std_buero: 3.88, std_aussendienst: 3.87` in `values` ergänzt — passend zur
+Schicht, nicht nur passend zur einen Prüfregel, die zuerst auffiel.
+Nachgerechnet mit der echten `pruefeMonatsabschluss()`-Funktion (Wegwerf-
+Skript, `npx tsx`, aus dem Repo-Root, danach gelöscht): **0 Warnungen** für
+den korrigierten Datensatz.
+
+### Verifiziert — diesmal mit dem echten Prüfnetz, nicht nur eigenen Skripten
+
+```
+npx playwright test --project=handy -g "Blattwahl im Archiv"   -> 6/6 bestanden
+npx playwright test --project=handy -g "Zustände der Rückfragen" -> 84/84 bestanden
+```
+
+Und, weil genau diese Lücke — eigene Skripte statt des echten Gates — die
+Ursache des gescheiterten Deploys war: **der vollständige `npm run check:ui`**
+lokal ausgeführt, vor dem nächsten Push, nicht nur ein gefilterter
+Ausschnitt.
+
+### Die Lehre, nicht nur die Korrektur
+
+CLAUDE.md hält fest: „Nichts gilt als funktionierend, bevor es ausgeführt
+wurde" — diese Sitzung hat das für JEDEN einzelnen Fund befolgt, aber mit
+selbstgeschriebenen, gezielten Skripten statt des vollständigen Gates. Für
+isolierte Änderungen war das ausreichend; für eine Änderung an gemeinsam
+genutzten Testdaten (`ARCHIV_BESTAND`) reicht ein gezielter Blick auf den
+NEUEN Fall nicht — er hätte von Anfang an eine Prüfung auf ALLE Verwender
+dieser Fixture gebraucht, und genau das leistet nur der volle Lauf.
+
+---
+
+## 2026-09-20 — v0.9.60: Ein Wächter verteidigte sich selbst gegen sich selbst
+
+Kein App-Fehler — ein Fehler im Prüfnetz selbst, gefunden beim Nachrechnen
+der Testabdeckung während dieses Durchlaufs (test-automation-engineer-Agent,
+dann selbst gegengeprüft).
+
+### Der Fehler
+
+`scripts/checks/ansichtsfokus.ts`, Prüfung „kein Reiter-Muster ohne
+Reiter-Bedienung": zählt Dateien, die `role="tab"`/`role="tablist"` UND
+`role="tabpanel"` enthalten, per roher Textsuche über den gesamten
+Dateiinhalt. Der Kommentar direkt über der Prüfung erklärt, warum das alte
+Reiter-Muster (vor 0.9.40) entfernt wurde — und zitiert dafür wörtlich
+`role="tablist"`, `role="tab"` **und** `role="tabpanel"` als Text.
+
+Eine reine Textsuche unterscheidet nicht zwischen Code und Kommentar. Die
+Prüfung zählte `App.tsx` damit als „eine Datei mit der Rolle, eine Datei mit
+dem Panel" — obwohl beide Treffer aus demselben erklärenden Absatz stammen
+und nirgends im Projekt ein echtes `role="tablist"` mehr existiert.
+Nachgerechnet: `mitTab = 1`, `mitPanel = 1`, die Bedingung
+`mitTab === 0 || mitPanel > 0` damit immer erfüllt — unabhängig davon, ob
+irgendwo im echten Code ein unvollständiges Reiter-Muster steht. Ein
+Wächter, der sich selbst mit seiner eigenen Begründung entwaffnet: Genau die
+Klasse Fehler, die `scripts/checks/typografie.ts` laut CLAUDE.md schon einmal
+hatte („ein Kommentar wird als Verstoß gemeldet, der erklärt, warum die
+Klasse entfallen ist").
+
+### Behoben
+
+`nurCode()` — Zeilenkommentare und Blockkommentare vor der Suche entfernen
+— gab es bereits in `scripts/checks/inhaltsrichtlinie.ts` (0.9.58, dieselbe
+Rettung für denselben Fehlertyp). Extrahiert nach `scripts/helfer.ts`, damit
+es nicht ein zweites Mal kopiert wird; beide Prüfungen importieren jetzt
+dieselbe Funktion. `ansichtsfokus.ts` sucht jetzt im kommentarbereinigten
+Text, mit einer eigenen Prüfung, dass die Kommentarentfernung nicht
+innerhalb eines offenen Blockkommentars endet (sonst wäre das Ergebnis
+selbst nicht belastbar) — derselbe Selbsttest-Gedanke wie in
+`inhaltsrichtlinie.ts`.
+
+### Verifiziert — mit einer simulierten echten Regression, nicht nur dem grünen Haken
+
+```
+VORHER (rohe Textsuche):     mitTab=1, mitPanel=1 -> Bedingung erfuellt: true  (Zufall, aus dem Kommentar)
+NACHHER (kommentarbereinigt): mitTab=0, mitPanel=0 -> Bedingung erfuellt: true  (echt, kein role=tab im Code)
+```
+
+Und die eigentliche Probe — trüge irgendeine Datei wieder ein echtes
+`role="tablist"` ohne `role="tabpanel"` (die Regression, die diese Prüfung
+verhindern soll):
+
+```
+Simuliert: <nav role="tablist"><button role="tab">Report</button></nav>
+  mitTab=1, mitPanel=0 -> Bedingung erfuellt: false  <- schlaegt jetzt korrekt fehl
+```
+
+Vor dieser Änderung hätte dieselbe Regression die Prüfung nicht berührt —
+`App.tsx`s Kommentar hätte weiterhin `mitPanel > 0` beigesteuert, ganz gleich
+was eine andere Datei täte. `npx tsc --noEmit`, `npm run check` (201/201,
+beide betroffenen Prüfungen grün — jetzt aus dem richtigen Grund) und `npm
+run build` bleiben grün. Keine App-Datei geändert, daher kein
+Changelog-Eintrag.
+
+---
+
 ## 2026-09-20 — v0.9.59: Jeder Tastendruck im Notizfeld schrieb das ganze Archiv
 
 Elfter Befund aus dem Neun-Agenten-Durchlauf. Der code-reviewer-Agent

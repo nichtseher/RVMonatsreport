@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { gruppe, pruefe, wahr } from "../helfer";
+import { gruppe, pruefe, wahr, nurCode } from "../helfer";
 
 /*
   Die Inhaltsrichtlinie (CSP) wirkt NUR in der ausgelieferten Fassung — und
@@ -78,43 +78,9 @@ function dateienSammeln(verzeichnis: string, treffer: string[] = []): string[] {
   return treffer;
 }
 
-/**
- * Gibt je Eingabezeile die Zeile OHNE Kommentartext zurück — Zeilenzahl und
- * Reihenfolge bleiben erhalten, damit Fundstellen benennbar sind.
- * `offen` meldet, ob die Datei innerhalb eines Blockkommentars endet.
- */
-function nurCode(zeilen: string[]): { code: string[]; offen: boolean } {
-  let imBlock = false;
-  const code = zeilen.map((zeile) => {
-    let rest = zeile;
-    let raus = "";
-    while (rest.length > 0) {
-      if (imBlock) {
-        const ende = rest.indexOf("*/");
-        if (ende === -1) break;
-        rest = rest.slice(ende + 2);
-        imBlock = false;
-        continue;
-      }
-      const block = rest.indexOf("/*");
-      const zeilenKommentar = rest.indexOf("//");
-      if (zeilenKommentar !== -1 && (block === -1 || zeilenKommentar < block)) {
-        raus += rest.slice(0, zeilenKommentar);
-        break;
-      }
-      if (block !== -1) {
-        raus += rest.slice(0, block);
-        rest = rest.slice(block + 2);
-        imBlock = true;
-        continue;
-      }
-      raus += rest;
-      break;
-    }
-    return raus;
-  });
-  return { code, offen: imBlock };
-}
+// nurCode() steht seit 0.9.60 in ../helfer -- ansichtsfokus.ts braucht sie
+// fuer denselben Fehler in derselben Form, zwei Kopien waeren die falsche
+// Antwort darauf.
 
 gruppe("Inhaltsrichtlinie (CSP)");
 

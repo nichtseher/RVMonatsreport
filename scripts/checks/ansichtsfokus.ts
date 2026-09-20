@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { gruppe, pruefe, wahr, gleich } from "../helfer";
+import { gruppe, pruefe, wahr, gleich, nurCode } from "../helfer";
 
 /*
   Die Wache über den Fokus beim Ansichtswechsel.
@@ -195,10 +195,21 @@ pruefe("der Haken wird in App.tsx auch aufgerufen", () => {
   sagte „Registerkarte", die Pfeiltasten taten nichts. axe-core meldet das
   nicht: Ein tablist mit tab-Kindern ist strukturell vollständig, das fehlende
   Panel ist keine seiner Regeln.
+
+  UEBER KOMMENTARBEREINIGTEN TEXT gesucht, seit 0.9.60 -- ohne das verteidigte
+  sich diese Pruefung selbst gegen sich selbst: Der Absatz direkt darueber
+  nennt `role="tablist"`, `role="tab"` UND `role="tabpanel"` als Zitat, um zu
+  erklaeren, warum das Muster entfernt wurde. Eine reine Textsuche zaehlte
+  App.tsx damit als "eine Datei mit der Rolle, eine mit dem Panel" und liess
+  die Bedingung unten IMMER zutreffen -- unabhaengig davon, ob irgendwo im
+  echten Code ein unvollstaendiges Reiter-Muster stand. Gegengeprueft: Vor
+  dieser Aenderung zaehlte die Pruefung mitTab=1, mitPanel=1, beide Treffer
+  in genau diesem Kommentarabsatz.
 */
 pruefe("kein Reiter-Muster ohne Reiter-Bedienung", () => {
   let mitTab = 0;
   let mitPanel = 0;
+  let kommentarNichtGeschlossen = 0;
   const gehe = (verzeichnis: string) => {
     for (const eintrag of readdirSync(verzeichnis, { withFileTypes: true })) {
       const pfad = join(verzeichnis, eintrag.name);
@@ -207,7 +218,9 @@ pruefe("kein Reiter-Muster ohne Reiter-Bedienung", () => {
         continue;
       }
       if (!/\.tsx$/.test(eintrag.name)) continue;
-      const inhalt = readFileSync(pfad, "utf8");
+      const { code, offen } = nurCode(readFileSync(pfad, "utf8").split(/\r?\n/));
+      if (offen) kommentarNichtGeschlossen++;
+      const inhalt = code.join("\n");
       if (/role=\{?"tab"/.test(inhalt) || /role=\{?"tablist"/.test(inhalt)) mitTab++;
       if (/role=\{?"tabpanel"/.test(inhalt)) mitPanel++;
     }
@@ -215,11 +228,18 @@ pruefe("kein Reiter-Muster ohne Reiter-Bedienung", () => {
   gehe(WURZEL);
 
   wahr(
+    kommentarNichtGeschlossen === 0,
+    `${kommentarNichtGeschlossen} Datei(en) enden innerhalb eines ` +
+      `Blockkommentars -- die Kommentarentfernung ist dort fehlgeschlagen, ` +
+      `das Ergebnis dieser Pruefung ist nicht belastbar.`,
+  );
+  wahr(
     mitTab === 0 || mitPanel > 0,
-    `${mitTab} Datei(en) setzen role="tab"/"tablist", aber keine setzt ` +
-      `role="tabpanel". Ein Reitersatz ist ein Bedienmuster, kein Aussehen: ` +
-      `Er verlangt Pfeiltasten, einen Tabulatorhalt für die Gruppe und ein ` +
-      `Panel, auf das die Reiter zeigen. Wer nur die Rolle setzt, verspricht ` +
-      `dem Screenreader etwas, das die Tastatur nicht einlöst.`,
+    `${mitTab} Datei(en) setzen role="tab"/"tablist" (ausserhalb von ` +
+      `Kommentaren), aber keine setzt role="tabpanel". Ein Reitersatz ist ` +
+      `ein Bedienmuster, kein Aussehen: Er verlangt Pfeiltasten, einen ` +
+      `Tabulatorhalt für die Gruppe und ein Panel, auf das die Reiter ` +
+      `zeigen. Wer nur die Rolle setzt, verspricht dem Screenreader etwas, ` +
+      `das die Tastatur nicht einlöst.`,
   );
 });

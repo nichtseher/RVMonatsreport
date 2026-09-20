@@ -43,6 +43,57 @@ export async function wirft(fn: () => Promise<unknown>, was = "sollte fehlschlag
   throw new Error(was + " — es wurde aber kein Fehler ausgelöst");
 }
 
+/**
+ * Entfernt Zeilenkommentare und Blockkommentare, damit eine quelltextsuchende
+ * Prüfung nicht ausgerechnet den Kommentar findet, der erklärt, warum ein
+ * Muster entfernt wurde -- und den "Verstoß" damit dauerhaft verteidigt,
+ * statt ihn zu finden.
+ *
+ * Extrahiert aus `checks/inhaltsrichtlinie.ts` (0.9.58), weil
+ * `checks/ansichtsfokus.ts` (0.9.60) genau denselben Fehler zeigte: Ein
+ * Kommentar, der die verbotene Rolle UND das dazugehörige Panel als Text
+ * nennt, um zu erklären, warum das Muster entfernt wurde, ließ die Prüfung
+ * dort "eine Datei mit der Rolle, eine mit dem Panel" zählen und damit
+ * dauerhaft grün bleiben -- unabhängig davon, ob irgendwo im echten Code
+ * ein unvollständiges Reiter-Muster steht.
+ *
+ * `offen` meldet, ob die Datei innerhalb eines Blockkommentars endet --
+ * dann hat die Kommentarentfernung selbst versagt, und das Ergebnis ist
+ * nicht belastbar.
+ */
+export function nurCode(zeilen: string[]): { code: string[]; offen: boolean } {
+  let imBlock = false;
+  const code = zeilen.map((zeile) => {
+    let rest = zeile;
+    let raus = "";
+    while (rest.length > 0) {
+      if (imBlock) {
+        const ende = rest.indexOf("*/");
+        if (ende === -1) break;
+        rest = rest.slice(ende + 2);
+        imBlock = false;
+        continue;
+      }
+      const block = rest.indexOf("/*");
+      const zeilenKommentar = rest.indexOf("//");
+      if (zeilenKommentar !== -1 && (block === -1 || zeilenKommentar < block)) {
+        raus += rest.slice(0, zeilenKommentar);
+        break;
+      }
+      if (block !== -1) {
+        raus += rest.slice(0, block);
+        rest = rest.slice(block + 2);
+        imBlock = true;
+        continue;
+      }
+      raus += rest;
+      break;
+    }
+    return raus;
+  });
+  return { code, offen: imBlock };
+}
+
 export async function alleLaufen(): Promise<number> {
   let fehler = 0;
   for (const f of faelle) {
