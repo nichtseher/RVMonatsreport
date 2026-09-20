@@ -1,3 +1,5 @@
+import { base64ToBytes } from "./base64";
+
 export async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
   const enc = new TextEncoder();
   const keyMaterial = await window.crypto.subtle.importKey(
@@ -55,9 +57,31 @@ export async function encryptData(data: string, password: string): Promise<strin
 }
 
 export async function decryptData(encryptedBase64: string, password: string): Promise<string> {
-  const response = await fetch("data:application/octet-stream;base64," + encryptedBase64);
-  const buffer = await response.arrayBuffer();
-  const combined = new Uint8Array(buffer);
+  /*
+    HIER STAND BIS 0.9.48 EIN `fetch("data:application/octet-stream;base64," + …)`.
+
+    Das sah symmetrisch zum FileReader-Weg in `encryptData` aus und war von
+    0.9.34 bis 0.9.47 der Grund, warum sich eine verschlüsselte Sicherung in
+    der PRODUKTION nicht mehr zurückspielen liess: Ein `fetch` auf eine
+    `data:`-URL wird gegen `connect-src` geprüft, die ausgelieferte Richtlinie
+    lautet `connect-src 'self'` (siehe `vite.config.ts`), und eine `data:`-URL
+    hat eine opake Herkunft. Der Browser wies die Anfrage ab, der Nutzer bekam
+    unten „Falsches Passwort oder beschädigte Datei." — für ein richtiges
+    Passwort.
+
+    Gemessen am 2026-09-19 im Browser gegen ein gebautes `dist/`. Dieselbe
+    Messung zeigt, dass `atob` unter derselben Richtlinie funktioniert.
+    Einzelheiten und der Wächter dagegen: `src/utils/base64.ts` und
+    `scripts/checks/inhaltsrichtlinie.ts`.
+  */
+  let combined: Uint8Array;
+  try {
+    combined = base64ToBytes(encryptedBase64);
+  } catch {
+    // `atob` wirft bei ungültigem Base64. Für den Nutzer ist das derselbe
+    // Fall wie ein beschädigter Chiffretext -- also dieselbe Meldung.
+    throw new Error("Falsches Passwort oder beschädigte Datei.");
+  }
 
   const salt = combined.slice(0, 16);
   const iv = combined.slice(16, 28);

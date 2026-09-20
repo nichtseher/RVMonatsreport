@@ -41,6 +41,43 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
       <div className="space-y-6">
         {/*
+          Ausfuehrlich, und zwar nach der zweiten Haelfte der Regel aus 0.9.40:
+          Es gibt nichts Neues zu KOENNEN, aber etwas zu WISSEN, um zu handeln.
+          Wer seit dem 14.09. eine passwortgeschuetzte Sicherung angelegt hat,
+          besitzt eine Datei, die sich nicht einspielen liess -- und hat
+          moeglicherweise geglaubt, sein Passwort sei falsch. Dass die Datei in
+          Ordnung ist und es sich jetzt lohnt, sie einmal auszuprobieren, kann
+          er nur aus einer ausgeschriebenen Zeile erfahren. Unter
+          "Fehlerbehebungen" waere es genau die Auskunft, die er braucht, die
+          fehlt.
+        */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.48: Verschlüsselte Sicherungen lassen sich wieder einspielen</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>
+              <strong>Wenn Sie seit dem 14. September eine Sicherung mit Passwort angelegt haben, ließ sie sich
+              nicht zurückspielen.</strong> Die App meldete „Falsches Passwort oder beschädigte Datei“, obwohl das
+              Passwort stimmte. Das ist behoben. <strong>Ihre vorhandenen Dateien sind in Ordnung</strong> – bitte
+              probieren Sie einmal aus, ob sich Ihre Sicherung jetzt einspielen lässt.
+            </li>
+            <li>
+              Betroffen war auch der <strong>verschlüsselte Text-Code</strong> beim Geräte-Sync, also der mit
+              Passwort. Auch er lässt sich wieder einlesen. Sicherungen <em>ohne</em> Passwort und der normale
+              Text-Code waren nie betroffen.
+            </li>
+            <li>
+              Warum das nicht früher auffiel: Die Ursache war eine Sicherheitsvorgabe, die ausschließlich in der
+              veröffentlichten Fassung gilt – auf dem Entwicklungsrechner und in allen automatischen Prüfungen trat
+              der Fehler nie auf. Es gibt jetzt eine Prüfung, die genau diesen Fall abfängt.
+            </li>
+          </ul>
+        </div>
+
+        {/*
           Ausfuehrlich, obwohl es keine neue Funktion ist -- dieselbe Abwaegung
           wie bei 0.9.38: Wer mit Tastatur oder Screenreader arbeitet, merkt
           die Aenderung sofort, weil sich sein eigener Ablauf aendert. Das

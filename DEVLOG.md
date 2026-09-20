@@ -10,6 +10,112 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-20 — v0.9.48: Verschlüsselte Sicherungen liefen seit fünf Tagen ins Leere
+
+Auf Bitte des Projektinhabers hat sich die gesamte App noch einmal einem
+breiten Durchlauf gestellt — neun spezialisierte Prüfungen parallel
+(Barrierefreiheit, Formularsemantik, Kernlogik, Datenschutz, Performance,
+Prüfnetz, Alltagstauglichkeit, Gestaltung, Dokumentation), jeder Befund vor
+der Übernahme hier selbst nachgemessen, nicht aus dem Agentenbericht
+übernommen. Das hier ist der erste und schwerste von mehreren gefundenen
+Punkten; die übrigen stehen in ROADMAP.md.
+
+### Der Fehler
+
+`decryptData` in `src/utils/crypto.ts` las den Chiffretext einer
+Sicherungsdatei über `fetch("data:application/octet-stream;base64," + …)` —
+denselben Umweg, den `encryptData` beim Schreiben nutzt (dort über
+`FileReader`, nicht `fetch`). Seit 0.9.34 (2026-09-14) trägt die
+ausgelieferte Seite eine Inhaltsrichtlinie mit `connect-src 'self'`. Ein
+`fetch` auf eine `data:`-URL hat eine opake Herkunft und passt nicht auf
+`'self'` — Chromium lehnt ab:
+
+```
+Refused to connect because it violates the document's Content Security
+Policy.
+```
+
+**Betroffen war jede Sicherung mit Passwort** (`SecureBackupModal.tsx`,
+Dateiendung `.json.enc`) und der verschlüsselte Text-Code beim Geräte-Sync
+(`RVC2:`). Erzeugen ging weiterhin — nur das Zurücklesen scheiterte. Der
+Nutzer sah „Falsches Passwort oder beschädigte Datei.“ für ein richtiges
+Passwort und eine unbeschädigte Datei.
+
+### Warum kein bestehendes Tor das gefunden hat
+
+Die Richtlinie wirkt ausschließlich in der Produktion (`apply: "build"` in
+`vite.config.ts`) — Vite braucht im Dev-Server Inline-Skripte und `eval` und
+würde daran sofort sterben. Drei Stellen, die den Fehler hätten zeigen
+können, haben ihn aus genau diesem Grund nicht gesehen:
+
+- `npm run check` ruft `encryptData`/`decryptData` im Umlauf auf
+  (`scripts/checks/backup.ts`), aber unter Node — dort ist `fetch` global und
+  kennt keine CSP. Der Umlauf bewies die Kryptografie, nicht die Auslieferung.
+- `npm run check:ui` läuft gegen den Dev-Server, in dem die Richtlinie nicht
+  eingehängt ist.
+- `scripts/csp-pruefen.ts` prüft die Richtlinie selbst, nicht den Quelltext,
+  der sich an sie halten muss.
+
+Das ist derselbe Riss, den 0.9.34 schon einmal aufgeschrieben hat („die CSP
+ist aktiv in Produktion und nirgendwo sonst“) — nur diesmal auf der
+Verbraucherseite statt der Erzeugerseite einer Richtlinie.
+
+### Die Behebung
+
+`decryptData` liest den Chiffretext jetzt über `atob` (in
+`src/utils/base64.ts`, `base64ToBytes`) statt über `fetch`. Derselbe Weg
+existierte in der App bereits — `syncCode.ts` hatte eine eigene, textgleiche
+Kopie dieser Funktion für die QR-/Textcode-Kodierung; beide Stellen nutzen
+jetzt dieselbe Datei statt zweier Kopien.
+
+**Neuer Wächter:** `scripts/checks/inhaltsrichtlinie.ts` durchsucht den
+gesamten `src`-Baum nach `fetch(`/`new Request(` auf eine `data:`-URL und
+lässt `npm run check` scheitern, falls sie zurückkehrt. Beim ersten
+Selbsttest schlug die Prüfung dreimal fehl — auf ihre eigenen Kommentare, die
+den entfernten Aufruf als Zitat nennen. Dieselbe Falle, die CLAUDE.md für
+`scripts/checks/typografie.ts` beschreibt: Wer den „Verstoß“ wegräumt,
+löscht die Begründung. Der Wächter entfernt jetzt Kommentare vor der Suche
+(mit einem Selbsttest, der belegt, dass er dabei den echten Fall nicht mit
+wegwirft) und meldet sich zusätzlich, falls eine Datei innerhalb eines
+Blockkommentars endet — dann wäre das Ergebnis nicht belastbar, und
+stillzuschweigen wäre schlimmer als ein Fehlalarm.
+
+`scripts/csp-pruefen.ts` verlangt `connect-src 'self'` jetzt selbst als
+Pflichtbestandteil der Richtlinie, mit Verweis auf den neuen Wächter — wer
+die Direktive weitet, um irgendeinen anderen Fall zu lösen, bekommt an
+beiden Stellen einen Hinweis.
+
+### Verifiziert
+
+Nicht nur `npm run check` (jetzt 201 statt 198 Prüfungen) und `npm run
+build` — beide hätten den ursprünglichen Fehler nicht gefunden, s. o. Der
+eigentliche Nachweis lief gegen die **gebaute** Fassung:
+
+1. Mit der App-eigenen `encryptData`-Funktion eine echte `.json.enc`-Datei
+   erzeugt (Archiv, Name, Notizen mit Umlauten und Emoji, wie ein reales
+   Backup).
+2. `npm run build` — `scripts/csp-pruefen.ts` bestätigt Richtlinie, Hash und
+   `Referrer-Policy`.
+3. `dist/` über einen eigenen statischen Server ausgeliefert (mit der
+   ausgelieferten `<meta http-equiv="Content-Security-Policy">`, nicht dem
+   Dev-Server), per Playwright gegen Chromium: Datei über die Oberfläche
+   eingespielt (Optionen → Datensicherung → Passwort → Datei wählen).
+   - Richtiges Passwort: „Sicherung eingespielt und mit den vorhandenen
+     Daten zusammengeführt.“ — keine CSP-Meldung in der Konsole.
+   - Falsches Passwort (Gegenprobe, selber Lauf): „Falsches Passwort oder
+     beschädigte Datei.“ — die App unterscheidet also weiterhin korrekt
+     zwischen „passt nicht“ und „technisch blockiert“.
+
+Vor der Änderung lieferte derselbe Aufbau in beiden Fällen keine Rückmeldung
+und die Konsole `Refused to connect … Content Security Policy` — das ist der
+Zustand, in dem Produktion seit 0.9.34 stand.
+
+**Nicht angetastet:** verschlüsseln (`encryptData`, `FileReader`-Weg), der
+unverschlüsselte Text-Code (`RVC1:`), die QR-Kodierung. Alle nutzten nie
+`fetch` und waren nie betroffen.
+
+---
+
 ## 2026-09-17 — v0.9.47: Eine Landmarke, ein ruhigeres Schriftbild, eine Erklärung im Entwurf
 
 Frage des Projektinhabers: „Was ist außer dem Screenreader-Durchlauf noch zu

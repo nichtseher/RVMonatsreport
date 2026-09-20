@@ -46,6 +46,11 @@ if (!csp) {
     "object-src 'none'",
     "base-uri 'self'",
     "script-src 'self'",
+    // Die Direktive, die die Zusage traegt: Ohne sie duerfte die Seite
+    // beliebige Ziele anfragen. Sie ist zugleich die Voraussetzung von
+    // scripts/checks/inhaltsrichtlinie.ts -- wer sie weitet, muss dort
+    // nachziehen.
+    "connect-src 'self'",
   ]) {
     if (!richtlinie.includes(pflicht)) fehler.push(`Die Richtlinie enthaelt "${pflicht}" nicht mehr.`);
   }

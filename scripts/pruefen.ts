@@ -30,6 +30,7 @@ import "./checks/ansichtsfokus";
 import "./checks/zuletzt-geaendert";
 import "./checks/typografie";
 import "./checks/erklaerung";
+import "./checks/inhaltsrichtlinie";
 import { alleLaufen } from "./helfer";
 
 alleLaufen()

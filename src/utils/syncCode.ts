@@ -15,27 +15,10 @@
  * seit 0.9.5 RVC2 als Angebot für Wege, die man nicht kontrolliert.
  */
 import { encryptData, decryptData } from "./crypto";
+import { base64ToBytes, bytesToBase64 } from "./base64";
 
 export const PROTOCOL = "RV1";
 export const CHUNK_SIZE = 450; // Zeichen pro QR-Code (zuverlässig scannbar)
-
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = "";
-  const CHUNK = 0x8000;
-  for (let i = 0; i < bytes.length; i += CHUNK) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-  }
-  return btoa(binary);
-}
-
-function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
 
 export async function compressString(
   input: string,
