@@ -144,7 +144,7 @@ export default function QuickEntryPanel({
           }}
           aria-expanded={isEditorOpen}
           aria-label="Schnell-Erfassung anpassen"
-          className="px-2.5 py-2 min-h-[44px] rounded-lg text-xs font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--border-color)] transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 flex-shrink-0"
+          className="px-2.5 py-2 min-h-[44px] rounded-lg text-xs font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 flex-shrink-0"
         >
           <Settings2 className="w-3.5 h-3.5" aria-hidden="true" />
           Anpassen

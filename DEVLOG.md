@@ -10,6 +10,522 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-20 — v0.9.55: Ein Download galt der App genauso viel wie ein Versand
+
+Siebter Befund aus dem Neun-Agenten-Durchlauf; die Verifikation deckte
+nebenbei 0.9.54 auf, ohne das dieser Test nie durch die erste Rückfrage
+hinausgekommen wäre.
+
+### Der Befund
+
+Der ux-researcher-Agent meldete: `triggerFileDownload()` liefert
+`"geteilt"`, `"heruntergeladen"` oder `"abgebrochen"` — beide erstgenannten
+lösten bislang identisch `setzeVersandStatus(monat, true)` aus. Der
+Unterschied ist aber keine Formalität: „geteilt" heißt, das
+Betriebssystem-Teilen-Menü wurde geöffnet UND ein Ziel gewählt (Mail,
+Teams …) — eine abgeschlossene Handlung. „heruntergeladen" heißt nur, dass
+die Datei jetzt im Download-Ordner liegt. Ob sie je irgendwohin geschickt
+wird, weiß die App nicht.
+
+Folge vor der Korrektur: Browser/Geräte ohne Web-Share-Unterstützung (jeder
+Desktop-Browser ohne Anbindung, und der Standardfall in jedem
+Testautomatisierungs-Browser) fielen immer auf den Download. Die App
+markierte den Monat trotzdem sofort als „Gesendet TT.MM." im Archiv — der
+Fristalarm für unversendete Monate verstummte, obwohl bei der
+Vertriebsleitung nichts angekommen war. Zwischen Download und tatsächlichem
+Versenden (E-Mail schreiben, Anhang wählen, abschicken) liegt ein manueller
+Schritt, den ein abgelenkter Kollege auslässt, ohne dass die App das
+bemerken könnte.
+
+### Behoben
+
+Beide Exportpfade (`useExport.ts` — „Bericht an VL senden" im Formular,
+und `HistoryModal.tsx` — Direktversand aus dem Archiv) markieren jetzt nur
+noch bei `ergebnis === "geteilt"` automatisch. Bei `"heruntergeladen"`
+bleibt der Monat offen, und Toast wie Ansage sagen explizit, was zu tun
+ist: „Bitte schicken Sie die Datei an die Vertriebsleitung und markieren
+Sie den Monat danach [im RV Archiv] als gesendet." Der manuelle Schalter
+dafür existierte bereits (`HistoryModal.tsx`, „Als gesendet markieren" /
+„Noch offen") — nichts Neues zu bauen, nur nicht mehr automatisch
+vorwegnehmen, was er entscheiden soll.
+
+Der dritte Exportpfad (`handleDirectExportTimeLogs`, der separate
+Stundenzettel) wurde geprüft und ist nicht betroffen: Er ruft
+`setzeVersandStatus`/`onVersandGemeldet` nie auf — der Stundenzettel-Export
+war nie an den Versand-Status gekoppelt.
+
+### Verifiziert — der komplette Nutzerablauf, zweimal
+
+Playwright gegen die gebaute Fassung, `navigator.share` einmal fehlend
+(Chromium-Standard), einmal simuliert erfolgreich:
+
+**Download-Fall** (kein `navigator.share`, der Fall, der den Fehler
+auslöste): Formular ausgefüllt, „Bericht an VL senden" → Monatsabschluss-
+Check → „Trotzdem senden" → Blattwahl → „Nur Vorlage senden" → Download
+ausgelöst (`RV_Mobil_Report_..._September_2026.xlsx`). Archiv danach:
+**„Noch offen — noch nicht an die Vertriebsleitung gesendet"**, „Als
+gesendet markieren" verfügbar.
+
+**Geteilt-Fall** (`navigator.share`/`canShare` erfolgreich simuliert):
+derselbe Ablauf, Meldung „Excel-Report geteilt. Der Monat ist im RV Archiv
+als gesendet markiert." Archiv danach: **„Gesendet TT.MM."** — die
+Gegenprobe, dass die eigentlich funktionierende automatische Markierung
+nicht versehentlich mit abgeschaltet wurde.
+
+`npx tsc --noEmit`, `npm run check` (201/201) und `npm run build` bleiben
+grün.
+
+---
+
+## 2026-09-20 — v0.9.54: „Trotzdem senden" tat nichts — eine Rückfrage schluckte die nächste
+
+Nicht aus dem ursprünglichen Neun-Agenten-Durchlauf, sondern beim
+Verifizieren des nächsten Befunds (0.9.55) selbst gefunden: Ein
+End-to-End-Test des Sendeflusses („Bericht an VL senden") blieb beim
+Klick auf „Trotzdem senden" stehen — kein Fehler, kein zweiter Dialog,
+kein Export. Die Taste hörte wortlos auf zu wirken.
+
+### Die Ursache
+
+`ConfirmDialog.tsx`, Bestätigungstaste:
+
+```js
+onClick={() => {
+  request.onConfirm();
+  onClose();
+}}
+```
+
+`handleSendToVL` (`useExport.ts`) fragt in zwei Schritten: Hat der
+Monatsabschluss-Check etwas anzumerken, öffnet die erste Rückfrage
+(„Monatsabschluss-Check", Tasten „Erst korrigieren"/„Trotzdem senden") mit
+`onConfirm: frageNachUmfang` — und `frageNachUmfang` öffnet seinerseits per
+`setConfirmRequest({...})` die ZWEITE Rückfrage (die Blattwahl, „Nur Vorlage
+senden"/„Alle drei Blätter").
+
+Beide `setConfirmRequest`-Aufrufe landen im selben Tick: `request.onConfirm()`
+setzt die neue (zweite) Anfrage, `onClose()` direkt danach setzt sie auf
+`null` zurück — React batcht beides in einen Render, der letzte Aufruf
+gewinnt. Die zweite Rückfrage wird nie sichtbar. Genau eine Stelle im
+gesamten Code verkettet zwei Rückfragen auf diese Art (`onConfirm:
+frageNachUmfang`); jede andere der anderen ~13 Rückfragen schließt sich
+selbst und war nie betroffen.
+
+**Tragweite:** Jeder Monat, bei dem `getReportWarnings()` mindestens eine
+Anmerkung hat (z. B. fehlender Name — der häufigste Fall, siehe 0.9.54s
+eigener Testlauf), ließ sich über „Bericht an VL senden" **überhaupt nicht
+verschicken**, sobald man „Trotzdem senden" wählte. Kein Hinweis, keine
+Fehlermeldung — die App tat einfach nichts. Nur Monate ganz ohne Anmerkung
+erreichten die Blattwahl je.
+
+### Behoben
+
+`ConfirmRequest.onConfirm` (und, aus Symmetrie, `alternative.onSelect`) darf
+jetzt `true` zurückgeben, um den automatischen `onClose()` zu unterdrücken:
+
+```ts
+onConfirm: () => void | boolean;
+```
+```js
+const haeltOffen = request.onConfirm();
+if (haeltOffen !== true) onClose();
+```
+
+Strikt `!== true`, nicht truthy-geprüft — ein normaler `onConfirm`, der
+nichts zurückgibt (`undefined`) oder ein Promise (asynchrones `senden()`),
+verhält sich unverändert. Nur `frageNachUmfang` gibt jetzt explizit `true`
+zurück und ist damit der einzige Aufrufer, der den Dialog absichtlich offen
+hält.
+
+### Verifiziert — der komplette Ablauf, nicht nur die Funktion
+
+Playwright gegen die gebaute Fassung, echter Klick-Pfad:
+
+```
+[Monatsabschluss-Check] "Trotzdem senden" geklickt
+  -> [Was soll gesendet werden?] erscheint jetzt tatsächlich
+  "Nur Vorlage senden" geklickt -> Download ausgelöst
+```
+
+Vorher brach die Kette nach der ersten Rückfrage ab, kein zweiter Dialog,
+kein Download. `npx tsc --noEmit`, `npm run check` (201/201, die
+Rückfragen-Zählprüfung `rueckfrage.ts` bleibt unverändert grün — es kam
+keine neue `setConfirmRequest`-Stelle hinzu) und `npm run build` bleiben
+grün.
+
+### Nicht Teil dieses Befunds
+
+Geprüft, ob eine zweite Stelle im Code denselben Verkettungs-Fehler hätte
+haben können: Nein — `onConfirm: frageNachUmfang` ist die einzige Stelle,
+an der der `onConfirm`-Funktionskörper selbst `setConfirmRequest` aufruft.
+
+---
+
+## 2026-09-20 — v0.9.53: Blatt 2 addierte Tage und Stunden zu einer Zahl ohne Bedeutung
+
+Sechster Befund aus demselben Durchlauf. Der code-reviewer-Agent meldete:
+„Summen je Bereich" auf dem Zusatzblatt (`baueZusatzBlatt` in
+`vorlageExport.ts`) summiert alle vier Bereiche gleich — für Bereich 4
+addiert das `tage_arbeit` + `std_buero` + `std_aussendienst` + `tage_urlaub`
++ `tage_krank` + `tage_feiertag` zu einer einzigen Zahl unter der
+Überschrift „4. Arbeitszeit & Büro".
+
+### Nachgerechnet, dann erzeugt
+
+Mit den Beispielwerten aus dem Bericht (21 Arbeitstage, 40 Stunden Büro,
+120 Stunden Außendienst, 2 Urlaubs-, 1 Krankheits-, 3 Feiertage) ergibt die
+Summe **187** — vier Tageszahlen und zwei Stundenzahlen ohne gemeinsame
+Einheit, addiert zu einer Zahl, die nichts bedeutet. Das ist die Datei, die
+bei „Alle drei Blätter senden" an die Vertriebsleitung geht.
+
+Geprüft, ob dasselbe Problem auch Bereich 1–3 betrifft: Nein. Beide Blicke
+bestätigt — `App.tsx` (`DEFAULT_FIELDS_CONFIG`) zeigt, dass s1–s3 in der
+Voreinstellung ausschließlich „Anzahl …"-Zähler sind (Vorführungen,
+Schulungen, Spezialprodukte); eine Summe zählt dort sinnvoll Vorgänge.
+Bereich 4 ist der einzige mit gemischten Einheiten.
+
+### Warum nicht allgemein behoben
+
+`FieldConfig` (`types.ts`) trägt keine Einheit — keinen Hinweis, ob ein Feld
+Tage, Stunden oder eine Anzahl zählt. Eine allgemeine Lösung („nur
+gleichartige Felder summieren") bräuchte diese Information zuerst, und das
+wäre ein Eingriff in die Feldkonfiguration selbst, die auch eigene Felder
+der Nutzer umfasst — eine größere, eigenständige Entscheidung, nicht Teil
+dieses Fixes. Diese Änderung behebt den konkret gemessenen, heute
+existierenden Fall: die sechs Standardfelder in Bereich 4.
+
+### Behoben
+
+`baueZusatzBlatt` lässt Bereich 4 aus der „Summen je Bereich"-Liste jetzt
+aus. Kein Informationsverlust: `tage_arbeit` und `std_buero` stehen
+weiterhin einzeln auf Blatt 1 (D18/D19, wie schon vorher), die übrigen vier
+Felder (`std_aussendienst`, `tage_urlaub`, `tage_krank`, `tage_feiertag`)
+stehen weiterhin einzeln in der Liste „Zusatzangaben" oben auf demselben
+Blatt 2 — nur die bedeutungslose Summe fällt weg.
+
+### Verifiziert
+
+Kein bestehender Prüffall (`scripts/checks/vorlage.ts`, `excel.ts`) berührte
+diesen Abschnitt — nachgesehen, kein Treffer. Stattdessen ein
+Wegwerf-Skript (`npx tsx`, aus dem Repo-Root, danach gelöscht): eine echte
+Datei mit `erzeugeVorlagenDatei()` erzeugt, mit ExcelJS zurückgelesen,
+geprüft:
+
+```
+Bereich 4 (Arbeitszeit) taucht NICHT mehr auf: JA
+Genau 3 Bereichssummen: JA
+s1-Summe = 10 (7+3): JA | s2-Summe = 5: JA | s3-Summe = 2: JA
+Einzelwert 'Stunden Außendienst' weiterhin vorhanden (120): JA
+Einzelwert 'Urlaubstage' weiterhin vorhanden (2): JA
+```
+
+`npx tsc --noEmit`, `npm run check` (201/201) und `npm run build` bleiben
+grün.
+
+---
+
+## 2026-09-20 — v0.9.52: Die Hilfe verschwieg eines von drei Feldern, die das Jahreskonto braucht
+
+Fünfter Befund aus demselben Durchlauf. Der ux-researcher-Agent meldete
+einen Widerspruch zwischen zwei Dateien: `HelpModal.tsx` sagt, für die
+Jahresübersicht seien „Urlaubs- und Krankheitstage" von Hand einzutragen —
+`TimeModal.tsx` (`yearlyOvertime`, Zeile 88-93) zieht vom Soll zusätzlich
+`tage_feiertag` ab: `targetDays = weekdays - uDays - kDays - fDays`.
+
+Wer der Hilfe folgt und nur Urlaub und Krankheit einträgt, aber Feiertage
+leer lässt, bekommt ein zu hohes Soll — die App zählt gesetzliche Feiertage
+sonst als Arbeitstage mit. Genau die Klasse Fehler, die CLAUDE.md unter
+„HelpModal.tsx makes concrete factual claims" mit Beispiel führt: eine
+falsche Hilfe erzeugt einen falschen Bericht, nicht sofort sichtbar, weil
+das Jahreskonto sich erst über mehrere Monate aufsummiert.
+
+### Behoben
+
+Ein Satz in `HelpModal.tsx`, FAQ „Wie funktioniert die Stempeluhr":
+„Urlaubs- und Krankheitstage" → „Urlaubs-, Krankheits- und Feiertage",
+zusätzlich ein Halbsatz, der die Folge eines vergessenen Eintrags konkret
+benennt („ein fehlender Eintrag zeigt dort ein zu hohes Soll"), statt nur
+zu sagen, was einzutragen ist.
+
+Geprüft, ob dieselbe unvollständige Aufzählung noch an anderer Stelle im
+Quelltext steht: zwei Treffer in `ChangelogModal.tsx`, beide historische
+Einträge zu vergangenen Versionen (0.9.x-Ankündigungen) — die bleiben
+unverändert, weil sie beschreiben, was zum jeweiligen Zeitpunkt galt, nicht
+den heutigen Stand. `TimeModal.tsx` selbst enthält keinen erklärenden
+Fließtext, der dieselbe Aufzählung wiederholt und hätte mitgehen müssen.
+
+### Verifiziert
+
+`npx tsc --noEmit`, `npm run check` (201/201), `npm run build` — grün. Der
+korrigierte Text im gebauten Bündel gegengeprüft (kein Encoding-Schaden an
+den Umlauten, die diesem Projekt schon einmal über PowerShell verlorengingen).
+
+---
+
+## 2026-09-20 — v0.9.51: Der Schalter für die Sprachausgabe sprach genau verkehrt herum
+
+Vierter Befund aus demselben Durchlauf. Der accessibility-auditor-Agent
+meldete: `setAccessibility(...)` wird eingereiht, `announceToAriaAndSpeech`
+läuft im selben Tick noch mit dem alten Wert — Einschalten blieb stumm,
+Ausschalten sprach noch einmal nach.
+
+### Die Ursache, genau benannt
+
+`announceToAriaAndSpeech` in `useSprachausgabe.ts` ist ein `useCallback` mit
+`accessibility.screenReaderNarration` in den Abhängigkeiten. Der Button-
+Handler rief `setAccessibility(...)` **und** `announceToAriaAndSpeech(...)`
+im selben Klick auf — React rendert dazwischen nicht neu, die Funktion war
+also noch die Fassung aus dem Render **vor** dem Klick, mit dem **alten**
+Wert von `screenReaderNarration` geschlossen. Klassischer Stale-Closure-
+Fehler, dadurch verschärft, dass hier ausgerechnet die Einstellung
+umgeschaltet wird, die dieselbe Funktion zwei Zeilen darunter abfragt.
+
+Ein zweiter, unabhängiger Fehler saß in derselben Stelle und hätte den
+ersten überlebt: Beide Richtungen (an/aus) nutzten denselben Ansagetext
+("Sprachansagen wurden aktualisiert."). `setAriaAnnouncement` schreibt nur
+bei geändertem Text in den Live-Bereich (Absicht — sonst reihen
+Screenreader Meldungen zu einer Kette). Weil der Text bei jedem Klick
+identisch blieb, hätte der Live-Bereich ab dem zweiten Klick geschwiegen,
+unabhängig vom ersten Fehler.
+
+### Behoben
+
+- `useSprachausgabe.ts`: `announceToAriaAndSpeech` bekommt einen fünften,
+  optionalen Parameter `sprachausgabeAktivUeberschreiben`. Gesetzt, ersetzt
+  er den (möglicherweise veralteten) Hook-Wert für genau diesen Aufruf —
+  `??`, nicht `||`, weil `false` ein gültiger, gewollter Override ist. Alle
+  bestehenden Aufrufstellen (mehrere Dutzend im ganzen Projekt) lassen den
+  Parameter weg und verhalten sich unverändert.
+- Beide Aufrufstellen (Tastenkürzel `S`, Schnell-Umschalter-Taste): der neue
+  Wert wird **lokal** berechnet (`!accessibility.screenReaderNarration`,
+  direkt aus dem aktuellen Render gelesen, keine Closure-Verzögerung) und an
+  drei Stellen verwendet — `setAccessibility`, den Ansagetext, den neuen
+  Override-Parameter.
+- Der Ansagetext unterscheidet jetzt die Richtung: „Sprachansagen
+  eingeschaltet." / „…ausgeschaltet." statt derselben Zeile für beides — das
+  behebt den zweiten Fehler als Nebeneffekt, ohne den geteilten
+  Dedup-Mechanismus im Live-Bereich anzufassen.
+
+### Verifiziert — Verhalten, nicht nur Typen
+
+`speechSynthesis.speak` in der gebauten Fassung abgefangen (Playwright),
+zweimal geklickt:
+
+```
+Anfangszustand: Sprachansagen AUS
+Klick 1 (-> AN):  gesprochen = ["Sprachansagen eingeschaltet."]
+Klick 2 (-> AUS): gesprochen = ["Sprachansagen eingeschaltet."]  (unveraendert -- Klick 2 hat NICHTS gesprochen)
+```
+
+Vorher wäre es umgekehrt gewesen: Klick 1 stumm, Klick 2 spricht. `npx tsc
+--noEmit`, `npm run check` (201/201) und `npm run build` bleiben grün.
+
+### Nicht Teil dieses Befunds
+
+Der allgemeine Dedup-Mechanismus in `setAriaAnnouncement` (kein Nonce, keine
+Wiederholung bei identischem Text über verschiedene Aufrufer hinweg) bleibt
+bestehen und betrifft potenziell weitere Stellen im Code, an denen zwei
+verschiedene Aktionen zufällig denselben Ansagetext erzeugen. Eine generelle
+Lösung (Zähler/Nonce am Live-Bereich) wäre ein Eingriff in die zentrale
+Funktion, die im ganzen Projekt aufgerufen wird, und gehört in einen eigenen
+Durchgang mit eigener Prüfung aller Aufrufstellen — nicht an den Rand dieser.
+
+---
+
+## 2026-09-20 — v0.9.50: Fünf Bedienelemente ohne Namen, in einem Zustand, den nichts je geöffnet hat
+
+Dritter Befund aus demselben Durchlauf (0.9.48, 0.9.49). Der section-508-
+accessibility-specialist-Agent meldete: Im Ziele-Editor (Formular →
+„Ziele" → Panel aufklappen) haben vier Zahlenfelder keinen zugänglichen
+Namen, und der Umschalter „Monatsziele festlegen" hat als Namen buchstäblich
+nur das Wort „Deaktiviert".
+
+### Gemessen, nicht angenommen
+
+Playwright gegen die gebaute Fassung, `isGoalsEditorOpen` geöffnet:
+
+```
+Zahlenfelder: (KEIN programmatischer Name) x4
+Checkbox-Label-Box: 101 x 18 px
+Zugänglicher Name der Checkbox: "Deaktiviert"
+```
+
+Ursache bei den vier Feldern: `<label>` ohne `htmlFor`, `<input>` ohne `id`
+oder `aria-label` — rein visuelle Nachbarschaft, keine programmatische
+Verbindung. Ursache beim Umschalter: Die sichtbare Überschrift „Monatsziele
+festlegen" stand als eigenständiges `<span>` AUSSERHALB des `<label>`, das
+den Checkbox umschließt; im Label selbst stand nur das Zustandswort
+„Aktiviert"/„Deaktiviert". Der zugängliche Name eines Eingabeelements in
+einem umschließenden `<label>` ist dessen Textinhalt — und der war eben nur
+das Zustandswort.
+
+Warum das trotz 1.086 Prüfungen im Netz nicht auffiel: `isGoalsEditorOpen`
+ist ein `useState`-Schalter wie jeder andere in `App.tsx` — aber er steht in
+keiner der Zustandslisten in `tests/oberflaeche.spec.ts`
+(`FORMULAR_ZUSTAENDE` hatte zwei Einträge, dieser Zustand war keiner davon).
+Genau die Klasse Fehler, die CLAUDE.md unter „eine handgepflegte Liste ist
+kein Sicherheitsnetz" seit drei Vorfällen führt — hier der vierte, nur
+diesmal nicht bei einer ganzen Ansicht, sondern bei einem Panel innerhalb
+einer Ansicht, die selbst längst geprüft wird.
+
+### Behoben
+
+- Die vier Felder: `id`/`htmlFor`-Paare nach dem im Projekt etablierten
+  Muster (`CarryoverModal.tsx`, `goal-s1-input` … `goal-s4-input`).
+- Der Umschalter: EIN `<label>` umschließt jetzt die ganze Zeile
+  (Überschrift **und** Schalter), mit `justify-between` für dieselbe Optik.
+  Der zugängliche Name enthält damit jeden sichtbaren Text der klickbaren
+  Fläche — WCAG 2.5.3 erfüllt, nicht nur „ein Name existiert". Nebeneffekt,
+  bewusst: Die ganze Zeile ist jetzt anklickbar, nicht mehr nur der kleine
+  Schalter — eine größere, nicht eine andere Trefferfläche.
+- `min-h-[44px]` auf dem neuen äußeren `<label>`: Die Box war vorher
+  101 × 18 px, weit unter der Schwelle aus CLAUDE.md („44 × 44 px für jedes
+  Bedienelement, ohne Ausnahme") — auch das nie gemessen, aus demselben
+  Grund wie oben.
+- Zwei `<div>` innerhalb des `<label>` wurden zu `<span>`: `<label>` erlaubt
+  laut Spezifikation nur Phrasing Content als Nachfahren; Browser tolerieren
+  ein `<div>` dort, korrekt ist es nicht. Kein Verhaltensunterschied, nur
+  Aufräumen an einer Stelle, die ohnehin schon angefasst wurde.
+
+### Verifiziert — mit der echten Accessibility-API, nicht mit `textContent`
+
+Erster Versuch maß den Text im Label per `el.textContent.trim()` und meldete
+"Monatsziele festlegenDeaktiviert" ohne Leerzeichen — das hätte, wäre es
+echt, selbst ein neuer Fehler gewesen. `textContent` ist aber keine
+Accessible-Name-Berechnung; sie fügt an Elementgrenzen kein Leerzeichen ein,
+der Accessible-Name-Algorithmus (und jeder Screenreader) tut das. Nachgemessen
+mit Playwrights `ariaSnapshot()`, das Chromiums echten Accessibility-Baum
+abfragt:
+
+```
+- group "Ziele-Konfiguration":
+  - checkbox "Monatsziele festlegen Deaktiviert"
+  - spinbutton "Vorführungen" [disabled]: "15"
+  - spinbutton "Schulungen" [disabled]: "10"
+  - spinbutton "Spezialprodukte" [disabled]: "5"
+  - spinbutton "Bürozeit (h)" [disabled]: "40"
+```
+
+Alle fünf Bedienelemente jetzt mit korrektem, vollständigem Namen. Label-Box
+der Checkbox: 344 × 44 px (vorher 101 × 18 px).
+
+`npx tsc --noEmit`, `npm run check` (201/201) und `npm run build` bleiben
+grün — diese Änderung berührt keine geprüfte reine Funktion.
+
+### Nicht Teil dieses Befunds
+
+Eine zweite Stelle mit denselben Feldnamen („Vorführungen", „Schulungen") in
+derselben Datei (Zeile ~2420, die Dashboard-Kacheln mit Fortschrittsbalken)
+wurde geprüft und ist **kein** Fehler: Dort trägt der umschließende
+`<button>` bereits einen vollständigen `aria-label`
+(„Bereich 1: Vorführungen. Aktuelle Summe: … von Monatsziel …"), der Text
+darunter ist rein visuelles Beiwerk zu einem bereits benannten Element.
+
+---
+
+## 2026-09-20 — v0.9.49: Text verschwand beim Überfahren, aber nur in den beiden Themes, die dafür gebaut sind
+
+Zweiter Befund aus demselben breiten Durchlauf, der 0.9.48 auslöste (siehe
+dort). Der ui-finish-gate-reviewer-Agent meldete: In beiden Hochkontrast-
+Schemata seien `--text-color`, `--border-color` und `--accent` identisch, und
+28 Stellen im Code setzten `hover:bg-[var(--border-color)]` neben
+`text-[var(--text-color)]` — die Beschriftung müsste beim Überfahren mit der
+Maus exakt auf ihrer eigenen Farbe stehen.
+
+### Nachgerechnet, dann live gemessen
+
+Handgerechnet (WCAG-Formel, die vier Farbpaare aus `index.css`):
+
+| Schema | Schwebe-Kontrast |
+|---|---|
+| Standard (hell) | 5,51:1 |
+| Dunkel | 5,52:1 |
+| Hochkontrast dunkel | **1,00:1** |
+| Hochkontrast gelb | **1,00:1** |
+
+Nur die beiden Hochkontrast-Schemata sind betroffen — Standard und Dunkel
+haben nie ein Problem gehabt, weil dort `border-color` ein eigener,
+unterscheidbarer Ton ist. Das ist auch der Grund, warum das hier keine
+Layout-Änderung an 28 Stellen braucht, sondern eine an der Wurzel: Der Fehler
+sitzt nicht im Aufruf, sondern darin, dass zwei Themes absichtlich nur ein
+Farbpaar kennen (`index.css`, Kommentar bei den Statusfarben: „Hochkontrast
+kennt genau ein Farbpaar") und ein Hover, der nur den Hintergrund tauscht,
+das nicht respektiert.
+
+Danach am Quelltext bestätigt: `grep` über den ganzen `src`-Baum fand exakt
+28 Stellen in 16 Dateien, alle mit dem identischen String
+`hover:bg-[var(--border-color)]`, keine Variante mit Opazitäts-Suffix. Zehn
+davon setzen `text-[var(--text-color)]` gar nicht explizit — sie erben die
+Farbe von `body { color: var(--text-color) }`. Das ändert nichts an der
+Diagnose (die geerbte Farbe ist dieselbe), aber es heißt: Eine Lösung, die
+nur die 18 „gepaarten" Stellen anfasst, würde die anderen zehn übersehen.
+
+### Die Lösung: zwei neue Variablen, keine neue Farbe
+
+`--hover-bg` und `--hover-text` in `index.css`, aber nicht als eigene
+Hex-Werte — als Umleitung:
+
+- `:root` (einmal, gilt für Standard **und** Dunkel, weil `[data-theme]` auf
+  `documentElement` sitzt, also demselben Element wie `:root`, und `var()`
+  am Verbrauchsort neu auflöst): `--hover-bg: var(--border-color)`,
+  `--hover-text: var(--text-color)`. Optisch keine Änderung — dieselben
+  Werte, die vorher direkt im Code standen.
+- Beide Hochkontrast-Themes überschreiben nur diese zwei Zeilen:
+  `--hover-bg: var(--text-color)`, `--hover-text: var(--bg-color)` — der
+  Tausch der beiden einzigen Farben, die das Theme kennt. Kein Grauton, kein
+  dritter Ton, der die Hochkontrast-Absicht verwässert hätte.
+
+An den 28 Aufrufstellen wurde mechanisch (Node-Skript, Text-Ersetzung, keine
+manuelle Bearbeitung) `hover:bg-[var(--border-color)]` durch
+`hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)]` ersetzt — mit
+einer Zählprüfung im Skript, die bei einer anderen Trefferzahl als 28
+abgebrochen hätte.
+
+### Verifiziert
+
+- `npx tsc --noEmit`: sauber.
+- `npm run check`: 201/201 (unverändert seit 0.9.48, diese Änderung berührt
+  keine der geprüften reinen Funktionen).
+- **Gegen die gebaute Fassung, im echten Browser, mit `getComputedStyle`**
+  (nicht nachgerechnet): `ConfirmDialog`, „Abbrechen"-Taste — der Fall, den
+  der Bericht als schärfsten nannte, über einen eigenen statischen Server mit
+  vier durchlaufenen Schemata (`localStorage`, wie das Prüfnetz es tut, nicht
+  `data-theme` von Hand):
+
+  | Schema | vorher (aus der Formel) | jetzt (gemessen) |
+  |---|---|---|
+  | Standard | 5,51:1 | **5,51:1** — unverändert |
+  | Dunkel | 5,52:1 | **5,52:1** — unverändert |
+  | Hochkontrast dunkel | 1,00:1 | **21,00:1** |
+  | Hochkontrast gelb | 1,00:1 | **19,56:1** |
+
+  Zusätzlich eine der zehn „geerbten" Stellen gemessen (`BestandModal`,
+  Zurück-Pfeil, SVG-Icon ohne eigene Textfarben-Klasse): Icon-Farbe vor Hover
+  `rgb(255,255,255)`, im Hover `rgb(0,0,0)` bei Tasten-Hintergrund
+  `rgb(255,255,255)` — 21,00:1. Die Vererbung trägt den neuen
+  `hover:text`-Wert korrekt bis zum SVG durch.
+- Kollisionsprüfung: kein Aufrufort trägt neben dem neuen `hover:text-[var(
+  --hover-text)]` noch eine zweite `hover:text-*`-Klasse (das wäre
+  Tailwind-Regelreihenfolge-abhängig und damit nicht vorhersagbar gewesen).
+- `npm run build`: grün, `scripts/csp-pruefen.ts` unverändert erfolgreich.
+
+### Bewusst nicht angefasst
+
+Ein verwandter, aber anderer Befund aus demselben Bericht: Der „ausgewählt"-
+Zustand in `DeviceSyncModal.tsx` und `OnboardingModal.tsx`
+(`border-[var(--accent)] bg-[var(--accent)]/10`) hat dasselbe Grundproblem
+(`--accent` == `--border-color` in beiden Hochkontrast-Themes), aber eine
+andere Form (Deckkraft statt Hover) und eine andere Lösung (Symbol/Haken
+statt Farbe, wie es die Kategoriefarben bereits vormachen). Bleibt offen,
+siehe ROADMAP.md.
+
+Nicht angetastet: `--accent`/`--accent-text` (bewusst nicht für Hover
+wiederverwendet — das hätte eine neutrale „Abbrechen"-Taste beim Überfahren
+wie die aktive Primärtaste aussehen lassen, ein anderes Signal als nur
+„hier ist der Mauszeiger").
+
+---
+
 ## 2026-09-20 — v0.9.48: Verschlüsselte Sicherungen liefen seit fünf Tagen ins Leere
 
 Auf Bitte des Projektinhabers hat sich die gesamte App noch einmal einem

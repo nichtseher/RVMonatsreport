@@ -169,12 +169,22 @@ export default function HistoryModal({
         return;
       }
       // Erst nach dem Abbruch-Zweig: Ein abgebrochener Teilen-Dialog darf den
-      // Monat nicht als erledigt markieren.
-      onVersandGemeldet(monthVal);
-      triggerToast(`Excel RV Report für ${formatMonthGerman(monthVal)} ${ergebnis}!`);
-      announceToAriaAndSpeech(
-        `Excel RV Report für ${formatMonthGerman(monthVal)} ${ergebnis}. Monat als gesendet markiert.`,
-      );
+      // Monat nicht als erledigt markieren. Und nur "geteilt" markiert
+      // automatisch -- ein blosser Download beweist kein Versenden (gleiche
+      // Begruendung wie in useExport.ts, seit 0.9.53).
+      if (ergebnis === "geteilt") {
+        onVersandGemeldet(monthVal);
+        triggerToast(`Excel RV Report für ${formatMonthGerman(monthVal)} ${ergebnis}!`);
+        announceToAriaAndSpeech(
+          `Excel RV Report für ${formatMonthGerman(monthVal)} ${ergebnis}. Monat als gesendet markiert.`,
+        );
+      } else {
+        triggerToast(`Excel RV Report für ${formatMonthGerman(monthVal)} ${ergebnis}. Bitte danach als gesendet markieren.`);
+        announceToAriaAndSpeech(
+          `Excel RV Report für ${formatMonthGerman(monthVal)} ${ergebnis}, aber noch nicht als gesendet markiert. ` +
+            `Bitte schicken Sie die Datei an die Vertriebsleitung und markieren Sie den Monat danach als gesendet.`,
+        );
+      }
     } catch (err) {
       console.error(err);
       triggerToast("Fehler beim Exportieren des Reports.");
@@ -560,7 +570,7 @@ export default function HistoryModal({
                                         <button
                                           type="button"
                                           onClick={() => setDeleteConfirm(null)}
-                                          className="min-w-[44px] min-h-[44px] px-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[var(--border-color)] active:scale-95 transition-all focus-visible:ring-4"
+                                          className="min-w-[44px] min-h-[44px] px-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] active:scale-95 transition-all focus-visible:ring-4"
                                           aria-label="Löschen abbrechen"
                                         >
                                           <X className="w-3.5 h-3.5" aria-hidden="true" />

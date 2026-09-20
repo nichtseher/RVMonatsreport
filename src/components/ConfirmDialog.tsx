@@ -9,7 +9,20 @@ export interface ConfirmRequest {
   confirmLabel: string;
   cancelLabel?: string;
   tone?: "danger" | "default";
-  onConfirm: () => void;
+  /**
+   * Rueckgabewert `true` (streng geprueft, nicht nur truthy) haelt den
+   * Dialog offen -- fuer den einzigen Fall, der das braucht: `onConfirm`
+   * ruft selbst `setConfirmRequest(...)` fuer eine ZWEITE Rueckfrage auf
+   * (Monatsabschluss-Check -> Blattwahl vor dem Senden). Ohne diese
+   * Ausnahme schliesst der Dialog unten IMMER nach `onConfirm` -- und
+   * schluckt damit die neue Anfrage im selben Tick, bevor sie je gerendert
+   * wird. Gemessen am 2026-09-20 mit Playwright: "Trotzdem senden" fuehrte
+   * zu nichts, kein Fehler, kein zweiter Dialog, kein Export -- der Nutzer
+   * stand vor einer Taste, die wortlos aufhoerte zu wirken. Jeder normale
+   * `onConfirm`, der `undefined`/nichts zurueckgibt, verhaelt sich exakt
+   * wie vorher.
+   */
+  onConfirm: () => void | boolean;
   /**
    * Zweite, gleichrangige Wahl -- keine Bestaetigung und kein Abbruch,
    * sondern eine andere Antwort auf dieselbe Frage. Bislang genau ein Fall:
@@ -20,8 +33,11 @@ export interface ConfirmRequest {
    * nebeneinander sind in `max-w-md` bei "Extra gross" jeweils unter 44 px
    * breit -- und 44 px sind in diesem Projekt die eine Schwelle, ohne
    * Ausnahme.
+   *
+   * Derselbe `true`-haelt-offen-Vertrag wie bei `onConfirm`, aus Symmetrie
+   * und fuer denselben Fall, falls er hier je gebraucht wird.
    */
-  alternative?: { label: string; onSelect: () => void };
+  alternative?: { label: string; onSelect: () => void | boolean };
 }
 
 interface ConfirmDialogProps {
@@ -187,7 +203,7 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
               ref={cancelRef}
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--border-color)] transition-all cursor-pointer"
+              className="flex-1 py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer"
             >
               {request.cancelLabel || "Abbrechen"}
             </button>
@@ -195,8 +211,8 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
               <button
                 type="button"
                 onClick={() => {
-                  request.alternative!.onSelect();
-                  onClose();
+                  const haeltOffen = request.alternative!.onSelect();
+                  if (haeltOffen !== true) onClose();
                 }}
                 /*
                   Rahmen in --primary, Schrift aber in --text-color: Gerechnet
@@ -206,7 +222,7 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
                   Die naheliegende Fassung "text-[var(--primary)]" waere genau
                   der Fehler aus 0.9.22 in neuer Verkleidung gewesen.
                 */
-                className="flex-1 py-3 px-4 rounded-xl font-bold border-2 border-[var(--primary)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--border-color)] transition-all cursor-pointer"
+                className="flex-1 py-3 px-4 rounded-xl font-bold border-2 border-[var(--primary)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer"
               >
                 {request.alternative.label}
               </button>
@@ -214,8 +230,9 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
             <button
               type="button"
               onClick={() => {
-                request.onConfirm();
-                onClose();
+                // Strikt === true, nicht truthy: siehe Kommentar am Typ.
+                const haeltOffen = request.onConfirm();
+                if (haeltOffen !== true) onClose();
               }}
               className={`flex-1 py-3 px-4 rounded-xl font-black transition-all cursor-pointer ${
                 danger

@@ -170,7 +170,7 @@ export default function BestandModal({
           type="button"
           onClick={onClose}
           aria-label="Zurück zu den Optionen"
-          className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] cursor-pointer transition-colors active:scale-95"
+          className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95"
         >
           <ArrowLeft className="w-6 h-6" aria-hidden="true" />
         </button>
@@ -236,7 +236,7 @@ export default function BestandModal({
                 zuruecksetzen();
                 announceToAriaAndSpeech("Bearbeitung abgebrochen.", true);
               }}
-              className="flex-1 min-h-[44px] py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--border-color)] transition-all cursor-pointer"
+              className="flex-1 min-h-[44px] py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer"
             >
               Abbrechen
             </button>
@@ -253,7 +253,7 @@ export default function BestandModal({
         <button
           type="button"
           onClick={vorlesen}
-          className="min-h-[44px] py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--border-color)] transition-all cursor-pointer flex items-center justify-center gap-2 flex-shrink-0"
+          className="min-h-[44px] py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer flex items-center justify-center gap-2 flex-shrink-0"
         >
           <Volume2 className="w-5 h-5" aria-hidden="true" />
           <span>Liste vorlesen</span>
@@ -285,7 +285,7 @@ export default function BestandModal({
                   type="button"
                   onClick={() => bearbeiten(p)}
                   aria-label={`Bearbeiten: ${p.text}`}
-                  className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] hover:bg-[var(--border-color)] transition-colors cursor-pointer"
+                  className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-colors cursor-pointer"
                 >
                   <Pencil className="w-5 h-5" aria-hidden="true" />
                 </button>

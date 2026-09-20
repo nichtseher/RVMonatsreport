@@ -34,12 +34,23 @@ export interface Sprachausgabe {
   /**
    * Jede Rueckmeldung laeuft hierueber -- Live-Bereich und Sprachausgabe.
    * `fieldId` + `newValue` schalten die Kurzform fuer schnelles Tippen frei.
+   *
+   * `sprachausgabeAktivUeberschreiben`: Diese Funktion ist ein `useCallback`
+   * mit `accessibility.screenReaderNarration` als Abhaengigkeit -- schaltet
+   * ein Aufruf GENAU DIESE Einstellung per `setAccessibility(...)` um und
+   * ruft im selben Tick `announceToAriaAndSpeech` auf, liest die Funktion
+   * noch den ALTEN Wert (React rendert vor dem naechsten Aufruf nicht neu,
+   * die Closure ist also veraltet). Gemessen 2026-09-19: Einschalten blieb
+   * stumm, Ausschalten sprach noch einmal nach. Wer die Sprachausgabe selbst
+   * umschaltet, kennt den neuen Wert bereits -- er gehoert hier hinein,
+   * nicht in den nächsten Render gewartet.
    */
   announceToAriaAndSpeech: (
     nachricht: string,
     sofort?: boolean,
     fieldId?: string,
     newValue?: number | "",
+    sprachausgabeAktivUeberschreiben?: boolean,
   ) => void;
   isDictating: boolean;
   toggleDictation: () => void;
@@ -64,6 +75,7 @@ export function useSprachausgabe(p: SprachausgabeParameter): Sprachausgabe {
       immediate = false,
       fieldId?: string,
       newValue?: number | "",
+      sprachausgabeAktivUeberschreiben?: boolean,
     ) => {
       let finalMessage = message;
 
@@ -88,8 +100,13 @@ export function useSprachausgabe(p: SprachausgabeParameter): Sprachausgabe {
 
       // 2. Eigene Sprachausgabe, falls eingeschaltet -- gebremst, damit
       //    schnelle Eingaben nicht jede Zwischenzahl vorlesen.
+      //    ?? statt ||: false ist ein gueltiger, gewollter Override (siehe
+      //    Kommentar am Funktionstyp) -- || wuerde ihn durch den
+      //    (moeglicherweise veralteten) Hook-Wert ersetzen.
+      const sprachausgabeAktiv =
+        sprachausgabeAktivUeberschreiben ?? accessibility.screenReaderNarration;
       if (
-        accessibility.screenReaderNarration &&
+        sprachausgabeAktiv &&
         typeof window !== "undefined" &&
         "speechSynthesis" in window
       ) {

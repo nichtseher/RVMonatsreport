@@ -152,7 +152,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
       <div className="flex items-center gap-3 p-6 md:p-8 border-b border-[var(--border-color)] bg-[var(--bg-color)]">
         <button
           onClick={onClose}
-          className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] cursor-pointer transition-colors active:scale-95"
+          className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95"
           aria-label="Zurück zu den Optionen"
         >
           <ArrowLeft className="w-6 h-6" aria-hidden="true" />

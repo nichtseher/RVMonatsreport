@@ -801,8 +801,18 @@ export default function App() {
         focusAndAnnounce("notes");
       } else if (event.key.toLowerCase() === "s") {
         event.preventDefault();
-        setAccessibility((prev) => ({ ...prev, screenReaderNarration: !prev.screenReaderNarration }));
-        announceToAriaAndSpeech("Sprachansagen aktualisiert.", true);
+        // neuerWert lokal berechnet statt in setAccessibility(prev => ...):
+        // announceToAriaAndSpeech im selben Tick saehe sonst noch den ALTEN
+        // Wert (siehe Kommentar an der Funktion in useSprachausgabe.ts).
+        const neuerWert = !accessibility.screenReaderNarration;
+        setAccessibility((prev) => ({ ...prev, screenReaderNarration: neuerWert }));
+        announceToAriaAndSpeech(
+          neuerWert ? "Sprachansagen eingeschaltet." : "Sprachansagen ausgeschaltet.",
+          true,
+          undefined,
+          undefined,
+          neuerWert,
+        );
       } else if (event.key.toLowerCase() === "l") {
         event.preventDefault();
         setMobileComfortMode((prev) => !prev);
@@ -2129,7 +2139,7 @@ export default function App() {
               type="button"
               onClick={() => setLastMonthClose(null)}
               aria-label="Alles klar. Hinweis zum Monatsabschluss ausblenden."
-              className="min-h-[44px] px-4 rounded-xl font-bold text-sm border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--border-color)] transition-all cursor-pointer active:scale-95 focus-visible:ring-4"
+              className="min-h-[44px] px-4 rounded-xl font-bold text-sm border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer active:scale-95 focus-visible:ring-4"
             >
               Alles klar
             </button>
@@ -2143,8 +2153,19 @@ export default function App() {
           type="button"
           aria-pressed={accessibility.screenReaderNarration}
           onClick={() => {
-            setAccessibility((prev) => ({ ...prev, screenReaderNarration: !prev.screenReaderNarration }));
-            announceToAriaAndSpeech("Sprachansagen wurden aktualisiert.", true);
+            // Gleiche Begruendung wie beim Tastenkuerzel S (siehe dort und
+            // useSprachausgabe.ts): neuerWert lokal, nicht aus prev gelesen,
+            // weil announceToAriaAndSpeech im selben Tick noch den alten
+            // Hook-Wert saehe.
+            const neuerWert = !accessibility.screenReaderNarration;
+            setAccessibility((prev) => ({ ...prev, screenReaderNarration: neuerWert }));
+            announceToAriaAndSpeech(
+              neuerWert ? "Sprachansagen eingeschaltet." : "Sprachansagen ausgeschaltet.",
+              true,
+              undefined,
+              undefined,
+              neuerWert,
+            );
           }}
           className={`inline-flex items-center rounded-full px-3.5 min-h-[44px] text-xs font-black transition-all cursor-pointer ${accessibility.screenReaderNarration ? "bg-[var(--accent)] text-[var(--accent-text)]" : "bg-[var(--bg-color)] text-[var(--text-color)] border border-[var(--border-color)]"}`}
         >
@@ -2659,7 +2680,7 @@ export default function App() {
               className={`px-2.5 min-h-[44px] rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
                 isCompactView
                   ? "bg-[var(--accent)] text-[var(--accent-text)] border-[var(--accent)] shadow-xs"
-                  : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--border-color)]"
+                  : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)]"
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" aria-hidden="true" />
@@ -2706,7 +2727,7 @@ export default function App() {
               className={`px-2.5 min-h-[44px] rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
                 isReadingSummary
                   ? "bg-[var(--warning-solid)] text-[var(--warning-solid-text)] border-[var(--warning-border)] shadow-xs"
-                  : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--border-color)]"
+                  : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)]"
               }`}
             >
               {isReadingSummary ? (
@@ -2739,7 +2760,7 @@ export default function App() {
                   ? "bg-[var(--accent)] text-[var(--accent-text)] border-[var(--accent)] shadow-xs"
                   : goalsConfig.enabled
                     ? "bg-[var(--cat-3-soft)] text-[var(--cat-3-text)] border-[var(--cat-3)]"
-                    : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--border-color)]"
+                    : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)]"
               }`}
             >
               <Target className="w-3.5 h-3.5" aria-hidden="true" />
@@ -2755,11 +2776,22 @@ export default function App() {
             role="group"
             aria-label="Ziele-Konfiguration"
           >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[var(--text-color)] flex items-center gap-1">
-                <span>Monatsziele festlegen</span>
+            {/*
+              War zwei Elemente: eine sichtbare Ueberschrift ausserhalb des
+              Labels und ein <label>, dessen Text nur "Aktiviert"/"Deaktiviert"
+              enthielt. Der zugaengliche Name der Checkbox war dadurch
+              woertlich "Deaktiviert" -- gemessen 2026-09-19 mit Playwright
+              gegen die gebaute Fassung. Jetzt umschliesst EIN <label> die
+              ganze Zeile (WCAG 2.5.3: der zugaengliche Name enthaelt jetzt
+              jeden sichtbaren Text der klickbaren Flaeche), und min-h-[44px]
+              haelt die Trefferflaeche ein -- vorher 101 x 18 px, weit unter
+              der Schwelle, weil dieser Zustand (isGoalsEditorOpen) in keinem
+              Testzustand geoeffnet wird und dem Pruefnetz nie begegnet ist. */}
+            <label className="flex items-center justify-between min-h-[44px] cursor-pointer select-none">
+              <span className="text-xs font-bold text-[var(--text-color)]">
+                Monatsziele festlegen
               </span>
-              <label className="relative inline-flex items-center cursor-pointer select-none">
+              <span className="relative inline-flex items-center">
                 <input
                   type="checkbox"
                   checked={goalsConfig.enabled}
@@ -2777,12 +2809,12 @@ export default function App() {
                   }}
                   className="sr-only peer"
                 />
-                <div className="w-8 h-4 bg-[var(--border-color)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--card-bg)] after:border-[var(--border-color)] after:border after:rounded-full after:h-3 after:w-3.5 after:transition-all peer-checked:bg-[var(--accent)]"></div>
+                <span className="w-8 h-4 bg-[var(--border-color)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--card-bg)] after:border-[var(--border-color)] after:border after:rounded-full after:h-3 after:w-3.5 after:transition-all peer-checked:bg-[var(--accent)]"></span>
                 <span className="ml-1.5 text-[0.75rem] font-bold text-[var(--text-muted)]">
                   {goalsConfig.enabled ? "Aktiviert" : "Deaktiviert"}
                 </span>
-              </label>
-            </div>
+              </span>
+            </label>
 
             <p className="text-[0.75rem] text-[var(--text-muted)] leading-relaxed">
               Tragen Sie hier Ihre persönlichen Monatsziele ein. Wenn die Ziele
@@ -2791,11 +2823,20 @@ export default function App() {
             </p>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {/*
+                Vier <label> ohne htmlFor neben vier <input> ohne id/aria-label
+                -- keins programmatisch verbunden. Gemessen 2026-09-19: der
+                zugaengliche Name aller vier Felder war leer, NVDA/VoiceOver
+                lasen nur "Bearbeiten, Zahl". Derselbe blinde Fleck wie beim
+                Umschalter oben: isGoalsEditorOpen liegt in keinem
+                Testzustand des Pruefnetzes.
+              */}
               <div>
-                <label className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
+                <label htmlFor="goal-s1-input" className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
                   Vorführungen
                 </label>
                 <input
+                  id="goal-s1-input"
                   type="number"
                   min="1"
                   max="999"
@@ -2809,10 +2850,11 @@ export default function App() {
                 />
               </div>
               <div>
-                <label className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
+                <label htmlFor="goal-s2-input" className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
                   Schulungen
                 </label>
                 <input
+                  id="goal-s2-input"
                   type="number"
                   min="1"
                   max="999"
@@ -2826,10 +2868,11 @@ export default function App() {
                 />
               </div>
               <div>
-                <label className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
+                <label htmlFor="goal-s3-input" className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
                   Spezialprodukte
                 </label>
                 <input
+                  id="goal-s3-input"
                   type="number"
                   min="1"
                   max="999"
@@ -2843,10 +2886,11 @@ export default function App() {
                 />
               </div>
               <div>
-                <label className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
+                <label htmlFor="goal-s4-input" className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
                   Bürozeit (h)
                 </label>
                 <input
+                  id="goal-s4-input"
                   type="number"
                   min="1"
                   max="999"

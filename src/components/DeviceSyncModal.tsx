@@ -1018,7 +1018,7 @@ export default function DeviceSyncModal({
             ref={closeButtonRef}
             onClick={onClose}
             aria-label="Zurück zu den Optionen"
-            className="w-11 h-11 min-w-[44px] min-h-[44px] flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--card-bg)] hover:bg-[var(--border-color)] transition-colors cursor-pointer active:scale-95"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--card-bg)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-colors cursor-pointer active:scale-95"
           >
             <ArrowLeft className="w-5 h-5" aria-hidden="true" />
           </button>

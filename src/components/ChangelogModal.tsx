@@ -23,7 +23,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
              43 x 48 px und unterschritt damit die 44 px aus WCAG 2.5.5 -- bei
              "Extra gross" sogar auf 38 px Breite bei 72 px Hoehe. Die Breite
              war nie gewollt, sie war das Nachgeben im Flex-Container. */
-          className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--border-color)] transition-colors active:scale-95 cursor-pointer"
+          className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-colors active:scale-95 cursor-pointer"
           aria-label="Zurück"
         >
           <ArrowLeft className="w-6 h-6" />
@@ -40,6 +40,147 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       </div>
 
       <div className="space-y-6">
+        {/*
+          Ausfuehrlich: Wer schon einmal "Trotzdem senden" gedrueckt und
+          nichts passieren sah, hat vermutlich angenommen, die Funktion sei
+          kaputt oder ihr Geraet blockiere das Teilen. Das gehoert richtig-
+          gestellt, nicht stillschweigend uebersprungen.
+        */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.54: „Trotzdem senden" konnte wirkungslos bleiben</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>
+              <strong>Wenn beim Senden eine Anmerkung erschien (z. B. fehlender Name) und Sie „Trotzdem senden"
+              wählten, öffnete sich die nächste Frage – welche Blätter gesendet werden sollen – bei manchen
+              Monaten gar nicht.</strong> Die Taste wirkte dann, als würde nichts passieren.
+            </li>
+            <li>Behoben. Wenn Sie das schon einmal erlebt haben: Bitte versuchen Sie „Bericht an VL senden" jetzt
+            erneut – es sollte jetzt bis zur Blattwahl und zum eigentlichen Versand durchlaufen.</li>
+          </ul>
+        </div>
+
+        {/*
+          Ebenfalls ausfuehrlich, und aus demselben Grund: Wer bisher einen
+          Download fuer "erledigt" hielt, muss jetzt wissen, dass er selbst
+          noch einen Schritt hat -- sonst bleibt ein Monat unbemerkt offen.
+        */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.55: Ein Download war nicht dasselbe wie ein Versand</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>
+              <strong>Bisher markierte die App einen Monat schon dann als „Gesendet", wenn die Excel-Datei nur
+              heruntergeladen wurde</strong> – auch ohne Teilen-Menü, z. B. am PC. Der Monat galt damit als
+              erledigt, obwohl die Datei möglicherweise nie an die Vertriebsleitung ging.
+            </li>
+            <li>
+              <strong>Jetzt markiert nur noch ein tatsächlich abgeschlossenes Teilen automatisch.</strong> Bei
+              einem reinen Download bleibt der Monat als „Noch offen" stehen, und die App bittet Sie, ihn im RV
+              Archiv über „Als gesendet markieren" selbst zu bestätigen, sobald die Datei wirklich raus ist.
+            </li>
+          </ul>
+        </div>
+
+        {/*
+          Kategorie + Zeile: Es gibt nichts nachzutragen und nichts anders zu
+          bedienen -- nur eine falsche Zahl, die jetzt fehlt statt falsch zu
+          sein. Die Zeile bleibt trotzdem etwas ausfuehrlicher als ein reiner
+          Ein-Satz-Fix, weil das Verschwinden einer Zahl aus einer Exportdatei
+          sonst wie ein Datenverlust aussehen koennte.
+        */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.53: Fehlerbehebungen</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>Auf dem Zusatzblatt der Excel-Datei zeigte „Summen je Bereich" für Bereich 4 eine Zahl ohne Bedeutung (Arbeitstage und Stunden wurden addiert). Diese eine Summenzeile ist entfallen – alle Einzelwerte stehen wie gewohnt auf Blatt 1 bzw. in der Liste „Zusatzangaben".</li>
+          </ul>
+        </div>
+
+        {/*
+          Ausfuehrlich, nicht Kategorie+Zeile: Wer der alten Hilfe glaubte,
+          muss jetzt etwas WISSEN, um sein Jahreskonto zu korrigieren --
+          reines Verschweigen waere hier keine Barmherzigkeit.
+        */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.52: Die Hilfe zur Stempeluhr nannte nur zwei von drei Feldern</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>
+              <strong>Die Hilfe sagte: „Urlaubs- und Krankheitstage von Hand eintragen". Das Jahreskonto
+              braucht aber auch die Feiertage.</strong> Wer diese Zeile leer ließ, sah im Jahreskonto ein zu
+              hohes Soll, weil die App gesetzliche Feiertage sonst als Arbeitstage mitzählt.
+            </li>
+            <li>
+              <strong>Bitte prüfen Sie das für vergangene Monate nach:</strong> Stellen Sie im RV Report
+              oben den betreffenden Monat ein (Feld „Monat"), tragen Sie unter Bereich 4 „Arbeitszeit &amp;
+              Büro" bei „Feiertage (arbeitsfrei)" die Anzahl nach und wechseln Sie zurück zum aktuellen
+              Monat – das Jahreskonto rechnet danach automatisch neu.
+            </li>
+          </ul>
+        </div>
+
+        {/*
+          Kategorie + Zeile -- betrifft nur, WIE die App eine bestehende
+          Einstellung bestaetigt, nicht was der Nutzer damit tun kann.
+        */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.51: Fehlerbehebungen</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>Der Schalter für die Sprachausgabe (Taste und Tastenkürzel „S") bestätigte sich selbst falsch herum: Beim Einschalten blieb er stumm, beim Ausschalten sprach er noch einmal. Behoben.</li>
+          </ul>
+        </div>
+
+        {/*
+          Ebenfalls Kategorie + Zeile: Niemand muss etwas anders BEDIENEN,
+          um es zu nutzen -- der Ziele-Editor tut, was er vorher tat, nur
+          liest ein Screenreader die Felder jetzt mit Namen statt stumm vor.
+        */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.50: Fehlerbehebungen</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>Im Ziele-Editor (RV Report → „Ziele") hatten die vier Eingabefelder und der Ein/Aus-Schalter für einen Screenreader keinen Namen. Behoben.</li>
+          </ul>
+        </div>
+
+        {/*
+          Kategorie + eine Zeile, nicht ausgeschrieben -- CLAUDE.md nennt
+          "contrast" ausdruecklich als Beispiel fuer "aendert nichts
+          Sichtbares [im Sinne von: nichts, das der Nutzer anders BEDIENEN
+          muesste]". Niemand muss etwas anders tun; eine Taste, die vorher
+          beim Ueberfahren unlesbar wurde, ist es jetzt nicht mehr.
+        */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.49: Fehlerbehebungen</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>In den beiden Hochkontrast-Designs wurde die Beschriftung mancher Tasten beim Überfahren mit der Maus unlesbar (weiß auf weiß bzw. gelb auf gelb). Behoben.</li>
+          </ul>
+        </div>
+
         {/*
           Ausfuehrlich, und zwar nach der zweiten Haelfte der Regel aus 0.9.40:
           Es gibt nichts Neues zu KOENNEN, aber etwas zu WISSEN, um zu handeln.

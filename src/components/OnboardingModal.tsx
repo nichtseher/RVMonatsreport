@@ -378,7 +378,7 @@ export default function OnboardingModal({
               <button
                 type="button"
                 onClick={() => goTo(step - 1)}
-                className="min-h-[48px] px-4 rounded-xl font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--border-color)] transition-all cursor-pointer flex items-center gap-1.5"
+                className="min-h-[48px] px-4 rounded-xl font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                 Zurück

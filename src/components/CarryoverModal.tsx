@@ -119,7 +119,7 @@ export default function CarryoverModal({
           type="button"
           onClick={onClose}
           aria-label="Zurück zur Zeiterfassung"
-          className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] cursor-pointer transition-colors active:scale-95"
+          className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95"
         >
           <ArrowLeft className="w-6 h-6" aria-hidden="true" />
         </button>

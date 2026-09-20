@@ -94,7 +94,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={onClose}
-              className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--border-color)] cursor-pointer transition-colors active:scale-95 focus-visible:ring-4"
+              className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95 focus-visible:ring-4"
               aria-label="Zurück zu den Optionen"
             >
               <ArrowLeft className="w-6 h-6" aria-hidden="true" />
@@ -350,7 +350,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <p>Der Bereich <strong>RV Zeit</strong> – in der unteren Leiste <strong>Zeit</strong> – ersetzt einen Stundenzettel. Wenn Sie morgens anfangen, drücken Sie auf <strong>Einstempeln</strong>. Die Uhr beginnt zu laufen.</p>
                   <p>Wenn Sie Feierabend machen, drücken Sie auf <strong>Ausstempeln</strong>. Es öffnet sich ein Dialog, in dem Sie Ihre Pausenzeit anpassen und die gearbeitete Zeit auf Büro- und Außendienst aufteilen können. Bestätigen Sie dies, um den Eintrag zu speichern.</p>
                   <p className="mt-2 text-[var(--info-text)] font-bold">Automatisch übernommen werden: Ihre Arbeitsstunden (Büro und Außendienst) sowie die Anzahl der Arbeitstage – diese müssen Sie nicht doppelt eintragen.</p>
-                  <p className="mt-2 text-[var(--warning-text)] font-bold">Bitte selbst eintragen: <strong>Urlaubs- und Krankheitstage</strong> tragen Sie im RV Report (Bereich 4 „Arbeitszeit &amp; Büro") von Hand ein. Die Stempeluhr erfasst diese nicht automatisch – sie rechnet damit aber in der Jahresübersicht weiter.</p>
+                  <p className="mt-2 text-[var(--warning-text)] font-bold">Bitte selbst eintragen: <strong>Urlaubs-, Krankheits- und Feiertage</strong> tragen Sie im RV Report (Bereich 4 „Arbeitszeit &amp; Büro") von Hand ein. Die Stempeluhr erfasst diese nicht automatisch – sie rechnet aber mit allen dreien in der Jahresübersicht weiter, und ein fehlender Eintrag zeigt dort ein zu hohes Soll.</p>
                   <p className="mt-2"><strong>Sie müssen die Stempeluhr nicht benutzen.</strong> Unter <strong>Optionen → Anzeige &amp; Bedienung</strong> lässt sie sich abschalten; dann verschwindet der Bereich „RV Zeit", und Sie tragen Ihre Bürostunden und Arbeitstage im RV Report von Hand ein. Ist sie abgeschaltet und liegen noch Schichten auf dem Gerät, erscheint dort außerdem <strong>Erfasste Schichten löschen</strong>. Das entfernt die Aufzeichnungen aus dem laufenden Monat und aus dem RV Archiv – <strong>Ihre Zählerstände im Bericht bleiben dabei unverändert</strong>.</p>
                 </FAQItem>
 

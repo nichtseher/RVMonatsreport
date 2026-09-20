@@ -40,6 +40,19 @@
      Vorgeschichte: urspruenglich #cbd5e1 mit nur 1,48:1 (kaum sichtbar). */
   --border-color: #8290a5;
   --border-focus: #2563eb;
+  /* Schwebeflaeche fuer Bedienelemente, deren Text --text-color bleibt
+     (z. B. "Abbrechen"-Tasten, Zurueck-Pfeile) -- ausgelagert aus 28
+     Stellen, die vorher direkt hover:bg-[var(--border-color)] trugen.
+     Hier nur eine Umleitung auf border-color/text-color: In diesem und im
+     dunklen Theme bleibt die Optik unveraendert. Der eigentliche Grund
+     fuer die eigenen Variablen steht bei den beiden Hochkontrast-Themes,
+     die sie unten umkehren -- dort war border-color IDENTISCH mit
+     text-color, und die Schrift verschwand beim Ueberfahren (1,00:1,
+     gemessen 2026-09-19). --hover-text existiert nur deshalb: eine
+     Schwebeflaeche laesst sich ohne Farbwechsel der Schrift nicht auf ein
+     Ein-Paar-Theme wie Hochkontrast anwenden. */
+  --hover-bg: var(--border-color);
+  --hover-text: var(--text-color);
   --danger: #dc2626;
   --alert-bg: #fef9c3;
   --alert-border: #eab308;
@@ -204,6 +217,13 @@
   --text-muted: #e5e5e5;
   --border-color: #ffffff;
   --border-focus: #ffff00;
+  /* Umgekehrt statt geerbt: border-color IST hier text-color, eine
+     Schwebeflaeche in dieser Farbe macht die Schrift unsichtbar (1,00:1,
+     gemessen 2026-09-19). Hochkontrast kennt nur ein Farbpaar -- die
+     einzige Schwebe-Rueckmeldung, die darin funktioniert, ist der Tausch
+     der beiden Farben. */
+  --hover-bg: var(--text-color);
+  --hover-text: var(--bg-color);
   --danger: #ff3333;
   --alert-bg: #000000;
   --alert-border: #ffffff;
@@ -266,6 +286,9 @@
   --text-muted: #ffff00;
   --border-color: #ffff00;
   --border-focus: #ffffff;
+  /* Umgekehrt statt geerbt -- Begruendung wie bei high-contrast-dark. */
+  --hover-bg: var(--text-color);
+  --hover-text: var(--bg-color);
   --danger: #ff3333;
   --alert-bg: #000000;
   --alert-border: #ffff00;

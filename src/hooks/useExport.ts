@@ -25,6 +25,11 @@ import { VORLAGE_STAND } from "../utils/vorlageStand";
  * Abbruch-Zweig. Ein abgebrochener Teilen-Dialog darf keinen Monat als erledigt
  * ausweisen -- sonst steht er im Archiv auf "Gesendet", obwohl nichts das
  * Geraet verlassen hat.
+ *
+ * SEIT 0.9.53 GILT DASSELBE FUER "heruntergeladen": Nur ein erfolgreicher
+ * `navigator.share()`-Abschluss ("geteilt") markiert automatisch. Ein reiner
+ * Download legt die Datei nur in den Download-Ordner -- ob sie je verschickt
+ * wird, weiss die App nicht, und durfte das darum nicht behaupten.
  */
 
 export interface ExportParameter {
@@ -167,17 +172,38 @@ export function useExport(p: ExportParameter): ExportFunktionen {
         announceToAriaAndSpeech("Teilen abgebrochen. Es wurde nichts gesendet.");
         return;
       }
-      // Erst hier markieren -- siehe Kopfkommentar.
+      /*
+        Nur "geteilt" als erledigt werten, nicht "heruntergeladen".
+
+        "geteilt" heisst: das Betriebssystem-Teilen-Menue wurde geoeffnet UND
+        der Nutzer hat darin ein Ziel gewaehlt (Mail, Teams, ...) -- das ist
+        eine abgeschlossene Handlung. "heruntergeladen" heisst nur: die Datei
+        liegt jetzt im Download-Ordner. Ob sie je irgendwohin geschickt wird,
+        weiss die App nicht -- das war bis 0.9.53 trotzdem "erledigt" und
+        schaltete den Frist-Hinweis fuer den Monat ab. Gemessen: Genau dieser
+        Ablauf (Teilen nicht verfuegbar -> Download -> Ablenkung -> E-Mail nie
+        geschrieben) macht den Monat fuer die App erledigt, fuer die
+        Vertriebsleitung aber nie angekommen.
+      */
       const imArchiv = !!history?.[monthVal];
-      setzeVersandStatus(monthVal, true);
-      triggerToast(`Excel-Report erfolgreich ${ergebnis}!`);
-      // Nur behaupten, was auch passiert ist: `setzeVersandStatus` steigt
-      // wortlos aus, wenn der Monat nicht im Archiv liegt.
-      announceToAriaAndSpeech(
-        imArchiv
-          ? `Excel-Report ${ergebnis}. Der Monat ist im RV Archiv als gesendet markiert.`
-          : `Excel-Report ${ergebnis}. Dieser Monat liegt nicht im RV Archiv und konnte dort nicht als gesendet markiert werden.`,
-      );
+      if (ergebnis === "geteilt") {
+        setzeVersandStatus(monthVal, true);
+        triggerToast(`Excel-Report erfolgreich ${ergebnis}!`);
+        // Nur behaupten, was auch passiert ist: `setzeVersandStatus` steigt
+        // wortlos aus, wenn der Monat nicht im Archiv liegt.
+        announceToAriaAndSpeech(
+          imArchiv
+            ? `Excel-Report ${ergebnis}. Der Monat ist im RV Archiv als gesendet markiert.`
+            : `Excel-Report ${ergebnis}. Dieser Monat liegt nicht im RV Archiv und konnte dort nicht als gesendet markiert werden.`,
+        );
+      } else {
+        triggerToast(`Excel-Report ${ergebnis}. Bitte danach im RV Archiv als gesendet markieren.`);
+        announceToAriaAndSpeech(
+          `Excel-Report ${ergebnis}, aber noch nicht als gesendet markiert. ` +
+            `Bitte schicken Sie die Datei an die Vertriebsleitung und markieren Sie den Monat danach im RV Archiv als gesendet.`,
+          true,
+        );
+      }
     } catch (err) {
       console.error("Excel-Export fehlgeschlagen", err);
       triggerToast("Fehler beim Erstellen der Excel-Datei.");
@@ -258,7 +284,12 @@ export function useExport(p: ExportParameter): ExportFunktionen {
       Schalters.
     */
     const mitZeiten = accessibility.enableTimeTracking !== false;
-    const frageNachUmfang = () => {
+    // Gibt `true` zurueck: als `onConfirm` des Monatsabschluss-Checks haelt
+    // das den Dialog offen und laesst ihn zur Blattwahl uebergehen, statt
+    // sie im selben Tick wieder zu schliessen (siehe ConfirmDialog.tsx).
+    // Der direkte Aufruf unten (kein Abschluss-Check noetig) liest den
+    // Rueckgabewert nicht -- dort ist er folgenlos.
+    const frageNachUmfang = (): true => {
       setConfirmRequest({
         title: "Was soll gesendet werden?",
         message: mitZeiten
@@ -276,6 +307,7 @@ export function useExport(p: ExportParameter): ExportFunktionen {
           void senden("vorlage");
         },
       });
+      return true;
     };
 
     const warnungen = getReportWarnings();

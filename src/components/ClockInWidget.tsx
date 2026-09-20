@@ -424,7 +424,7 @@ export default React.memo(function ClockInWidget({
                       onClick={() =>
                         setBreakMinutes((prev) => Math.max(0, prev - 15))
                       }
-                      className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--border-color)] active:scale-90"
+                      className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] active:scale-90"
                       aria-label="-15: Pause um 15 Minuten verringern"
                     >
                       -15
@@ -448,7 +448,7 @@ export default React.memo(function ClockInWidget({
                       onClick={() =>
                         setBreakMinutes((prev) => Math.min(240, prev + 15))
                       }
-                      className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--border-color)] active:scale-90"
+                      className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] active:scale-90"
                       aria-label="+15: Pause um 15 Minuten erhöhen"
                     >
                       +15
@@ -778,7 +778,7 @@ export default React.memo(function ClockInWidget({
                   onClick={() =>
                     setManualBreakMinutes((prev) => Math.max(0, prev - 15))
                   }
-                  className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--border-color)] active:scale-90"
+                  className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] active:scale-90"
                   aria-label="-15: Pause um 15 Minuten verringern"
                 >
                   -15
@@ -802,7 +802,7 @@ export default React.memo(function ClockInWidget({
                   onClick={() =>
                     setManualBreakMinutes((prev) => Math.min(240, prev + 15))
                   }
-                  className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--border-color)] active:scale-90"
+                  className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] active:scale-90"
                   aria-label="+15: Pause um 15 Minuten erhöhen"
                 >
                   +15

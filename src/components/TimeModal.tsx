@@ -262,7 +262,7 @@ export default function TimeModal({
                    2026-09-02 fuer alles im Tab-Lauf gilt. Gefunden hat das
                    nicht das Auge, sondern das verschaerfte Pruefgate im
                    Schreibtisch-Profil. */
-                className="w-full min-h-[44px] py-2 px-3 bg-[var(--bg-color)] hover:bg-[var(--border-color)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                className="w-full min-h-[44px] py-2 px-3 bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                 aria-label="Jahreskonto-Einstellungen bearbeiten"
               >
                 <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" />
@@ -437,7 +437,7 @@ export default function TimeModal({
                    Reiter "Jahreskonto"; das Pruefgate sieht nur den beim
                    Oeffnen aktiven Reiter, sie waere also erst aufgefallen,
                    wenn jemand sie benutzt. */
-                className="w-full min-h-[44px] py-2.5 px-3 bg-[var(--bg-color)] hover:bg-[var(--border-color)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                className="w-full min-h-[44px] py-2.5 px-3 bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                 aria-label="Jahresübertrag und Soll-Stunden bearbeiten"
               >
                 <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" />

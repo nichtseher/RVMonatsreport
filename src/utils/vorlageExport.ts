@@ -188,17 +188,35 @@ const baueZusatzBlatt = (
     uebrig.forEach((f) => zusatz.addRow([f.label, wert(f.id)]));
   }
 
-  // Bereichssummen mitgeben: In der Vorlage gibt es nur die eine Summe D10.
+  /*
+    Bereichssummen mitgeben: In der Vorlage gibt es nur die eine Summe D10.
+
+    NUR s1-s3, NICHT s4. Die drei ersten Bereiche sind in der Voreinstellung
+    homogene "Anzahl"-Zaehler (Vorfuehrungen, Schulungen, Spezialprodukte) --
+    eine Summe zaehlt dort sinnvoll Vorgaenge. Bereich 4 mischt Tage
+    (tage_arbeit, tage_urlaub, tage_krank, tage_feiertag) mit Stunden
+    (std_buero, std_aussendienst); "Summe" addierte bislang beides zu einer
+    Zahl ohne Einheit und ohne Bedeutung (gemessen 2026-09-19: 21+40+120+2+
+    1+3 = 187, unter der Ueberschrift "4. Arbeitszeit & Buero" -- in der
+    Datei, die bei "Alle drei Blaetter" an die Vertriebsleitung geht).
+
+    `FieldConfig` (types.ts) traegt keine Einheit -- ein allgemeiner Schutz
+    ("nur gleichartige Felder summieren") liesse sich damit nicht bauen, auch
+    nicht fuer eigene Felder, die ein Nutzer zu s1-s3 hinzufuegt. Diese
+    Aenderung behebt den konkret gemessenen Fall (die sechs Standardfelder in
+    s4), nicht die allgemeine Lücke. Alle sechs Werte stehen dem Empfaenger
+    trotzdem zur Verfuegung: tage_arbeit/std_buero auf Blatt 1 (D18/D19), die
+    uebrigen vier einzeln in der Liste "Zusatzangaben" oben auf diesem Blatt.
+  */
   zusatz.addRow([]);
   const summenKopf = zusatz.addRow(["Summen je Bereich", "Wert"]);
   summenKopf.font = { bold: true };
-  const bereichsNamen: Record<keyof SectionsConfig, string> = {
+  const bereichsNamen: Record<"s1" | "s2" | "s3", string> = {
     s1: "1. Vorführungen & Auslieferungen",
     s2: "2. Schulung, Support & Akquise",
     s3: "3. Spezialprodukte",
-    s4: "4. Arbeitszeit & Büro",
   };
-  (["s1", "s2", "s3", "s4"] as (keyof SectionsConfig)[]).forEach((s) => {
+  (["s1", "s2", "s3"] as const).forEach((s) => {
     const summe = (felder[s] || []).reduce((a, f) => a + wert(f.id), 0);
     zusatz.addRow([bereichsNamen[s], summe]);
   });
