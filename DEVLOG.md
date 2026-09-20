@@ -10,6 +10,59 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-20 — v0.9.64: Zwei Changelog-Einträge standen an der falschen Stelle
+
+Vom Projektinhaber gefunden: „Was gibt's Neues?" zeigte 0.9.54 ganz oben —
+vor 0.9.62 und 0.9.63, obwohl beide neuer sind. Nachgesehen und einen
+zweiten, selben Fehler gleich mitgefunden: 0.9.63 stand unter 0.9.62 statt
+darüber.
+
+### Ursache
+
+Reines Einfüge-Versehen bei mehreren Changelog-Änderungen im Laufe des
+Tages: Ein neuer Eintrag muss direkt **vor** dem bisher jüngsten stehen,
+damit „neueste zuerst" erhalten bleibt. Beim Einfügen von 0.9.54/0.9.55 (in
+einem Editier-Schritt, direkt nachdem der Rückfragen-Ketten-Fehler gefunden
+wurde) landete der Anker versehentlich ganz oben statt an der damals
+aktuellen Stelle. Beim späteren Einfügen von 0.9.63 wurde auf „Version
+0.9.61" verankert statt auf das zu dem Zeitpunkt tatsächlich jüngste
+„Version 0.9.62" — eine Zeile zu tief.
+
+### Behoben
+
+Beide Blöcke an die richtige Stelle verschoben — Text unverändert, nur die
+Position. Wegwerf-Skript (`npx tsx`-artig, aber als reines Node-Skript ohne
+TypeScript, da nur Textverschiebung): CRLF-sicher (Zeilenende erkannt statt
+angenommen — diese Datei ist durchgehend CRLF, gemessen), mit eingebauter
+Selbstprüfung, die vor dem Schreiben die komplette Reihenfolge auf
+„durchgehend absteigend" prüft und bei jeder Abweichung abbricht, statt
+eine nur teilweise korrigierte Datei zu schreiben. Der erste Lauf hat genau
+so den zweiten Fehler (0.9.63/0.9.62) gefunden, bevor irgendetwas
+geschrieben wurde.
+
+### Verifiziert
+
+Nicht nur der Quelltext gelesen, sondern die tatsächlich gerenderte Liste
+geprüft (Playwright gegen die gebaute Fassung, „Was gibt's Neues?"
+geöffnet, alle `h3`-Versionsüberschriften ausgelesen):
+
+```
+Gerenderte Reihenfolge: 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, ...
+ERGEBNIS: bestanden -- durchgehend absteigend
+```
+
+Zusätzlich die neun Playwright-Prüfungen, die speziell die Changelog-Ansicht
+betreffen (Geometrie in zwei Schriftgrößen, 320 px, Textabstand, axe-core,
+Fokus beim Ansichtswechsel, Tabulator-Erreichbarkeit, Name-in-Beschriftung)
+— alle grün. `npx tsc --noEmit` und `npm run check` (201/201) bleiben
+grün. Keine volle `check:ui`-Runde für diese Änderung: reine
+Positionsverschiebung von JSX-Blöcken ohne jede Logikänderung, ein
+grundlegend anderes Risikoprofil als die beiden echten Deploy-Fehlschläge
+von heute (die hingen an Zeit-/Zustandslogik, nicht an statischer
+Reihenfolge).
+
+---
+
 ## 2026-09-20 — v0.9.63: Der zweite gescheiterte Deploy — eine Momentaufnahme statt einer Wiederholung
 
 Wie 0.9.61, aber der zweite Fund dieser Art am selben Tag: Der Push von

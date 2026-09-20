@@ -41,25 +41,33 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
       <div className="space-y-6">
         {/*
-          Ausfuehrlich: Wer schon einmal "Trotzdem senden" gedrueckt und
-          nichts passieren sah, hat vermutlich angenommen, die Funktion sei
-          kaputt oder ihr Geraet blockiere das Teilen. Das gehoert richtig-
-          gestellt, nicht stillschweigend uebersprungen.
+          Kategorie + Zeile: Betrifft nur die Reihenfolge dieser Liste
+          selbst, keine Funktion der App.
         */}
         <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.54: „Trotzdem senden" konnte wirkungslos bleiben</span>
+            <span>Version 0.9.64: Fehlerbehebungen</span>
             <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
-            <li>
-              <strong>Wenn beim Senden eine Anmerkung erschien (z. B. fehlender Name) und Sie „Trotzdem senden"
-              wählten, öffnete sich die nächste Frage – welche Blätter gesendet werden sollen – bei manchen
-              Monaten gar nicht.</strong> Die Taste wirkte dann, als würde nichts passieren.
-            </li>
-            <li>Behoben. Wenn Sie das schon einmal erlebt haben: Bitte versuchen Sie „Bericht an VL senden" jetzt
-            erneut – es sollte jetzt bis zur Blattwahl und zum eigentlichen Versand durchlaufen.</li>
+            <li>Zwei Einträge in dieser Liste standen nicht an der richtigen Stelle (0.9.54 ganz oben statt weiter
+            unten, 0.9.63 unter statt über 0.9.62). Der Inhalt der Einträge war davon nicht betroffen. Behoben.</li>
+          </ul>
+        </div>
+
+        {/*
+          Kategorie + Zeile: Nur eine Pruefung robuster gemacht (tests/
+          oberflaeche.spec.ts), keine App-Datei geaendert.
+        */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.63: Wartung</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
           </ul>
         </div>
 
@@ -78,21 +86,6 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             <li>Die Werkzeugleiste, die beim Bearbeiten eines Zählerfelds erscheint, hatte bei „Zurück", „Weiter"
             und „Fertig" einen zugänglichen Namen, der nicht das sichtbare Wort enthielt – Sprachsteuerung traf
             die Tasten dadurch nicht. Behoben.</li>
-          </ul>
-        </div>
-
-        {/*
-          Kategorie + Zeile: Nur eine Pruefung robuster gemacht (tests/
-          oberflaeche.spec.ts), keine App-Datei geaendert.
-        */}
-        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.63: Wartung</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
-            <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
           </ul>
         </div>
 
@@ -225,6 +218,29 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
               einem reinen Download bleibt der Monat als „Noch offen" stehen, und die App bittet Sie, ihn im RV
               Archiv über „Als gesendet markieren" selbst zu bestätigen, sobald die Datei wirklich raus ist.
             </li>
+          </ul>
+        </div>
+
+        {/*
+          Ausfuehrlich: Wer schon einmal "Trotzdem senden" gedrueckt und
+          nichts passieren sah, hat vermutlich angenommen, die Funktion sei
+          kaputt oder ihr Geraet blockiere das Teilen. Das gehoert richtig-
+          gestellt, nicht stillschweigend uebersprungen.
+        */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.54: „Trotzdem senden" konnte wirkungslos bleiben</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>
+              <strong>Wenn beim Senden eine Anmerkung erschien (z. B. fehlender Name) und Sie „Trotzdem senden"
+              wählten, öffnete sich die nächste Frage – welche Blätter gesendet werden sollen – bei manchen
+              Monaten gar nicht.</strong> Die Taste wirkte dann, als würde nichts passieren.
+            </li>
+            <li>Behoben. Wenn Sie das schon einmal erlebt haben: Bitte versuchen Sie „Bericht an VL senden" jetzt
+            erneut – es sollte jetzt bis zur Blattwahl und zum eigentlichen Versand durchlaufen.</li>
           </ul>
         </div>
 
