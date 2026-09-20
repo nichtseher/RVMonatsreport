@@ -10,6 +10,74 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-20 — v0.9.63: Der zweite gescheiterte Deploy — eine Momentaufnahme statt einer Wiederholung
+
+Wie 0.9.61, aber der zweite Fund dieser Art am selben Tag: Der Push von
+`1891d42` (0.9.60–0.9.62) scheiterte im Deploy-Gate erneut an `check:ui` —
+diesmal an einem ANDEREN Test als beim ersten Mal.
+
+### Was scheiterte
+
+```
+Grenze der abgeschalteten Stempeluhr › Schichten löschen räumt Archiv
+und laufenden Monat, ohne Zähler zu ändern
+Error: Der laufende Monat wird doppelt gezählt
+Expected substring: "(2)"
+Received string:    "Erfasste Schichten löschen (1)"
+```
+
+Der Test seedet zwei Schichten direkt in IndexedDB (eine im laufenden
+Monat, eine im Archiv), navigiert, wartet **fest 1200 ms**, und prüft dann
+per `expect((await taste.textContent())?.trim()).toContain("(2)")` — eine
+**einmalige Momentaufnahme**, keine Wiederholung. Der geprüfte Zähler
+(`schichtenAnzahl` in `App.tsx`) baut sich aus zwei asynchron aus
+IndexedDB geladenen Werten zusammen (`reportData` und `history`) und
+braucht je nach Systemlast unterschiedlich lange, bis beide da sind. Auf
+diesem Rechner reichten die 1200 ms zehn von zehn Wiederholungen; auf dem
+langsameren CI-Läufer nicht.
+
+**Nicht die Ursache:** Nachgerechnet, ob das an der 0.9.59-Bremse
+(`ARCHIV_SPIEGEL_VERZOEGERUNG_MS`) liegen könnte — die betroffene Zählung
+liest `reportData?.timeLogs` direkt, nicht über den Archiv-Spiegel, ist
+also von dessen Verzögerung strukturell unabhängig. Der Lösch-Handler
+(`handleSchichtenLoeschen`) schreibt ebenfalls synchron, nicht über den
+gebremsten Effekt. Zehn und zwanzig lokale Wiederholungen ohne einen
+einzigen Fehlschlag bestätigen: keine Regression aus dieser Sitzung,
+sondern eine vorbestehende Zeitspannen-Annahme, die nur auf dem geladenen
+CI-Läufer knapp wurde — exakt das Muster, das CLAUDE.md für den
+Tabulator-Test vom 2026-09-07 beschreibt.
+
+### Behoben
+
+`expect((await taste.textContent())?.trim()).toContain(...)` ersetzt durch
+`await expect(taste).toContainText("(2)", { timeout: 15_000 })` —
+Playwrights eingebaute, automatisch wiederholende Prüfung statt einer
+einmaligen Momentaufnahme nach festem Warten. Geprüft, ob dasselbe Muster
+sonst irgendwo im Testfile steht: kein weiterer Treffer.
+
+### Verifiziert
+
+```
+npx playwright test -g "Schichten löschen räumt Archiv" --repeat-each=10  -> 10/10
+npx playwright test -g "Grenze der abgeschalteten Stempeluhr" --repeat-each=5 -> 20/20
+npm run check:ui (vollständig, drittes Mal an diesem Tag)                  -> 615/615, 0 Fehler
+```
+
+`npx tsc --noEmit` und `npm run check` (201/201) bleiben grün. Keine
+App-Datei geändert — nur `tests/oberflaeche.spec.ts`.
+
+### Der Stand danach
+
+Drei vollständige lokale `check:ui`-Läufe an diesem Tag, alle 615/615. Zwei
+Deploys sind trotzdem gescheitert, an zwei unterschiedlichen Stellen, beide
+auf feste statt wiederholende Zeitannahmen zurückzuführen. Die Lehre bleibt
+dieselbe wie in 0.9.61, nur einmal mehr bestätigt: Ein grünes lokales Gate
+misst dieselbe Testsuite auf einer schnelleren Maschine — für alles, was
+von absoluter Zeit statt vom tatsächlichen Zustand abhängt, ist das keine
+Garantie.
+
+---
+
 ## 2026-09-20 — v0.9.62: Drei Tasten, deren Namen nicht enthielten, was draufstand
 
 Zwölfter Befund aus dem Neun-Agenten-Durchlauf. Der accessibility-auditor-

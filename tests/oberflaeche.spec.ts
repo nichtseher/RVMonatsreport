@@ -4542,9 +4542,19 @@ test.describe("Grenze der abgeschalteten Stempeluhr", () => {
     await page.getByRole("button", { name: /Anzeige & Bedienung/ }).first().click();
     const taste = page.getByRole("button", { name: /Erfasste Schichten löschen/ }).first();
     await taste.waitFor({ state: "visible", timeout: 15_000 });
-    // Ueber die Kennung gezaehlt: Der laufende Monat liegt zugleich im Archiv.
-    // Vor der Korrektur meldete diese Taste "(3)" bei zwei Schichten.
-    expect((await taste.textContent())?.trim(), "Der laufende Monat wird doppelt gezählt").toContain("(2)");
+    /*
+      Ueber die Kennung gezaehlt: Der laufende Monat liegt zugleich im Archiv.
+      Vor der Korrektur meldete diese Taste "(3)" bei zwei Schichten.
+
+      expect(await taste.textContent()) statt expect(taste).toContainText():
+      genau diese Momentaufnahme-statt-Wiederholung hat am 2026-09-20 den
+      Deploy zerissen (1891d42) -- der Zaehler haengt am asynchronen Laden
+      von reportData UND history aus IndexedDB, das auf dem CI-Laeufer
+      messbar laenger dauert als hier (10 von 10 lokalen Wiederholungen ohne
+      Befund). toContainText() wiederholt bis zu seinem eigenen Timeout,
+      statt einmalig eine Zahl zu pruefen, die noch nicht fertig geladen ist.
+    */
+    await expect(taste, "Der laufende Monat wird doppelt gezählt").toContainText("(2)", { timeout: 15_000 });
 
     await taste.click();
     await page.getByRole("alertdialog").waitFor({ state: "visible", timeout: 15_000 });
