@@ -1840,11 +1840,12 @@ export default function App() {
       nr: 1,
       schluessel: "s1" as const,
       titel: "1. Vorführungen & Auslieferungen",
+      icon: <Eye className="w-4 h-4" />,
       felder: appFields.s1,
       hinweis: null as React.ReactNode,
       fuss: (
         <div
-          className="mt-6 p-4 rounded-xl bg-[var(--total-bg)] text-[var(--total-text)] font-black text-right text-lg border border-[var(--border-color)]"
+          className="mt-6 p-4 rounded-[var(--rv-radius-md)] bg-[var(--total-bg)] text-[var(--total-text)] font-black text-right text-lg border border-[var(--border-color)]"
           aria-live="polite"
         >
           <span>Bereichs-Gesamtsumme: </span>
@@ -1856,6 +1857,7 @@ export default function App() {
       nr: 2,
       schluessel: "s2" as const,
       titel: "2. Schulung, Support & Akquise",
+      icon: <GraduationCap className="w-4 h-4" />,
       felder: appFields.s2,
       hinweis: null as React.ReactNode,
       fuss: null as React.ReactNode,
@@ -1864,6 +1866,7 @@ export default function App() {
       nr: 3,
       schluessel: "s3" as const,
       titel: "3. Spezialprodukte (Fokus)",
+      icon: <Sparkles className="w-4 h-4" />,
       felder: appFields.s3,
       hinweis: null as React.ReactNode,
       fuss: null as React.ReactNode,
@@ -1872,9 +1875,10 @@ export default function App() {
       nr: 4,
       schluessel: "s4" as const,
       titel: "4. Arbeitszeit & Büro",
+      icon: <Clock className="w-4 h-4" />,
       felder: appFields.s4,
       hinweis: (accessibility.enableTimeTracking !== false ? (
-        <div className="mb-4 p-3 rounded-xl bg-[var(--info-bg)] border border-[var(--info-border)] text-[var(--info-text)] text-xs font-bold flex items-start gap-2">
+        <div className="mb-4 p-3 rounded-[var(--rv-radius-md)] bg-[var(--info-bg)] border border-[var(--info-border)] text-[var(--info-text)] text-xs font-bold flex items-start gap-2">
           <Clock className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <p>Diese Werte werden automatisch aus Ihrer Stempeluhr (RV Zeit) berechnet und beim Ausstempeln hier eingetragen.</p>
         </div>
@@ -1900,7 +1904,7 @@ export default function App() {
       <div className="flex min-h-screen w-full items-center justify-center bg-[var(--bg-color)] p-4">
         <div
           role="alert"
-          className="w-full max-w-md rounded-2xl border-2 border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger-text)] p-5 flex flex-col gap-4"
+          className="w-full max-w-md rounded-[var(--rv-radius-lg)] border-2 border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger-text)] p-5 flex flex-col gap-4"
         >
           <h1 className="text-xl font-black flex items-start gap-2.5">
             <AlertTriangle className="w-6 h-6 flex-shrink-0 mt-0.5" aria-hidden="true" />
@@ -1920,7 +1924,7 @@ export default function App() {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="min-h-[44px] px-5 py-3 rounded-xl font-black bg-[var(--danger-solid)] text-[var(--danger-solid-text)] hover:brightness-110 transition-all cursor-pointer"
+            className="min-h-[44px] px-5 py-3 rounded-[var(--rv-radius-md)] font-black bg-[var(--danger-solid)] text-[var(--danger-solid-text)] hover:brightness-110 transition-all cursor-pointer"
           >
             Erneut versuchen
           </button>
@@ -1940,6 +1944,8 @@ export default function App() {
   const isDesktop =
     accessibility.desktopLayout === undefined ? viewportIsWide : accessibility.desktopLayout;
   const shouldUseCompactFields = isCompactView && !(mobileComfortMode && !isDesktop);
+  /* Dichte statt Verstecken: siehe Begruendung an der Stammdaten-Karte unten. */
+  const stammdatenKompakt = !!(reportData?.name && String(reportData.name).trim().length > 0);
 
   return (
     <>
@@ -1948,7 +1954,7 @@ export default function App() {
       
       {/* SIDEBAR NAVIGATION (Only visible on Desktop when enabled) */}
       {isDesktop && (
-        <aside className="hidden lg:flex flex-col w-64 xl:w-72 border-r border-[var(--border-color)] bg-[var(--card-bg)] h-screen shrink-0 sticky top-0 z-[150] shadow-sm">
+        <aside className="hidden lg:flex flex-col w-64 xl:w-72 border-r border-[var(--border-color)] bg-[var(--card-bg)] h-screen shrink-0 sticky top-0 z-[150] shadow-[var(--rv-shadow-sm)]">
           <div className="p-6 pb-4 border-b border-[var(--border-color)]">
              <h1 className="text-2xl font-black text-[var(--text-color)] flex items-center gap-2">
                RV Mobil
@@ -1968,8 +1974,8 @@ export default function App() {
                   onClick={() => {
                      wechsleHauptansicht(tab.id, tab.ansage);
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all cursor-pointer font-bold ${
-                    isSelected ? "bg-[var(--accent)] text-[var(--accent-text)] shadow-md" : "text-[var(--text-muted)] hover:bg-[var(--input-bg)] hover:text-[var(--text-color)]"
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-[var(--rv-radius-md)] transition-all cursor-pointer font-bold ${
+                    isSelected ? "bg-[var(--accent)] text-[var(--accent-text)] shadow-[var(--rv-shadow-md)]" : "text-[var(--text-muted)] hover:bg-[var(--input-bg)] hover:text-[var(--text-color)]"
                   }`}
                 >
                   <IconComp className={`w-5 h-5 ${isSelected ? "stroke-[2.5]" : "stroke-[2]"}`} />
@@ -2016,7 +2022,7 @@ export default function App() {
         <div className={`animate-fade-in ${isDesktop ? 'lg:pb-8' : 'pb-24'}`}>
           {/* HEADER SECTION (Accessible, modern responsive layout, removed duplicate buttons for clean tidiness) */}
           <header
-            className="p-3 sm:p-5 mb-3 sm:mb-4 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)] flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-5 shadow-sm"
+            className="p-3 sm:p-5 mb-3 sm:mb-4 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] border-[var(--border-color)] flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-5 shadow-[var(--rv-shadow-sm)]"
           >
         <div className="space-y-1.5 flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -2031,7 +2037,7 @@ export default function App() {
             <h1 tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black text-[var(--text-color)]">
               RV Report
             </h1>
-            <span className="rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2.5 py-1 text-[0.75rem] font-black text-[var(--success-text)]">
+            <span className="rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[0.75rem] font-bold text-[var(--success-text)]">
               DSGVO & barrierefrei
             </span>
           </div>
@@ -2076,8 +2082,22 @@ export default function App() {
         {/* Stammdaten: auf dem Handy nebeneinander statt gestapelt -- das
             spart rund 100px Hoehe, ohne etwas zu verstecken. Die Hinweise
             "DSGVO-sicher lokal" und der Archiv-Link entfielen bewusst: beides
-            steht bereits im Kopf-Abzeichen bzw. in der Navigation. */}
-        <div className="flex flex-row items-stretch gap-2 sm:gap-3 w-full md:w-auto md:max-w-md bg-[var(--bg-color)] p-2.5 sm:p-3 rounded-xl border border-dashed border-[var(--border-color)]" role="group" aria-label="Berichtsmetadaten">
+            steht bereits im Kopf-Abzeichen bzw. in der Navigation.
+
+            Dichte statt Verstecken (0.9.65): Sobald einmal ein Name gespeichert
+            wurde, braucht die Karte nicht mehr die volle Aufmerksamkeit eines
+            Ersteinstiegs -- sie entfaellt hier aber nur die Kastenoptik
+            (gestrichelter Rahmen, Flaeche, Polsterung), niemals ein Element.
+            Label, Icon und beide <input>-Felder bleiben WORTGLEICH bestehen,
+            mit derselben id, demselben Tabindex, demselben Wert -- ein
+            Screenreader-Nutzer erreicht sie im ersten Tab-Durchlauf, in
+            beiden Zustaenden, ohne vorher etwas zu aktivieren. Das ist die
+            Bedingung, an der ein Verstecken-Muster hier abgelehnt wuerde. */}
+        <div className={`flex flex-row items-stretch gap-2 w-full md:w-auto md:max-w-md ${
+          stammdatenKompakt
+            ? ""
+            : "sm:gap-3 bg-[var(--bg-color)] p-2.5 sm:p-3 rounded-[var(--rv-radius-md)] border border-dashed border-[var(--border-color)]"
+        }`} role="group" aria-label="Berichtsmetadaten">
           {/* Month input */}
           <div className="flex-1 min-w-0 space-y-1">
             <label
@@ -2093,7 +2113,7 @@ export default function App() {
               type="month"
               value={reportData?.month}
               onChange={(e) => handleMonthChange(e.target.value)}
-              className="w-full px-2 py-2.5 min-h-[44px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-lg text-xs font-bold focus:border-[var(--border-focus)] outline-none"
+              className="w-full px-2 py-2.5 min-h-[44px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-sm)] text-xs font-bold focus:border-[var(--border-focus)] outline-none"
               aria-required="true"
             />
           </div>
@@ -2118,7 +2138,7 @@ export default function App() {
                   : String(reportData?.name || "")
               }
               onChange={(e) => handleMetaChange("name", e.target.value)}
-              className="w-full px-2 py-2.5 min-h-[44px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-lg text-xs font-bold focus:border-[var(--border-focus)] outline-none"
+              className="w-full px-2 py-2.5 min-h-[44px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-sm)] text-xs font-bold focus:border-[var(--border-focus)] outline-none"
               autoComplete="name"
               aria-required="true"
             />
@@ -2132,7 +2152,7 @@ export default function App() {
       {lastMonthClose && (
         <div
           role="status"
-          className="mb-4 p-3.5 rounded-2xl border-2 border-[var(--accent)] bg-[var(--accent)]/10 flex flex-col sm:flex-row sm:items-center gap-3"
+          className="mb-4 p-3.5 rounded-[var(--rv-radius-lg)] border-2 border-[var(--accent)] bg-[var(--accent)]/10 flex flex-col sm:flex-row sm:items-center gap-3"
         >
           <p className="flex-1 min-w-0 text-sm font-bold text-[var(--text-color)] leading-snug">
             <Check className="w-4 h-4 inline-block align-[-2px] mr-1" aria-hidden="true" />
@@ -2144,7 +2164,7 @@ export default function App() {
               type="button"
               onClick={handleUndoMonthClose}
               aria-label={`Monatsabschluss rückgängig machen und zurück zu ${formatMonthGerman(lastMonthClose.from)}`}
-              className="min-h-[44px] px-4 rounded-xl font-black text-sm bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 transition-all cursor-pointer active:scale-95 focus-visible:ring-4"
+              className="min-h-[44px] px-4 rounded-[var(--rv-radius-md)] font-black text-sm bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 transition-all cursor-pointer active:scale-95 focus-visible:ring-4"
             >
               Rückgängig
             </button>
@@ -2152,52 +2172,13 @@ export default function App() {
               type="button"
               onClick={() => setLastMonthClose(null)}
               aria-label="Alles klar. Hinweis zum Monatsabschluss ausblenden."
-              className="min-h-[44px] px-4 rounded-xl font-bold text-sm border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer active:scale-95 focus-visible:ring-4"
+              className="min-h-[44px] px-4 rounded-[var(--rv-radius-md)] font-bold text-sm border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer active:scale-95 focus-visible:ring-4"
             >
               Alles klar
             </button>
           </div>
         </div>
       )}
-
-      {/* Schnell-Umschalter (kompakt): Sprachansage & Ein-Hand-Modus */}
-      <div className="mb-4 flex flex-wrap items-center gap-2" role="toolbar" aria-label="Schnell-Einstellungen">
-        <button
-          type="button"
-          aria-pressed={accessibility.screenReaderNarration}
-          onClick={() => {
-            // Gleiche Begruendung wie beim Tastenkuerzel S (siehe dort und
-            // useSprachausgabe.ts): neuerWert lokal, nicht aus prev gelesen,
-            // weil announceToAriaAndSpeech im selben Tick noch den alten
-            // Hook-Wert saehe.
-            const neuerWert = !accessibility.screenReaderNarration;
-            setAccessibility((prev) => ({ ...prev, screenReaderNarration: neuerWert }));
-            announceToAriaAndSpeech(
-              neuerWert ? "Sprachansagen eingeschaltet." : "Sprachansagen ausgeschaltet.",
-              true,
-              undefined,
-              undefined,
-              neuerWert,
-            );
-          }}
-          className={`inline-flex items-center rounded-full px-3.5 min-h-[44px] text-xs font-black transition-all cursor-pointer ${accessibility.screenReaderNarration ? "bg-[var(--accent)] text-[var(--accent-text)]" : "bg-[var(--bg-color)] text-[var(--text-color)] border border-[var(--border-color)]"}`}
-        >
-          {accessibility.screenReaderNarration ? "Sprachansagen AN" : "Sprachansagen AUS"}
-        </button>
-        {!isDesktop && (
-          <button
-            type="button"
-            aria-pressed={mobileComfortMode}
-            onClick={() => {
-              setMobileComfortMode((prev) => !prev);
-              announceToAriaAndSpeech("Ein-Hand-Modus aktualisiert.", true);
-            }}
-            className={`inline-flex items-center rounded-full px-3.5 min-h-[44px] text-xs font-black transition-all cursor-pointer ${mobileComfortMode ? "bg-[var(--accent)] text-[var(--accent-text)]" : "bg-[var(--bg-color)] text-[var(--text-color)] border border-[var(--border-color)]"}`}
-          >
-            {mobileComfortMode ? "Ein-Hand AN" : "Ein-Hand AUS"}
-          </button>
-        )}
-      </div>
 
       {/* SCHNELL-ERFASSUNG: Ein Tipp direkt nach dem Termin */}
       <QuickEntryPanel
@@ -2213,7 +2194,7 @@ export default function App() {
 
       {/* MOBILE COMFORT ACTION BAR */}
       {mobileComfortMode && !isDesktop && (
-        <div className="mb-4 rounded-2xl border border-[var(--border-color)] bg-[var(--card-bg)] p-3 shadow-sm" role="toolbar" aria-label="Schnellzugriffe für den Ein-Hand-Modus">
+        <div className="mb-4 rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--card-bg)] p-3 shadow-[var(--rv-shadow-sm)]" role="toolbar" aria-label="Schnellzugriffe für den Ein-Hand-Modus">
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => focusAndAnnounce("month")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-4 min-h-[44px] text-xs font-black inline-flex items-center justify-center cursor-pointer focus-visible:ring-4">Monat</button>
             <button type="button" onClick={() => focusAndAnnounce("name")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-4 min-h-[44px] text-xs font-black inline-flex items-center justify-center cursor-pointer focus-visible:ring-4">Name</button>
@@ -2234,7 +2215,7 @@ export default function App() {
               speicherUrteil.stufe !== "sicher" &&
               !(speicherUrteil.stufe !== "kritisch" && speicherHinweisAusgeblendet) && (
                 <div
-                  className={`p-4 mb-4 rounded-xl border-2 flex flex-col sm:flex-row sm:items-center gap-3 ${
+                  className={`p-4 mb-4 rounded-[var(--rv-radius-md)] border-2 flex flex-col sm:flex-row sm:items-center gap-3 ${
                     speicherUrteil.stufe === "kritisch"
                       ? "border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger-text)]"
                       : "border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)]"
@@ -2255,7 +2236,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setActiveTab("backup")}
-                      className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-xl font-black text-sm bg-[var(--primary)] text-[var(--primary-text)] hover:brightness-110 transition-all cursor-pointer"
+                      className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-[var(--rv-radius-md)] font-black text-sm bg-[var(--primary)] text-[var(--primary-text)] hover:brightness-110 transition-all cursor-pointer"
                     >
                       Jetzt sichern
                     </button>
@@ -2264,7 +2245,7 @@ export default function App() {
                         type="button"
                         onClick={() => setSpeicherHinweisAusgeblendet(true)}
                         aria-label="Hinweis zum Speicherzustand ausblenden"
-                        className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-xl font-black text-sm border-2 border-current hover:brightness-110 transition-all cursor-pointer"
+                        className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-[var(--rv-radius-md)] font-black text-sm border-2 border-current hover:brightness-110 transition-all cursor-pointer"
                       >
                         Ausblenden
                       </button>
@@ -2279,7 +2260,7 @@ export default function App() {
                 Geraeteverlust zu sichern. Fuer Letzteres gab es bis 0.9.16
                 nichts. */}
             {sicherungUrteil && !sicherungHinweisAusgeblendet && (
-              <div className="p-4 mb-4 rounded-xl border-2 border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)] flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="p-4 mb-4 rounded-[var(--rv-radius-md)] border-2 border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)] flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex items-start gap-2.5 flex-1 min-w-0">
                   <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
                   <p className="text-sm font-bold leading-snug">{sicherungUrteil.ansage}</p>
@@ -2288,7 +2269,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setActiveTab("backup")}
-                    className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-xl font-black text-sm bg-[var(--primary)] text-[var(--primary-text)] hover:brightness-110 transition-all cursor-pointer"
+                    className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-[var(--rv-radius-md)] font-black text-sm bg-[var(--primary)] text-[var(--primary-text)] hover:brightness-110 transition-all cursor-pointer"
                   >
                     Jetzt sichern
                   </button>
@@ -2296,7 +2277,7 @@ export default function App() {
                     type="button"
                     onClick={() => setSicherungHinweisAusgeblendet(true)}
                     aria-label="Später. Erinnerung an die Datensicherung ausblenden."
-                    className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-xl font-black text-sm border-2 border-current hover:brightness-110 transition-all cursor-pointer"
+                    className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-[var(--rv-radius-md)] font-black text-sm border-2 border-current hover:brightness-110 transition-all cursor-pointer"
                   >
                     Später
                   </button>
@@ -2308,7 +2289,7 @@ export default function App() {
             {storageWriteFailed && (
               <div
                 role="alert"
-                className="p-4 mb-4 rounded-xl border-2 border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger-text)] flex flex-col sm:flex-row sm:items-center gap-3"
+                className="p-4 mb-4 rounded-[var(--rv-radius-md)] border-2 border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger-text)] flex flex-col sm:flex-row sm:items-center gap-3"
               >
                 <div className="flex items-start gap-2.5 flex-1">
                   <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
@@ -2320,7 +2301,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("backup")}
-                  className="px-4 py-2.5 rounded-xl font-black text-sm bg-[var(--danger-solid)] text-[var(--danger-solid-text)] hover:brightness-110 transition-all cursor-pointer flex-shrink-0 whitespace-nowrap"
+                  className="px-4 py-2.5 rounded-[var(--rv-radius-md)] font-black text-sm bg-[var(--danger-solid)] text-[var(--danger-solid-text)] hover:brightness-110 transition-all cursor-pointer flex-shrink-0 whitespace-nowrap"
                 >
                   Jetzt Backup erstellen
                 </button>
@@ -2332,7 +2313,7 @@ export default function App() {
             {liveSync.failed && !syncAbbruchAusgeblendet && (
               <div
                 role="alert"
-                className="p-4 mb-4 rounded-xl border-2 border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)] flex flex-col sm:flex-row sm:items-center gap-3"
+                className="p-4 mb-4 rounded-[var(--rv-radius-md)] border-2 border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)] flex flex-col sm:flex-row sm:items-center gap-3"
               >
                 <div className="flex items-start gap-2.5 flex-1 min-w-0">
                   <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
@@ -2354,7 +2335,7 @@ export default function App() {
                       setSyncAbbruchAusgeblendet(true);
                       setActiveTab("sync");
                     }}
-                    className="min-h-[44px] px-4 py-2 w-full sm:w-auto rounded-xl font-black text-sm bg-[var(--warning-solid)] text-[var(--warning-solid-text)] hover:brightness-110 transition-all cursor-pointer focus-visible:ring-4"
+                    className="min-h-[44px] px-4 py-2 w-full sm:w-auto rounded-[var(--rv-radius-md)] font-black text-sm bg-[var(--warning-solid)] text-[var(--warning-solid-text)] hover:brightness-110 transition-all cursor-pointer focus-visible:ring-4"
                   >
                     Neu verbinden
                   </button>
@@ -2362,7 +2343,7 @@ export default function App() {
                     type="button"
                     onClick={() => setSyncAbbruchAusgeblendet(true)}
                     aria-label="Hinweis zur unterbrochenen Live-Verbindung ausblenden"
-                    className="min-h-[44px] px-4 py-2 w-full sm:w-auto rounded-xl font-bold text-sm border border-[var(--warning-border)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--warning-bg)] transition-all cursor-pointer focus-visible:ring-4"
+                    className="min-h-[44px] px-4 py-2 w-full sm:w-auto rounded-[var(--rv-radius-md)] font-bold text-sm border border-[var(--warning-border)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--warning-bg)] transition-all cursor-pointer focus-visible:ring-4"
                   >
                     Ausblenden
                   </button>
@@ -2374,7 +2355,7 @@ export default function App() {
       {deadlineInfo.sichtbar && (
         <div
           role="alert"
-          className={`p-3.5 mb-4 rounded-xl border flex gap-2.5 items-center text-xs font-bold leading-snug ${
+          className={`p-3.5 mb-4 rounded-[var(--rv-radius-md)] border flex gap-2.5 items-center text-xs font-bold leading-snug ${
             deadlineInfo.isUrgent
               ? "bg-[var(--danger-bg)] border-[var(--danger-border)] text-[var(--danger-text)] animate-pulse"
               : "bg-[var(--alert-bg)] border-[var(--alert-border)] text-[var(--alert-text)]"
@@ -2417,7 +2398,7 @@ export default function App() {
       </div>
 
       {/* LIVE BENTO DASHBOARD CARDS (Modern, interactive, responsive, screen-reader optimized metrics dashboard of current totals) */}
-      <div className="sticky top-2 z-30 bg-[var(--bg-color)]/95 backdrop-blur-md py-2 -mx-2 px-2 rounded-xl mb-4 shadow-sm border border-[var(--border-color)]">
+      <div className="sticky top-2 z-30 bg-[var(--bg-color)]/95 backdrop-blur-md py-2 -mx-2 px-2 rounded-[var(--rv-radius-md)] mb-4 shadow-[var(--rv-shadow-md)] border border-[var(--border-color)]">
         <div
           className="grid grid-cols-2 sm:grid-cols-4 gap-2.5"
           aria-label="Aktueller Monatsfortschritt Live-Anzeige"
@@ -2435,7 +2416,7 @@ export default function App() {
                 : "Filter gewechselt auf Bereich 1: Vorführungen",
             );
           }}
-          className={`p-3 rounded-2xl border bg-[var(--card-bg)] flex flex-col justify-between shadow-xs hover:border-[var(--cat-1)] transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
+          className={`p-3 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] flex flex-col justify-between shadow-[var(--rv-shadow-sm)] hover:shadow-[var(--rv-shadow-md)] hover:border-[var(--cat-1)] transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
             activeSectionTab === "s1"
               ? "border-2 border-[var(--cat-1)] bg-[var(--cat-1-soft)]"
               : "border-[var(--border-color)]"
@@ -2448,7 +2429,7 @@ export default function App() {
         >
           <div className="flex items-center gap-2 w-full">
             <div
-              className="w-8 h-8 rounded-xl bg-[var(--cat-1-soft)] text-[var(--cat-1-text)] border border-[var(--cat-1)] flex items-center justify-center flex-shrink-0"
+              className="w-8 h-8 rounded-[var(--rv-radius-md)] bg-[var(--cat-1-soft)] text-[var(--cat-1-text)] border border-[var(--cat-1)] flex items-center justify-center flex-shrink-0"
               aria-hidden="true"
             >
               <Eye className="w-4 h-4" />
@@ -2494,7 +2475,7 @@ export default function App() {
                 : "Filter gewechselt auf Bereich 2: Schulungen & Support",
             );
           }}
-          className={`p-3 rounded-2xl border bg-[var(--card-bg)] flex flex-col justify-between shadow-xs hover:border-[var(--cat-2)] transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
+          className={`p-3 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] flex flex-col justify-between shadow-[var(--rv-shadow-sm)] hover:shadow-[var(--rv-shadow-md)] hover:border-[var(--cat-2)] transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
             activeSectionTab === "s2"
               ? "border-2 border-[var(--cat-2)] bg-[var(--cat-2-soft)]"
               : "border-[var(--border-color)]"
@@ -2507,7 +2488,7 @@ export default function App() {
         >
           <div className="flex items-center gap-2 w-full">
             <div
-              className="w-8 h-8 rounded-xl bg-[var(--cat-2-soft)] text-[var(--cat-2-text)] border border-[var(--cat-2)] flex items-center justify-center flex-shrink-0"
+              className="w-8 h-8 rounded-[var(--rv-radius-md)] bg-[var(--cat-2-soft)] text-[var(--cat-2-text)] border border-[var(--cat-2)] flex items-center justify-center flex-shrink-0"
               aria-hidden="true"
             >
               <GraduationCap className="w-4 h-4" />
@@ -2553,7 +2534,7 @@ export default function App() {
                 : "Filter gewechselt auf Bereich 3: Spezialprodukte",
             );
           }}
-          className={`p-3 rounded-2xl border bg-[var(--card-bg)] flex flex-col justify-between shadow-xs hover:border-[var(--cat-3)] transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
+          className={`p-3 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] flex flex-col justify-between shadow-[var(--rv-shadow-sm)] hover:shadow-[var(--rv-shadow-md)] hover:border-[var(--cat-3)] transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
             activeSectionTab === "s3"
               ? "border-2 border-[var(--cat-3)] bg-[var(--cat-3-soft)]"
               : "border-[var(--border-color)]"
@@ -2566,7 +2547,7 @@ export default function App() {
         >
           <div className="flex items-center gap-2 w-full">
             <div
-              className="w-8 h-8 rounded-xl bg-[var(--cat-3-soft)] text-[var(--cat-3-text)] border border-[var(--cat-3)] flex items-center justify-center flex-shrink-0"
+              className="w-8 h-8 rounded-[var(--rv-radius-md)] bg-[var(--cat-3-soft)] text-[var(--cat-3-text)] border border-[var(--cat-3)] flex items-center justify-center flex-shrink-0"
               aria-hidden="true"
             >
               <Sparkles className="w-4 h-4" />
@@ -2612,7 +2593,7 @@ export default function App() {
                 : "Filter gewechselt auf Bereich 4: Arbeitszeit",
             );
           }}
-          className={`p-3 rounded-2xl border bg-[var(--card-bg)] flex flex-col justify-between shadow-xs hover:border-[var(--cat-4)] transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
+          className={`p-3 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] flex flex-col justify-between shadow-[var(--rv-shadow-sm)] hover:shadow-[var(--rv-shadow-md)] hover:border-[var(--cat-4)] transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
             activeSectionTab === "s4"
               ? "border-2 border-[var(--cat-4)] bg-[var(--cat-4-soft)]"
               : "border-[var(--border-color)]"
@@ -2625,7 +2606,7 @@ export default function App() {
         >
           <div className="flex items-center gap-2 w-full">
             <div
-              className="w-8 h-8 rounded-xl bg-[var(--cat-4-soft)] text-[var(--cat-4-text)] border border-[var(--cat-4)] flex items-center justify-center flex-shrink-0"
+              className="w-8 h-8 rounded-[var(--rv-radius-md)] bg-[var(--cat-4-soft)] text-[var(--cat-4-text)] border border-[var(--cat-4)] flex items-center justify-center flex-shrink-0"
               aria-hidden="true"
             >
               <Clock className="w-4 h-4" />
@@ -2669,7 +2650,7 @@ export default function App() {
         ohnehin, was sie tut --, und die "Ein/Aus"-Plaketten sind durch
         aria-pressed ersetzt, das Screenreader von sich aus vorlesen.
       */}
-      <div className="mb-3 p-2.5 rounded-xl border bg-[var(--card-bg)] border-[var(--border-color)] space-y-2 shadow-xs">
+      <div className="mb-3 p-2.5 rounded-[var(--rv-radius-md)] border bg-[var(--card-bg)] border-[var(--border-color)] space-y-2 shadow-[var(--rv-shadow-sm)]">
         <div
           className="flex flex-wrap items-center gap-1.5"
           role="toolbar"
@@ -2690,9 +2671,9 @@ export default function App() {
                     : "Standard-Layout aktiviert!",
                 );
               }}
-              className={`px-2.5 min-h-[44px] rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
+              className={`px-2.5 min-h-[44px] rounded-[var(--rv-radius-sm)] text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
                 isCompactView
-                  ? "bg-[var(--accent)] text-[var(--accent-text)] border-[var(--accent)] shadow-xs"
+                  ? "bg-[var(--accent)] text-[var(--accent-text)] border-[var(--accent)] shadow-[var(--rv-shadow-sm)]"
                   : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)]"
               }`}
             >
@@ -2720,7 +2701,7 @@ export default function App() {
                      kann — beim Blick in einen alten Archivmonat war das die
                      Regel, nicht die Ausnahme. */
                   aria-label={`Werte aus ${formatMonthGerman(vorlage.month)} als Vorlage laden`}
-                  className="px-2.5 min-h-[44px] rounded-lg text-xs font-bold border bg-[var(--success-bg)] text-[var(--success-text)] border-[var(--success-border)] hover:brightness-110 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
+                  className="px-2.5 min-h-[44px] rounded-[var(--rv-radius-sm)] text-xs font-bold border bg-[var(--success-bg)] text-[var(--success-text)] border-[var(--success-border)] hover:brightness-110 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
                 >
                   <Copy className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Vorlage</span>
@@ -2737,9 +2718,9 @@ export default function App() {
                   ? "Zusammenfassung vorlesen stoppen"
                   : "Zusammenfassung vorlesen"
               }
-              className={`px-2.5 min-h-[44px] rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
+              className={`px-2.5 min-h-[44px] rounded-[var(--rv-radius-sm)] text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
                 isReadingSummary
-                  ? "bg-[var(--warning-solid)] text-[var(--warning-solid-text)] border-[var(--warning-border)] shadow-xs"
+                  ? "bg-[var(--warning-solid)] text-[var(--warning-solid-text)] border-[var(--warning-border)] shadow-[var(--rv-shadow-sm)]"
                   : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)]"
               }`}
             >
@@ -2768,9 +2749,9 @@ export default function App() {
               }}
               aria-expanded={isGoalsEditorOpen}
               aria-label={`Monatsziele einrichten. Ziele sind zurzeit ${goalsConfig.enabled ? "eingeschaltet" : "ausgeschaltet"}.`}
-              className={`px-2.5 min-h-[44px] rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
+              className={`px-2.5 min-h-[44px] rounded-[var(--rv-radius-sm)] text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
                 isGoalsEditorOpen
-                  ? "bg-[var(--accent)] text-[var(--accent-text)] border-[var(--accent)] shadow-xs"
+                  ? "bg-[var(--accent)] text-[var(--accent-text)] border-[var(--accent)] shadow-[var(--rv-shadow-sm)]"
                   : goalsConfig.enabled
                     ? "bg-[var(--cat-3-soft)] text-[var(--cat-3-text)] border-[var(--cat-3)]"
                     : "bg-[var(--bg-color)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)]"
@@ -2858,7 +2839,7 @@ export default function App() {
                     const val = Math.max(1, parseInt(e.target.value) || 0);
                     updateGoalsConfig({ ...goalsConfig, s1: val });
                   }}
-                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg outline-none focus:border-[var(--border-focus)]"
+                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-[var(--rv-radius-sm)] outline-none focus:border-[var(--border-focus)]"
                   disabled={!goalsConfig.enabled}
                 />
               </div>
@@ -2876,7 +2857,7 @@ export default function App() {
                     const val = Math.max(1, parseInt(e.target.value) || 0);
                     updateGoalsConfig({ ...goalsConfig, s2: val });
                   }}
-                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg outline-none focus:border-[var(--border-focus)]"
+                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-[var(--rv-radius-sm)] outline-none focus:border-[var(--border-focus)]"
                   disabled={!goalsConfig.enabled}
                 />
               </div>
@@ -2894,7 +2875,7 @@ export default function App() {
                     const val = Math.max(1, parseInt(e.target.value) || 0);
                     updateGoalsConfig({ ...goalsConfig, s3: val });
                   }}
-                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg outline-none focus:border-[var(--border-focus)]"
+                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-[var(--rv-radius-sm)] outline-none focus:border-[var(--border-focus)]"
                   disabled={!goalsConfig.enabled}
                 />
               </div>
@@ -2912,7 +2893,7 @@ export default function App() {
                     const val = Math.max(1, parseInt(e.target.value) || 0);
                     updateGoalsConfig({ ...goalsConfig, s4: val });
                   }}
-                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg outline-none focus:border-[var(--border-focus)]"
+                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-[var(--rv-radius-sm)] outline-none focus:border-[var(--border-focus)]"
                   disabled={!goalsConfig.enabled}
                 />
               </div>
@@ -2932,7 +2913,7 @@ export default function App() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Nach Produkten oder Kategorien suchen (z.B. WeWalk, Tactonom, Schulung)..."
               aria-label="Nach Produkten oder Kategorien suchen"
-              className="w-full pl-9 pr-8 min-h-[44px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-xl text-xs font-bold focus:border-[var(--border-focus)] outline-none"
+              className="w-full pl-9 pr-8 min-h-[44px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-md)] text-xs font-bold focus:border-[var(--border-focus)] outline-none"
             />
             {searchQuery && (
               <button
@@ -2964,7 +2945,7 @@ export default function App() {
           ohnehin aus dessen eigener Beschreibung (`CounterField.tsx`,
           `sr-only`), also genau dort, wo sie hilft.
         */}
-        <p className="flex items-start gap-2 mb-4 px-3 py-2.5 rounded-xl border border-[var(--info-border)] bg-[var(--info-bg)] text-[var(--info-text)] text-xs font-bold leading-snug">
+        <p className="flex items-start gap-2 mb-4 px-3 py-2.5 rounded-[var(--rv-radius-md)] border border-[var(--info-border)] bg-[var(--info-bg)] text-[var(--info-text)] text-xs font-bold leading-snug">
           <Info className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
           <span className="min-w-0 [overflow-wrap:anywhere]">
             Tipp: Sie können jede Zahl direkt in das Feld eintippen — auch größere
@@ -2989,6 +2970,7 @@ export default function App() {
               key={b.nr}
               nummer={b.nr}
               titel={b.titel}
+              icon={b.icon}
               felder={filterFields(b.felder)}
               werte={reportData?.values || {}}
               zeitstempel={reportData?.valuesUpdatedAt}
@@ -3011,14 +2993,14 @@ export default function App() {
         !hasVisibleFields(appFields.s2) &&
         !hasVisibleFields(appFields.s3) &&
         !hasVisibleFields(appFields.s4) && (
-          <div className="p-8 text-center border-2 border-dashed border-[var(--border-color)] rounded-2xl bg-[var(--card-bg)] mb-5 animate-fade-in">
+          <div className="p-8 text-center border-2 border-dashed border-[var(--border-color)] rounded-[var(--rv-radius-lg)] bg-[var(--card-bg)] mb-5 animate-fade-in">
             <p className="text-sm font-bold text-[var(--text-muted)]">
               Keine passenden Einträge gefunden für "{searchQuery}".
             </p>
             <button
               type="button"
               onClick={() => setSearchQuery("")}
-              className="mt-3 px-3 py-1.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] text-xs font-bold rounded-lg cursor-pointer active:scale-95 transition-all"
+              className="mt-3 px-3 py-1.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] text-xs font-bold rounded-[var(--rv-radius-sm)] cursor-pointer active:scale-95 transition-all"
             >
               Suche zurücksetzen
             </button>
@@ -3053,7 +3035,7 @@ export default function App() {
              (Auto-Archiv)", zugänglich aber „Nächsten Monat starten…" — wer
              per Sprachsteuerung „Klick Monat abschließen" sagt, traf nichts. */
           aria-label="Monat abschließen und neu starten. Auto-Archiv: Der aktuelle Monat wird automatisch im RV Archiv gesichert."
-          className="w-full py-4 px-6 rounded-2xl font-black bg-[var(--primary)] hover:opacity-90 text-[var(--primary-text)] text-base md:text-lg flex items-center justify-center gap-2.5 shadow-md cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-4 mb-4"
+          className="w-full py-4 px-6 rounded-[var(--rv-radius-lg)] font-black bg-[var(--primary)] hover:opacity-90 text-[var(--primary-text)] text-base md:text-lg flex items-center justify-center gap-2.5 shadow-[var(--rv-shadow-md)] cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-4 mb-4"
         >
           <CalendarPlus
             className="w-5.5 h-5.5 text-[var(--accent)]"
@@ -3068,7 +3050,7 @@ export default function App() {
           <button
             type="button"
             onClick={handleSendToVL}
-            className="w-full py-4 px-6 rounded-2xl font-bold bg-[var(--cat-3-soft)] hover:brightness-110 text-[var(--cat-3-text)] border border-[var(--cat-3)] text-base flex items-center justify-center gap-2.5 shadow-sm cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-4"
+            className="w-full py-4 px-6 rounded-[var(--rv-radius-lg)] font-bold bg-[var(--cat-3-soft)] hover:brightness-110 text-[var(--cat-3-text)] border border-[var(--cat-3)] text-base flex items-center justify-center gap-2.5 shadow-[var(--rv-shadow-sm)] cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-4"
           >
             <Share2 className="w-5 h-5" aria-hidden="true" />
             <span>Bericht an VL senden (Teilen/E-Mail)</span>
@@ -3117,7 +3099,7 @@ export default function App() {
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:right-8 md:translate-x-0 bg-[var(--primary)] text-[var(--primary-text)] font-black py-3.5 px-6 rounded-full shadow-2xl z-50 text-sm border border-[var(--border-color)] animate-bounce"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:right-8 md:translate-x-0 bg-[var(--primary)] text-[var(--primary-text)] font-black py-3.5 px-6 rounded-full shadow-[var(--rv-shadow-lg)] z-50 text-sm border border-[var(--border-color)] animate-bounce"
         >
           {toastText}
         </div>
@@ -3326,6 +3308,11 @@ export default function App() {
             onSchichtenLoeschen={handleSchichtenLoeschen}
             onAllesLoeschen={handleAllesLoeschen}
             onOpenStats={() => setActiveTab("stats")}
+            mobileComfortMode={mobileComfortMode}
+            onToggleMobileComfort={() => {
+              setMobileComfortMode((prev) => !prev);
+              announceToAriaAndSpeech("Ein-Hand-Modus aktualisiert.", true);
+            }}
           />
         </div>
       )}
@@ -3402,7 +3389,7 @@ export default function App() {
 
           return (
             <div
-              className="fixed bottom-0 left-0 right-0 z-[100] bg-[var(--card-bg)] border-t border-[var(--border-color)] p-3 shadow-[0_-8px_30px_rgba(0,0,0,0.15)] pb-safe-bottom"
+              className="fixed bottom-0 left-0 right-0 z-[100] bg-[var(--card-bg)] border-t border-[var(--border-color)] p-3 shadow-[0_-8px_30px_rgba(0,0,0,0.15)] rv-safe-pb"
               role="toolbar"
               aria-label="Mobiles Navigations-Hilfe-Menü"
             >
@@ -3418,7 +3405,7 @@ export default function App() {
                     beginnt jetzt mit dem sichtbaren Wort.
                   */
                   aria-label="Zurück zum vorherigen Eingabefeld"
-                  className="h-12 px-3 rounded-xl font-black border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
+                  className="h-12 px-3 rounded-[var(--rv-radius-md)] font-black border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
                 >
                   ◀ Zurück
                 </button>
@@ -3438,7 +3425,7 @@ export default function App() {
                   onClick={() => handleNavigateField("next")}
                   // Gleiche Begruendung wie bei "Zurück" oben.
                   aria-label="Weiter zum nächsten Eingabefeld"
-                  className="h-12 px-3 rounded-xl font-black border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
+                  className="h-12 px-3 rounded-[var(--rv-radius-md)] font-black border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
                 >
                   Weiter ▶
                 </button>
@@ -3451,7 +3438,7 @@ export default function App() {
                   }}
                   // Gleiche Begruendung wie bei "Zurück" oben.
                   aria-label="Fertig – Eingabe abschließen"
-                  className="h-12 px-3.5 rounded-xl font-black bg-[var(--primary)] text-[var(--primary-text)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
+                  className="h-12 px-3.5 rounded-[var(--rv-radius-md)] font-black bg-[var(--primary)] text-[var(--primary-text)] active:scale-95 transition-all text-xs flex items-center justify-center cursor-pointer"
                 >
                   Fertig
                 </button>
@@ -3494,7 +3481,7 @@ export default function App() {
             und 7,83:1 im dunklen Schema. Der Weichzeichner ist ersatzlos weg:
             Hinter einer deckenden Flaeche tut er ohnehin nichts.
           */
-          className={`fixed bottom-4 left-1/2 -translate-x-1/2 w-[96%] max-w-xl z-[200] bg-[var(--card-bg)] border border-[var(--border-color)] py-2.5 px-2 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.5)] transition-all ${isDesktop ? 'lg:hidden' : ''}`}
+          className={`fixed rv-safe-nav-bottom left-1/2 -translate-x-1/2 w-[96%] max-w-xl z-[200] bg-[var(--card-bg)] border border-[var(--border-color)] py-2.5 px-2 rounded-[var(--rv-radius-lg)] shadow-[0_10px_35px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.5)] transition-all ${isDesktop ? 'lg:hidden' : ''}`}
           role="navigation"
           aria-label="Hauptnavigation"
         >
@@ -3513,7 +3500,7 @@ export default function App() {
                   onClick={() => {
                     wechsleHauptansicht(tab.id, tab.ansage);
                   }}
-                  className={`flex-1 min-w-0 flex flex-col items-center justify-center py-1.5 rounded-xl relative transition-all active:scale-90 cursor-pointer ${
+                  className={`flex-1 min-w-0 flex flex-col items-center justify-center py-1.5 rounded-[var(--rv-radius-md)] relative transition-all active:scale-90 cursor-pointer ${
                     isSelected
                       ? "text-[var(--accent)] font-black"
                       : "text-[var(--text-muted)] hover:text-[var(--text-color)] font-bold"

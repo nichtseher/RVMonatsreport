@@ -162,25 +162,29 @@ export default function BestandModal({
   };
 
   return (
-    <div className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-3xl w-full border border-[var(--border-color)] p-6 md:p-8 relative shadow-lg animate-fade-in [overflow-wrap:anywhere]">
+    <div className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--border-color)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] animate-fade-in [overflow-wrap:anywhere]">
       {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
-      <div className="flex items-center gap-3 mb-4">
-        <button
-          ref={closeButtonRef}
-          type="button"
-          onClick={onClose}
-          aria-label="Zurück zu den Optionen"
-          className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95"
-        >
-          <ArrowLeft className="w-6 h-6" aria-hidden="true" />
-        </button>
-        <Package className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
+      {/* flex-col sm:flex-row: siehe CarryoverModal -- bei "Extra gross"
+          blieben der Ueberschrift sonst nur 58 px neben Taste und Icon. */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-4">
+        <div className="flex items-center gap-3">
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            aria-label="Zurück zu den Optionen"
+            className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95"
+          >
+            <ArrowLeft className="w-6 h-6" aria-hidden="true" />
+          </button>
+          <Package className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
+        </div>
         {/* min-w-0: sonst gibt das Flex-Element seine Breite nicht unter den
             Inhalt preis und die Überschrift schiebt die Seite waagerecht auf. */}
-        <h2 tabIndex={-1} data-ansicht-titel="" className="text-2xl md:text-3xl font-black min-w-0 break-words">Meine Demogeräte</h2>
+        <h2 tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black flex-1 min-w-0 [overflow-wrap:anywhere]">Meine Demogeräte</h2>
       </div>
 
-      <div className="p-3.5 mb-5 rounded-xl bg-[var(--cat-4-soft)] border border-[var(--cat-4)]/10 flex gap-2.5 items-start text-xs font-bold leading-relaxed">
+      <div className="p-3.5 mb-5 rounded-[var(--rv-radius-md)] bg-[var(--cat-4-soft)] border border-[var(--cat-4)]/10 flex gap-2.5 items-start text-xs font-bold leading-relaxed">
         <Info className="w-4 h-4 flex-shrink-0 text-[var(--cat-4-text)] mt-0.5" aria-hidden="true" />
         <p className="flex-1">
           Ihre eigene Liste der Vorführgeräte, die Sie gerade dabeihaben – damit Sie
@@ -202,7 +206,7 @@ export default function BestandModal({
             onChange={(e) => setEntwurf(e.target.value)}
             placeholder="z. B. Tactonom Pro mit Netzteil"
             autoComplete="off"
-            className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] font-bold focus-visible:ring-4"
+            className="w-full min-h-[44px] px-3.5 py-2.5 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] font-bold focus-visible:ring-4"
           />
         </div>
         <div>
@@ -216,7 +220,7 @@ export default function BestandModal({
             onChange={(e) => setNotizEntwurf(e.target.value)}
             placeholder="z. B. seit KW 37, geht danach an Kollegin"
             autoComplete="off"
-            className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] font-bold focus-visible:ring-4"
+            className="w-full min-h-[44px] px-3.5 py-2.5 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] font-bold focus-visible:ring-4"
           />
         </div>
         {/* Stapeln bis sm: Drei Elemente nebeneinander unterschreiten bei
@@ -224,7 +228,7 @@ export default function BestandModal({
         <div className="flex flex-col sm:flex-row gap-2.5">
           <button
             type="submit"
-            className="flex-1 min-h-[44px] py-3 px-4 rounded-xl font-black bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2"
+            className="flex-1 min-h-[44px] py-3 px-4 rounded-[var(--rv-radius-md)] font-black bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             <Plus className="w-5 h-5" aria-hidden="true" />
             <span>{bearbeitet ? "Änderung übernehmen" : "Zur Liste hinzufügen"}</span>
@@ -236,7 +240,7 @@ export default function BestandModal({
                 zuruecksetzen();
                 announceToAriaAndSpeech("Bearbeitung abgebrochen.", true);
               }}
-              className="flex-1 min-h-[44px] py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer"
+              className="flex-1 min-h-[44px] py-3 px-4 rounded-[var(--rv-radius-md)] font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer"
             >
               Abbrechen
             </button>
@@ -253,7 +257,7 @@ export default function BestandModal({
         <button
           type="button"
           onClick={vorlesen}
-          className="min-h-[44px] py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer flex items-center justify-center gap-2 flex-shrink-0"
+          className="min-h-[44px] py-3 px-4 rounded-[var(--rv-radius-md)] font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer flex items-center justify-center gap-2 flex-shrink-0"
         >
           <Volume2 className="w-5 h-5" aria-hidden="true" />
           <span>Liste vorlesen</span>
@@ -270,7 +274,7 @@ export default function BestandModal({
           {posten.map((p) => (
             <li
               key={p.id}
-              className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] p-3.5 flex flex-col sm:flex-row sm:items-start gap-2.5"
+              className="rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--bg-color)] p-3.5 flex flex-col sm:flex-row sm:items-start gap-2.5"
             >
               <div className="min-w-0 flex-1">
                 <p className="font-black text-sm break-words">{p.text}</p>
@@ -285,7 +289,7 @@ export default function BestandModal({
                   type="button"
                   onClick={() => bearbeiten(p)}
                   aria-label={`Bearbeiten: ${p.text}`}
-                  className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-colors cursor-pointer"
+                  className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-[var(--rv-radius-md)] flex items-center justify-center border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-colors cursor-pointer"
                 >
                   <Pencil className="w-5 h-5" aria-hidden="true" />
                 </button>
@@ -293,7 +297,7 @@ export default function BestandModal({
                   type="button"
                   onClick={() => loeschen(p)}
                   aria-label={`Eintrag löschen: ${p.text}`}
-                  className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center border border-[var(--danger-text)] bg-[var(--card-bg)] text-[var(--text-color)] hover:bg-[var(--danger-bg)] transition-colors cursor-pointer"
+                  className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-[var(--rv-radius-md)] flex items-center justify-center border border-[var(--danger-text)] bg-[var(--card-bg)] text-[var(--text-color)] hover:bg-[var(--danger-bg)] transition-colors cursor-pointer"
                 >
                   <Trash2 className="w-5 h-5" aria-hidden="true" />
                 </button>

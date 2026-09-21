@@ -19,6 +19,35 @@
     Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "SF Mono",
     Menlo, Consolas, monospace;
+
+  /* `animate-fade-in` (22 Stellen) und `animate-slide-up` (5 Stellen) standen
+     im Code, ohne dass ein einziges CSS dahinterstand -- Tailwind 4 kennt von
+     Haus aus nur spin/ping/pulse/bounce. Die Modale sollten einblenden und
+     erschienen stattdessen. Kein Schwung/Overshoot: professionell-freundlich,
+     nicht verspielt. Die globale prefers-reduced-motion-Regel weiter unten
+     nullt beide Dauern bereits, ohne dass hier etwas dafuer noetig waere.
+
+     100/140ms statt anfaenglich 180/220ms: `tests/oberflaeche.spec.ts`s
+     gemeinsame `oeffne()`-Hilfsfunktion wartet nach der Navigation fest
+     250ms, geteilt von über 600 Prüfungen. Mit 180ms schlugen die axe-Läufe
+     für Zeit und Archiv (beide mit animate-fade-in auf der Wurzel) 4 von 5
+     Versuchen fehl -- derselbe Farbwert jedes Mal (#3c955e statt #15803d),
+     also kein Zufallsrauschen, sondern ein Schnappschuss mitten im
+     Opacity-Uebergang. Kuerzer statt die gemeinsame Wartezeit fuer die
+     gesamte Suite zu erhoehen: 100ms bleibt als Uebergang sichtbar,
+     lässt aber reichlich Rand unter den 250ms. */
+  --animate-fade-in: fade-in 100ms ease-out;
+  --animate-slide-up: slide-up 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 :root {
@@ -408,6 +437,25 @@ body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   line-height: 1.5;
+}
+
+/* `env(safe-area-inset-bottom)` auf body (oben) wirkt nur im normalen Fluss.
+   `position: fixed` sitzt relativ zum Viewport und ignoriert das Padding von
+   body vollstaendig -- deshalb brauchen die beiden schwebenden Leisten am
+   unteren Rand ihren eigenen Zuschlag, wie .rv-update-hinweis ihn schon hat
+   (dort bei bottom, nicht bei padding, weil sie ueber statt auf der Kante
+   sitzt). Ohne das saß die Formular-Werkzeugleiste auf Geraeten mit
+   Home-Indikator (iPhone 15 Pro und neuer) direkt auf der Wischzone;
+   `pb-safe-bottom` stand vorher an ihrer Stelle -- keine Tailwind-Utility
+   dieses Namens existiert, die Klasse erzeugte kein einziges CSS. Auf
+   Geraeten ohne Aussparung (Android ohne Geste, Desktop) ist env(...) 0px,
+   also unveraendert gegenueber vorher. */
+.rv-safe-pb {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.rv-safe-nav-bottom {
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
 }
 
 button, input, select, textarea {

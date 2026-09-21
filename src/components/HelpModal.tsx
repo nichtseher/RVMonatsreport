@@ -86,7 +86,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
   */
   return (
     <div className="animate-fade-in" ref={modalRef}>
-      <div className="bg-[var(--card-bg)] rounded-3xl overflow-hidden shadow-2xl border-4 border-[var(--border-color)] flex flex-col max-h-[85vh]">
+      <div className="bg-[var(--card-bg)] rounded-[var(--rv-radius-xl)] overflow-hidden shadow-[var(--rv-shadow-lg)] border-4 border-[var(--border-color)] flex flex-col max-h-[85vh]">
         
         {/* Header */}
         <div className="bg-[var(--bg-color)] p-6 border-b-2 border-[var(--border-color)] flex items-center justify-between sticky top-0 z-10">
@@ -101,7 +101,12 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             </button>
             {/* text-[var(--primary-text)] statt text-white: --primary ist in
                 "Weiß auf Schwarz" selbst #ffffff und in "Gelb auf Schwarz"
-                #ffff00 -- das Fragezeichen war dort unsichtbar. */}
+                #ffff00 -- das Fragezeichen war dort unsichtbar.
+                shadow-inner bewusst außerhalb der --rv-shadow-*-Skala: Ein
+                Innenschatten zeigt eine eingelassene Flaeche, keine
+                Elevation ueber der Seite -- ein anderer Effekt, keine
+                fehlende Anbindung. scripts/checks/gestaltung.ts kennt genau
+                diese eine Ausnahme. */}
             <div className="w-12 h-12 bg-[var(--primary)] rounded-full hidden sm:flex items-center justify-center text-[var(--primary-text)] shadow-inner flex-shrink-0">
               <HelpCircle className="w-6 h-6" aria-hidden="true" />
             </div>
@@ -183,7 +188,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
           
           {activeTab === "general" && (
             <div className="space-y-6 animate-fade-in">
-              <div className="bg-[var(--info-bg)] p-5 rounded-2xl border border-[var(--info-border)]">
+              <div className="bg-[var(--info-bg)] p-5 rounded-[var(--rv-radius-lg)] border border-[var(--info-border)]">
                 <h3 className="font-black text-lg text-[var(--info-text)] mb-2 flex items-center gap-2">
                   <Play className="w-5 h-5" />
                   Erste Schritte
@@ -332,7 +337,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <p>Vor dem Senden prüft die App Ihren Bericht kurz auf Auffälligkeiten (z. B. fehlender Name oder Stunden, die nicht zur Stempeluhr passen) und fragt gegebenenfalls nach. Danach fragt sie in jedem Fall, welche Tabellenblätter mitgehen sollen – siehe unten.</p>
                   <p>Zusätzlich können Sie im <strong>RV Archiv</strong> jederzeit rückwirkend Excel-Dateien für jeden vergangenen Monat herunterladen oder teilen.</p>
                   <p className="mt-2">Im RV Archiv trägt jeder Monat ein Abzeichen: <strong>„Gesendet"</strong> mit Datum oder <strong>„Noch offen"</strong>. Es wird automatisch gesetzt, sobald Sie den Monat exportiert und die Datei wirklich verschickt haben – brechen Sie den Teilen-Dialog ab, bleibt der Monat offen. Mit der Schaltfläche <strong>Als gesendet markieren</strong> können Sie es jederzeit von Hand korrigieren.</p>
-                  <p className="mt-2 text-[var(--info-text)] font-bold">Vor jedem Senden fragt die App, <strong>was mitgehen soll</strong>. <strong>Nur Vorlage senden</strong> schickt allein das Blatt <strong>Monatsinfo</strong> – exakt das gewohnte Formular der Vertriebsleitung, gleiche Zeilen, gleiche gelbe Felder, gleiche Summenformel. Das ist die vorgeschlagene Antwort, und sie reicht der Vertriebsleitung.</p>
+                  <p className="mt-2 text-[var(--info-text)] font-normal">Vor jedem Senden fragt die App, <strong>was mitgehen soll</strong>. <strong>Nur Vorlage senden</strong> schickt allein das Blatt <strong>Monatsinfo</strong> – exakt das gewohnte Formular der Vertriebsleitung, gleiche Zeilen, gleiche gelbe Felder, gleiche Summenformel. Das ist die vorgeschlagene Antwort, und sie reicht der Vertriebsleitung.</p>
                   <p className="mt-2"><strong>Welche Formularfassung steckt drin?</strong> Die App bringt das Formular der Vertriebsleitung in der Fassung <strong>{VORLAGE_STAND}</strong> mit. Diese Angabe steht auch in jeder erzeugten Datei – in den Dateieigenschaften und, sofern mitgesendet, auf dem Blatt <strong>Zusatzangaben</strong>. Gibt die Vertriebsleitung ein neues Formular heraus, melden Sie sich bitte: Die App erkennt das nicht von selbst.</p>
                   <p className="mt-2">Wählen Sie stattdessen <strong>Alle drei Blätter</strong>, kommen zwei weitere dazu: Auf <strong>RV Mobil - Zusatzangaben</strong> stehen alle Werte, für die es im Formular keine Zeile gibt (etwa Urlaubs- und Krankheitstage, Reisezeit und Ihre eigenen Kategorien) samt der Summen je Bereich. Auf <strong>RV Mobil - Arbeitszeiten</strong> stehen Ihre einzelnen Schichten aus der Stempeluhr – mit Kommen, Gehen, Pause und Kommentar. Ist die Stempeluhr abgeschaltet, entfällt dieses Blatt, und die Antwort heißt <strong>Beide Blätter</strong>.</p>
                 </FAQItem>
@@ -349,8 +354,8 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 >
                   <p>Der Bereich <strong>RV Zeit</strong> – in der unteren Leiste <strong>Zeit</strong> – ersetzt einen Stundenzettel. Wenn Sie morgens anfangen, drücken Sie auf <strong>Einstempeln</strong>. Die Uhr beginnt zu laufen.</p>
                   <p>Wenn Sie Feierabend machen, drücken Sie auf <strong>Ausstempeln</strong>. Es öffnet sich ein Dialog, in dem Sie Ihre Pausenzeit anpassen und die gearbeitete Zeit auf Büro- und Außendienst aufteilen können. Bestätigen Sie dies, um den Eintrag zu speichern.</p>
-                  <p className="mt-2 text-[var(--info-text)] font-bold">Automatisch übernommen werden: Ihre Arbeitsstunden (Büro und Außendienst) sowie die Anzahl der Arbeitstage – diese müssen Sie nicht doppelt eintragen.</p>
-                  <p className="mt-2 text-[var(--warning-text)] font-bold">Bitte selbst eintragen: <strong>Urlaubs-, Krankheits- und Feiertage</strong> tragen Sie im RV Report (Bereich 4 „Arbeitszeit &amp; Büro") von Hand ein. Die Stempeluhr erfasst diese nicht automatisch – sie rechnet aber mit allen dreien in der Jahresübersicht weiter, und ein fehlender Eintrag zeigt dort ein zu hohes Soll.</p>
+                  <p className="mt-2 text-[var(--info-text)] font-normal">Automatisch übernommen werden: Ihre Arbeitsstunden (Büro und Außendienst) sowie die Anzahl der Arbeitstage – diese müssen Sie nicht doppelt eintragen.</p>
+                  <p className="mt-2 text-[var(--warning-text)] font-normal">Bitte selbst eintragen: <strong>Urlaubs-, Krankheits- und Feiertage</strong> tragen Sie im RV Report (Bereich 4 „Arbeitszeit &amp; Büro") von Hand ein. Die Stempeluhr erfasst diese nicht automatisch – sie rechnet aber mit allen dreien in der Jahresübersicht weiter, und ein fehlender Eintrag zeigt dort ein zu hohes Soll.</p>
                   <p className="mt-2"><strong>Sie müssen die Stempeluhr nicht benutzen.</strong> Unter <strong>Optionen → Anzeige &amp; Bedienung</strong> lässt sie sich abschalten; dann verschwindet der Bereich „RV Zeit", und Sie tragen Ihre Bürostunden und Arbeitstage im RV Report von Hand ein. Ist sie abgeschaltet und liegen noch Schichten auf dem Gerät, erscheint dort außerdem <strong>Erfasste Schichten löschen</strong>. Das entfernt die Aufzeichnungen aus dem laufenden Monat und aus dem RV Archiv – <strong>Ihre Zählerstände im Bericht bleiben dabei unverändert</strong>.</p>
                 </FAQItem>
 
@@ -369,7 +374,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
 
           {activeTab === "backup" && (
             <div className="space-y-6 animate-fade-in">
-              <div className="bg-[var(--warning-bg)] p-5 rounded-2xl border border-[var(--warning-border)]">
+              <div className="bg-[var(--warning-bg)] p-5 rounded-[var(--rv-radius-lg)] border border-[var(--warning-border)]">
                 <h3 className="font-black text-lg text-[var(--warning-text)] mb-2 flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5" />
                   Wichtiger Hinweis zum Backup
@@ -387,7 +392,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <p>Gehen Sie im Menü auf <strong>Optionen</strong> und dort auf <strong>Datensicherung</strong>.</p>
                   <p>Setzen Sie das Häkchen bei <strong>„Backup mit Passwort schützen“</strong> und tragen Sie darunter im Feld <strong>„Passwort“</strong> eines ein. Mit <strong>Auf Gerät speichern</strong> laden Sie die Datei herunter, mit <strong>Sicher Teilen / Senden</strong> geben Sie sie direkt weiter (z. B. an sich selbst per E-Mail).</p>
                   <p>Ohne Passwort entsteht eine normale Datei (Endung <code>.json</code>), mit Passwort eine verschlüsselte (Endung <code>.json.enc</code>). Heben Sie diese Datei sicher auf.</p>
-                  <p className="text-[var(--warning-text)] font-bold">Wichtig: Ohne das Passwort lässt sich ein verschlüsseltes Backup später nicht mehr öffnen.</p>
+                  <p className="text-[var(--warning-text)] font-normal">Wichtig: Ohne das Passwort lässt sich ein verschlüsseltes Backup später nicht mehr öffnen.</p>
                 </FAQItem>
 
                 <FAQItem
@@ -417,7 +422,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
         <div className="p-5 bg-[var(--bg-color)] border-t-2 border-[var(--border-color)] flex justify-end">
           <button
             onClick={onClose}
-            className="px-6 py-3 bg-[var(--primary)] hover:opacity-90 text-[var(--primary-text)] font-black rounded-xl transition-all active:scale-95 focus-visible:ring-4 shadow-sm"
+            className="px-6 py-3 bg-[var(--primary)] hover:opacity-90 text-[var(--primary-text)] font-black rounded-[var(--rv-radius-md)] transition-all active:scale-95 focus-visible:ring-4 shadow-[var(--rv-shadow-sm)]"
           >
             Hilfe schließen
           </button>
@@ -429,7 +434,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
 
 function FAQItem({ icon, title, children }: { icon: React.ReactNode, title: string, children: React.ReactNode }) {
   return (
-    <div className="bg-[var(--bg-color)] border border-[var(--border-color)] rounded-xl overflow-hidden shadow-sm">
+    <div className="bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[var(--rv-radius-md)] overflow-hidden shadow-[var(--rv-shadow-sm)]">
       <div className="p-4 bg-[var(--bg-color)] border-b border-[var(--border-color)]">
         <h4 className="font-black text-sm text-[var(--text-color)] flex items-center gap-2">
           {icon}

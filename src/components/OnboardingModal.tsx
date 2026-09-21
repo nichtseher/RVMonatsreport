@@ -122,7 +122,7 @@ export default function OnboardingModal({
       onClick={onClick}
       aria-pressed={active}
       aria-label={ariaLabel}
-      className={`min-h-[44px] px-3 py-2.5 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer ${
+      className={`min-h-[44px] px-3 py-2.5 rounded-[var(--rv-radius-md)] text-sm font-bold border-2 transition-all cursor-pointer ${
         active
           ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--text-color)]"
           : "border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-muted)] hover:border-[var(--accent)]/50"
@@ -141,7 +141,7 @@ export default function OnboardingModal({
     >
       <div
         ref={dialogRef}
-        className="bg-[var(--card-bg)] w-full max-w-lg rounded-2xl shadow-2xl border border-[var(--border-color)] flex flex-col max-h-[92vh]"
+        className="bg-[var(--card-bg)] w-full max-w-lg rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] border border-[var(--border-color)] flex flex-col max-h-[92vh]"
       >
         {/* Fortschritt: als Text UND als Balken, nicht nur als Punkte */}
         <div className="px-5 pt-5 pb-3">
@@ -176,7 +176,7 @@ export default function OnboardingModal({
           {step === 0 && (
             <div className="space-y-3 text-sm text-[var(--text-color)] leading-relaxed">
               <div className="flex justify-center py-2">
-                <div className="w-16 h-16 rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)]">
+                <div className="w-16 h-16 rounded-[var(--rv-radius-lg)] bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)]">
                   <Zap className="w-8 h-8" aria-hidden="true" />
                 </div>
               </div>
@@ -199,7 +199,7 @@ export default function OnboardingModal({
           {step === 1 && (
             <div className="space-y-3">
               <div className="flex justify-center py-1">
-                <div className="w-14 h-14 rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)]">
+                <div className="w-14 h-14 rounded-[var(--rv-radius-lg)] bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)]">
                   <User className="w-7 h-7" aria-hidden="true" />
                 </div>
               </div>
@@ -220,7 +220,7 @@ export default function OnboardingModal({
                 onChange={(e) => onNameChange(e.target.value)}
                 placeholder="Vor- und Nachname"
                 autoComplete="name"
-                className="w-full px-3 py-3 min-h-[48px] rounded-xl border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] font-bold focus:border-[var(--border-focus)] outline-none"
+                className="w-full px-3 py-3 min-h-[48px] rounded-[var(--rv-radius-md)] border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] font-bold focus:border-[var(--border-focus)] outline-none"
               />
               <p className="text-[0.75rem] text-[var(--text-muted)]">
                 Der Name bleibt auf diesem Gerät. Sie können ihn später jederzeit oben im
@@ -320,7 +320,7 @@ export default function OnboardingModal({
           {step === 3 && (
             <div className="space-y-3 text-sm text-[var(--text-color)] leading-relaxed">
               <div className="flex justify-center py-1">
-                <div className="w-14 h-14 rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)]">
+                <div className="w-14 h-14 rounded-[var(--rv-radius-lg)] bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)]">
                   <Zap className="w-7 h-7" aria-hidden="true" />
                 </div>
               </div>
@@ -336,7 +336,7 @@ export default function OnboardingModal({
                 Welche Tasten dort erscheinen, richtet sich automatisch danach, was Sie am
                 häufigsten nutzen. Sie können sie aber auch selbst festlegen.
               </p>
-              <div className="p-3 rounded-xl bg-[var(--bg-color)] border border-[var(--border-color)] text-[0.75rem] text-[var(--text-muted)]">
+              <div className="p-3 rounded-[var(--rv-radius-md)] bg-[var(--bg-color)] border border-[var(--border-color)] text-[0.75rem] text-[var(--text-muted)]">
                 <strong className="text-[var(--text-color)]">Tipp:</strong> Wenn Sie die App
                 auf dem Startbildschirm installieren und das Symbol gedrückt halten, springen
                 Sie direkt zur Erfassung oder zur Stempeluhr.
@@ -347,7 +347,7 @@ export default function OnboardingModal({
           {step === 4 && (
             <div className="space-y-3 text-sm text-[var(--text-color)] leading-relaxed">
               <div className="flex justify-center py-1">
-                <div className="w-14 h-14 rounded-2xl bg-[var(--cat-1-soft)] flex items-center justify-center text-[var(--cat-1-text)]">
+                <div className="w-14 h-14 rounded-[var(--rv-radius-lg)] bg-[var(--cat-1-soft)] flex items-center justify-center text-[var(--cat-1-text)]">
                   <ShieldCheck className="w-7 h-7" aria-hidden="true" />
                 </div>
               </div>
@@ -355,7 +355,7 @@ export default function OnboardingModal({
                 Alle Daten bleiben <strong>ausschließlich auf diesem Gerät</strong>. Es gibt
                 keinen Server, kein Konto und keine Übertragung im Hintergrund.
               </p>
-              <div className="p-3 rounded-xl bg-[var(--cat-2-soft)] border border-[var(--warning-border)] text-[var(--text-color)]">
+              <div className="p-3 rounded-[var(--rv-radius-md)] bg-[var(--cat-2-soft)] border border-[var(--warning-border)] text-[var(--text-color)]">
                 <p className="font-bold mb-1">Das bedeutet aber auch:</p>
                 <p className="text-[0.8125rem]">
                   Wenn Sie die Browserdaten löschen oder das Gerät verlieren, sind die Daten
@@ -378,7 +378,7 @@ export default function OnboardingModal({
               <button
                 type="button"
                 onClick={() => goTo(step - 1)}
-                className="min-h-[48px] px-4 rounded-xl font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer flex items-center gap-1.5"
+                className="min-h-[48px] px-4 rounded-[var(--rv-radius-md)] font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                 Zurück
@@ -388,7 +388,7 @@ export default function OnboardingModal({
               <button
                 type="button"
                 onClick={() => goTo(step + 1)}
-                className="flex-1 min-h-[48px] px-4 rounded-xl font-black bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="flex-1 min-h-[48px] px-4 rounded-[var(--rv-radius-md)] font-black bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 Weiter
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
@@ -397,7 +397,7 @@ export default function OnboardingModal({
               <button
                 type="button"
                 onClick={onFinish}
-                className="flex-1 min-h-[48px] px-4 rounded-xl font-black bg-[var(--accent)] text-[var(--accent-text)] hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="flex-1 min-h-[48px] px-4 rounded-[var(--rv-radius-md)] font-black bg-[var(--accent)] text-[var(--accent-text)] hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <CheckCircle2 className="w-5 h-5" aria-hidden="true" />
                 Los geht's

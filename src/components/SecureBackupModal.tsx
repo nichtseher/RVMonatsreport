@@ -147,20 +147,26 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
   };
 
   return (
-    <div className="bg-[var(--card-bg)] rounded-3xl shadow-lg w-full overflow-hidden flex flex-col border border-[var(--border-color)] animate-fade-in relative">
+    <div className="bg-[var(--card-bg)] rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] w-full overflow-hidden flex flex-col border border-[var(--border-color)] animate-fade-in relative">
       {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
-      <div className="flex items-center gap-3 p-6 md:p-8 border-b border-[var(--border-color)] bg-[var(--bg-color)]">
-        <button
-          onClick={onClose}
-          className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95"
-          aria-label="Zurück zu den Optionen"
-        >
-          <ArrowLeft className="w-6 h-6" aria-hidden="true" />
-        </button>
-        <div className="p-3 bg-[var(--info-bg)] text-[var(--cat-4-text)] rounded-xl flex-shrink-0">
-          <Lock className="w-6 h-6" aria-hidden="true" />
+      {/* flex-col sm:flex-row: siehe CarryoverModal. Hier war der Effekt am
+          staerksten -- das gepolsterte Schloss-Icon allein nahm bei "Extra
+          gross" schon so viel Breite, dass "Datensicherung" nur noch 34 px
+          Restbreite blieben. */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-6 md:p-8 border-b border-[var(--border-color)] bg-[var(--bg-color)]">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onClose}
+            className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95"
+            aria-label="Zurück zu den Optionen"
+          >
+            <ArrowLeft className="w-6 h-6" aria-hidden="true" />
+          </button>
+          <div className="p-3 bg-[var(--info-bg)] text-[var(--cat-4-text)] rounded-[var(--rv-radius-md)] flex-shrink-0">
+            <Lock className="w-6 h-6" aria-hidden="true" />
+          </div>
         </div>
-        <h2 id="backup-title" tabIndex={-1} data-ansicht-titel="" className="text-2xl md:text-3xl font-black text-[var(--text-color)]">Datensicherung</h2>
+        <h2 id="backup-title" tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black text-[var(--text-color)] flex-1 min-w-0 [overflow-wrap:anywhere]">Datensicherung</h2>
       </div>
 
       {/* overflow-x-hidden + break-words: `overflow-y-auto` zieht die x-Achse
@@ -170,12 +176,12 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
           umbrachen. Gescrollt werden soll hier nur senkrecht. */}
       <div className="p-6 md:p-8 space-y-6 overflow-y-auto overflow-x-hidden break-words">
           
-          <div className="bg-[var(--info-bg)] text-[var(--info-text)] p-4 rounded-xl text-sm leading-relaxed border border-[var(--info-border)]">
+          <div className="bg-[var(--info-bg)] text-[var(--info-text)] p-4 rounded-[var(--rv-radius-md)] text-sm leading-relaxed border border-[var(--info-border)]">
             Sichern Sie Ihre Daten oder übertragen Sie diese auf ein neues Gerät. 
             Mit einem <strong>Passwort</strong> können Sie die Datei sicher per E-Mail oder Messenger teilen.
           </div>
 
-          <div className="space-y-4 bg-[var(--bg-color)] p-5 rounded-xl border border-[var(--border-color)]">
+          <div className="space-y-4 bg-[var(--bg-color)] p-5 rounded-[var(--rv-radius-md)] border border-[var(--border-color)]">
             <h3 className="font-bold text-[var(--text-color)] flex items-center gap-2">
               <Lock className="w-4 h-4 text-[var(--text-muted)]" />
               Sicherheit
@@ -223,7 +229,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
                 placeholder="Passwort eingeben"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-[var(--border-color)] focus:ring-2 focus:ring-[var(--border-focus)] focus:border-[var(--cat-4)] transition-all text-lg"
+                className="w-full px-4 py-3 rounded-[var(--rv-radius-sm)] border border-[var(--border-color)] focus:ring-2 focus:ring-[var(--border-focus)] focus:border-[var(--cat-4)] transition-all text-lg"
                 aria-describedby="backup-passwort-hinweis"
               />
               <p id="backup-passwort-hinweis" className="text-xs text-[var(--text-muted)] mt-2 leading-relaxed">
@@ -238,7 +244,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`p-4 rounded-xl flex items-start gap-3 ${
+              className={`p-4 rounded-[var(--rv-radius-md)] flex items-start gap-3 ${
                 status.type === "success" ? "bg-[var(--success-bg)] text-[var(--success-text)] border border-[var(--success-border)]" :
                 status.type === "error" ? "bg-[var(--danger-bg)] text-[var(--danger-text)] border border-[var(--danger-border)]" :
                 "bg-[var(--info-bg)] text-[var(--info-text)] border border-[var(--info-border)]"
@@ -254,7 +260,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
               onClick={handleExport}
-              className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-[var(--primary)] hover:brightness-110 text-[var(--primary-text)] transition-all shadow-md hover:shadow-lg focus:ring-4 focus:ring-[var(--border-focus)] outline-none"
+              className="flex flex-col items-center justify-center gap-2 p-4 rounded-[var(--rv-radius-md)] bg-[var(--primary)] hover:brightness-110 text-[var(--primary-text)] transition-all shadow-[var(--rv-shadow-md)] hover:shadow-[var(--rv-shadow-lg)] focus:ring-4 focus:ring-[var(--border-focus)] outline-none"
             >
               <Download className="w-6 h-6" />
               <span className="font-bold">Auf Gerät speichern</span>
@@ -262,7 +268,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
             
             <button
               onClick={handleShare}
-              className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] transition-all shadow-md hover:shadow-lg focus:ring-4 focus:ring-[var(--border-focus)] outline-none"
+              className="flex flex-col items-center justify-center gap-2 p-4 rounded-[var(--rv-radius-md)] bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] transition-all shadow-[var(--rv-shadow-md)] hover:shadow-[var(--rv-shadow-lg)] focus:ring-4 focus:ring-[var(--border-focus)] outline-none"
             >
               <Share2 className="w-6 h-6" />
               <span className="font-bold">Sicher Teilen / Senden</span>
@@ -280,7 +286,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
             {/* Die Wahl faellt VOR der Dateiauswahl, wie beim
                 Verschluesselungs-Schalter oben -- nicht in einem Dialog danach,
                 den man mit Screenreader erst wieder suchen muesste. */}
-            <div className="sm:col-span-2 p-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)]">
+            <div className="sm:col-span-2 p-3 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--bg-color)]">
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -303,7 +309,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
 
             <button
               onClick={handleImportClick}
-              className="sm:col-span-2 flex items-center justify-center gap-2 p-4 rounded-xl bg-[var(--card-bg)] border-2 border-dashed border-[var(--border-color)] hover:border-[var(--cat-4)] hover:bg-[var(--info-bg)] text-[var(--text-color)] transition-all focus:ring-4 focus:ring-[var(--border-focus)] outline-none group"
+              className="sm:col-span-2 flex items-center justify-center gap-2 p-4 rounded-[var(--rv-radius-md)] bg-[var(--card-bg)] border-2 border-dashed border-[var(--border-color)] hover:border-[var(--cat-4)] hover:bg-[var(--info-bg)] text-[var(--text-color)] transition-all focus:ring-4 focus:ring-[var(--border-focus)] outline-none group"
             >
               <Upload className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--cat-4-text)] transition-colors" />
               <span className="font-normal group-hover:text-[var(--cat-4-text)] transition-colors">

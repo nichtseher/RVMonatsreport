@@ -148,7 +148,7 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
 
   return (
     <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-[var(--modal-bg)] backdrop-blur-sm"
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
@@ -156,7 +156,7 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
     >
       <div
         ref={dialogRef}
-        className="bg-[var(--card-bg)] w-full max-w-md rounded-2xl shadow-2xl border border-[var(--border-color)] overflow-hidden"
+        className="bg-[var(--card-bg)] w-full max-w-md rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] border border-[var(--border-color)] overflow-hidden"
       >
         <div className="p-6 space-y-4">
           <div className="flex items-start gap-3">
@@ -203,7 +203,7 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
               ref={cancelRef}
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer"
+              className="flex-1 py-3 px-4 rounded-[var(--rv-radius-md)] font-bold border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all active:scale-[0.97] cursor-pointer"
             >
               {request.cancelLabel || "Abbrechen"}
             </button>
@@ -222,7 +222,7 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
                   Die naheliegende Fassung "text-[var(--primary)]" waere genau
                   der Fehler aus 0.9.22 in neuer Verkleidung gewesen.
                 */
-                className="flex-1 py-3 px-4 rounded-xl font-bold border-2 border-[var(--primary)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all cursor-pointer"
+                className="flex-1 py-3 px-4 rounded-[var(--rv-radius-md)] font-bold border-2 border-[var(--primary)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-all active:scale-[0.97] cursor-pointer"
               >
                 {request.alternative.label}
               </button>
@@ -234,7 +234,7 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
                 const haeltOffen = request.onConfirm();
                 if (haeltOffen !== true) onClose();
               }}
-              className={`flex-1 py-3 px-4 rounded-xl font-black transition-all cursor-pointer ${
+              className={`flex-1 py-3 px-4 rounded-[var(--rv-radius-md)] font-black transition-all active:scale-[0.97] cursor-pointer ${
                 danger
                   /* text-white war hier ein Blindgänger: --danger-solid ist im
                      Schema "Weiß auf Schwarz" selbst #ffffff und in "Gelb auf
@@ -247,7 +247,7 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
                      sah zwei Tasten, eine davon leer, und musste raten.
                      --danger-solid-text existiert genau dafür und ist an jeder
                      anderen Stelle auch benutzt. */
-                  ? "bg-[var(--danger-solid)] text-[var(--danger-solid-text)] hover:bg-[var(--danger-solid)]"
+                  ? "bg-[var(--danger-solid)] text-[var(--danger-solid-text)] hover:brightness-110"
                   : "bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90"
               }`}
             >

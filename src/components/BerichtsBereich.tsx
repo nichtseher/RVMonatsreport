@@ -2,10 +2,27 @@ import type { ReactNode } from "react";
 import CounterField from "./CounterField";
 import type { FieldConfig } from "../types";
 
+/** Feste, vollstaendige Klassenstrings je Kategorie -- Tailwind scannt den
+    Quelltext auf woertliche Klassennamen, eine zur Laufzeit zusammengesetzte
+    Zeichenkette (`bg-[var(--cat-${n}-soft)]`) waere fuer den Scanner nicht
+    auffindbar und erzeugte kein CSS. */
+const KATEGORIE_BADGE: Record<number, string> = {
+  1: "bg-[var(--cat-1-soft)] text-[var(--cat-1-text)] border-[var(--cat-1)]",
+  2: "bg-[var(--cat-2-soft)] text-[var(--cat-2-text)] border-[var(--cat-2)]",
+  3: "bg-[var(--cat-3-soft)] text-[var(--cat-3-text)] border-[var(--cat-3)]",
+  4: "bg-[var(--cat-4-soft)] text-[var(--cat-4-text)] border-[var(--cat-4)]",
+};
+
 interface BerichtsBereichProps {
   /** 1–4. Bestimmt die id der Überschrift und damit das `aria-labelledby`. */
   nummer: number;
   titel: string;
+  /** Kategorie-Icon fuer das Badge vor der Ueberschrift (rein dekorativ,
+      aria-hidden -- die Unterscheidung traegt der Ueberschriftstext). In den
+      beiden Hochkontrast-Themes faellt die Badge-Farbe fuer alle vier
+      Bereiche auf dasselbe Paar zusammen; das Icon-Symbol bleibt dort der
+      einzige zusaetzliche Unterschied. */
+  icon: ReactNode;
   /** Bereits nach der Suche gefiltert — diese Komponente entscheidet nichts über Sichtbarkeit. */
   felder: FieldConfig[];
   werte: Record<string, number | "">;
@@ -46,6 +63,7 @@ interface BerichtsBereichProps {
 export default function BerichtsBereich({
   nummer,
   titel,
+  icon,
   felder,
   werte,
   zeitstempel,
@@ -64,14 +82,33 @@ export default function BerichtsBereich({
 
   return (
     <section
-      className="p-4 sm:p-5 mb-5 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)]"
+      className="p-4 sm:p-5 mb-5 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] border-[var(--border-color)] shadow-[var(--rv-shadow-sm)]"
       aria-labelledby={ueberschriftId}
     >
+      {/* flex-wrap: min-w-0 am Titel-Span (unten) reichte allein nicht --
+          bei 320 px/"Extra groß"/breiter Schrift blieb ein Rest-Überlauf, der
+          document.documentElement.scrollWidth auf 352 px trieb (window.innerWidth
+          wuchs mit auf 352, waehrend clientWidth bei den echten 320 blieb) und
+          darüber die feste untere Navigationsleiste (width:96%) faelschlich
+          gegen 352 statt 320 skalierte -- der eigentliche Fehler lag hier,
+          nicht in der Navigationsleiste. Mit flex-wrap kann die ganze Zeile
+          (Badge + Titel) statt nur der Titeltext umbrechen; gemessen: 0
+          überstehende Elemente, scrollWidth = clientWidth = 320. */}
       <h2
         id={ueberschriftId}
-        className="text-lg md:text-xl font-black pb-3 mb-4 border-b-2 border-[var(--border-color)] text-[var(--text-color)]"
+        className="flex flex-wrap items-center gap-2.5 pb-3 mb-4 border-b-2 border-[var(--border-color)]"
       >
-        {titel}
+        <span
+          className={`w-8 h-8 rounded-[var(--rv-radius-md)] border flex items-center justify-center flex-shrink-0 ${KATEGORIE_BADGE[nummer] ?? ""}`}
+          aria-hidden="true"
+        >
+          {icon}
+        </span>
+        {/* min-w-0: ohne das gibt das Flex-Kind seine Breite nicht unter den
+            Inhalt preis (`min-width: auto`) -- bei 320 px schob "3.
+            Spezialprodukte (Fokus)" die Seite auf 352 px, achter Fall dieser
+            Klasse in diesem Projekt. */}
+        <span className="text-lg font-bold text-[var(--text-color)] min-w-0">{titel}</span>
       </h2>
       {hinweis}
       {/*

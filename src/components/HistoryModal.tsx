@@ -292,12 +292,12 @@ export default function HistoryModal({
   const sortedYears = Object.keys(recordsByYear).sort((a, b) => b.localeCompare(a));
 
   return (
-    <div className="w-full bg-[var(--card-bg)] border-2 border-[var(--border-color)] rounded-3xl shadow-lg overflow-hidden flex flex-col focus:outline-none animate-fade-in" tabIndex={-1}>
+    <div className="w-full bg-[var(--card-bg)] border-2 border-[var(--border-color)] rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] overflow-hidden flex flex-col focus:outline-none animate-fade-in" tabIndex={-1}>
       {/* Header */}
       <div className="p-5 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-color)]">
         <div className="flex items-center gap-2.5">
           <History className="w-5 h-5 text-[var(--accent)]" aria-hidden="true" />
-          <h2 id="history-modal-title" tabIndex={-1} data-ansicht-titel="" className="text-lg md:text-xl font-black text-[var(--text-color)]">
+          <h2 id="history-modal-title" tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black text-[var(--text-color)] flex-1 min-w-0 [overflow-wrap:anywhere]">
             RV Archiv - Gespeicherte Monate
           </h2>
         </div>
@@ -306,7 +306,7 @@ export default function HistoryModal({
       {/* Scrollable Content */}
       <div className="p-5 space-y-4 flex-1">
           {/* Storage Information box */}
-          <div className="p-3.5 rounded-xl bg-[var(--cat-4-soft)] text-[var(--info-text)] border border-[var(--info-border)] text-xs font-bold leading-relaxed">
+          <div className="p-3.5 rounded-[var(--rv-radius-md)] bg-[var(--cat-4-soft)] text-[var(--info-text)] border border-[var(--info-border)] text-xs font-bold leading-relaxed">
             <strong>Ihre Daten sind sicher:</strong> Alle Ihre Monatsdaten werden direkt auf Ihrem Gerät gespeichert. Es werden keine Daten ins Internet übertragen.
           </div>
 
@@ -327,7 +327,7 @@ export default function HistoryModal({
                   placeholder="Monat, Name oder Kommentar suchen..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full min-h-[44px] pl-9 pr-14 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] text-xs font-bold text-[var(--text-color)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]"
+                  className="w-full min-h-[44px] pl-9 pr-14 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--bg-color)] text-xs font-bold text-[var(--text-color)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]"
                 />
                 {/* Hiess bis 0.9.25 "Clear" -- ein englisches Wort in einer
                     durchgehend deutschen, siezenden Oberflaeche, und als
@@ -342,7 +342,7 @@ export default function HistoryModal({
                       announceToAriaAndSpeech("Suche zurückgesetzt. Alle Monate werden wieder angezeigt.");
                     }}
                     aria-label="Suche zurücksetzen"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-[var(--text-muted)] hover:text-[var(--text-color)] cursor-pointer focus-visible:ring-4"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-[var(--rv-radius-md)] text-[var(--text-muted)] hover:text-[var(--text-color)] cursor-pointer focus-visible:ring-4"
                   >
                     <X className="w-4 h-4" aria-hidden="true" />
                   </button>
@@ -399,7 +399,7 @@ export default function HistoryModal({
                         schlichte Ueberschrift -- es gibt nichts aufzuklappen,
                         alles ist sichtbar. */}
                     {searchQuery ? (
-                      <div className="w-full flex items-center min-h-[44px] px-3 bg-[var(--bg-color)]/60 rounded-xl border border-[var(--border-color)] select-none">
+                      <div className="w-full flex items-center min-h-[44px] px-3 bg-[var(--bg-color)]/60 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] select-none">
                         <span className="text-xs font-black text-[var(--text-color)] flex items-center gap-1.5">
                           <Filter className="w-3 h-3 text-[var(--accent)]" aria-hidden="true" />
                           Jahr {year} ({yearRecords.length} {yearRecords.length === 1 ? "Treffer" : "Treffer"})
@@ -410,7 +410,7 @@ export default function HistoryModal({
                         type="button"
                         onClick={() => toggleYear(year)}
                         aria-expanded={!isYearCollapsed}
-                        className="w-full flex items-center justify-between min-h-[44px] px-3 bg-[var(--bg-color)]/60 rounded-xl border border-[var(--border-color)] text-left cursor-pointer hover:bg-[var(--bg-color)] transition-all select-none"
+                        className="w-full flex items-center justify-between min-h-[44px] px-3 bg-[var(--bg-color)]/60 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] text-left cursor-pointer hover:bg-[var(--bg-color)] transition-all select-none"
                       >
                         <span className="text-xs font-black text-[var(--text-color)] flex items-center gap-1.5">
                           <Filter className="w-3 h-3 text-[var(--accent)]" aria-hidden="true" />
@@ -435,7 +435,7 @@ export default function HistoryModal({
                           return (
                             <div 
                               key={record.month}
-                              className="rounded-2xl border-2 border-[var(--border-color)] bg-[var(--bg-color)] overflow-hidden shadow-xs hover:border-[var(--border-focus)] transition-all"
+                              className="rounded-[var(--rv-radius-lg)] border-2 border-[var(--border-color)] bg-[var(--bg-color)] overflow-hidden shadow-[var(--rv-shadow-sm)] hover:border-[var(--border-focus)] transition-all"
                               role="listitem"
                             >
                               {/* Collapsible Header Button */}
@@ -534,7 +534,7 @@ export default function HistoryModal({
                               {isExpanded && (
                                 <div className="p-3.5 border-t border-[var(--border-color)] bg-[var(--bg-color)] space-y-3.5 animate-fade-in">
                                   {record.notes && (
-                                    <p className="text-xs italic text-[var(--text-muted)] leading-relaxed bg-[var(--bg-color)]/30 p-2.5 rounded-xl border border-[var(--border-color)]">
+                                    <p className="text-xs italic text-[var(--text-muted)] leading-relaxed bg-[var(--bg-color)]/30 p-2.5 rounded-[var(--rv-radius-md)] border border-[var(--border-color)]">
                                       <strong>Kommentar:</strong> "{String(record.notes)}"
                                     </p>
                                   )}
@@ -546,7 +546,7 @@ export default function HistoryModal({
                                     type="button"
                                     aria-pressed={!!record.sentAt}
                                     onClick={() => onToggleVersand(record.month, !record.sentAt)}
-                                    className={`w-full min-h-[44px] px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all focus-visible:ring-4 border ${
+                                    className={`w-full min-h-[44px] px-3 rounded-[var(--rv-radius-md)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all focus-visible:ring-4 border ${
                                       record.sentAt
                                         ? "border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)]"
                                         : "border-[var(--success-border)] bg-[var(--success-bg)] text-[var(--success-text)]"
@@ -589,7 +589,7 @@ export default function HistoryModal({
                                         <button
                                           type="button"
                                           onClick={() => executeDelete()}
-                                          className="flex-1 min-h-[44px] px-3 rounded-xl border border-[var(--danger-border)] bg-[var(--danger-solid)] text-[var(--danger-solid-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:brightness-110 active:scale-95 transition-all focus-visible:ring-4"
+                                          className="flex-1 min-h-[44px] px-3 rounded-[var(--rv-radius-md)] border border-[var(--danger-border)] bg-[var(--danger-solid)] text-[var(--danger-solid-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:brightness-110 active:scale-95 transition-all focus-visible:ring-4"
                                         >
                                           <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                                           <span>Wirklich löschen</span>
@@ -602,7 +602,7 @@ export default function HistoryModal({
                                         <button
                                           type="button"
                                           onClick={() => setDeleteConfirm(null)}
-                                          className="min-w-[44px] min-h-[44px] px-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] active:scale-95 transition-all focus-visible:ring-4"
+                                          className="min-w-[44px] min-h-[44px] px-3 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] active:scale-95 transition-all focus-visible:ring-4"
                                           aria-label="Löschen abbrechen"
                                         >
                                           <X className="w-3.5 h-3.5" aria-hidden="true" />
@@ -615,7 +615,7 @@ export default function HistoryModal({
                                           onClick={() => {
                                             onLoadMonth(record.month);
                                           }}
-                                          className="flex-1 min-h-[44px] px-3 rounded-xl bg-[var(--primary)] text-[var(--primary-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all focus-visible:ring-4"
+                                          className="flex-1 min-h-[44px] px-3 rounded-[var(--rv-radius-md)] bg-[var(--primary)] text-[var(--primary-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all focus-visible:ring-4"
                                         >
                                           <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
                                           <span>Laden / Editieren</span>
@@ -628,7 +628,7 @@ export default function HistoryModal({
                                           type="button"
                                           onClick={() => setDeleteConfirm(record.month)}
                                           aria-label={`${formatMonthGerman(record.month)} aus RV Archiv löschen`}
-                                          className="min-w-[44px] min-h-[44px] px-3 rounded-xl border border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger-text)] font-black text-xs flex items-center justify-center cursor-pointer hover:brightness-110 active:scale-95 transition-all focus-visible:ring-4"
+                                          className="min-w-[44px] min-h-[44px] px-3 rounded-[var(--rv-radius-md)] border border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger-text)] font-black text-xs flex items-center justify-center cursor-pointer hover:brightness-110 active:scale-95 transition-all focus-visible:ring-4"
                                         >
                                           <Trash2 className="w-4 h-4" aria-hidden="true" />
                                         </button>
@@ -639,7 +639,7 @@ export default function HistoryModal({
                                       <button
                                         type="button"
                                         onClick={() => handleDirectExport(record)}
-                                        className="min-h-[44px] rounded-xl border border-[var(--accent)] bg-[var(--cat-1-soft)] text-[var(--cat-1-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:bg-[var(--cat-1-soft)] active:scale-95 transition-all focus-visible:ring-4"
+                                        className="min-h-[44px] rounded-[var(--rv-radius-md)] border border-[var(--accent)] bg-[var(--cat-1-soft)] text-[var(--cat-1-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:bg-[var(--cat-1-soft)] active:scale-95 transition-all focus-visible:ring-4"
                                       >
                                         <FileSpreadsheet className="w-3.5 h-3.5 text-[var(--accent)]" aria-hidden="true" />
                                         <span>Export RV Report</span>
@@ -653,7 +653,7 @@ export default function HistoryModal({
                                         <button
                                           type="button"
                                           onClick={() => handleDirectExportTimeLogs(record)}
-                                          className="min-h-[44px] rounded-xl border border-[var(--info-border)] bg-[var(--info-bg)] text-[var(--info-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:bg-[var(--info-bg)] active:scale-95 transition-all focus-visible:ring-4"
+                                          className="min-h-[44px] rounded-[var(--rv-radius-md)] border border-[var(--info-border)] bg-[var(--info-bg)] text-[var(--info-text)] font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:bg-[var(--info-bg)] active:scale-95 transition-all focus-visible:ring-4"
                                         >
                                           <Clock className="w-3.5 h-3.5 text-[var(--info-text)]" aria-hidden="true" />
                                           <span>Export RV Zeit</span>
@@ -664,7 +664,7 @@ export default function HistoryModal({
                                           </span>
                                         </button>
                                       ) : (
-                                        <div className="h-11 rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-muted)] text-[0.75rem] font-bold flex items-center justify-center select-none">
+                                        <div className="h-11 rounded-[var(--rv-radius-md)] border border-dashed border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-muted)] text-[0.75rem] font-bold flex items-center justify-center select-none">
                                           Keine Schichten erfasst
                                         </div>
                                       )}

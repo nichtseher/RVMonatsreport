@@ -155,7 +155,7 @@ export default React.memo(function CounterField({
   // Schriftgroesse mit (gemessen 52 / 64 / 76 px) und war dadurch mal
   // niedriger, mal deutlich hoeher als die Tasten daneben -- die Zeile wirkte
   // dadurch unruhig. Die Zahl selbst skaliert weiterhin.
-  const inputSize = isCompact ? "h-[48px] text-lg rounded-lg" : "h-[64px] text-2xl rounded-xl";
+  const inputSize = isCompact ? "h-[48px] text-lg rounded-[var(--rv-radius-sm)]" : "h-[64px] text-2xl rounded-[var(--rv-radius-md)]";
 
   return (
     <div 
@@ -174,7 +174,7 @@ export default React.memo(function CounterField({
          Rahmenfarbe der Bedienelemente ist gegen --bg-color auf 3:1 abgestimmt
          (WCAG 1.4.11). Auf dem alten slate-Hintergrund kam sie nur auf
          2,55-2,98:1 -- die Tastenumrisse waren zu schwach. */
-      className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl bg-[var(--bg-color)] p-[6px] sm:p-4 border border-[var(--border-color)]/40 transition-all focus-within:ring-2 focus-within:ring-[var(--border-focus)] hover:border-[var(--border-focus)] gap-3`}
+      className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] p-[6px] sm:p-4 border border-[var(--border-color)]/40 transition-all focus-within:ring-2 focus-within:ring-[var(--border-focus)] hover:border-[var(--border-focus)] gap-3`}
     >
       <div className="flex-1 pr-2 min-w-0">
         <label 
@@ -236,7 +236,7 @@ export default React.memo(function CounterField({
              ein dunkler Kreis aus fester Palettenfarbe (slate-800): Im dunklen
              Schema war das Minus kaum vom Kartenhintergrund zu unterscheiden,
              waehrend das Plus als leuchtender Kreis danebenstand. */
-          className={`${buttonSize} rounded-xl flex items-center justify-center border-2 border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:bg-[var(--border-color)] touch-manipulation`}
+          className={`${buttonSize} rounded-[var(--rv-radius-md)] flex items-center justify-center border-2 border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:bg-[var(--border-color)] touch-manipulation`}
         >
           <Minus className={iconSize} aria-hidden="true" />
         </button>
@@ -301,7 +301,7 @@ export default React.memo(function CounterField({
           aria-label="Erhöhen"
           /* Einzige gefuellte Taste der Zeile: Ein Tipp = plus eins ist die
              haeufigste Handlung und darf als einzige hervorstechen. */
-          className={`${buttonSize} rounded-xl flex items-center justify-center border-2 border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-text)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:opacity-85 touch-manipulation`}
+          className={`${buttonSize} rounded-[var(--rv-radius-md)] flex items-center justify-center border-2 border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-text)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:opacity-85 touch-manipulation`}
         >
           <Plus className={iconSize} aria-hidden="true" />
         </button>

@@ -323,7 +323,7 @@ export default React.memo(function ClockInWidget({
   };
 
   return (
-    <div className="p-4 rounded-2xl border bg-[var(--card-bg)] border-[var(--border-color)] shadow-xs space-y-4">
+    <div className="p-4 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] border-[var(--border-color)] shadow-[var(--rv-shadow-sm)] space-y-4">
       {/* Title */}
       {/* flex-wrap plus min-w-0: Diese Zeile ist nur breit, WAEHREND eine
           Schicht laeuft -- dann steht das Abzeichen "Aufnahme laeuft" neben der
@@ -363,7 +363,7 @@ export default React.memo(function ClockInWidget({
           <button
             type="button"
             onClick={handleStartClockIn}
-            className="w-full sm:w-auto py-3 px-6 font-black bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] rounded-xl cursor-pointer text-sm transition-all focus-visible:ring-4 flex items-center justify-center gap-2 shadow-md active:scale-95"
+            className="w-full sm:w-auto py-3 px-6 font-black bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] rounded-[var(--rv-radius-md)] cursor-pointer text-sm transition-all focus-visible:ring-4 flex items-center justify-center gap-2 shadow-[var(--rv-shadow-md)] active:scale-95"
           >
             <Play className="w-4 h-4 fill-current" />
             <span>Jetzt Einstempeln (Kommen)</span>
@@ -373,7 +373,7 @@ export default React.memo(function ClockInWidget({
         // Clock-out View
         <div className="space-y-3.5">
           {!isFormOpen ? (
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-3 rounded-xl bg-[var(--bg-color)] border border-[var(--border-color)]">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-3 rounded-[var(--rv-radius-md)] bg-[var(--bg-color)] border border-[var(--border-color)]">
               <div className="text-center md:text-left space-y-1">
                 <span className="text-[0.75rem] font-black text-[var(--text-muted)]">
                   Laufende Arbeitszeit
@@ -393,7 +393,7 @@ export default React.memo(function ClockInWidget({
               <button
                 type="button"
                 onClick={handleOpenClockOutForm}
-                className="w-full md:w-auto py-3.5 px-6 font-black bg-[var(--danger-solid)] hover:brightness-110 text-[var(--danger-solid-text)] rounded-xl cursor-pointer text-sm transition-all focus-visible:ring-4 flex items-center justify-center gap-2 shadow-md active:scale-95"
+                className="w-full md:w-auto py-3.5 px-6 font-black bg-[var(--danger-solid)] hover:brightness-110 text-[var(--danger-solid-text)] rounded-[var(--rv-radius-md)] cursor-pointer text-sm transition-all focus-visible:ring-4 flex items-center justify-center gap-2 shadow-[var(--rv-shadow-md)] active:scale-95"
               >
                 <Square className="w-3.5 h-3.5 fill-current" />
                 <span>Ausstempeln (Gehen)</span>
@@ -403,7 +403,7 @@ export default React.memo(function ClockInWidget({
             // Clock-out Booking Form (Accessible inline design)
             <form
               onSubmit={handleSaveShift}
-              className="p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] space-y-4 animate-slide-up"
+              className="p-4 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--bg-color)] space-y-4 animate-slide-up"
             >
               <h4 className="text-xs font-black text-[var(--accent)]">
                 Arbeitszeit verbuchen
@@ -504,7 +504,7 @@ export default React.memo(function ClockInWidget({
 
               {/* Custom ratio slider if selected */}
               {preset === "custom" && (
-                <div className="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] space-y-2 animate-slide-up">
+                <div className="p-3 rounded-[var(--rv-radius-sm)] border border-[var(--border-color)] bg-[var(--card-bg)] space-y-2 animate-slide-up">
                   <label
                     htmlFor="custom-ratio-slider"
                     className="text-[0.75rem] font-black text-[var(--text-muted)] flex justify-between"
@@ -536,7 +536,7 @@ export default React.memo(function ClockInWidget({
               )}
 
               {/* Direct manual hours entry */}
-              <div className="p-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] space-y-3">
+              <div className="p-3 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--card-bg)] space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[0.75rem] font-black text-[var(--text-color)] flex items-center gap-1">
                     Büro vs. Außendienst h
@@ -602,7 +602,7 @@ export default React.memo(function ClockInWidget({
                     UI" noch dessen Mono-Pendant hat, sprengte diese Zeile bei
                     "Extra gross" das 360-px-Fenster (368 px gemessen) -- hier
                     unsichtbar, weil die Schriften vorhanden sind. */}
-                <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex flex-wrap justify-between gap-x-2 bg-[var(--bg-color)] p-2 rounded-lg">
+                <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex flex-wrap justify-between gap-x-2 bg-[var(--bg-color)] p-2 rounded-[var(--rv-radius-sm)]">
                   <span className="min-w-0 [overflow-wrap:anywhere]">Gesamtstunden dieser Schicht:</span>
                   <span className="font-mono text-[var(--total-text)] flex-shrink-0">
                     {(typedOfficeHours !== "" || typedFieldHours !== ""
@@ -640,13 +640,13 @@ export default React.memo(function ClockInWidget({
                 <button
                   type="button"
                   onClick={() => setIsFormOpen(false)}
-                  className="flex-1 min-w-0 min-h-[44px] py-2 px-3 border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg cursor-pointer hover:bg-[var(--bg-color)] [overflow-wrap:anywhere]"
+                  className="flex-1 min-w-0 min-h-[44px] py-2 px-3 border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-bold rounded-[var(--rv-radius-sm)] cursor-pointer hover:bg-[var(--bg-color)] [overflow-wrap:anywhere]"
                 >
                   Abbrechen
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 min-w-0 min-h-[44px] py-2 px-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] text-xs font-black rounded-lg cursor-pointer flex items-center justify-center gap-1 [&>span]:min-w-0 [&>span]:[overflow-wrap:anywhere]"
+                  className="flex-1 min-w-0 min-h-[44px] py-2 px-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] text-xs font-black rounded-[var(--rv-radius-sm)] cursor-pointer flex items-center justify-center gap-1 [&>span]:min-w-0 [&>span]:[overflow-wrap:anywhere]"
                 >
                   <Check className="w-3.5 h-3.5 flex-shrink-0" />
                   <span>Schicht verbuchen</span>
@@ -676,7 +676,7 @@ export default React.memo(function ClockInWidget({
                 "Formular für manuelles Nachtragen geöffnet.",
               );
             }}
-            className="w-full py-2.5 px-3 border border-dashed border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-bold rounded-xl cursor-pointer hover:bg-[var(--bg-color)] hover:border-[var(--border-focus)] transition-all flex items-center justify-center gap-2 active:scale-95"
+            className="w-full py-2.5 px-3 border border-dashed border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-bold rounded-[var(--rv-radius-md)] cursor-pointer hover:bg-[var(--bg-color)] hover:border-[var(--border-focus)] transition-all flex items-center justify-center gap-2 active:scale-95"
           >
             <Plus className="w-4 h-4 text-[var(--accent)]" />
             <span>Vergessene Schicht manuell nachtragen</span>
@@ -688,7 +688,7 @@ export default React.memo(function ClockInWidget({
       {isManualOpen && (
         <form
           onSubmit={handleSaveManualShift}
-          className="p-4 rounded-xl border-2 border-dashed border-[var(--accent)] bg-[var(--bg-color)] space-y-4 animate-slide-up"
+          className="p-4 rounded-[var(--rv-radius-md)] border-2 border-dashed border-[var(--accent)] bg-[var(--bg-color)] space-y-4 animate-slide-up"
         >
           {/* min-w-0 an Ueberschrift und Text, flex-shrink-0 am Symbol und am
               Abzeichen: Ohne das gab die Ueberschrift als Flex-Kind ihre Breite
@@ -855,7 +855,7 @@ export default React.memo(function ClockInWidget({
 
           {/* Custom slider */}
           {manualPreset === "custom" && (
-            <div className="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] space-y-2 animate-slide-up">
+            <div className="p-3 rounded-[var(--rv-radius-sm)] border border-[var(--border-color)] bg-[var(--card-bg)] space-y-2 animate-slide-up">
               <label
                 htmlFor="manual-custom-ratio-slider"
                 className="text-[0.75rem] font-black text-[var(--text-muted)] flex justify-between"
@@ -887,7 +887,7 @@ export default React.memo(function ClockInWidget({
           )}
 
           {/* Direct manual hours entry */}
-          <div className="p-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] space-y-3">
+          <div className="p-3 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--card-bg)] space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[0.75rem] font-black text-[var(--text-color)] flex items-center gap-1">
                 Büro vs. Außendienst h
@@ -951,7 +951,7 @@ export default React.memo(function ClockInWidget({
             {/* Gleiche Behandlung wie im Verbuchen-Formular oben: ohne
                 min-w-0 und flex-wrap sprengt diese Zeile auf dem CI-Laeufer
                 bei "Extra gross" das Fenster (369 px gemessen). */}
-            <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex flex-wrap justify-between gap-x-2 bg-[var(--bg-color)] p-2 rounded-lg">
+            <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex flex-wrap justify-between gap-x-2 bg-[var(--bg-color)] p-2 rounded-[var(--rv-radius-sm)]">
               <span className="min-w-0 [overflow-wrap:anywhere]">Gesamtstunden dieser Schicht:</span>
               <span className="font-mono text-[var(--total-text)] flex-shrink-0">
                 {(typedManualOfficeHours !== "" || typedManualFieldHours !== ""
@@ -989,13 +989,13 @@ export default React.memo(function ClockInWidget({
             <button
               type="button"
               onClick={() => setIsManualOpen(false)}
-              className="flex-1 min-w-0 min-h-[44px] py-2 px-3 border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-bold rounded-lg cursor-pointer hover:bg-[var(--bg-color)] [overflow-wrap:anywhere]"
+              className="flex-1 min-w-0 min-h-[44px] py-2 px-3 border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-bold rounded-[var(--rv-radius-sm)] cursor-pointer hover:bg-[var(--bg-color)] [overflow-wrap:anywhere]"
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              className="flex-1 min-w-0 min-h-[44px] py-2 px-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] text-xs font-black rounded-lg cursor-pointer flex items-center justify-center gap-1 [&>span]:min-w-0 [&>span]:[overflow-wrap:anywhere]"
+              className="flex-1 min-w-0 min-h-[44px] py-2 px-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] text-xs font-black rounded-[var(--rv-radius-sm)] cursor-pointer flex items-center justify-center gap-1 [&>span]:min-w-0 [&>span]:[overflow-wrap:anywhere]"
             >
               <Check className="w-3.5 h-3.5 flex-shrink-0" />
               <span>Schicht manuell verbuchen</span>
@@ -1034,7 +1034,7 @@ export default React.memo(function ClockInWidget({
                 <button
                   type="button"
                   onClick={onExportExcel}
-                  className="w-full py-2.5 px-3.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] rounded-xl text-xs font-black cursor-pointer transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm"
+                  className="w-full py-2.5 px-3.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] rounded-[var(--rv-radius-md)] text-xs font-black cursor-pointer transition-all flex items-center justify-center gap-2 active:scale-95 shadow-[var(--rv-shadow-sm)]"
                 >
                   <FileSpreadsheet className="w-4 h-4" />
                   <span>Schichtprotokoll als Excel exportieren</span>
@@ -1047,7 +1047,7 @@ export default React.memo(function ClockInWidget({
               <div
                 id="shift-logs-list"
                 tabIndex={0}
-                className="divide-y divide-[var(--border-color)] max-h-56 overflow-y-auto overflow-x-hidden space-y-1.5 pr-1 focus-visible:ring-4 rounded-lg"
+                className="divide-y divide-[var(--border-color)] max-h-56 overflow-y-auto overflow-x-hidden space-y-1.5 pr-1 focus-visible:ring-4 rounded-[var(--rv-radius-sm)]"
                 role="region"
                 aria-label="Monatliche Schichtliste"
               >
@@ -1103,7 +1103,7 @@ export default React.memo(function ClockInWidget({
                         /* Gemessen 2026-09-07: 32 x 32 px. Zwei solche Tasten
                            stehen in benachbarten Zeilen untereinander -- wer
                            danebentippt, loescht die falsche Schicht. */
-                        className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--danger)] hover:bg-[var(--danger-bg)] rounded-lg cursor-pointer active:scale-90 transition-all flex-shrink-0 focus-visible:ring-4"
+                        className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--danger)] hover:bg-[var(--danger-bg)] rounded-[var(--rv-radius-sm)] cursor-pointer active:scale-90 transition-all flex-shrink-0 focus-visible:ring-4"
                       >
                         <Trash2 className="w-4 h-4" aria-hidden="true" />
                       </button>

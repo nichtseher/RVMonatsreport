@@ -10,6 +10,226 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-20 — v0.9.65: Das Design-System aus `index.css` tatsächlich benutzen
+
+Auftrag des Projektinhabers: Die Barrierefreiheit ist am Ziel (615/615), jetzt
+soll die Oberfläche auch für sehende Kollegen praktikabel und schön sein.
+Vorgehen: erst ein Plan (`EnterPlanMode`), darin zwei Recherche-Agenten
+parallel (`ui-designer` für einen schriftlichen Gestaltungsvertrag,
+`ux-researcher` für die Praxistauglichkeit der 13 Ansichten), danach eine
+Gegenprüfung durch `accessibility-auditor`, bevor eine Zeile Code fiel.
+
+### Befund vor jeder Änderung
+
+`index.css` enthält ein vollständiges, gemessenes Design-System — vier
+Themes, eine Radius-Skala (`--rv-radius-*`), eine Schatten-Skala
+(`--rv-shadow-*`), vier Kategoriefarben (`--cat-1…4`). Keines davon wurde in
+den 19 Komponenten benutzt: 0 Treffer für `--rv-radius-*`/`--rv-shadow-*`,
+stattdessen fünf konkurrierende Tailwind-Radien und (nach genauerem Hinsehen
+durch den Designer-Agenten, nicht nur die anfänglich vermuteten drei
+Einzelfälle) 51 rohe `shadow-*`-Klassen, die Tailwinds eigene, unveränderte
+Schattenskala benutzen und damit die Hochkontrast-Themes (`--rv-shadow-*:
+none`) umgehen. Dazu 27 Stellen mit `animate-fade-in`/`animate-slide-up` ohne
+jedes zugehörige CSS — dieselbe Fehlerklasse wie der `pb-safe-bottom`-Fund
+vom Vormittag: Tailwind 4 kennt diese Namen nicht von Haus aus, die Modale
+sollten einblenden und erschienen stattdessen. Die vier Berichtsbereiche
+trugen trotz der vorhandenen Kategoriefarben keine erkennbare Identität.
+
+Die Gegenprüfung fand zusätzlich drei echte Fehler, die keiner der beiden
+Recherche-Agenten gesucht hatte: `ConfirmDialog.tsx` und `DeviceSyncModal.tsx`
+nutzten `bg-black/60` statt `var(--modal-bg)` als Backdrop (in beiden
+Hochkontrast-Themes damit sichtbar transparenter als vom Theme vorgesehen);
+die destruktive Taste in `ConfirmDialog.tsx` hatte `hover:bg-[var(--danger-solid)]`
+auf einer bereits `--danger-solid`-farbenen Fläche — ein wirkungsloser Hover;
+und zwei Ikon-Tasten in `A11yModal.tsx` standen bei exakt 44,0 px ohne jede
+Reserve, während fünf gleichwertige Tasten anderswo schon 48 px hatten.
+
+### Geändert
+
+- `index.css`: `@keyframes fade-in`/`slide-up` plus `--animate-*`-Einträge im
+  `@theme`-Block ergänzt — die 27 Stellen leben jetzt, ohne dass ein einziger
+  Aufrufort geändert werden musste. Von `prefers-reduced-motion` bereits
+  abgedeckt.
+- Radius/Schatten app-weit auf die Skala umgehängt: 307 Radius- und
+  49 Schatten-Ersetzungen über 21 Dateien, per Wegwerf-Skript mit
+  Selbstprüfung (negativer Lookbehind `(?<!--rv-)`, damit die Ersetzung nicht
+  den eigenen erzeugten Variablennamen `--rv-shadow-md` am Teilstring
+  `shadow-md` noch einmal trifft). Vier Modal-Hüllen (ConfirmDialog,
+  OnboardingModal, DeviceSyncModal, SecureBackupModal) auf die
+  "Sheet"-Stufe (24 px) angehoben statt der mechanischen Karten-Stufe.
+- `BerichtsBereich.tsx`: Icon-Badge je Bereich (`--cat-1…4-soft/-text`, aus
+  den bereits im Bento-Dashboard verwendeten Icons Eye/GraduationCap/
+  Sparkles/Clock übernommen — keine neue Entscheidung nötig). Rahmenfarbe
+  bewusst NICHT auf `--cat-N` umgestellt: Der Designer-Vorschlag (`/30`
+  Deckkraft) hätte nur ~1,5–1,8:1 erreicht, gebraucht wären ~75 % gewesen,
+  das ist optisch kaum von deckend zu unterscheiden. Rahmen bleibt neutral,
+  die Identität trägt allein das Badge.
+- Alle 13 Ansichtstitel auf eine Rampe (`text-xl md:text-2xl font-black`)
+  vereinheitlicht — vorher sechs verschiedene. `DeviceSyncModal` dabei von
+  `font-bold` (dem bisher leichtesten Titel der App) korrigiert.
+- Schriftgewicht: Fließtext auf `font-normal` gesetzt, aber nur bei
+  `text-base` (16 px) und größer — die Gegenprüfung hat die Ausnahme für
+  Fließtext bei `text-sm`/`text-xs` ausdrücklich erweitert statt nur bei
+  `text-xs` zu belassen, weil dünnere Striche bei 12–14 px auf einfachen
+  Mobilpanelen ein echtes Lesbarkeitsrisiko sind. Betroffen: 7 Absätze
+  (Barrierefreiheitserklärung, zwei Sätze in `StatsModal`, vier
+  Hilfetexte in `HelpModal`). Die deutlich größere Zahl an
+  `text-sm font-bold`-Absätzen bleibt bewusst unverändert.
+- Backdrop-Fix, Hover-Fix, Tastengrößen-Fix wie oben befundet.
+- Neu: `scripts/checks/gestaltung.ts` — weist rohe Radien/Schatten außerhalb
+  der Skala ab (mit der einen begründeten Ausnahme `shadow-inner` am
+  Hilfe-Icon, im Quelltext UND im Check dokumentiert) und jede `animate-*`-
+  Klasse ohne `--animate-*`-Definition. In `scripts/pruefen.ts` eingehängt.
+
+### Ein selbst gefundener und selbst behobener Regressionsfall
+
+Die Titel-Vereinheitlichung (`min-w-0` + `[overflow-wrap:anywhere]`) ließ bei
+"Extra groß" sechs Überschriften (Jahreskonto, Verwalten, Erklärung,
+Datensicherung, Changelog, Demogeräte) zu einer senkrechten
+Buchstabenspalte über den ganzen Bildschirm kollabieren — gemessen 34–58 px
+Breite bei 250–420 px Höhe. Ursache: `min-w-0` nimmt der Überschrift die
+Mindestbreite, gibt ihr aber ohne `flex-1` keinen Anspruch auf die
+verbleibende Zeilenbreite; bei "Extra groß" wachsen die `rem`-basierte
+Zurück-Taste (48→72 px) und das Icon (32→48 px) so stark mit, dass in einem
+360-px-Fenster kaum Rest blieb. Das ist vermutlich ein vorbestehender Fehler
+(zwei der sechs Stellen hatten `min-w-0` schon vorher), der nie auffiel, weil
+kürzere Titel ihn nie auslösten — und er ist für `check:ui`s
+Überlaufprüfung strukturell unsichtbar, da eine senkrechte Buchstabenspalte
+keinen waagerechten Seiten-Überlauf erzeugt.
+
+Erst mit `flex-1` allein blieb der Fehler bestehen (Ursache oben, gemessen
+per DOM-Kettenauswertung: 58 px Rest nach Taste+Icon+Abstand). Behoben durch
+Stapeln (Taste+Icon auf eigener Zeile, Titel auf voller Kartenbreite darunter,
+`flex-col sm:flex-row`) — dieselbe Technik, die `TimeModal` an einer Stelle
+schon nutzte. Nachgemessen: 214–226 px Breite, keine Kollaps-Fälle mehr, bei
+"Normal" weiterhin ein sauberes einzeiliges oder zweizeiliges Bild.
+
+### Zwei weitere, vom vollen `check:ui`-Lauf gefundene Regressionen
+
+Der erste volle Lauf nach den obigen Änderungen meldete 8 Fehlschläge. Keiner
+davon war eine neue Kategorie — beide folgenden Ursachen erklären alle acht.
+
+**1. Die jetzt wirksame `animate-fade-in`/`animate-slide-up` lief axe mitten
+im Übergang vor die Linse.** `TimeModal` und `HistoryModal` tragen beide
+`animate-fade-in` auf ihrer Wurzel. Der axe-Lauf für „Zeit" maß einen
+Tastenhintergrund mit Kontrast 3,68 statt der korrekten 5+; der Farbwert
+(`#3c955e` statt `--accent` `#15803d`) ist keine Zufallszahl, sondern der
+Bildschirm mitten in der Opacity-Blende. Wiederholt: 4 von 5 Versuchen
+fehlgeschlagen, immer derselbe Farbwert — kein Rauschen, ein Wettlauf gegen
+die gemeinsame Testhilfe `oeffne()`, die fest 250ms wartet (das reichte
+gegen die anfänglichen 180/220ms nicht zuverlässig). Zwei Teile behoben:
+`index.css` auf 100/140ms verkürzt (statt die gemeinsame Wartezeit für über
+600 Tests zu erhöhen), und `tests/oberflaeche.spec.ts` bekam eine neue
+Hilfsfunktion `warteAufEinblendAnimation()`, die gezielt nur auf diese zwei
+benannten Animationen wartet (nicht auf `animate-pulse`/`-spin`, die endlos
+laufen und deren `finished`-Promise nie aufloest) — mit bis zu 5 Versuchen im
+40ms-Abstand, weil ein einmaliger Check bei React.lazy-Ansichten (Archiv)
+zu früh kommen kann, wenn das Element den Übergang noch gar nicht begonnen
+hat. In `oeffne()`, `oeffneMitSchema()` und `oeffneUeberEinstieg()`
+eingehängt. Nachgemessen: 60/60 über 15 Wiederholungen für Zeit und Archiv.
+
+**2. `BerichtsBereich`s neues Icon-Badge löste bei 320 px/„Extra groß“/breiter
+Schrift einen Rest-Überlauf aus, der sich als Fehler an ganz anderer Stelle
+zeigte.** Vier der acht Fehlschläge nannten nicht `BerichtsBereich`, sondern
+die untere Navigationsleiste oder den Update-Hinweis — alle vier betrafen
+aber die Formular-Ansicht im Hintergrund. Gemessen: `document.documentElement.scrollWidth`
+352 px, aber auch `window.innerWidth` 352 px, während `clientWidth` korrekt
+bei 320 blieb — der Layout-Viewport selbst hatte sich verbreitert, und die
+prozentual breite Navigationsleiste (`w-[96%]`) skalierte gutgläubig gegen
+diesen aufgeblähten Wert (96 % von 352 ≈ 337,9 px, exakt der gemeldete Wert).
+Per `git stash` gegen 0.9.64 verglichen: Der Fehler existiert dort nicht.
+Bisektion durch gezieltes Zurücksetzen einzelner Dateien zeigte
+`BerichtsBereich.tsx` als Quelle; ein direkter `min-w-0`-Fix am Titel-Span
+(derselbe wie beim Backup-Fund) reichte allein nicht — erst `flex-wrap` am
+gesamten Titel-Baustein (Badge + Text, statt nur am Text) brachte
+`scrollWidth = clientWidth = 320` mit null überstehenden Elementen. Eine
+versuchte Korrektur an der Navigationsleiste selbst (`left`/`right` statt
+`width:96%`) wurde wieder verworfen, weil sie nicht die Ursache war und eine
+unnötige Änderung an einer sonst unbeteiligten, gut geprüften Komponente
+gewesen wäre.
+
+### Verifiziert
+
+- `npx tsc --noEmit`: sauber nach jeder Datei.
+- `npm run check`: 206/206 (201 bestehende + 5 neue Gestaltungs-Prüfungen).
+  Der neue Wächter hat sich dabei selbst zweimal ertappt: einmal an der
+  eigenen Selbstkollision mit `--rv-shadow-md`, einmal an einer falsch
+  platzierten Ausnahme-Buchführung für `shadow-inner` — beide vor dem
+  ersten grünen Lauf behoben.
+- Browser-Screenshots: 17 Ansichten vor der Änderung als Referenz, danach
+  gezielt Formular/Optionen/Archiv in Hell und Kontrast-Gelb, alle vier
+  betroffenen Kopfzeilen bei 360 px in "Normal" UND "Extra groß" (dort lag
+  der Regressionsfund), sowie die Kontrast-Dialoge nach dem Backdrop-Fix.
+- `npm run check:ui`, voller Lauf über alle drei Profile: erster Durchlauf
+  8 von 1194 Prüfungen fehlgeschlagen (siehe oben, beide Ursachen gefunden
+  und behoben), zweiter — finaler — Durchlauf **615 bestanden, 579
+  profilbedingt übersprungen, 0 fehlgeschlagen, 24,6 Minuten**.
+
+### Nachgereicht: Formular entrümpelt, Ein-Hand-Modus umgezogen
+
+Zweiter Teil derselben Anfrage: die vom `ux-researcher` gefundene, vom
+`accessibility-auditor` konkretisierte Entrümpelung der Formular-Kopfzeile.
+
+- **Die zwei Schnell-Tasten „Sprachansagen"/„Ein-Hand" sind entfernt.**
+  „Sprachansagen" hatte bereits eine Entsprechung in Optionen → Anzeige &
+  Bedienung (`screenReaderNarration`) — reine Entfernung der Abkürzung. Der
+  Ein-Hand-Modus (`mobileComfortMode`) hatte **keine**: Die Taste im
+  Formularkopf war der einzige Weg dorthin. Vor dem Entfernen musste die
+  Einstellung deshalb zuerst nach `A11yModal.tsx` nachgezogen werden (neuer
+  ToggleRow unter „App-Verhalten", neben „Desktop-Layout am PC" — das
+  spiegelbildliche Pendant fürs Handy) — sonst wäre die Funktion nach dem
+  Entfernen gar nicht mehr erreichbar gewesen, keine Verkürzung mehr, sondern
+  ein Verlust. Das Tastenkürzel Alt+Umschalt+L war davon nie betroffen, es
+  hängt nicht an dieser Taste.
+- **Die Monat/Name-Karte wird dichter, sobald ein Name gespeichert ist —
+  nicht versteckt.** Getestet gegen die vom Auditor vorgegebene Bedingung:
+  `#meta-name-input` bleibt bei jedem Zustand dasselbe Element mit derselben
+  `id`, sichtbar, nicht deaktiviert, `tabIndex 0` — nachgemessen per
+  `getComputedStyle`. Es ändert sich ausschließlich die Kastenoptik der
+  Eltern-Karte (gestrichelter Rahmen, Fläche, Polsterung fallen weg), kein
+  Label, kein Icon, kein Attribut am Eingabefeld selbst.
+- Das „DSGVO & barrierefrei"-Abzeichen ist unauffälliger (weniger Polsterung,
+  `font-bold` statt `font-black`) — rein dekorativ, keine Funktionsänderung.
+- `ConfirmDialog.tsx`s drei Rückfrage-Tasten hatten `transition-all`, aber
+  keine einzige `active:*`-Regel — null Rückmeldung beim Tippen auf
+  ausgerechnet den Tasten, die jede zerstörende Aktion der App freigeben.
+  `active:scale-[0.97]` ergänzt.
+
+**Bewusst nicht gemacht:** Der Gestaltungsvertrag schlug zusätzlich ein
+vollständig vereinheitlichtes Tastensystem vor (eine Höhe, feste Polsterung
+für alle ~30 Text-Tasten der App). Zurückgestellt, nicht vergessen: Nach dem
+Kopfzeilen-Überlauf-Fund reicht ein Blick in den Vertrag nicht als Nachweis,
+dass ein mechanisches Umschreiben von 30 Stellen mit unterschiedlichen
+`w-full`/`flex-1`/Icon-Kombinationen nirgends dasselbe Muster wiederholt --
+und ein Teil der heutigen Höhen-Varianz ist außerdem beabsichtigte Hierarchie
+(eine grosse Haupt-Handlungstaste darf größer sein als „Abbrechen"), keine
+Inkonsistenz. Ebenso zurückgestellt: die Gewichtsreduktion auf `text-sm`-
+Ebene, die der Designer-Agent ursprünglich vorschlug — die Gegenprüfung hat
+diese Stufe ausdrücklich als zu riskant für die sehbehinderte Zielgruppe
+eingestuft.
+
+### Nachgereicht verifiziert
+
+- `npx tsc --noEmit`, `npm run check` (206/206): sauber.
+- Gezielter `check:ui`-Lauf (80 Prüfungen: Formular, Optionen, Label-in-Name,
+  Tastatur, Ein-Hand-Leiste): 80/80, `handy`-Profil.
+- Browser: Formularkopf ohne Namen (unveraendert vollstaendig) und mit
+  Namen (kompakt) gegenübergestellt; `#meta-name-input` nach der
+  Kompaktierung direkt per `getComputedStyle` geprüft; neue Einstellung in
+  Optionen → Anzeige & Bedienung sichtbar und bedienbar bestätigt.
+- Voller `npm run check:ui`-Lauf über alle Änderungen zusammen: **erster
+  Versuch mit 2 Fehlschlägen** (`Erklärung zur Barrierefreiheit mit breiter
+  Schrift`, `Hilfe ohne schwere Verstöße`, beide exakt 16,5s) — Ursache war
+  nicht der Code, sondern dass waehrend des Laufs weitergearbeitet wurde
+  (`ChangelogModal.tsx`, `package.json`, `DEVLOG.md`), genau die in
+  `CLAUDE.md` dokumentierte Falle ("a save during the run tears the
+  execution context out of the page"). Zweiter, sauberer Lauf ohne jede
+  Nebenbei-Änderung: **615 bestanden, 579 übersprungen, 0 fehlgeschlagen,
+  24,8 Minuten.** Beide zuvor gefallenen Prüfungen liefen darin grün durch
+  — bestätigt die Deutung als Messfehler, nicht als Regression.
+
+---
+
 ## 2026-09-20 — v0.9.64: Zwei Changelog-Einträge standen an der falschen Stelle
 
 Vom Projektinhaber gefunden: „Was gibt's Neues?" zeigte 0.9.54 ganz oben —

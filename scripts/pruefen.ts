@@ -29,6 +29,7 @@ import "./checks/rueckfrage";
 import "./checks/ansichtsfokus";
 import "./checks/zuletzt-geaendert";
 import "./checks/typografie";
+import "./checks/gestaltung";
 import "./checks/erklaerung";
 import "./checks/inhaltsrichtlinie";
 import { alleLaufen } from "./helfer";

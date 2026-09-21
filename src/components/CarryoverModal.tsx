@@ -110,37 +110,41 @@ export default function CarryoverModal({
   return (
     <div
       ref={modalRef}
-      className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-3xl w-full border border-[var(--border-color)] p-6 md:p-8 relative shadow-lg animate-fade-in"
+      className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--border-color)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] animate-fade-in"
     >
       {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
-      <div className="flex items-center gap-3 mb-4">
-        <button
-          ref={closeButtonRef}
-          type="button"
-          onClick={onClose}
-          aria-label="Zurück zur Zeiterfassung"
-          className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95"
-        >
-          <ArrowLeft className="w-6 h-6" aria-hidden="true" />
-        </button>
-        <Calendar className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
-        {/* min-w-0: Ein Flex-Element gibt seine Mindestbreite standardmaessig
-            nicht unter den Inhalt preis (`min-width: auto`). Die Ueberschrift
-            konnte deshalb bei "Extra gross" nicht umbrechen und schob die
-            Seite auf 456 px in einem 360-px-Fenster -- eine echte waagerechte
-            Bildlaufleiste, WCAG 1.4.10. Mit min-w-0 bricht sie um. */}
+      {/* flex-col sm:flex-row: Bei "Extra gross" wuchsen Zurueck-Taste (rem-
+          basiert, 48 -> 72 px) und Kalender-Icon (32 -> 48 px) so weit mit,
+          dass der Ueberschrift in einem 360-px-Fenster nur noch 58 px Breite
+          blieben -- mit [overflow-wrap:anywhere] brach sie dort in eine
+          senkrechte Buchstabenspalte ueber den ganzen Bildschirm, gemessen
+          2026-09-20. Gestapelt steht ihr die volle Kartenbreite zur
+          Verfuegung; ab sm: ist wieder reichlich Platz fuer eine Zeile. */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-4">
+        <div className="flex items-center gap-3">
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            aria-label="Zurück zur Zeiterfassung"
+            className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95"
+          >
+            <ArrowLeft className="w-6 h-6" aria-hidden="true" />
+          </button>
+          <Calendar className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
+        </div>
         <h2
           tabIndex={-1}
           data-ansicht-titel=""
           id="carryover-modal-title"
-          className="text-2xl md:text-3xl font-black min-w-0 break-words"
+          className="text-xl md:text-2xl font-black flex-1 min-w-0 [overflow-wrap:anywhere]"
         >
           Jahreskonto & Einstellungen
         </h2>
       </div>
 
         {/* Info text */}
-        <div className="p-3.5 mb-5 rounded-xl bg-[var(--cat-4-soft)] border border-[var(--cat-4)]/10 flex gap-2.5 items-start text-xs font-bold leading-relaxed">
+        <div className="p-3.5 mb-5 rounded-[var(--rv-radius-md)] bg-[var(--cat-4-soft)] border border-[var(--cat-4)]/10 flex gap-2.5 items-start text-xs font-bold leading-relaxed">
           <Info className="w-4 h-4 flex-shrink-0 text-[var(--cat-4-text)] mt-0.5" aria-hidden="true" />
           <p className="flex-1">
             Hier können Sie Ihre Startwerte für Urlaub und Überstunden eintragen.
@@ -149,7 +153,7 @@ export default function CarryoverModal({
 
         <form onSubmit={handleFormSubmit} className="space-y-5">
           {/* Section 1: Urlaubskonto */}
-          <div className="space-y-3 p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)]">
+          <div className="space-y-3 p-4 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--bg-color)]">
             <h3 className="text-xs font-black text-[var(--accent)] flex items-center gap-1.5">
               Urlaubskonto-Konfiguration
             </h3>
@@ -167,7 +171,7 @@ export default function CarryoverModal({
                   step="0.5"
                   value={localCarryover.regularVacationEntitlement || ""}
                   onChange={(e) => handleFieldChange("regularVacationEntitlement", parseFloat(e.target.value))}
-                  className="w-full p-2.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm font-bold rounded-lg outline-none focus:border-[var(--border-focus)]"
+                  className="w-full p-2.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm font-bold rounded-[var(--rv-radius-sm)] outline-none focus:border-[var(--border-focus)]"
                 />
               </div>
 
@@ -183,7 +187,7 @@ export default function CarryoverModal({
                   step="0.5"
                   value={localCarryover.additionalVacationEntitlement || ""}
                   onChange={(e) => handleFieldChange("additionalVacationEntitlement", parseFloat(e.target.value))}
-                  className="w-full p-2.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm font-bold rounded-lg outline-none focus:border-[var(--border-focus)]"
+                  className="w-full p-2.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm font-bold rounded-[var(--rv-radius-sm)] outline-none focus:border-[var(--border-focus)]"
                 />
                 <span className="text-[0.75rem] text-[var(--text-muted)] block font-normal leading-none">
                   (z.B. 5 Tage für Schwerbehinderte)
@@ -203,7 +207,7 @@ export default function CarryoverModal({
                 step="0.5"
                 value={localCarryover.vacationCarryover || ""}
                 onChange={(e) => handleFieldChange("vacationCarryover", parseFloat(e.target.value))}
-                className="w-full p-2.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm font-bold rounded-lg outline-none focus:border-[var(--border-focus)]"
+                className="w-full p-2.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm font-bold rounded-[var(--rv-radius-sm)] outline-none focus:border-[var(--border-focus)]"
               />
               <p className="text-[0.75rem] text-[var(--text-muted)] leading-relaxed">
                 Tragen Sie hier den Resturlaub aus dem Vorjahr oder die bereits genommene Urlaubs-Kompensation ein (z.B. positive/negative Tage beim Start-Vortrag).
@@ -212,7 +216,7 @@ export default function CarryoverModal({
           </div>
 
           {/* Section 2: Arbeitszeit & Überstunden */}
-          <div className="space-y-3 p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)]">
+          <div className="space-y-3 p-4 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--bg-color)]">
             <h3 className="text-xs font-black text-[var(--accent)] flex items-center gap-1.5">
               ⏱️ Überstunden & Sollarbeitszeit
             </h3>
@@ -230,7 +234,7 @@ export default function CarryoverModal({
                   step="0.25"
                   value={localCarryover.overtimeCarryover || ""}
                   onChange={(e) => handleFieldChange("overtimeCarryover", parseFloat(e.target.value))}
-                  className="w-full p-2.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm font-bold rounded-lg outline-none focus:border-[var(--border-focus)]"
+                  className="w-full p-2.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm font-bold rounded-[var(--rv-radius-sm)] outline-none focus:border-[var(--border-focus)]"
                 />
                 <span className="text-[0.75rem] text-[var(--text-muted)] block font-normal leading-none">
                   (Negativwert für Minusstunden)
@@ -249,7 +253,7 @@ export default function CarryoverModal({
                   step="0.5"
                   value={localCarryover.dailyTargetHours || ""}
                   onChange={(e) => handleFieldChange("dailyTargetHours", parseFloat(e.target.value))}
-                  className="w-full p-2.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm font-bold rounded-lg outline-none focus:border-[var(--border-focus)]"
+                  className="w-full p-2.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm font-bold rounded-[var(--rv-radius-sm)] outline-none focus:border-[var(--border-focus)]"
                 />
                 <span className="text-[0.75rem] text-[var(--text-muted)] block font-normal leading-none">
                   (z.B. 8 Stunden bei Vollzeit)
@@ -268,13 +272,13 @@ export default function CarryoverModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 px-4 font-bold border border-[var(--border-color)] bg-[var(--card-bg)] hover:bg-[var(--bg-color)] rounded-xl cursor-pointer text-sm transition-all focus-visible:ring-4"
+              className="flex-1 py-3 px-4 font-bold border border-[var(--border-color)] bg-[var(--card-bg)] hover:bg-[var(--bg-color)] rounded-[var(--rv-radius-md)] cursor-pointer text-sm transition-all focus-visible:ring-4"
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 px-4 font-black bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 rounded-xl cursor-pointer text-sm transition-all focus-visible:ring-4 flex items-center justify-center gap-1.5"
+              className="flex-1 py-3 px-4 font-black bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 rounded-[var(--rv-radius-md)] cursor-pointer text-sm transition-all focus-visible:ring-4 flex items-center justify-center gap-1.5"
             >
               <Save className="w-4 h-4" />
               <span>Speichern</span>

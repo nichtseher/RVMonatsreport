@@ -54,6 +54,15 @@ interface A11yModalProps {
    * nicht.
    */
   onOpenStats?: () => void;
+  /**
+   * Ein-Hand-Modus (kompakte Zaehlerfelder + Aktionsleiste auf dem Handy).
+   * Bis 0.9.65 nur ueber eine Schnell-Taste im Formularkopf erreichbar, ohne
+   * Entsprechung in den Optionen -- eine Ansicht, die die beiden Schnell-
+   * Tasten dort ersetzt, muss diese Einstellung zuerst hierher nachziehen,
+   * sonst waere sie nach dem Entfernen der Tasten gar nicht mehr erreichbar.
+   */
+  mobileComfortMode: boolean;
+  onToggleMobileComfort: () => void;
 }
 
 /* ---------- Wiederverwendbare, kompakte Bausteine ---------- */
@@ -85,9 +94,9 @@ function MenuRow({
       type="button"
       id={id}
       onClick={onClick}
-      className="w-full flex items-center gap-3 px-4 py-3.5 text-left group hover:bg-[var(--input-bg)] transition-colors active:scale-[0.99] cursor-pointer first:rounded-t-2xl last:rounded-b-2xl"
+      className="w-full flex items-center gap-3 px-4 py-3.5 text-left group hover:bg-[var(--input-bg)] transition-colors active:scale-[0.99] cursor-pointer first:rounded-t-[var(--rv-radius-lg)] last:rounded-b-[var(--rv-radius-lg)]"
     >
-      <span className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${iconClass}`} aria-hidden="true">
+      <span className={`w-9 h-9 rounded-[var(--rv-radius-md)] flex items-center justify-center flex-shrink-0 ${iconClass}`} aria-hidden="true">
         {icon}
       </span>
       <span className="flex-1 min-w-0">
@@ -117,7 +126,7 @@ function ToggleRow({
 }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3.5">
-      <span className="w-9 h-9 rounded-xl bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--accent)] flex items-center justify-center flex-shrink-0" aria-hidden="true">
+      <span className="w-9 h-9 rounded-[var(--rv-radius-md)] bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--accent)] flex items-center justify-center flex-shrink-0" aria-hidden="true">
         {icon}
       </span>
       <span className="flex-1 min-w-0">
@@ -170,7 +179,7 @@ function ToggleRow({
 /** Abschnitts-Karte mit Titel; gruppiert zusammengehörige Zeilen. */
 function SectionCard({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-color)] shadow-sm overflow-hidden">
+    <section className="rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--bg-color)] shadow-[var(--rv-shadow-sm)] overflow-hidden">
       {title && (
         <h3 className="px-4 pt-3 pb-1 text-xs font-black text-[var(--text-muted)]">
           {title}
@@ -207,6 +216,8 @@ export default function A11yModal({
   onSchichtenLoeschen,
   onAllesLoeschen,
   onOpenStats,
+  mobileComfortMode,
+  onToggleMobileComfort,
 }: A11yModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeMenu, setActiveMenu] = useState<"main" | "a11y" | "form">("main");
@@ -409,7 +420,7 @@ export default function A11yModal({
           <button
             type="button"
             onClick={onAllesLoeschen}
-            className="w-full min-h-[44px] py-3 px-4 rounded-xl font-bold border-2 border-[var(--danger-text)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--danger-bg)] transition-all cursor-pointer"
+            className="w-full min-h-[44px] py-3 px-4 rounded-[var(--rv-radius-md)] font-bold border-2 border-[var(--danger-text)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--danger-bg)] transition-all cursor-pointer"
           >
             Alle Daten von diesem Gerät löschen
           </button>
@@ -428,7 +439,7 @@ export default function A11yModal({
       <div className="flex items-center gap-3 border-b border-[var(--border-color)] pb-3">
         <button
           onClick={() => setActiveMenu("main")}
-          className="w-11 h-11 flex items-center justify-center rounded-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-colors active:scale-95 cursor-pointer flex-shrink-0"
+          className="w-12 h-12 flex items-center justify-center rounded-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-colors active:scale-95 cursor-pointer flex-shrink-0"
           aria-label="Zurück zum Hauptmenü Optionen"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -449,7 +460,7 @@ export default function A11yModal({
                   type="button"
                   onClick={() => updateSetting("fontSize", size)}
                   aria-pressed={isActive}
-                  className={`py-3 px-2 text-sm font-black rounded-xl border-2 transition-all cursor-pointer text-center active:scale-95 flex items-center justify-center gap-1.5 ${
+                  className={`py-3 px-2 text-sm font-black rounded-[var(--rv-radius-md)] border-2 transition-all cursor-pointer text-center active:scale-95 flex items-center justify-center gap-1.5 ${
                     isActive
                       ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-text)]"
                       : "bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
@@ -472,7 +483,7 @@ export default function A11yModal({
             return (
               <label
                 key={t.id}
-                className={`py-3 px-3 rounded-xl border-2 transition-all cursor-pointer flex items-center gap-2.5 ${t.swatch} ${t.swatchText} ${
+                className={`py-3 px-3 rounded-[var(--rv-radius-md)] border-2 transition-all cursor-pointer flex items-center gap-2.5 ${t.swatch} ${t.swatchText} ${
                   isActive
                     ? "ring-4 ring-[var(--border-focus)]/40 border-[var(--border-focus)]"
                     : "hover:border-[var(--border-focus)]"
@@ -516,7 +527,7 @@ export default function A11yModal({
         <div className="px-4 py-3.5">
           <label htmlFor="speech-rate-range" className="flex justify-between items-center text-sm font-black text-[var(--text-color)]">
             <span>Vorlese-Tempo</span>
-            <span className="bg-[var(--success-bg)] text-[var(--success-text)] px-2.5 py-0.5 rounded-lg font-black text-xs">
+            <span className="bg-[var(--success-bg)] text-[var(--success-text)] px-2.5 py-0.5 rounded-[var(--rv-radius-sm)] font-black text-xs">
               {(settings.speechRate || 1.0).toFixed(1)}x
             </span>
           </label>
@@ -570,7 +581,7 @@ export default function A11yModal({
             <button
               type="button"
               onClick={onSchichtenLoeschen}
-              className="w-full min-h-[44px] py-3 px-4 rounded-xl font-bold border-2 border-[var(--danger-text)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--danger-bg)] transition-all cursor-pointer"
+              className="w-full min-h-[44px] py-3 px-4 rounded-[var(--rv-radius-md)] font-bold border-2 border-[var(--danger-text)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--danger-bg)] transition-all cursor-pointer"
             >
               Erfasste Schichten löschen ({schichtenAnzahl})
             </button>
@@ -588,6 +599,14 @@ export default function A11yModal({
           checked={!!settings.desktopLayout}
           onToggle={() => updateSetting("desktopLayout", !settings.desktopLayout)}
         />
+        <ToggleRow
+          icon={<Smartphone className="w-5 h-5" />}
+          label="Ein-Hand-Modus"
+          hint="Kompaktere Zählerfelder und eine Aktionsleiste für die Bedienung mit einer Hand. Tastenkürzel: Alt+Umschalt+L"
+          describedById="mobile-comfort-hint"
+          checked={mobileComfortMode}
+          onToggle={onToggleMobileComfort}
+        />
       </SectionCard>
     </div>
   );
@@ -598,7 +617,7 @@ export default function A11yModal({
       <div className="flex items-center gap-3 border-b border-[var(--border-color)] pb-3">
         <button
           onClick={() => setActiveMenu("main")}
-          className="w-11 h-11 flex items-center justify-center rounded-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-colors active:scale-95 cursor-pointer flex-shrink-0"
+          className="w-12 h-12 flex items-center justify-center rounded-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-colors active:scale-95 cursor-pointer flex-shrink-0"
           aria-label="Zurück zum Hauptmenü Optionen"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -625,7 +644,7 @@ export default function A11yModal({
                 placeholder="z.B. Schulung, Messe"
                 value={newFieldName}
                 onChange={(e) => setNewFieldName(e.target.value)}
-                className="w-full p-3.5 border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-xl font-bold focus:border-[var(--border-focus)] outline-none text-sm"
+                className="w-full p-3.5 border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-md)] font-bold focus:border-[var(--border-focus)] outline-none text-sm"
               />
             </div>
 
@@ -637,7 +656,7 @@ export default function A11yModal({
                 id="new-field-section"
                 value={newFieldSection}
                 onChange={(e) => setNewFieldSection(e.target.value as keyof SectionsConfig)}
-                className="w-full p-3.5 border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-xl font-bold focus:border-[var(--border-focus)] outline-none text-sm cursor-pointer"
+                className="w-full p-3.5 border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-md)] font-bold focus:border-[var(--border-focus)] outline-none text-sm cursor-pointer"
               >
                 <option value="s1">1. Vorführungen & Auslieferungen</option>
                 <option value="s2">2. Schulung & Akquise</option>
@@ -654,7 +673,7 @@ export default function A11yModal({
                 id="new-field-step"
                 value={newFieldStep}
                 onChange={(e) => setNewFieldStep(parseFloat(e.target.value))}
-                className="w-full p-3.5 border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-xl font-bold focus:border-[var(--border-focus)] outline-none text-sm cursor-pointer"
+                className="w-full p-3.5 border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-md)] font-bold focus:border-[var(--border-focus)] outline-none text-sm cursor-pointer"
               >
                 <option value="1">+1er Schritte (Anzahl)</option>
                 <option value="0.5">+0,5er Schritte (Stunden)</option>
@@ -669,7 +688,7 @@ export default function A11yModal({
                 id="new-field-icon"
                 value={newFieldIcon}
                 onChange={(e) => setNewFieldIcon(e.target.value)}
-                className="w-full p-3.5 border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-xl font-bold focus:border-[var(--border-focus)] outline-none text-sm cursor-pointer"
+                className="w-full p-3.5 border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-md)] font-bold focus:border-[var(--border-focus)] outline-none text-sm cursor-pointer"
               >
                 <option value="⭐">⭐ Standard / Spezial</option>
                 <option value="🏫">🏫 Schule / Bildung</option>
@@ -697,7 +716,7 @@ export default function A11yModal({
 
           <button
             type="submit"
-            className="w-full py-3.5 px-6 font-black bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 rounded-xl cursor-pointer text-sm transition-all active:scale-95 shadow-md shadow-[var(--primary)]/20"
+            className="w-full py-3.5 px-6 font-black bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 rounded-[var(--rv-radius-md)] cursor-pointer text-sm transition-all active:scale-95 shadow-[var(--rv-shadow-md)] shadow-[var(--primary)]/20"
           >
             + Kategorie hinzufügen
           </button>
@@ -719,7 +738,7 @@ export default function A11yModal({
   return (
     <div
       ref={modalRef}
-      className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-3xl w-full border border-[var(--border-color)] p-4 md:p-6 relative shadow-lg flex flex-col gap-4 animate-fade-in"
+      className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--border-color)] p-4 md:p-6 relative shadow-[var(--rv-shadow-lg)] flex flex-col gap-4 animate-fade-in"
     >
       {activeMenu === "main" && renderMainMenu()}
       {activeMenu === "a11y" && renderA11yMenu()}

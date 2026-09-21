@@ -191,7 +191,7 @@ export default function TimeModal({
   return (
     <div
       ref={modalRef}
-      className="w-full bg-[var(--card-bg)] text-[var(--text-color)] rounded-3xl border border-[var(--border-color)] p-6 md:p-8 relative shadow-lg flex flex-col gap-5 animate-fade-in"
+      className="w-full bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] border border-[var(--border-color)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] flex flex-col gap-5 animate-fade-in"
     >
       {/* Header */}
       {/*
@@ -226,7 +226,7 @@ export default function TimeModal({
               tabIndex={-1}
               data-ansicht-titel=""
               id="time-modal-title"
-              className="text-xl sm:text-2xl font-black hyphens-auto break-words"
+              className="text-xl md:text-2xl font-black hyphens-auto break-words"
             >
               Zeiterfassung
             </h2>
@@ -271,7 +271,7 @@ export default function TimeModal({
         {activeTab === "stempeln" ? (
           <div className="space-y-4 flex flex-col flex-1">
             {/* Info Card / Carryover Integration */}
-            <div className="p-4 rounded-xl border border-[var(--info-border)] bg-[var(--info-bg)] flex flex-col gap-3">
+            <div className="p-4 rounded-[var(--rv-radius-md)] border border-[var(--info-border)] bg-[var(--info-bg)] flex flex-col gap-3">
               <div className="flex gap-3 text-[var(--text-color)]">
                 <Briefcase className="w-5 h-5 flex-shrink-0 mt-0.5 text-[var(--cat-4-text)]" aria-hidden="true" />
                 <div className="text-xs space-y-1 leading-relaxed font-bold">
@@ -292,7 +292,7 @@ export default function TimeModal({
                    2026-09-02 fuer alles im Tab-Lauf gilt. Gefunden hat das
                    nicht das Auge, sondern das verschaerfte Pruefgate im
                    Schreibtisch-Profil. */
-                className="w-full min-h-[44px] py-2 px-3 bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                className="w-full min-h-[44px] py-2 px-3 bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-bold rounded-[var(--rv-radius-sm)] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                 aria-label="Jahreskonto-Einstellungen bearbeiten"
               >
                 <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" />
@@ -320,10 +320,10 @@ export default function TimeModal({
             {/* Grid Container for Vacation and Overtime */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Overtime (Überstunden) Card */}
-              <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-color)] shadow-xs flex flex-col justify-between">
+              <div className="p-4 rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--bg-color)] shadow-[var(--rv-shadow-sm)] flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-xl bg-[var(--cat-4-soft)] text-[var(--cat-4-text)] flex items-center justify-center" aria-hidden="true">
+                    <div className="w-8 h-8 rounded-[var(--rv-radius-md)] bg-[var(--cat-4-soft)] text-[var(--cat-4-text)] flex items-center justify-center" aria-hidden="true">
                       <Clock className="w-4 h-4" />
                     </div>
                     <h3 className="text-xs font-black text-[var(--text-muted)]">Überstundenkonto</h3>
@@ -364,10 +364,10 @@ export default function TimeModal({
               </div>
 
               {/* Vacation (Urlaubskonto) Card */}
-              <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-color)] shadow-xs flex flex-col justify-between">
+              <div className="p-4 rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--bg-color)] shadow-[var(--rv-shadow-sm)] flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-xl bg-[var(--cat-1-soft)] text-[var(--cat-1-text)] flex items-center justify-center" aria-hidden="true">
+                    <div className="w-8 h-8 rounded-[var(--rv-radius-md)] bg-[var(--cat-1-soft)] text-[var(--cat-1-text)] flex items-center justify-center" aria-hidden="true">
                       <Umbrella className="w-4 h-4" />
                     </div>
                     <h3 className="text-xs font-black text-[var(--text-muted)]">Urlaubskonto</h3>
@@ -418,7 +418,7 @@ export default function TimeModal({
                 <span>Monatlicher Stunden-Verlauf ({activeYear})</span>
               </h4>
 
-              <div className="overflow-hidden rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)]">
+              <div className="overflow-hidden rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--bg-color)]">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-[0.75rem]" aria-label="Monatliche Arbeitszeit-Aufschlüsselung">
                     <thead>
@@ -467,7 +467,7 @@ export default function TimeModal({
                    Reiter "Jahreskonto"; das Pruefgate sieht nur den beim
                    Oeffnen aktiven Reiter, sie waere also erst aufgefallen,
                    wenn jemand sie benutzt. */
-                className="w-full min-h-[44px] py-2.5 px-3 bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                className="w-full min-h-[44px] py-2.5 px-3 bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-black rounded-[var(--rv-radius-md)] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                 aria-label="Jahresübertrag und Soll-Stunden bearbeiten"
               >
                 <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" />

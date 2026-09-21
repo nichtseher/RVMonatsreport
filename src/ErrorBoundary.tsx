@@ -81,7 +81,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-[var(--bg-color)] flex flex-col items-center justify-center p-4">
-          <div className="max-w-md w-full bg-[var(--card-bg)] rounded-3xl shadow-2xl p-6 md:p-8 text-center border border-[var(--danger-border)]">
+          <div className="max-w-md w-full bg-[var(--card-bg)] rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] p-6 md:p-8 text-center border border-[var(--danger-border)]">
             <div className="w-16 h-16 bg-[var(--danger-bg)] rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-8 h-8 text-[var(--danger-text)]" />
             </div>
@@ -94,7 +94,7 @@ export class ErrorBoundary extends Component<Props, State> {
               Die App konnte leider nicht ordnungsgemäß geladen werden. Bitte versuchen Sie, die Seite neu zu laden.
             </p>
 
-            <div className="bg-[var(--bg-color)] p-3 rounded-xl text-left mb-6 overflow-auto max-h-32 border border-[var(--border-color)]">
+            <div className="bg-[var(--bg-color)] p-3 rounded-[var(--rv-radius-md)] text-left mb-6 overflow-auto max-h-32 border border-[var(--border-color)]">
               <code className="text-[0.75rem] text-[var(--danger-text)] font-mono">
                 {this.state.errorMsg || "Unknown render error"}
               </code>
@@ -107,7 +107,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <button
                 onClick={this.handleRettung}
                 disabled={this.state.rettung === "laeuft"}
-                className="w-full flex items-center justify-center gap-2 bg-[var(--card-bg)] text-[var(--text-color)] font-bold py-3.5 px-4 rounded-xl border-2 border-[var(--primary)] hover:brightness-110 disabled:opacity-60 transition-all active:scale-95 text-sm"
+                className="w-full flex items-center justify-center gap-2 bg-[var(--card-bg)] text-[var(--text-color)] font-bold py-3.5 px-4 rounded-[var(--rv-radius-md)] border-2 border-[var(--primary)] hover:brightness-110 disabled:opacity-60 transition-all active:scale-95 text-sm"
               >
                 <Download className="w-4 h-4" aria-hidden="true" />
                 <span>
@@ -128,7 +128,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
               <button
                 onClick={this.handleSoftReset}
-                className="w-full flex items-center justify-center gap-2 bg-[var(--primary)] text-[var(--primary-text)] font-bold py-3.5 px-4 rounded-xl hover:opacity-90 transition-all active:scale-95 text-sm"
+                className="w-full flex items-center justify-center gap-2 bg-[var(--primary)] text-[var(--primary-text)] font-bold py-3.5 px-4 rounded-[var(--rv-radius-md)] hover:opacity-90 transition-all active:scale-95 text-sm"
               >
                 <RefreshCw className="w-4 h-4" />
                 <span>App neu laden</span>
@@ -136,7 +136,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
               <button 
                 onClick={this.handleHardReset}
-                className="w-full flex items-center justify-center gap-2 bg-[var(--danger-bg)] text-[var(--danger-text)] font-bold py-3.5 px-4 rounded-xl border border-[var(--danger-border)] hover:brightness-110 transition-all active:scale-95 text-sm"
+                className="w-full flex items-center justify-center gap-2 bg-[var(--danger-bg)] text-[var(--danger-text)] font-bold py-3.5 px-4 rounded-[var(--rv-radius-md)] border border-[var(--danger-border)] hover:brightness-110 transition-all active:scale-95 text-sm"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Kompletten Reset durchführen</span>

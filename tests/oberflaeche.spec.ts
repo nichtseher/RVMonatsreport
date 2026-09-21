@@ -49,6 +49,56 @@ async function oeffne(page: Page, tab: string) {
   // dass React tatsaechlich gerendert hat.
   await page.locator("button").first().waitFor({ state: "attached", timeout: 15_000 });
   await page.waitForTimeout(250);
+  await warteAufEinblendAnimation(page);
+}
+
+/*
+  `animate-fade-in`/`animate-slide-up` waren bis 0.9.65 ohne jedes CSS --
+  seither wirken sie wirklich, und die fest 250ms oben reichen gegen ihre
+  100/140ms nicht zuverlaessig: Ein axe-Lauf traf die Wurzel von Zeit/Archiv
+  4 von 5 Malen mitten im Opacity-Uebergang (gemessen #3c955e statt #15803d
+  als Tastenhintergrund). Gezielt nur auf DIESE zwei Animationen warten, nicht
+  auf alle laufenden -- `animate-pulse`/`animate-spin` u. ae. laufen endlos
+  (iteration-count infinite) und ihr `finished` loest nie auf.
+*/
+async function warteAufEinblendAnimation(page: Page) {
+  /*
+    Ein einmaliger Check direkt nach den festen 250ms reichte nicht: Bei
+    React.lazy-Ansichten (Archiv u.a.) kann das Element erst NACH diesem
+    Zeitpunkt ueberhaupt montieren -- der einmalige Check findet dann nichts,
+    haelt die Animation faelschlich fuer "gibt es nicht" und axe scannt exakt
+    beim Start des Uebergangs (gemessen: Kontrast 1,51 statt der spaeteren
+    3,68 -- noch fruehe Phase). Deshalb kurz nachfassen statt einmalig pruefen:
+    bis zu 5 Versuche im 40ms-Abstand, sobald etwas laeuft sofort auf dessen
+    Ende warten und zurueckkehren. Kein Treffer nach 200ms heisst: diese
+    Ansicht hat hier keine solche Animation, weitermachen.
+  */
+  for (let versuch = 0; versuch < 5; versuch++) {
+    const laeuft = await page.evaluate(
+      () =>
+        document
+          .getAnimations()
+          .filter(
+            (a): a is CSSAnimation =>
+              a instanceof CSSAnimation && (a.animationName === "fade-in" || a.animationName === "slide-up"),
+          ).length > 0,
+    );
+    if (laeuft) {
+      await page.evaluate(() =>
+        Promise.all(
+          document
+            .getAnimations()
+            .filter(
+              (a): a is CSSAnimation =>
+                a instanceof CSSAnimation && (a.animationName === "fade-in" || a.animationName === "slide-up"),
+            )
+            .map((a) => a.finished.catch(() => {})),
+        ),
+      );
+      return;
+    }
+    await page.waitForTimeout(40);
+  }
 }
 
 async function setzeSchriftgroesse(page: Page, groesse: string) {
@@ -392,6 +442,7 @@ async function oeffneMitSchema(page: Page, tab: string, schema: string) {
   await page.goto(`/?tab=${tab}`, { waitUntil: "domcontentloaded" });
   await page.locator("button").first().waitFor({ state: "attached", timeout: 15_000 });
   await page.waitForTimeout(250);
+  await warteAufEinblendAnimation(page);
 }
 
 test.describe("Kontrast in allen Farbschemata", () => {
@@ -593,6 +644,7 @@ async function oeffneUeberEinstieg(page: Page, eintrag: (typeof EINSTIEGE)[numbe
     .first()
     .waitFor({ state: "visible", timeout: 15_000 });
   await page.waitForTimeout(250);
+  await warteAufEinblendAnimation(page);
 }
 
 /**

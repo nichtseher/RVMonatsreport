@@ -103,20 +103,26 @@ export default function ManageModal({
   return (
     <div
       ref={modalRef}
-      className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-3xl w-full border border-[var(--border-color)] p-6 md:p-8 relative shadow-lg animate-fade-in"
+      className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--border-color)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] animate-fade-in"
     >
       {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          ref={closeButtonRef}
-          type="button"
-          onClick={onClose}
-          aria-label="Zurück zu den Optionen"
-          className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95"
-        >
-          <ArrowLeft className="w-6 h-6" aria-hidden="true" />
-        </button>
-        <Settings className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
+      {/* flex-col sm:flex-row: dieselbe Massnahme wie in CarryoverModal --
+          bei "Extra gross" blieben der Ueberschrift neben der mitwachsenden
+          Zurueck-Taste und dem Zahnrad-Icon nur 58 px, und sie brach in eine
+          senkrechte Buchstabenspalte statt lesbar umzubrechen. */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-6">
+        <div className="flex items-center gap-3">
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            aria-label="Zurück zu den Optionen"
+            className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95"
+          >
+            <ArrowLeft className="w-6 h-6" aria-hidden="true" />
+          </button>
+          <Settings className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
+        </div>
         {/*
           min-w-0 und overflow-wrap: Ohne beides gab die Überschrift als
           Flex-Kind ihre Breite nicht unter den Inhalt preis (`min-width:
@@ -129,7 +135,7 @@ export default function ManageModal({
           tabIndex={-1}
           data-ansicht-titel=""
           id="manage-modal-title"
-          className="text-2xl md:text-3xl font-black min-w-0 [overflow-wrap:anywhere]"
+          className="text-xl md:text-2xl font-black flex-1 min-w-0 [overflow-wrap:anywhere]"
         >
           Formularfelder verwalten
         </h2>
@@ -184,7 +190,7 @@ export default function ManageModal({
                       */
                       <div
                         key={field.id}
-                        className="flex items-center justify-between gap-2 p-3.5 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-xl"
+                        className="flex items-center justify-between gap-2 p-3.5 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[var(--rv-radius-md)]"
                       >
                         <span className="font-bold text-sm leading-snug min-w-0 [overflow-wrap:anywhere]">
                           {field.label}
@@ -196,7 +202,7 @@ export default function ManageModal({
                           type="button"
                           onClick={() => onDeleteField(secKey, field.id, field.label)}
                           aria-label={`Kategorie "${field.label}" unwiderruflich löschen`}
-                          className="w-11 h-11 min-w-[44px] min-h-[44px] flex-shrink-0 rounded-xl flex items-center justify-center bg-[var(--danger-bg)] hover:brightness-110 text-[var(--danger)] cursor-pointer transition-all"
+                          className="w-11 h-11 min-w-[44px] min-h-[44px] flex-shrink-0 rounded-[var(--rv-radius-md)] flex items-center justify-center bg-[var(--danger-bg)] hover:brightness-110 text-[var(--danger)] cursor-pointer transition-all"
                         >
                           <Trash2 className="w-4 h-4" aria-hidden="true" />
                         </button>
@@ -218,7 +224,7 @@ export default function ManageModal({
           <button
             type="button"
             onClick={onFactoryReset}
-            className="w-full py-4 px-4 rounded-xl font-bold border-2 border-dashed border-[var(--danger)] text-[var(--danger)] hover:bg-[var(--danger-bg)] flex items-center justify-center gap-2 cursor-pointer transition-all text-sm"
+            className="w-full py-4 px-4 rounded-[var(--rv-radius-md)] font-bold border-2 border-dashed border-[var(--danger)] text-[var(--danger)] hover:bg-[var(--danger-bg)] flex items-center justify-center gap-2 cursor-pointer transition-all text-sm"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Formular auf Standard-Felder zurücksetzen</span>

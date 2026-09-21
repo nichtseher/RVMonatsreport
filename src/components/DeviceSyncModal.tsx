@@ -724,7 +724,7 @@ export default function DeviceSyncModal({
           <li
             key={step.label}
             aria-current={currentStep === idx + 1 ? "step" : undefined}
-            className={`rounded-2xl border px-3 py-2 text-center ${
+            className={`rounded-[var(--rv-radius-lg)] border px-3 py-2 text-center ${
               currentStep === idx + 1
                 ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--text-color)]"
                 : "border-[var(--border-color)] bg-[var(--bg-color)]"
@@ -744,7 +744,7 @@ export default function DeviceSyncModal({
           umgestellt werden: Ein QR-Code braucht eine weisse Ruhezone mit
           maximalem Kontrast zum schwarzen Muster, sonst erkennt ihn die Kamera
           des anderen Geraets nicht. Gilt auch in den Hochkontrast-Themes. */}
-      <div className="bg-white p-4 rounded-xl shadow-sm mb-4">
+      <div className="bg-white p-4 rounded-[var(--rv-radius-md)] shadow-[var(--rv-shadow-sm)] mb-4">
         <QRCodeSVG
           value={chunks[currentChunk]}
           size={230}
@@ -805,7 +805,7 @@ export default function DeviceSyncModal({
         <div className="mt-4 w-full max-w-[300px] space-y-3">
           {/* Passwortschutz nur für Nutzdaten -- Kopplungscodes enthalten keine. */}
           {sendPayloadRef.current && (
-            <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] p-3 space-y-2">
+            <div className="rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--bg-color)] p-3 space-y-2">
               <p className="text-[0.75rem] font-bold text-[var(--text-color)] leading-snug">
                 Der QR-Code bleibt auf dem Bildschirm – er verlässt das Gerät nicht.
                 Der <strong>kopierte Textcode</strong> dagegen ist ohne Passwort
@@ -820,7 +820,7 @@ export default function DeviceSyncModal({
                 value={sendePasswort}
                 onChange={(e) => setSendePasswort(e.target.value)}
                 placeholder="leer lassen = ohne Schutz"
-                className="w-full px-3 min-h-[44px] rounded-lg border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm focus:border-[var(--border-focus)] outline-none"
+                className="w-full px-3 min-h-[44px] rounded-[var(--rv-radius-sm)] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-sm focus:border-[var(--border-focus)] outline-none"
                 aria-describedby="sync-passwort-hinweis"
               />
               <p id="sync-passwort-hinweis" className="text-[0.75rem] text-[var(--text-muted)] leading-snug">
@@ -831,7 +831,7 @@ export default function DeviceSyncModal({
           )}
           <button
             onClick={copyTextCode}
-            className="w-full py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all flex justify-center items-center gap-2 cursor-pointer"
+            className="w-full py-3 px-4 rounded-[var(--rv-radius-md)] font-bold border border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all flex justify-center items-center gap-2 cursor-pointer"
           >
             <Copy className="w-5 h-5" aria-hidden="true" />
             {sendPayloadRef.current && sendePasswort
@@ -854,7 +854,7 @@ export default function DeviceSyncModal({
    * „fehlt", sondern „nicht auffindbar".
    */
   const renderEinfuegeBlock = () => (
-    <div className="w-full max-w-[300px] mb-4 p-3 rounded-xl border-2 border-[var(--accent)] bg-[var(--bg-color)]">
+    <div className="w-full max-w-[300px] mb-4 p-3 rounded-[var(--rv-radius-md)] border-2 border-[var(--accent)] bg-[var(--bg-color)]">
       <label htmlFor="paste-code-input" className="block text-xs font-black text-[var(--text-color)] mb-2">
         Ohne Kamera: Code einfügen
       </label>
@@ -882,7 +882,7 @@ export default function DeviceSyncModal({
         }}
         placeholder="Code hier einfügen (beginnt mit RVC1: oder RVC2:)..."
         rows={3}
-        className="w-full p-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-mono focus:border-[var(--border-focus)] outline-none resize-y"
+        className="w-full p-2.5 rounded-[var(--rv-radius-sm)] border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-mono focus:border-[var(--border-focus)] outline-none resize-y"
       />
 
       {brauchtPasswort && (
@@ -896,7 +896,7 @@ export default function DeviceSyncModal({
             value={empfangsPasswort}
             onChange={(e) => setEmpfangsPasswort(e.target.value)}
             placeholder="Passwort eingeben"
-            className="w-full px-3 min-h-[44px] rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-sm focus:border-[var(--border-focus)] outline-none"
+            className="w-full px-3 min-h-[44px] rounded-[var(--rv-radius-sm)] border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-sm focus:border-[var(--border-focus)] outline-none"
           />
         </div>
       )}
@@ -904,7 +904,7 @@ export default function DeviceSyncModal({
       <button
         onClick={() => void submitPastedCode()}
         disabled={!pasteValue.trim()}
-        className="mt-2 w-full py-2.5 px-4 min-h-[44px] rounded-lg font-bold bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex justify-center items-center gap-2 cursor-pointer text-sm"
+        className="mt-2 w-full py-2.5 px-4 min-h-[44px] rounded-[var(--rv-radius-sm)] font-bold bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex justify-center items-center gap-2 cursor-pointer text-sm"
       >
         <ClipboardPaste className="w-4 h-4" aria-hidden="true" />
         Code übernehmen
@@ -928,7 +928,7 @@ export default function DeviceSyncModal({
       <div
         id="reader"
         aria-hidden="true"
-        className="w-full max-w-[300px] overflow-hidden rounded-xl border-2 border-[var(--accent)] mb-4 bg-black"
+        className="w-full max-w-[300px] overflow-hidden rounded-[var(--rv-radius-md)] border-2 border-[var(--accent)] mb-4 bg-black"
       />
 
       {expectedTotal > 1 && (
@@ -974,7 +974,7 @@ export default function DeviceSyncModal({
         <Link2 className="w-6 h-6 animate-pulse" aria-hidden="true" />
         <Smartphone className="w-8 h-8" aria-hidden="true" />
       </div>
-      <div className="p-4 rounded-xl bg-[var(--success-bg)] border border-[var(--success-border)] text-sm text-[var(--success-text)] font-bold text-center">
+      <div className="p-4 rounded-[var(--rv-radius-md)] bg-[var(--success-bg)] border border-[var(--success-border)] text-sm text-[var(--success-text)] font-bold text-center">
         Live verbunden – beide Geräte gleichen sich automatisch ab.
         {lastSyncTime && (
           <span className="block mt-1 text-xs font-bold">Letzter Abgleich: {lastSyncTime} Uhr</span>
@@ -989,7 +989,7 @@ export default function DeviceSyncModal({
       </p>
       <button
         onClick={disconnectLive}
-        className="w-full py-3 px-4 rounded-xl font-bold border border-[var(--danger-border)] text-[var(--danger-text)] hover:brightness-110 transition-all flex justify-center items-center gap-2 cursor-pointer"
+        className="w-full py-3 px-4 rounded-[var(--rv-radius-md)] font-bold border border-[var(--danger-border)] text-[var(--danger-text)] hover:brightness-110 transition-all flex justify-center items-center gap-2 cursor-pointer"
       >
         <Unplug className="w-5 h-5" aria-hidden="true" />
         Verbindung trennen
@@ -1001,7 +1001,7 @@ export default function DeviceSyncModal({
 
   return (
     <div
-      className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-[var(--modal-bg)] backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="sync-modal-title"
@@ -1010,7 +1010,7 @@ export default function DeviceSyncModal({
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         ref={modalRef}
-        className="bg-[var(--card-bg)] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-[var(--border-color)] flex flex-col max-h-[90vh]"
+        className="bg-[var(--card-bg)] w-full max-w-md rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] overflow-hidden border border-[var(--border-color)] flex flex-col max-h-[90vh]"
       >
         {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
         <div className="p-3 border-b border-[var(--border-color)] flex items-center gap-2.5 bg-[var(--bg-color)]">
@@ -1022,7 +1022,7 @@ export default function DeviceSyncModal({
           >
             <ArrowLeft className="w-5 h-5" aria-hidden="true" />
           </button>
-          <h2 id="sync-modal-title" tabIndex={-1} data-ansicht-titel="" className="font-bold text-lg flex items-center gap-2 min-w-0">
+          <h2 id="sync-modal-title" tabIndex={-1} data-ansicht-titel="" className="font-black text-xl md:text-2xl flex items-center gap-2 flex-1 min-w-0">
             <ArrowRightLeft className="w-5 h-5 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
             <span className="truncate">Geräte-Synchronisation</span>
           </h2>
@@ -1041,7 +1041,7 @@ export default function DeviceSyncModal({
           <div role="status" aria-live="polite" aria-atomic="true">
             {status && (
               <div
-                className={`mb-6 p-4 rounded-xl text-sm flex items-start gap-3 ${
+                className={`mb-6 p-4 rounded-[var(--rv-radius-md)] text-sm flex items-start gap-3 ${
                   status.type === "success"
                     ? "bg-[var(--success-bg)] text-[var(--success-text)]"
                     : status.type === "error"
@@ -1065,7 +1065,7 @@ export default function DeviceSyncModal({
 
           {mode === "select" && !liveConnected && (
             <div className="space-y-4">
-              <div className="mb-6 p-4 rounded-xl bg-[var(--bg-color)] border border-[var(--border-color)] flex items-start gap-3">
+              <div className="mb-6 p-4 rounded-[var(--rv-radius-md)] bg-[var(--bg-color)] border border-[var(--border-color)] flex items-start gap-3">
                 <ShieldCheck className="w-6 h-6 text-[var(--accent)] flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <p className="text-sm text-[var(--text-muted)]">
                   <strong className="text-[var(--text-color)]">100 % serverlos &amp; DSGVO-konform:</strong>{" "}
@@ -1086,7 +1086,7 @@ export default function DeviceSyncModal({
 
               <button
                 onClick={startSend}
-                className="w-full p-4 rounded-xl border border-[var(--border-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all flex items-center gap-4 text-left group cursor-pointer"
+                className="w-full p-4 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all flex items-center gap-4 text-left group cursor-pointer"
               >
                 <div className="w-12 h-12 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] group-hover:scale-110 transition-transform">
                   <Monitor className="w-6 h-6" aria-hidden="true" />
@@ -1101,7 +1101,7 @@ export default function DeviceSyncModal({
 
               <button
                 onClick={startReceive}
-                className="w-full p-4 rounded-xl border border-[var(--border-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all flex items-center gap-4 text-left group cursor-pointer"
+                className="w-full p-4 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all flex items-center gap-4 text-left group cursor-pointer"
               >
                 <div className="w-12 h-12 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] group-hover:scale-110 transition-transform">
                   <Smartphone className="w-6 h-6" aria-hidden="true" />
@@ -1120,7 +1120,7 @@ export default function DeviceSyncModal({
 
               <button
                 onClick={startLiveHost}
-                className="w-full p-4 rounded-xl border border-[var(--border-color)] hover:border-[var(--cat-1)] hover:bg-[var(--cat-1-soft)] transition-all flex items-center gap-4 text-left group cursor-pointer"
+                className="w-full p-4 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] hover:border-[var(--cat-1)] hover:bg-[var(--cat-1-soft)] transition-all flex items-center gap-4 text-left group cursor-pointer"
               >
                 <div className="w-12 h-12 rounded-full bg-[var(--cat-1-soft)] flex items-center justify-center text-[var(--cat-1-text)] group-hover:scale-110 transition-transform">
                   <Radio className="w-6 h-6" aria-hidden="true" />
@@ -1135,7 +1135,7 @@ export default function DeviceSyncModal({
 
               <button
                 onClick={startLiveJoin}
-                className="w-full p-4 rounded-xl border border-[var(--border-color)] hover:border-[var(--cat-1)] hover:bg-[var(--cat-1-soft)] transition-all flex items-center gap-4 text-left group cursor-pointer"
+                className="w-full p-4 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] hover:border-[var(--cat-1)] hover:bg-[var(--cat-1-soft)] transition-all flex items-center gap-4 text-left group cursor-pointer"
               >
                 <div className="w-12 h-12 rounded-full bg-[var(--cat-1-soft)] flex items-center justify-center text-[var(--cat-1-text)] group-hover:scale-110 transition-transform">
                   <Link2 className="w-6 h-6" aria-hidden="true" />
@@ -1192,7 +1192,7 @@ export default function DeviceSyncModal({
 
               <button
                 onClick={() => applyImport("merge")}
-                className="w-full py-3.5 px-4 rounded-xl font-bold bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 transition-all flex justify-center items-center gap-2 cursor-pointer"
+                className="w-full py-3.5 px-4 rounded-[var(--rv-radius-md)] font-bold bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 transition-all flex justify-center items-center gap-2 cursor-pointer"
               >
                 <GitMerge className="w-5 h-5" aria-hidden="true" />
                 Zusammenführen (empfohlen)
@@ -1205,7 +1205,7 @@ export default function DeviceSyncModal({
 
               <button
                 onClick={ersetzenAnfragen}
-                className="w-full py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--bg-color)] transition-all flex justify-center items-center gap-2 cursor-pointer"
+                className="w-full py-3 px-4 rounded-[var(--rv-radius-md)] font-bold border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--bg-color)] transition-all flex justify-center items-center gap-2 cursor-pointer"
               >
                 <AlertTriangle className="w-5 h-5" aria-hidden="true" />
                 Alles ersetzen
@@ -1237,7 +1237,7 @@ export default function DeviceSyncModal({
                     <div className="space-y-3 mt-4">
                       <button
                         onClick={startScanAnswer}
-                        className="w-full py-3.5 px-4 rounded-xl font-bold bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 transition-all flex justify-center items-center gap-2 cursor-pointer"
+                        className="w-full py-3.5 px-4 rounded-[var(--rv-radius-md)] font-bold bg-[var(--primary)] text-[var(--primary-text)] hover:opacity-90 transition-all flex justify-center items-center gap-2 cursor-pointer"
                       >
                         <Camera className="w-5 h-5" aria-hidden="true" />
                         Antwort-Code empfangen (Schritt 2)
@@ -1271,7 +1271,7 @@ export default function DeviceSyncModal({
                       <div className="space-y-3 mt-4">
                         <button
                           onClick={regenerateAnswer}
-                          className="w-full py-3 px-4 rounded-xl font-bold border border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all flex justify-center items-center gap-2 cursor-pointer"
+                          className="w-full py-3 px-4 rounded-[var(--rv-radius-md)] font-bold border border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all flex justify-center items-center gap-2 cursor-pointer"
                         >
                           <RefreshCw className="w-5 h-5" aria-hidden="true" />
                           Neuen Antwort-Code erzeugen
