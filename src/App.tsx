@@ -61,6 +61,8 @@ import { subscribeLiveSync, getLiveSyncSnapshot } from "./utils/liveSync";
 import A11yModal from "./components/A11yModal";
 import QuickEntryPanel from "./components/QuickEntryPanel";
 import MonatsKarte from "./components/MonatsKarte";
+import FensterHinweis from "./components/FensterHinweis";
+import { abonniereFenster, istFensterAktiv } from "./utils/einFenster";
 import ConfirmDialog, { ConfirmRequest } from "./components/ConfirmDialog";
 import OnboardingModal from "./components/OnboardingModal";
 
@@ -597,6 +599,8 @@ export default function App() {
 
   // Live-Sync-Status (Verbindung lebt außerhalb dieses Fensters weiter)
   const liveSync = useSyncExternalStore(subscribeLiveSync, getLiveSyncSnapshot);
+  // Nur das zuletzt geöffnete Fenster arbeitet (0.9.67, siehe einFenster.ts).
+  const fensterAktiv = useSyncExternalStore(abonniereFenster, istFensterAktiv);
 
   // Barrierefreier Ersatz für window.confirm() (siehe ConfirmDialog.tsx)
   const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null);
@@ -1900,6 +1904,10 @@ export default function App() {
     `role="alert"` und die Ansage, weil ein blinder Nutzer sonst nur eine
     stille Seite vorfindet.
   */
+  if (!fensterAktiv) {
+    return <FensterHinweis />;
+  }
+
   if (ladeFehler) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-[var(--bg-color)] p-4">

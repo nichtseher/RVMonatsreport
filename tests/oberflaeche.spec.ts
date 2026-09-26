@@ -5018,3 +5018,73 @@ test.describe("Filterkacheln", () => {
     await expect(tasten.first()).toHaveAttribute("aria-pressed", "false");
   });
 });
+
+/*
+  Zwei offene Fenster derselben App (0.9.67).
+
+  Jedes Fenster schrieb seinen kompletten Stand. Gemessen am 2026-09-26:
+  Fenster B zählt, danach zählt Fenster A -- und B's Eintrag war weg. Jetzt
+  arbeitet nur das zuletzt geöffnete Fenster; das ältere schreibt nichts mehr
+  und bietet „Hier weiterarbeiten" an.
+*/
+test.describe("Zwei Fenster", () => {
+  test("ein älteres Fenster überschreibt keine Einträge des neueren", async ({ browser }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Datenhaltung hängt nicht am Geräteprofil");
+    const kontext = await browser.newContext({ baseURL: "http://localhost:3000", viewport: { width: 360, height: 780 } });
+    try {
+      await kontext.addInitScript(() => localStorage.setItem("aussendienst_pwa_onboarding_v1", "1"));
+      const werte = (p: Page) =>
+        p.evaluate(async () => {
+          const db = await new Promise<IDBDatabase>((res) => {
+            const r = indexedDB.open("keyval-store", 1);
+            r.onsuccess = () => res(r.result);
+          });
+          return new Promise<Record<string, unknown>>((res) => {
+            const q = db.transaction("keyval").objectStore("keyval").get("aussendienst_pwa_data");
+            q.onsuccess = () => res((q.result?.values as Record<string, unknown>) || {});
+          });
+        });
+      const a = await kontext.newPage();
+      await a.goto("/?tab=form");
+      await a.locator("#monatskarte-titel").waitFor({ timeout: 20_000 });
+      await a.waitForTimeout(800);
+      const b = await kontext.newPage();
+      await b.goto("/?tab=form");
+      await b.locator("#monatskarte-titel").waitFor({ timeout: 20_000 });
+      await b.waitForTimeout(800);
+
+      await b.getByRole("button", { name: /^Anzahl Vorführungen Schule/ }).first().click();
+      await b.waitForTimeout(1800);
+      expect((await werte(b)).vf_schule, "Fenster B hat nicht gespeichert").toBe(1);
+
+      // Das ältere Fenster weiß, dass es nicht mehr schreibt, und sagt es.
+      await a.bringToFront();
+      await expect(a.getByRole("heading", { name: /in einem anderen Fenster geöffnet/i })).toBeVisible({ timeout: 10_000 });
+      expect(
+        await a.getByRole("button", { name: /^Anzahl Vorführungen Arbeitsplatz/ }).count(),
+        "Das ältere Fenster bietet weiter das Formular an",
+      ).toBe(0);
+      // Der Hinweis ist ein eigener Zustand -- also dieselben Maßstäbe wie jede Ansicht.
+      const schwer = (await new AxeBuilder({ page: a }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze())
+        .violations.filter((v) => v.impact === "critical" || v.impact === "serious")
+        .map((v) => v.id);
+      expect(schwer, "Hinweis im älteren Fenster: schwere axe-Verstöße").toEqual([]);
+      expect(await findeZuKleineZiele(a), "Hinweis im älteren Fenster: Trefferfläche unterschritten").toEqual([]);
+      const { scrollBreite, sichtBreite } = await findeUeberlauf(a);
+      expect(scrollBreite, "Hinweis im älteren Fenster: waagerechter Überlauf").toBeLessThanOrEqual(sichtBreite);
+      // Wechsel in den Hintergrund: früher schrieb das Fenster dabei seinen Stand.
+      await b.bringToFront();
+      await a.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+      await a.waitForTimeout(600);
+      expect((await werte(b)).vf_schule, "Ein älteres Fenster hat den Eintrag aus B überschrieben").toBe(1);
+
+      // „Hier weiterarbeiten" übernimmt -- mit dem aktuellen Stand.
+      await a.getByRole("button", { name: "Hier weiterarbeiten" }).click();
+      await a.locator("#monatskarte-titel").waitFor({ timeout: 20_000 });
+      await expect(a.getByRole("button", { name: /^Anzahl Vorführungen Schule\/Bildung\. Aktueller Stand 1\./ }).first()).toBeVisible();
+      await expect(b.getByRole("heading", { name: /in einem anderen Fenster geöffnet/i })).toBeVisible({ timeout: 10_000 });
+    } finally {
+      await kontext.close();
+    }
+  });
+});

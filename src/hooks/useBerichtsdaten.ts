@@ -6,6 +6,7 @@ import { stempeln, stempelNachtragen } from "../utils/zeitstempel";
 import { baueArchivEintrag } from "../utils/archivEintrag";
 import { monthHasContent } from "../utils/monatInhalt";
 import { stableStringify } from "../utils/stableJson";
+import { darfSchreiben } from "../utils/einFenster";
 
 /**
  * Die Monatsdaten und ihre Speicherung -- der Kern der App.
@@ -328,6 +329,9 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
     setSaveStatus("saving");
     const t = setTimeout(() => {
       if (!reportData) return;
+      // Ein älteres Fenster schreibt nicht mehr (0.9.67, siehe einFenster.ts):
+      // Sein Stand ist veraltet und überschriebe die Einträge des neueren.
+      if (!darfSchreiben()) return;
       set(SCHLUESSEL_BERICHT, reportData)
         .then(() => {
           setSaveStatus("saved");
@@ -424,7 +428,9 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
   // --- Notfallspeicherung beim Wegwischen -------------------------------
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden" && reportData) {
+      // Auch hier nur das aktive Fenster: Genau beim Wechsel in den
+      // Hintergrund schrieb ein älteres Fenster sonst seinen alten Stand.
+      if (document.visibilityState === "hidden" && reportData && darfSchreiben()) {
         // Synchron in localStorage, damit iOS beim Wegwischen der App nichts
         // abschneidet. try/catch statt safeSetItem: Hier darf kein alert()
         // den Wechsel in den Hintergrund blockieren.

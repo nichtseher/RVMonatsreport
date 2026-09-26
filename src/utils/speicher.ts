@@ -1,4 +1,5 @@
 import { set } from "idb-keyval";
+import { darfSchreiben } from "./einFenster";
 
 /**
  * Die beiden Speicher-Helfer, die aus `App.tsx` herausgeloest wurden.
@@ -35,6 +36,10 @@ export const persistHistory = (
    */
   onSuccess?: () => void,
 ) => {
+  // Ein älteres Fenster schreibt das Archiv nicht mehr (0.9.67): Sein Stand
+  // ist veraltet und überschriebe, was das neuere Fenster gespeichert hat.
+  // Kein Fehlerfall -- dieses Fenster zeigt ohnehin nur noch den Hinweis.
+  if (!darfSchreiben()) return;
   set("aussendienst_pwa_history", data)
     .then(() => onSuccess?.())
     .catch((err) => onFailure(context, err));
