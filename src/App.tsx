@@ -2122,6 +2122,11 @@ export default function App() {
                   Monat
                 </label>
                 {/*
+                  Schriftgröße nach Breite (clamp mit 7vw): Eine Auswahlliste bricht
+                  nicht um. Mit festem text-4xl stand bei 360 px und „Groß" nur
+                  „September 2" da. Untergrenze und Obergrenze in rem, damit die
+                  Einstellung der App weiter mitwirkt.
+
                   Auswahlliste statt <input type="month"> (0.9.71): Das
                   Datumsfeld zeigt je nach Browser „September 2026" oder nur
                   „2026-09" (Firefox am Rechner, kopflose Browser) und nahm die
@@ -2136,7 +2141,7 @@ export default function App() {
                     id="meta-month-input"
                     value={reportData?.month}
                     onChange={(e) => handleMonthChange(e.target.value)}
-                    className="appearance-none max-w-full min-h-[48px] bg-transparent text-[var(--text-color)] text-3xl sm:text-4xl font-black border-0 border-b-2 border-dashed border-[var(--border-color)] hover:border-[var(--accent)] focus:border-solid focus:border-[var(--border-focus)] outline-none pl-0 pr-10 py-1 rounded-none cursor-pointer"
+                    className="appearance-none max-w-full min-h-[48px] bg-transparent text-[var(--text-color)] text-[clamp(1rem,7vw,2.25rem)] font-black border-0 border-b-2 border-dashed border-[var(--border-color)] hover:border-[var(--accent)] focus:border-solid focus:border-[var(--border-focus)] outline-none pl-0 pr-[36px] py-1 rounded-none cursor-pointer"
                     aria-required="true"
                   >
                     {monatsAuswahl.map((m) => (
@@ -2146,7 +2151,7 @@ export default function App() {
                     ))}
                   </select>
                   <ChevronDown
-                    className="w-7 h-7 text-[var(--text-muted)] absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none"
+                    className="w-[26px] h-[26px] text-[var(--text-muted)] absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none"
                     aria-hidden="true"
                   />
                 </div>

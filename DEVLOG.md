@@ -79,6 +79,11 @@ Schicht nachtragen" am Rechner (41 px). Alle drei behoben.
   eingestempelt" in `text-2xl` passte nicht in die doppelt gepolsterte
   Karte (rem-Polster wachsen mit der Schrift). Karte mit festem Innenabstand,
   Silbentrennung, Reiter brechen um.
+- Monatsauswahl nach der ersten vollen Prüfung nachgebessert: Bei 360 px und
+  „Groß" stand im Bildschirmfoto nur „September 2" -- eine Auswahlliste bricht
+  nicht um. Jetzt `clamp(1rem, 7vw, 2.25rem)`, Pfeil und Abstand in Pixeln;
+  gemessen passt „September 2026" bei 320–1280 px in allen drei Stufen.
+  Danach zweiter voller Lauf: 556 bestanden, 1 rot (QR-Kamera).
 - „Gelb auf Schwarz": Der inaktive Reiter der Zeit-Ansicht war gelb auf gelb
   (`--hover-bg`). Jetzt `--nav-active-*` wie die Navigation.
 - Barrierefreiheitsbaum (Playwright `ariaSnapshot`) für Kopf, Monatskarte,
