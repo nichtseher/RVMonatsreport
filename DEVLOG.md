@@ -10,6 +10,91 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-26/27 — v0.9.71: Entwurf „Warmes Grün" vollständig -- und ein drei Wochen alter Schriftfehler
+
+Auftrag: die fünf offenen Punkte aus dem Abgleich mit dem Entwurf, „prüfe
+sorgfältig", und ausdrücklich: „es muss alles weiterhin blind und
+barrierefrei bedienbar sein".
+
+### Umgesetzt
+
+- **Report-Kopf:** Markenzeile mit Speicherstand als Pille („Gesichert
+  21:53", gesprochen „Automatisch lokal gesichert 21:53"), darunter Monat
+  groß und Name. Beide bleiben ECHTE Felder mit sichtbarer Beschriftung,
+  derselben id und demselben Platz in der Tab-Folge; der Stift aus dem
+  Entwurf ist nur Zeichen, kein Klick vor dem Feld. **Der Monat ist jetzt
+  eine `<select>`** statt `<input type="month">`: Das Datumsfeld zeigte im
+  kopflosen Chromium (und in Firefox am Rechner) „2026-09" statt „September
+  2026". Die Liste reicht zwei Jahre zurück, drei Monate voraus, plus jeden
+  Archivmonat und den eingestellten. Der Test, der den Monat per `fill`
+  setzte, nutzt `selectOption`.
+- **Monatskarte:** Ziel und Balken, wenn Monatsziele eingeschaltet sind
+  (Summe der Ziele 1–3). Balken `aria-hidden`, gesprochen „23 Aktivitäten
+  von 30 als Monatsziel". Der Monat steht nicht mehr doppelt; die Karte
+  behält eine (sr-only) Überschrift für die Überschriften-Navigation.
+- **Filter als Chips:** ohne `aria-label` -- der sichtbare Text ist der Name
+  (2.5.3), Bereichsnummer und Ziel als sr-only, Zustand über `aria-pressed`.
+  Die klebende Leiste ist rund halb so hoch.
+- **Mehr:** Profilkarte (Initialen als Schmuck, Name, Version, Datenschutz)
+  und „Was gibt's Neues?" als eigene Zeile (id `menu-changelog` bleibt,
+  der Rückweg-Fokus hängt daran).
+- **Zeit:** Stempeluhr als große Karte in `--primary`/`--primary-text`;
+  laufende Zeit ohne Sekunden und ohne `aria-live`, gesprochen „Laufende
+  Zeit: 3 Stunden 48 Minuten" (sichtbar „3:48" läse ein Screenreader als
+  Uhrzeit). Neu `WochenUebersicht`: Balken `aria-hidden`, darunter eine
+  echte Liste („Montag: 8,2 Stunden, heute"). Schichtliste mit
+  Datumskachel, Dauer mit Komma. Reiter als Segmente mit `aria-pressed`
+  (vorher sagte kein Attribut, welcher Reiter aktiv ist). **Kein
+  Pause-Knopf** wie im Entwurf: Die App hat keine laufende Pause, die Pause
+  wird beim Ausstempeln eingetragen -- ein Knopf ohne Funktion wäre schlimmer
+  als keiner.
+
+### Der Fund: `font: inherit` außerhalb der Ebenen
+
+`src/index.css` hatte seit dem 2026-09-02 (39b3e7d) `button, input, select,
+textarea { font: inherit; }` ungeschichtet. Ungeschichtetes CSS schlägt jede
+`@layer`-Regel, also jede Tailwind-Utility: An KEINER Taste und KEINEM
+Eingabefeld wirkten `text-*`/`font-*`. Gemessen im Report: 82 von 89
+Bedienelementen änderten Größe oder Stärke, als die Zeile fiel (z. B. die
+Zählerzahl von 16 px normal auf die vorgesehenen 24 px schwarz). Tailwinds
+Preflight setzt dasselbe bereits in `base` -- die Zeile war doppelt und
+schädlich.
+
+Zwei Folgen, beide gemessen und abgefangen durch eine eigene Ebene
+`rv-mindestgroesse` NACH `utilities`:
+- Felder mit `text-xs`/`text-sm` (Schicht nachtragen, Ziele, Jahreskonto,
+  Suche) wären auf 12–14 px gefallen -- Safari zoomt dann beim Antippen.
+  Jetzt mindestens 16 px.
+- Tasten mit `text-xs` wären 12 px gewesen (angezeigt wurden sie bisher in
+  16 px). Jetzt mindestens 14 px.
+Der Scan über 18 Ansichten/Zustände bei 360 und 1280 px meldet danach
+nichts mehr. Er fand dabei drei Trefferflächen unter 44 px, die bisher nur die
+zu große geerbte Schrift über die Schwelle gehoben hatte oder die das Tor nie
+erreichte: Diktat-Taste (40 px), die vier Zielfelder (31 px), „Vergessene
+Schicht nachtragen" am Rechner (41 px). Alle drei behoben.
+
+### Weitere Messungen
+
+- Überlauf bei 320 px/„Extra groß" in der Zeit-Ansicht (378 px): „Nicht
+  eingestempelt" in `text-2xl` passte nicht in die doppelt gepolsterte
+  Karte (rem-Polster wachsen mit der Schrift). Karte mit festem Innenabstand,
+  Silbentrennung, Reiter brechen um.
+- „Gelb auf Schwarz": Der inaktive Reiter der Zeit-Ansicht war gelb auf gelb
+  (`--hover-bg`). Jetzt `--nav-active-*` wie die Navigation.
+- Barrierefreiheitsbaum (Playwright `ariaSnapshot`) für Kopf, Monatskarte,
+  Chips, Stempeluhr, Woche und Profilkarte ausgegeben und gelesen.
+
+**Nicht gemessen:** echte Screenreader (NVDA, VoiceOver), echtes iPhone,
+Silbentrennung (kopfloses Chromium ohne Wörterbuch). Und: Veröffentlicht ist
+das noch nicht -- der Push auf `main` wurde in dieser Umgebung von der
+Sicherheitsprüfung angehalten und braucht die Freigabe des Projektinhabers.
+
+### Prüfung
+
+`tsc` sauber, `npm run check` 212/212. `check:ui` lokal (Chromium, `handy` und `schreibtisch`): 556 bestanden, 1 rot -- der QR-Kamera-Test, der hier auch am Ausgangsstand scheitert. Ein erster Lauf hatte 12 Fehler, alle dieselbe Ursache (Diktat-Taste 40 px hinter Einstieg/Rückfragen); ein Lauf, in dessen Mitte ich eine Datei geändert hatte, wurde verworfen, nicht gewertet.
+
+---
+
 ## 2026-09-26 — v0.9.70: Ruhigerer Report-Anfang, flache Leiste im Querformat
 
 Auftrag: „mach alles" -- die vier offenen Design-Punkte nach 0.9.69.

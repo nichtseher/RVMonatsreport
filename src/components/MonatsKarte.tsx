@@ -20,6 +20,8 @@ interface MonatsKarteProps {
    * eigener Kasten mit Alarm; sie ist tatsächlich eine Warnung.
    */
   abgabeHinweis?: string | null;
+  /** Summe der Monatsziele 1–3, wenn Ziele eingeschaltet sind (0.9.71). */
+  ziel?: number | null;
 }
 
 /**
@@ -34,7 +36,7 @@ interface MonatsKarteProps {
  * Kein `aria-live`: Jede Änderung wird bereits über announceToAriaAndSpeech
  * angesagt. Eine zweite Ansage an dieser Stelle wäre eine Dopplung.
  */
-export default function MonatsKarte({ monat, aktivitaeten, felder, zeitstempel, abgabeHinweis }: MonatsKarteProps) {
+export default function MonatsKarte({ monat, aktivitaeten, felder, zeitstempel, abgabeHinweis, ziel }: MonatsKarteProps) {
   const letzte = findeLetzteAenderung(
     zeitstempel,
     felder.map((f) => f.id),
@@ -51,23 +53,35 @@ export default function MonatsKarte({ monat, aktivitaeten, felder, zeitstempel, 
       aria-labelledby="monatskarte-titel"
       className="mb-4 p-4 sm:p-5 rounded-[var(--rv-radius-xl)] border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[var(--rv-shadow-sm)]"
     >
-      {/* flex-wrap statt fester Zeile: Monat und Summe stehen nebeneinander,
-          solange sie passen, und untereinander bei „Extra groß" -- ohne dass
-          ein Geschwister flex-1 trägt, das den Umbruch verhindern würde. */}
+      {/*
+        Seit 0.9.71 steht der Monat groß im Kopf des Reports (Entwurf „Warmes
+        Grün"). Hier zweimal sichtbar wäre Ballast; für die Überschriften-
+        Navigation des Screenreaders bleibt die Karte aber benannt.
+      */}
+      <h2 id="monatskarte-titel" className="sr-only">
+        Überblick {formatMonthGerman(monat)}
+      </h2>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2
-          id="monatskarte-titel"
-          className="text-xl font-black text-[var(--text-color)] min-w-0 [overflow-wrap:anywhere]"
-        >
-          {formatMonthGerman(monat)}
-        </h2>
-        <p className="text-base text-[var(--text-muted)]">
-          <span className="text-2xl font-black text-[var(--text-color)] tabular-nums">
-            {aktivitaeten}
-          </span>{" "}
+        <p className="text-lg text-[var(--text-muted)]">
+          <span className="text-4xl font-black text-[var(--text-color)] tabular-nums">{aktivitaeten}</span>{" "}
           {aktivitaeten === 1 ? "Aktivität" : "Aktivitäten"}
+          {ziel ? <span className="sr-only">{` von ${ziel} als Monatsziel`}</span> : null}
         </p>
+        {ziel ? (
+          <p className="text-lg text-[var(--text-muted)]" aria-hidden="true">
+            Ziel <span className="font-black text-[var(--text-color)] tabular-nums">{ziel}</span>
+          </p>
+        ) : null}
       </div>
+      {ziel ? (
+        /* Rein sichtbar: Die Zahl davor sagt dasselbe, gesprochen „23 von 40". */
+        <div className="mt-3 h-2.5 rounded-full bg-[var(--hover-bg)] overflow-hidden" aria-hidden="true">
+          <div
+            className="h-full rounded-full bg-[var(--accent)] transition-all duration-500"
+            style={{ width: `${Math.min(100, (aktivitaeten / ziel) * 100)}%` }}
+          />
+        </div>
+      ) : null}
 
       <div className="mt-3 pt-3 border-t border-[var(--card-border)] flex items-center gap-3">
         {/* Ein Haken bei leerem Monat hiesse „erledigt" -- das Gegenteil. */}

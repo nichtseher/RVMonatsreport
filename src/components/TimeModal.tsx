@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import AnsichtsKopf from "./AnsichtsKopf";
 import ClockInWidget from "./ClockInWidget";
+import WochenUebersicht from "./WochenUebersicht";
 import { TimeLog, YearlyCarryover, ReportData, HistoryRecord } from "../types";
 
 interface TimeModalProps {
@@ -192,7 +193,7 @@ export default function TimeModal({
   return (
     <div
       ref={modalRef}
-      className="w-full bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] border border-[var(--card-border)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] flex flex-col gap-5 animate-fade-in"
+      className="w-full bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] border border-[var(--card-border)] p-4 sm:p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] flex flex-col gap-5 animate-fade-in"
     >
       <AnsichtsKopf
         id="time-modal-title"
@@ -203,17 +204,18 @@ export default function TimeModal({
       />
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-[var(--card-border)] select-none">
+        <div className="flex flex-wrap gap-1 p-1 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)] select-none">
           <button
             type="button"
             onClick={() => {
               setActiveTab("stempeln");
               announceToAriaAndSpeech("Stempeluhr und Schichten ausgewählt");
             }}
-            className={`flex-1 min-w-0 min-h-[44px] flex items-end justify-center text-center pb-3 text-sm font-black border-b-2 transition-all cursor-pointer ${
+            aria-pressed={activeTab === "stempeln"}
+            className={`flex-[1_1_8rem] min-w-0 min-h-[44px] px-3 py-2 flex items-center justify-center text-center text-sm font-bold rounded-[var(--rv-radius-md)] hyphens-auto break-words transition-all cursor-pointer focus-visible:ring-4 ${
               activeTab === "stempeln"
-                ? "border-[var(--accent)] text-[var(--text-color)]"
-                : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-color)]"
+                ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-text)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text-color)]"
             }`}
           >
             Stempeluhr &amp; Schichten
@@ -224,10 +226,11 @@ export default function TimeModal({
               setActiveTab("konto");
               announceToAriaAndSpeech("Jahreskonto und Abwesenheiten ausgewählt");
             }}
-            className={`flex-1 min-w-0 min-h-[44px] flex items-end justify-center text-center pb-3 text-sm font-black border-b-2 transition-all cursor-pointer ${
+            aria-pressed={activeTab === "konto"}
+            className={`flex-[1_1_8rem] min-w-0 min-h-[44px] px-3 py-2 flex items-center justify-center text-center text-sm font-bold rounded-[var(--rv-radius-md)] hyphens-auto break-words transition-all cursor-pointer focus-visible:ring-4 ${
               activeTab === "konto"
-                ? "border-[var(--accent)] text-[var(--text-color)]"
-                : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-color)]"
+                ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-text)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text-color)]"
             }`}
           >
             Jahreskonto ({activeYear})
@@ -236,6 +239,22 @@ export default function TimeModal({
 
         {activeTab === "stempeln" ? (
           <div className="space-y-4 flex flex-col flex-1">
+            {/* Real-time Stempeluhr Widget */}
+            <div className="flex-1">
+              <ClockInWidget
+                clockInTime={clockInTime}
+                onClockIn={onClockIn}
+                onClockOut={onClockOut}
+                timeLogs={timeLogs}
+                onDeleteLog={onDeleteLog}
+                announceToAriaAndSpeech={announceToAriaAndSpeech}
+                onExportExcel={onExportExcel}
+                selectedMonth={selectedMonth}
+                onAddManualLog={onAddManualLog}
+                nachDerUhr={<WochenUebersicht timeLogs={timeLogs} sollWoche={carryover.dailyTargetHours * 5} />}
+              />
+            </div>
+
             {/* Info Card / Carryover Integration */}
             <div className="p-4 rounded-[var(--rv-radius-md)] border border-[var(--card-border)] bg-[var(--info-bg)] flex flex-col gap-3">
               <div className="flex gap-3 text-[var(--text-color)]">
@@ -264,21 +283,6 @@ export default function TimeModal({
                 <Calendar className="w-4 h-4 flex-shrink-0 text-[var(--accent)]" aria-hidden="true" />
                 <span>Jahreskonto-Einstellungen bearbeiten</span>
               </button>
-            </div>
-
-            {/* Real-time Stempeluhr Widget */}
-            <div className="flex-1">
-              <ClockInWidget
-                clockInTime={clockInTime}
-                onClockIn={onClockIn}
-                onClockOut={onClockOut}
-                timeLogs={timeLogs}
-                onDeleteLog={onDeleteLog}
-                announceToAriaAndSpeech={announceToAriaAndSpeech}
-                onExportExcel={onExportExcel}
-                selectedMonth={selectedMonth}
-                onAddManualLog={onAddManualLog}
-              />
             </div>
           </div>
         ) : (

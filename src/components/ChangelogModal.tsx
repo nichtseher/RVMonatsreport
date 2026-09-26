@@ -26,6 +26,41 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       />
 
       <div className="space-y-6">
+        {/*
+          Ausgeschrieben, weil Bedienelemente an neuen Stellen stehen: Wer den
+          Monat bisher im Datumsfeld gewechselt hat, muss wissen, wo er jetzt ist.
+        */}
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.71: Das neue Erscheinungsbild ist vollständig</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
+            <li>
+              <strong>Report:</strong> Der Monat steht groß oben und wird über eine Auswahl gewechselt
+              („Monat", zwei Jahre zurück bis drei Monate voraus). Darunter Ihr Name. Die Filter der Bereiche sind
+              schmale Knöpfe („Vorführungen 18"). Sind Monatsziele eingeschaltet, zeigt die Monatskarte das Ziel mit
+              Fortschrittsbalken.
+            </li>
+            <li>
+              <strong>Zeit:</strong> Die Stempeluhr ist eine große Karte mit der laufenden Arbeitszeit und der Taste
+              zum Ein- oder Ausstempeln. Darunter „Diese Woche" mit den verbuchten Stunden je Tag – der
+              Screenreader liest sie als Liste, Tag für Tag.
+            </li>
+            <li>
+              <strong>Mehr:</strong> Oben eine Karte mit Ihrem Namen, der Version und der Datenschutz-Zusage;
+              „Was gibt's Neues?" ist eine eigene Zeile.
+            </li>
+            <li>
+              Fehlerbehebungen: Tasten und Eingabefelder zeigten ihre vorgesehene Schriftgröße nicht (alle erschienen
+              gleich groß). Eingabefelder haben jetzt mindestens 16 Pixel Schrift, damit das iPhone beim Antippen
+              nicht hineinzoomt. Die Felder der Monatsziele und die Diktat-Taste haben wieder die volle
+              Tippfläche.
+            </li>
+          </ul>
+        </div>
+
         {/* Eine Zeile: Anordnung und Ruhe, nichts Neues zu tun oder zu wissen. */}
         <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">

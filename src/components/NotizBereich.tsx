@@ -57,7 +57,7 @@ export default function NotizBereich({
               ? "Sprachaufnahme stoppen"
               : "Notiz per Sprache diktieren"
           }
-          className={`py-2 px-3.5 rounded-[var(--rv-radius-md)] border-2 transition-all cursor-pointer font-black text-sm flex items-center gap-1.5 focus-visible:ring-4 ${
+          className={`min-h-[44px] py-2 px-3.5 rounded-[var(--rv-radius-md)] border-2 transition-all cursor-pointer font-black text-sm flex items-center gap-1.5 focus-visible:ring-4 ${
             isDictating
               ? "bg-[var(--danger-solid)] border-[var(--danger-border)] text-[var(--danger-solid-text)] animate-pulse"
               : "bg-[var(--bg-color)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"

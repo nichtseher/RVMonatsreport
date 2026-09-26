@@ -3,9 +3,10 @@ import { AccessibilitySettings, AccessibilityTheme, SectionsConfig } from "../ty
 import {
   Type, Volume2, Sparkles, HelpCircle, Lock, Settings2, ChevronRight,
   LayoutGrid, Clock, Sliders, Smartphone, Bell, Monitor, Palette, CalendarDays, Package,
-  BarChart3, Accessibility,
+  BarChart3, Accessibility, ShieldCheck,
 } from "lucide-react";
 import AnsichtsKopf from "./AnsichtsKopf";
+import { APP_VERSION } from "../version";
 
 interface A11yModalProps {
   settings: AccessibilitySettings;
@@ -55,6 +56,8 @@ interface A11yModalProps {
    * nicht.
    */
   onOpenStats?: () => void;
+  /** Name aus dem Report -- für die Profilkarte oben (0.9.71). */
+  benutzerName?: string;
   /**
    * Ein-Hand-Modus (kompakte Zaehlerfelder + Aktionsleiste auf dem Handy).
    * Bis 0.9.65 nur ueber eine Schnell-Taste im Formularkopf erreichbar, ohne
@@ -193,6 +196,15 @@ function SectionCard({ title, children }: { title?: string; children: React.Reac
 
 /* ---------- Hauptkomponente ---------- */
 
+/** „Alex Winter" -> „AW"; ohne Name ein neutrales Zeichen. */
+function initialen(name?: string): string {
+  const teile = (name || "").trim().split(/\s+/).filter(Boolean);
+  if (!teile.length) return "RV";
+  const erst = teile[0][0] || "";
+  const letzt = teile.length > 1 ? teile[teile.length - 1][0] || "" : "";
+  return (erst + letzt).toUpperCase();
+}
+
 export default function A11yModal({
   settings,
   onChange,
@@ -217,6 +229,7 @@ export default function A11yModal({
   onSchichtenLoeschen,
   onAllesLoeschen,
   onOpenStats,
+  benutzerName,
   mobileComfortMode,
   onToggleMobileComfort,
 }: A11yModalProps) {
@@ -270,27 +283,52 @@ export default function A11yModal({
         titel="Optionen"
         symbol={Settings2}
         className=""
-        rechts={
-          onOpenChangelog && (
-            <button
-              type="button"
-              onClick={onOpenChangelog}
-              id="menu-changelog"
-              className="text-sm font-bold px-4 min-h-[44px] inline-flex items-center rounded-full bg-[var(--success-bg)] text-[var(--success-text)] border border-[var(--success-border)] hover:bg-[var(--bg-color)] transition-colors cursor-pointer flex-shrink-0"
-            >
-              Was gibt's Neues?
-            </button>
-          )
-        }
       />
 
-      <p className="flex items-start gap-2 px-1 text-sm text-[var(--text-muted)] leading-relaxed">
-        <Lock className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
-        <span>
-          DSGVO-konform: Alle Daten bleiben lokal auf dem Gerät. Der Geräte-Sync läuft
-          offline per QR-Code oder Text-Code – ohne Server und ohne Internet.
-        </span>
-      </p>
+      {/*
+        Profilkarte (0.9.71, Entwurf „Warmes Grün"): wem das Gerät gehört, welche
+        Version läuft, und die Datenschutz-Zusage -- vorher ein grauer Absatz.
+        Die Initialen sind Schmuck (aria-hidden); der Name steht als Text da.
+      */}
+      <section
+        aria-label="Ihr Gerät"
+        className="p-5 rounded-[var(--rv-radius-xl)] border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[var(--rv-shadow-sm)]"
+      >
+        <div className="flex flex-wrap items-center gap-4">
+          <span
+            className="w-16 h-16 flex-shrink-0 rounded-[var(--rv-radius-lg)] bg-[var(--primary)] text-[var(--primary-text)] text-2xl font-black flex items-center justify-center"
+            aria-hidden="true"
+          >
+            {initialen(benutzerName)}
+          </span>
+          <div className="min-w-0 flex-[1_1_10rem]">
+            <p className="text-xl font-black text-[var(--text-color)] [overflow-wrap:anywhere]">
+              {benutzerName && benutzerName.trim() ? benutzerName.trim() : "Noch kein Name eingetragen"}
+            </p>
+            <p className="text-sm text-[var(--text-muted)]">RV Mobil {APP_VERSION} · Beta</p>
+          </div>
+        </div>
+        <p className="mt-4 flex items-start gap-3 p-4 rounded-[var(--rv-radius-lg)] bg-[var(--success-bg)] text-[var(--success-text)] text-sm font-bold leading-relaxed">
+          <ShieldCheck className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <span className="min-w-0">
+            Alle Daten bleiben auf diesem Gerät – ohne Server. Der Geräte-Sync läuft
+            offline per QR-Code oder Text-Code.
+          </span>
+        </p>
+      </section>
+
+      {onOpenChangelog && (
+        <button
+          type="button"
+          onClick={onOpenChangelog}
+          id="menu-changelog"
+          className="w-full min-h-[56px] px-5 py-3 flex items-center gap-3 rounded-[var(--rv-radius-xl)] bg-[var(--cat-3-soft)] text-[var(--cat-3-text)] border border-[var(--card-border)] text-base font-bold text-left cursor-pointer hover:brightness-95 transition-all focus-visible:ring-4"
+        >
+          <Sparkles className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+          <span className="flex-1 min-w-0">Was gibt's Neues?</span>
+          <ChevronRight className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+        </button>
+      )}
 
       <SectionCard title="Einstellungen">
         <MenuRow

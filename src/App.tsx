@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef, useCallback, useSyncExternalStore }
 import { useSwipeable } from "react-swipeable";
 import {
   Calendar,
+  ChevronDown,
   CalendarPlus,
   Check,
+  Pencil,
   Copy,
   Target,
   Share2,
@@ -640,7 +642,7 @@ export default function App() {
   // Real-time live search query for products/categories
   const [searchQuery, setSearchQuery] = useState("");
 
-  const monthInputRef = useRef<HTMLInputElement>(null);
+  const monthInputRef = useRef<HTMLSelectElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const notesInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -783,7 +785,6 @@ export default function App() {
   const focusAndAnnounce = useCallback((target: "month" | "name" | "notes") => {
     if (target === "month") {
       monthInputRef.current?.focus();
-      monthInputRef.current?.select();
       announceToAriaAndSpeech("Berichtsmonat-Feld aktiviert.", true);
     } else if (target === "name") {
       nameInputRef.current?.focus();
@@ -947,6 +948,21 @@ export default function App() {
   };
 
   const deadlineInfo = getDeadlineAlert();
+
+  /* Monate für die Auswahl im Kopf (0.9.71) -- siehe Kommentar dort. */
+  const monatsAuswahl = (() => {
+    const heute = new Date();
+    const menge = new Set<string>();
+    for (let i = -24; i <= 3; i++) {
+      const d = new Date(heute.getFullYear(), heute.getMonth() + i, 1);
+      menge.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    Object.keys(history || {}).forEach((m) => {
+      if (/^\d{4}-\d{2}$/.test(m)) menge.add(m);
+    });
+    if (reportData?.month) menge.add(reportData.month);
+    return [...menge].sort();
+  })();
 
   // --- SCHNELL-ERFASSUNG: EIN TIPP = +1 ---
   const handleQuickIncrement = useCallback((field: FieldConfig) => {
@@ -1953,8 +1969,6 @@ export default function App() {
   const isDesktop =
     accessibility.desktopLayout === undefined ? viewportIsWide : accessibility.desktopLayout;
   const shouldUseCompactFields = isCompactView && !(mobileComfortMode && !isDesktop);
-  /* Dichte statt Verstecken: siehe Begruendung an der Stammdaten-Karte unten. */
-  const stammdatenKompakt = !!(reportData?.name && String(reportData.name).trim().length > 0);
 
   return (
     <>
@@ -2036,149 +2050,140 @@ export default function App() {
 
       {activeTab === "form" && (
         <div className={`animate-fade-in ${isDesktop ? 'lg:pb-8' : 'pb-24'}`}>
-          {/* HEADER SECTION (Accessible, modern responsive layout, removed duplicate buttons for clean tidiness) */}
-          <header
-            className="p-4 sm:p-5 mb-3 sm:mb-4 rounded-[var(--rv-radius-xl)] border bg-[var(--card-bg)] border-[var(--card-border)] flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-5 shadow-[var(--rv-shadow-sm)]"
-          >
-        <div className="space-y-1.5 flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Markenzeichen (0.9.66): rein schmückend, deshalb AUSSERHALB der
-                Überschrift -- in ihr stünde „RV" im Textinhalt, auch wenn der
-                Screenreader es wegen aria-hidden übergeht. */}
-            <span
-              className="w-9 h-9 rounded-[var(--rv-radius-md)] bg-[var(--primary)] text-[var(--primary-text)] text-sm font-black flex items-center justify-center flex-shrink-0"
-              aria-hidden="true"
-            >
-              RV
-            </span>
-            {/*
-              „RV Report" statt „RV Mobil" (0.9.43): Die Überschrift benennt
-              seit 0.9.41 die Ansicht, denn der Fokus landet nach jedem Wechsel
-              auf ihr. Wer in der Navigation „RV Report" drückt, hörte hier bis
-              dahin den Namen der APP -- als einzige der zwölf Ansichten. Der
-              Produktname steht weiterhin in der Seitenleiste am Rechner, im
-              Einstieg, im Fusszeilen-Hinweis und im Namen des Fensters.
-            */}
-            <h1 tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black text-[var(--text-color)]">
-              RV Report
-            </h1>
-          </div>
+          {/*
+            KOPF DES REPORTS (0.9.71, Entwurf „Warmes Grün"): Markenzeile mit
+            Speicherstand, darunter der Monat groß und der Name.
 
-          {/* Offline Auto-Save live status feedback */}
-          {/* flex-wrap, weil das Live-Abzeichen dazukommen KANN: ohne Umbruch
-              sprengte die Zeile bei "Extra groß" und breiter Schrift das
-              Fenster (gemessen 2026-09-09: 385 px in 360, 384 px in 320 --
-              ohne Abzeichen jeweils genau die Fensterbreite). Kein Geschwister
-              traegt hier flex-1, deshalb greift der Umbruch auch wirklich. */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm text-[var(--text-muted)] pt-1">
-            {saveStatus === "saving" ? (
-              <>
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--warning-border)] animate-pulse"></span>
-                <span>Speichert lokal...</span>
-              </>
-            ) : saveStatus === "error" ? (
-              <>
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--danger-solid)]"></span>
-                <span className="text-[var(--danger-text)]">Speichern fehlgeschlagen!</span>
-              </>
-            ) : (
-              <>
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]"></span>
-                <span>Automatisch lokal gesichert ({lastSavedTime})</span>
-              </>
-            )}
-            {liveSync.connected && (
-              <button
-                type="button"
-                onClick={() => setActiveTab("sync")}
-                aria-label={`Live verbunden. Die Live-Verbindung mit dem anderen Gerät ist aktiv.${liveSync.lastSyncTime ? ` Letzter Abgleich um ${liveSync.lastSyncTime} Uhr.` : ""} Antippen zum Verwalten.`}
-                className="ml-2 flex min-h-[44px] items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-3 py-1 text-[var(--success-text)] cursor-pointer hover:brightness-110 transition-colors"
+            Monat und Name sind weiterhin ECHTE Eingabefelder mit sichtbarer
+            Beschriftung, derselben id und demselben Platz in der Tab-Folge --
+            nur ohne Kasten. Im Entwurf stand ein Stift neben dem Namen, der ein
+            Bearbeiten-Feld öffnet; das hätte die Felder hinter einen Klick
+            gelegt (für Screenreader und Sprachsteuerung ein Umweg, den es
+            vorher nicht gab). Der Stift bleibt als Zeichen „hier kann man
+            schreiben", das Feld selbst ist sofort erreichbar.
+
+            Die gestrichelte Unterkante ist die Umrandung, an der man das Feld
+            als Eingabe erkennt (WCAG 1.4.11): --border-color ist gegen den
+            Hintergrund auf 3:1 abgestimmt.
+          */}
+          <header className="mb-4 px-1 pt-1">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              {/* Markenzeichen: rein schmückend, deshalb außerhalb der Überschrift. */}
+              <span
+                className="w-10 h-10 rounded-[var(--rv-radius-md)] bg-[var(--primary)] text-[var(--primary-text)] text-sm font-black flex items-center justify-center flex-shrink-0"
+                aria-hidden="true"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" aria-hidden="true"></span>
-                <span>Live verbunden</span>
-              </button>
-            )}
-            {/* Das Abzeichen stand bis 0.9.65 neben der Überschrift. Mit dem
-                Markenzeichen davor passte die Zeile auf dem Handy nicht mehr
-                und brach als eigene Zeile um -- hier teilt es sich die Zeile
-                mit dem Speicherstand, zu dem es inhaltlich gehört. */}
-            <span className="rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[0.75rem] font-bold text-[var(--success-text)]">
-              DSGVO & barrierefrei
-            </span>
-          </div>
-        </div>
+                RV
+              </span>
+              <h1 tabIndex={-1} data-ansicht-titel="" className="text-lg md:text-xl font-black text-[var(--text-color)]">
+                RV Report
+              </h1>
+              {/* flex-wrap ohne flex-1-Geschwister: Bei „Extra groß" rutscht die
+                  Pille in eine eigene Zeile, statt die Seite zu verbreitern. */}
+              <div className="ml-auto flex flex-wrap items-center gap-2">
+                {saveStatus === "saving" ? (
+                  <span className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] text-sm font-bold">
+                    <span className="w-2 h-2 rounded-full bg-[var(--warning-border)]" aria-hidden="true"></span>
+                    Speichert lokal…
+                  </span>
+                ) : saveStatus === "error" ? (
+                  <span className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-full bg-[var(--danger-bg)] text-[var(--danger-text)] text-sm font-bold">
+                    <AlertTriangle className="w-4 h-4" aria-hidden="true" />
+                    Speichern fehlgeschlagen!
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-full bg-[var(--success-bg)] text-[var(--success-text)] text-sm font-bold">
+                    <Check className="w-4 h-4" aria-hidden="true" />
+                    <span className="sr-only">Automatisch lokal </span>
+                    Gesichert {lastSavedTime}
+                  </span>
+                )}
+                {liveSync.connected && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("sync")}
+                    aria-label={`Live verbunden. Die Live-Verbindung mit dem anderen Gerät ist aktiv.${liveSync.lastSyncTime ? ` Letzter Abgleich um ${liveSync.lastSyncTime} Uhr.` : ""} Antippen zum Verwalten.`}
+                    className="flex min-h-[44px] items-center gap-1.5 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-3 text-sm font-bold text-[var(--success-text)] cursor-pointer hover:brightness-110 transition-colors focus-visible:ring-4"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-[var(--accent)]" aria-hidden="true"></span>
+                    <span>Live verbunden</span>
+                  </button>
+                )}
+              </div>
+            </div>
 
-        {/* Stammdaten: auf dem Handy nebeneinander statt gestapelt -- das
-            spart rund 100px Hoehe, ohne etwas zu verstecken. Die Hinweise
-            "DSGVO-sicher lokal" und der Archiv-Link entfielen bewusst: beides
-            steht bereits im Kopf-Abzeichen bzw. in der Navigation.
+            <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3" role="group" aria-label="Berichtsmetadaten">
+              <div className="min-w-0 max-w-full">
+                <label
+                  htmlFor="meta-month-input"
+                  className="text-sm text-[var(--text-muted)] flex items-center gap-1.5"
+                >
+                  <Calendar className="w-4 h-4 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
+                  Monat
+                </label>
+                {/*
+                  Auswahlliste statt <input type="month"> (0.9.71): Das
+                  Datumsfeld zeigt je nach Browser „September 2026" oder nur
+                  „2026-09" (Firefox am Rechner, kopflose Browser) und nahm die
+                  große Schrift nicht an. Eine <select> liest jeder Screenreader
+                  als „Monat, Auswahl, September 2026", auf dem iPhone öffnet
+                  sie das Drehrad. Angeboten werden zwei Jahre zurück, drei
+                  Monate voraus, jeder Monat im Archiv und der eingestellte.
+                */}
+                <div className="relative inline-block max-w-full">
+                  <select
+                    ref={monthInputRef}
+                    id="meta-month-input"
+                    value={reportData?.month}
+                    onChange={(e) => handleMonthChange(e.target.value)}
+                    className="appearance-none max-w-full min-h-[48px] bg-transparent text-[var(--text-color)] text-3xl sm:text-4xl font-black border-0 border-b-2 border-dashed border-[var(--border-color)] hover:border-[var(--accent)] focus:border-solid focus:border-[var(--border-focus)] outline-none pl-0 pr-10 py-1 rounded-none cursor-pointer"
+                    aria-required="true"
+                  >
+                    {monatsAuswahl.map((m) => (
+                      <option key={m} value={m}>
+                        {formatMonthGerman(m)}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="w-7 h-7 text-[var(--text-muted)] absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none"
+                    aria-hidden="true"
+                  />
+                </div>
+              </div>
 
-            Dichte statt Verstecken (0.9.65): Sobald einmal ein Name gespeichert
-            wurde, braucht die Karte nicht mehr die volle Aufmerksamkeit eines
-            Ersteinstiegs -- sie entfaellt hier aber nur die Kastenoptik
-            (gestrichelter Rahmen, Flaeche, Polsterung), niemals ein Element.
-            Label, Icon und beide <input>-Felder bleiben WORTGLEICH bestehen,
-            mit derselben id, demselben Tabindex, demselben Wert -- ein
-            Screenreader-Nutzer erreicht sie im ersten Tab-Durchlauf, in
-            beiden Zustaenden, ohne vorher etwas zu aktivieren. Das ist die
-            Bedingung, an der ein Verstecken-Muster hier abgelehnt wuerde. */}
-        {/* flex-wrap mit rem-Grundbreite (0.9.66): Die Felder stehen
-            nebeneinander, solange 2 x 8 rem hineinpassen -- bei „Extra groß"
-            also untereinander. Seit die Eingaben 16 px Schrift haben (vorher
-            12 px, darunter zoomt Safari auf dem iPhone bei jedem Antippen ins
-            Feld), braucht ein halbes Handy dafür sonst zu wenig Platz. */}
-        <div className={`flex flex-row flex-wrap items-stretch gap-2 w-full md:w-auto md:max-w-md ${
-          stammdatenKompakt
-            ? ""
-            : "sm:gap-3 bg-[var(--bg-color)] p-2.5 sm:p-3 rounded-[var(--rv-radius-lg)] border border-[var(--card-border)]"
-        }`} role="group" aria-label="Berichtsmetadaten">
-          {/* Month input */}
-          <div className="flex-1 basis-[8rem] min-w-0 space-y-1">
-            <label
-              htmlFor="meta-month-input"
-              className="text-[0.75rem] font-bold text-[var(--text-muted)] flex items-center gap-1"
-            >
-              <Calendar className="w-3 h-3 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
-              <span className="truncate">Monat:</span>
-            </label>
-            <input
-              ref={monthInputRef}
-              id="meta-month-input"
-              type="month"
-              value={reportData?.month}
-              onChange={(e) => handleMonthChange(e.target.value)}
-              className="w-full px-3 py-2.5 min-h-[48px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-md)] text-base font-bold focus:border-[var(--border-focus)] outline-none"
-              aria-required="true"
-            />
-          </div>
-
-          {/* Name input */}
-          <div className="flex-1 basis-[8rem] min-w-0 space-y-1">
-            <label
-              htmlFor="meta-name-input"
-              className="text-[0.75rem] font-bold text-[var(--text-muted)] flex items-center gap-1"
-            >
-              <User className="w-3 h-3 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
-              <span className="truncate">Mitarbeiter/in:</span>
-            </label>
-            <input
-              ref={nameInputRef}
-              id="meta-name-input"
-              type="text"
-              placeholder="Name..."
-              value={
-                typeof reportData?.name === "string"
-                  ? reportData?.name
-                  : String(reportData?.name || "")
-              }
-              onChange={(e) => handleMetaChange("name", e.target.value)}
-              className="w-full px-3 py-2.5 min-h-[48px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-md)] text-base font-bold focus:border-[var(--border-focus)] outline-none"
-              autoComplete="name"
-              aria-required="true"
-            />
-          </div>
-        </div>
-      </header>
+              <div className="min-w-0 flex-[1_1_12rem] max-w-md">
+                <label
+                  htmlFor="meta-name-input"
+                  className="text-sm text-[var(--text-muted)] flex items-center gap-1.5"
+                >
+                  <User className="w-4 h-4 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
+                  Mitarbeiter/in
+                </label>
+                <div className="relative">
+                  <input
+                    ref={nameInputRef}
+                    id="meta-name-input"
+                    type="text"
+                    placeholder="Name eintragen"
+                    value={
+                      typeof reportData?.name === "string"
+                        ? reportData?.name
+                        : String(reportData?.name || "")
+                    }
+                    onChange={(e) => handleMetaChange("name", e.target.value)}
+                    className="w-full min-h-[48px] bg-transparent text-[var(--text-color)] text-xl font-bold border-0 border-b-2 border-dashed border-[var(--border-color)] hover:border-[var(--accent)] focus:border-solid focus:border-[var(--border-focus)] outline-none pl-0 pr-9 py-1 rounded-none placeholder:text-[var(--text-muted)] placeholder:font-normal"
+                    autoComplete="name"
+                    aria-required="true"
+                  />
+                  <Pencil
+                    className="w-5 h-5 text-[var(--accent)] absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none"
+                    aria-hidden="true"
+                  />
+                </div>
+              </div>
+            </div>
+          </header>
 
       {/* Rückgängig-Angebot nach dem Monatsabschluss.
           role="status" statt "alert": Es ist eine Bestätigung, keine Störung --
@@ -2220,6 +2225,7 @@ export default function App() {
         aktivitaeten={s1Total + s2Total + s3Total}
         felder={[...appFields.s1, ...appFields.s2, ...appFields.s3, ...appFields.s4]}
         zeitstempel={reportData.valuesUpdatedAt}
+        ziel={goalsConfig.enabled ? goalsConfig.s1 + goalsConfig.s2 + goalsConfig.s3 : null}
         abgabeHinweis={
           deadlineInfo.sichtbar && !deadlineInfo.isUrgent
             ? "Abgabe: Bitte senden Sie den Report bis zum 8. des Folgemonats als Excel-Datei an die Vertriebsleitung (VL)."
@@ -2447,256 +2453,70 @@ export default function App() {
         )}
       </div>
 
-      {/* LIVE BENTO DASHBOARD CARDS (Modern, interactive, responsive, screen-reader optimized metrics dashboard of current totals) */}
-      <div className="sticky top-2 z-30 bg-[var(--bg-color)]/95 backdrop-blur-md py-2 -mx-2 px-2 rounded-[var(--rv-radius-lg)] mb-4 shadow-[var(--rv-shadow-md)] border border-[var(--card-border)]">
+      {/*
+        Filter als Chips (0.9.71, Entwurf „Warmes Grün"): vier schlanke
+        Umschalter statt vier Kacheln. Die Leiste klebt beim Scrollen oben --
+        als Kacheln nahm sie auf dem Handy rund 150 px dauerhaft weg, als
+        Chips etwa die Hälfte.
+
+        Kein aria-label mehr: Der sichtbare Text („Vorführungen 18") IST der
+        Name (WCAG 2.5.3, Sprachsteuerung). Was nur gesprochen gebraucht wird
+        -- Bereichsnummer, Ziel, Zweck -- steht als sr-only daneben. Der
+        Zustand kommt über aria-pressed.
+      */}
+      <div className="sticky top-2 z-30 bg-[var(--bg-color)]/95 backdrop-blur-md py-2 -mx-2 px-2 rounded-[var(--rv-radius-lg)] mb-4">
         <div
-          className="grid grid-cols-2 sm:grid-cols-4 gap-2.5"
+          className="flex flex-wrap gap-2"
           aria-label="Aktueller Monatsfortschritt Live-Anzeige"
           role="region"
         >
-        {/* Card 1: Vorführungen */}
-        <button
-          type="button"
-          /* Umschalter, also aria-pressed (0.9.66): Ob der Filter aktiv
-             ist, zeigten bis dahin nur Rahmen und Fläche -- ein Screenreader
-             sagte bei jedem Zustand dasselbe. */
-          aria-pressed={activeSectionTab === "s1"}
-          onClick={() => {
-            triggerHaptic(15);
-            setActiveSectionTab(activeSectionTab === "s1" ? "all" : "s1");
-            announceToAriaAndSpeech(
-              activeSectionTab === "s1"
-                ? "Filter auf alle Bereiche zurückgesetzt"
-                : "Filter gewechselt auf Bereich 1: Vorführungen",
-            );
-          }}
-          className={`p-3 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] flex flex-col justify-between shadow-[var(--rv-shadow-sm)] hover:shadow-[var(--rv-shadow-md)] hover:border-[var(--cat-1)] transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
-            activeSectionTab === "s1"
-              ? "border-2 border-[var(--cat-1)] bg-[var(--cat-1-soft)]"
-              : "border-[var(--card-border)]"
-          }`}
-          aria-label={
-            goalsConfig.enabled
-              ? `Bereich 1: Vorführungen. Aktuelle Summe: ${s1Total} von Monatsziel ${goalsConfig.s1}. Klick, um auf diesen Bereich zu filtern.`
-              : `Bereich 1: Vorführungen. Aktuelle Summe: ${s1Total}. Klick, um auf diesen Bereich zu filtern.`
-          }
-        >
-          <div className="flex items-center gap-2 w-full">
-            <div
-              className="w-8 h-8 rounded-[var(--rv-radius-md)] bg-[var(--cat-1-soft)] text-[var(--cat-1-text)] border border-[var(--cat-1)] flex items-center justify-center flex-shrink-0"
-              aria-hidden="true"
-            >
-              <Eye className="w-4 h-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="block text-[0.75rem] font-bold text-[var(--text-muted)] leading-tight">
-                Vorführungen
-              </span>
-              <span className="text-lg font-black text-[var(--text-color)] leading-none">
-                {s1Total}
-                {goalsConfig.enabled && (
-                  <span className="text-[0.75rem] font-normal text-[var(--text-muted)] ml-0.5">
-                    /{goalsConfig.s1}
-                  </span>
-                )}
-              </span>
-            </div>
-          </div>
-          {goalsConfig.enabled && (
-            <div
-              className="w-full bg-[var(--border-color)] h-1.5 rounded-full mt-2.5 overflow-hidden"
-              aria-hidden="true"
-            >
-              <div
-                className="bg-[var(--cat-1)] h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${Math.min(100, (s1Total / (goalsConfig.s1 || 1)) * 100)}%`,
+          {[
+            { id: "s1" as const, name: "Vorführungen", bereich: "Bereich 1: Vorführungen", wert: s1Total, ziel: goalsConfig.s1, einheit: "", farbe: "var(--cat-1)" },
+            { id: "s2" as const, name: "Schulungen", bereich: "Bereich 2: Schulungen & Support", wert: s2Total, ziel: goalsConfig.s2, einheit: "", farbe: "var(--cat-2)" },
+            { id: "s3" as const, name: "Spezial", bereich: "Bereich 3: Spezialprodukte", wert: s3Total, ziel: goalsConfig.s3, einheit: "", farbe: "var(--cat-3)" },
+            { id: "s4" as const, name: "Büro", bereich: "Bereich 4: Arbeitszeit", wert: s4Hours, ziel: goalsConfig.s4, einheit: " h", farbe: "var(--cat-4)" },
+          ].map((chip) => {
+            const aktiv = activeSectionTab === chip.id;
+            return (
+              <button
+                key={chip.id}
+                type="button"
+                aria-pressed={aktiv}
+                onClick={() => {
+                  triggerHaptic(15);
+                  setActiveSectionTab(aktiv ? "all" : chip.id);
+                  announceToAriaAndSpeech(
+                    aktiv ? "Filter auf alle Bereiche zurückgesetzt" : `Filter gewechselt auf ${chip.bereich}`,
+                  );
                 }}
-              />
-            </div>
-          )}
-        </button>
-
-        {/* Card 2: Schulungen */}
-        <button
-          type="button"
-          aria-pressed={activeSectionTab === "s2"}
-          onClick={() => {
-            triggerHaptic(15);
-            setActiveSectionTab(activeSectionTab === "s2" ? "all" : "s2");
-            announceToAriaAndSpeech(
-              activeSectionTab === "s2"
-                ? "Filter auf alle Bereiche zurückgesetzt"
-                : "Filter gewechselt auf Bereich 2: Schulungen & Support",
+                className={`inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full border text-sm transition-all cursor-pointer active:scale-95 focus-visible:ring-4 ${
+                  aktiv
+                    ? "bg-[var(--text-color)] text-[var(--card-bg)] border-[var(--text-color)]"
+                    : "bg-[var(--card-bg)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--hover-bg)]"
+                }`}
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  style={{ background: chip.farbe }}
+                  aria-hidden="true"
+                />
+                <span className="font-bold">{chip.name}</span>
+                <span className="font-black tabular-nums">
+                  {chip.wert}
+                  {chip.einheit}
+                  {goalsConfig.enabled && (
+                    <>
+                      <span className="sr-only"> von Monatsziel </span>
+                      <span className="font-normal opacity-80" aria-hidden="true">/</span>
+                      <span className="font-normal opacity-80">{chip.ziel}{chip.einheit}</span>
+                    </>
+                  )}
+                </span>
+                <span className="sr-only">. Filter für {chip.bereich}</span>
+              </button>
             );
-          }}
-          className={`p-3 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] flex flex-col justify-between shadow-[var(--rv-shadow-sm)] hover:shadow-[var(--rv-shadow-md)] hover:border-[var(--cat-2)] transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
-            activeSectionTab === "s2"
-              ? "border-2 border-[var(--cat-2)] bg-[var(--cat-2-soft)]"
-              : "border-[var(--card-border)]"
-          }`}
-          aria-label={
-            goalsConfig.enabled
-              ? `Bereich 2: Schulungen und Support. Aktuelle Summe: ${s2Total} von Monatsziel ${goalsConfig.s2}. Klick, um auf diesen Bereich zu filtern.`
-              : `Bereich 2: Schulungen und Support. Aktuelle Summe: ${s2Total}. Klick, um auf diesen Bereich zu filtern.`
-          }
-        >
-          <div className="flex items-center gap-2 w-full">
-            <div
-              className="w-8 h-8 rounded-[var(--rv-radius-md)] bg-[var(--cat-2-soft)] text-[var(--cat-2-text)] border border-[var(--cat-2)] flex items-center justify-center flex-shrink-0"
-              aria-hidden="true"
-            >
-              <GraduationCap className="w-4 h-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="block text-[0.75rem] font-bold text-[var(--text-muted)] leading-tight">
-                Schulungen
-              </span>
-              <span className="text-lg font-black text-[var(--text-color)] leading-none">
-                {s2Total}
-                {goalsConfig.enabled && (
-                  <span className="text-[0.75rem] font-normal text-[var(--text-muted)] ml-0.5">
-                    /{goalsConfig.s2}
-                  </span>
-                )}
-              </span>
-            </div>
-          </div>
-          {goalsConfig.enabled && (
-            <div
-              className="w-full bg-[var(--border-color)] h-1.5 rounded-full mt-2.5 overflow-hidden"
-              aria-hidden="true"
-            >
-              <div
-                className="bg-[var(--cat-2)] h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${Math.min(100, (s2Total / (goalsConfig.s2 || 1)) * 100)}%`,
-                }}
-              />
-            </div>
-          )}
-        </button>
-
-        {/* Card 3: Spezialprodukte */}
-        <button
-          type="button"
-          aria-pressed={activeSectionTab === "s3"}
-          onClick={() => {
-            triggerHaptic(15);
-            setActiveSectionTab(activeSectionTab === "s3" ? "all" : "s3");
-            announceToAriaAndSpeech(
-              activeSectionTab === "s3"
-                ? "Filter auf alle Bereiche zurückgesetzt"
-                : "Filter gewechselt auf Bereich 3: Spezialprodukte",
-            );
-          }}
-          className={`p-3 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] flex flex-col justify-between shadow-[var(--rv-shadow-sm)] hover:shadow-[var(--rv-shadow-md)] hover:border-[var(--cat-3)] transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
-            activeSectionTab === "s3"
-              ? "border-2 border-[var(--cat-3)] bg-[var(--cat-3-soft)]"
-              : "border-[var(--card-border)]"
-          }`}
-          aria-label={
-            goalsConfig.enabled
-              ? `Spezial. Bereich 3: Spezialprodukte. Aktuelle Summe: ${s3Total} von Monatsziel ${goalsConfig.s3}. Klick, um auf diesen Bereich zu filtern.`
-              : `Spezial. Bereich 3: Spezialprodukte. Aktuelle Summe: ${s3Total}. Klick, um auf diesen Bereich zu filtern.`
-          }
-        >
-          <div className="flex items-center gap-2 w-full">
-            <div
-              className="w-8 h-8 rounded-[var(--rv-radius-md)] bg-[var(--cat-3-soft)] text-[var(--cat-3-text)] border border-[var(--cat-3)] flex items-center justify-center flex-shrink-0"
-              aria-hidden="true"
-            >
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="block text-[0.75rem] font-bold text-[var(--text-muted)] leading-tight">
-                Spezial
-              </span>
-              <span className="text-lg font-black text-[var(--text-color)] leading-none">
-                {s3Total}
-                {goalsConfig.enabled && (
-                  <span className="text-[0.75rem] font-normal text-[var(--text-muted)] ml-0.5">
-                    /{goalsConfig.s3}
-                  </span>
-                )}
-              </span>
-            </div>
-          </div>
-          {goalsConfig.enabled && (
-            <div
-              className="w-full bg-[var(--border-color)] h-1.5 rounded-full mt-2.5 overflow-hidden"
-              aria-hidden="true"
-            >
-              <div
-                className="bg-[var(--cat-3)] h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${Math.min(100, (s3Total / (goalsConfig.s3 || 1)) * 100)}%`,
-                }}
-              />
-            </div>
-          )}
-        </button>
-
-        {/* Card 4: Büro & Arbeitszeit */}
-        <button
-          type="button"
-          aria-pressed={activeSectionTab === "s4"}
-          onClick={() => {
-            triggerHaptic(15);
-            setActiveSectionTab(activeSectionTab === "s4" ? "all" : "s4");
-            announceToAriaAndSpeech(
-              activeSectionTab === "s4"
-                ? "Filter auf alle Bereiche zurückgesetzt"
-                : "Filter gewechselt auf Bereich 4: Arbeitszeit",
-            );
-          }}
-          className={`p-3 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] flex flex-col justify-between shadow-[var(--rv-shadow-sm)] hover:shadow-[var(--rv-shadow-md)] hover:border-[var(--cat-4)] transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
-            activeSectionTab === "s4"
-              ? "border-2 border-[var(--cat-4)] bg-[var(--cat-4-soft)]"
-              : "border-[var(--card-border)]"
-          }`}
-          aria-label={
-            goalsConfig.enabled
-              ? `Bürozeit ${s4Hours} h. Bereich 4: Arbeitszeit. Aktuelle Summe: ${s4Hours} Stunden von Monatsziel ${goalsConfig.s4} Stunden. Klick, um auf diesen Bereich zu filtern.`
-              : `Bürozeit ${s4Hours} h. Bereich 4: Arbeitszeit. Aktuelle Summe: ${s4Hours} Stunden. Klick, um auf diesen Bereich zu filtern.`
-          }
-        >
-          <div className="flex items-center gap-2 w-full">
-            <div
-              className="w-8 h-8 rounded-[var(--rv-radius-md)] bg-[var(--cat-4-soft)] text-[var(--cat-4-text)] border border-[var(--cat-4)] flex items-center justify-center flex-shrink-0"
-              aria-hidden="true"
-            >
-              <Clock className="w-4 h-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="block text-[0.75rem] font-bold text-[var(--text-muted)] leading-tight">
-                Bürozeit
-              </span>
-              <span className="text-lg font-black text-[var(--text-color)] leading-none">
-                {s4Hours}h
-                {goalsConfig.enabled && (
-                  <span className="text-[0.75rem] font-normal text-[var(--text-muted)] ml-0.5">
-                    /{goalsConfig.s4}
-                  </span>
-                )}
-              </span>
-            </div>
-          </div>
-          {goalsConfig.enabled && (
-            <div
-              className="w-full bg-[var(--border-color)] h-1.5 rounded-full mt-2.5 overflow-hidden"
-              aria-hidden="true"
-            >
-              <div
-                className="bg-[var(--cat-4)] h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${Math.min(100, (s4Hours / (goalsConfig.s4 || 1)) * 100)}%`,
-                }}
-              />
-            </div>
-          )}
-        </button>
-      </div>
+          })}
+        </div>
       </div>
 
       {/*
@@ -2896,7 +2716,7 @@ export default function App() {
                     const val = Math.max(1, parseInt(e.target.value) || 0);
                     updateGoalsConfig({ ...goalsConfig, s1: val });
                   }}
-                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-[var(--rv-radius-sm)] outline-none focus:border-[var(--border-focus)]"
+                  className="w-full min-h-[44px] px-3 py-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-base font-bold rounded-[var(--rv-radius-md)] outline-none focus:border-[var(--border-focus)]"
                   disabled={!goalsConfig.enabled}
                 />
               </div>
@@ -2914,7 +2734,7 @@ export default function App() {
                     const val = Math.max(1, parseInt(e.target.value) || 0);
                     updateGoalsConfig({ ...goalsConfig, s2: val });
                   }}
-                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-[var(--rv-radius-sm)] outline-none focus:border-[var(--border-focus)]"
+                  className="w-full min-h-[44px] px-3 py-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-base font-bold rounded-[var(--rv-radius-md)] outline-none focus:border-[var(--border-focus)]"
                   disabled={!goalsConfig.enabled}
                 />
               </div>
@@ -2932,7 +2752,7 @@ export default function App() {
                     const val = Math.max(1, parseInt(e.target.value) || 0);
                     updateGoalsConfig({ ...goalsConfig, s3: val });
                   }}
-                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-[var(--rv-radius-sm)] outline-none focus:border-[var(--border-focus)]"
+                  className="w-full min-h-[44px] px-3 py-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-base font-bold rounded-[var(--rv-radius-md)] outline-none focus:border-[var(--border-focus)]"
                   disabled={!goalsConfig.enabled}
                 />
               </div>
@@ -2950,7 +2770,7 @@ export default function App() {
                     const val = Math.max(1, parseInt(e.target.value) || 0);
                     updateGoalsConfig({ ...goalsConfig, s4: val });
                   }}
-                  className="w-full px-2 py-1 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded-[var(--rv-radius-sm)] outline-none focus:border-[var(--border-focus)]"
+                  className="w-full min-h-[44px] px-3 py-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-base font-bold rounded-[var(--rv-radius-md)] outline-none focus:border-[var(--border-focus)]"
                   disabled={!goalsConfig.enabled}
                 />
               </div>
@@ -3366,6 +3186,7 @@ export default function App() {
             onSchichtenLoeschen={handleSchichtenLoeschen}
             onAllesLoeschen={handleAllesLoeschen}
             onOpenStats={() => setActiveTab("stats")}
+            benutzerName={typeof reportData?.name === "string" ? reportData.name : ""}
             mobileComfortMode={mobileComfortMode}
             onToggleMobileComfort={() => {
               setMobileComfortMode((prev) => !prev);

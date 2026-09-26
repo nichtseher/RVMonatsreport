@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Clock,
   Play,
-  Square,
+  LogOut,
   Trash2,
   Check,
   FileSpreadsheet,
@@ -22,6 +22,8 @@ interface ClockInWidgetProps {
   onExportExcel?: () => void;
   selectedMonth?: string;
   onAddManualLog?: (newLog: TimeLog) => void;
+  /** Steht direkt unter der Stempeluhr-Karte (0.9.71: die Wochenübersicht). */
+  nachDerUhr?: React.ReactNode;
 }
 
 export default React.memo(function ClockInWidget({
@@ -33,6 +35,7 @@ export default React.memo(function ClockInWidget({
   announceToAriaAndSpeech,
   onExportExcel,
   selectedMonth,
+  nachDerUhr,
   onAddManualLog,
 }: ClockInWidgetProps) {
   // Barrierefreier Bestätigungsdialog (Ersatz für window.confirm)
@@ -88,6 +91,8 @@ export default React.memo(function ClockInWidget({
     }
     return `${selMonth}-01`;
   };
+
+  const MONATE_KURZ = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
   // Time formatting helpers
   const formatTimeHM = (date: Date) => {
@@ -322,344 +327,357 @@ export default React.memo(function ClockInWidget({
     setTypedManualFieldHours("");
   };
 
-  return (
-    <div className="p-4 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] border-[var(--card-border)] shadow-[var(--rv-shadow-sm)] space-y-4">
-      {/* Title */}
-      {/* flex-wrap plus min-w-0: Diese Zeile ist nur breit, WAEHREND eine
-          Schicht laeuft -- dann steht das Abzeichen "Aufnahme laeuft" neben der
-          Ueberschrift. Genau deshalb hat sie bis 0.9.23 keine Pruefung gesehen.
-          Gemessen bei 360 px und "Extra gross": 415 px Inhalt, ohne diese Zeile
-          exakt 360. Elfter Fall der Klasse "min-width: auto an Flex-Elementen". */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--card-border)] pb-2.5">
-        <h3 className="text-xs font-black text-[var(--text-color)] flex items-center gap-2 min-w-0">
-          <Clock className="w-4 h-4 text-[var(--accent)] flex-shrink-0" />
-          <span className="min-w-0 [overflow-wrap:anywhere]">⏱️ Echtzeit-Stempeluhr</span>
-        </h3>
-        {clockInTime && (
-          <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--danger-bg)] text-[var(--danger-text)] border border-[var(--danger-border)] text-[0.75rem] font-black flex-shrink-0">
-            {/* Nur der Punkt pulsiert, nicht die Schrift. Mit `animate-pulse`
-                am ganzen Abzeichen sinkt die Deckkraft des TEXTES mit --
-                gemessen 2,82:1 gegen die geforderten 4,5:1 (WCAG 1.4.3).
-                Dasselbe Muster wie beim Abzeichen "Live verbunden". */}
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--danger)] animate-pulse" aria-hidden="true" />
-            Aufnahme läuft
-          </span>
-        )}
-      </div>
+  // „03:47:12" -> „3:47" für die Stempeluhr-Karte.
+  const laufzeit = (() => {
+    const [h = "0", m = "00"] = (elapsed || "00:00:00").split(":");
+    return `${parseInt(h, 10)}:${m}`;
+  })();
+  const laufzeitGesprochen = (() => {
+    const [h = "0", m = "00"] = (elapsed || "00:00:00").split(":");
+    const std = parseInt(h, 10);
+    const min = parseInt(m, 10);
+    return `Laufende Zeit: ${std} ${std === 1 ? "Stunde" : "Stunden"} ${min} ${min === 1 ? "Minute" : "Minuten"}`;
+  })();
 
-      {/* Clocking controls */}
-      {!clockInTime ? (
-        // Clock-in View
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-1.5">
-          <div className="space-y-1 text-center sm:text-left">
-            <span className="block text-xs font-bold text-[var(--text-color)]">
-              Aktuell nicht eingestempelt
-            </span>
-            <span className="block text-[0.75rem] text-[var(--text-muted)] leading-relaxed">
+  return (
+    <div className="space-y-4">
+      {/*
+        STEMPELUHR-KARTE (0.9.71, Entwurf „Warmes Grün"): eine große Karte statt
+        Überschrift, Abzeichen und Zeile. Oben der Zustand in Worten, darunter
+        die laufende Zeit, unten die eine Handlung, die jetzt dran ist.
+
+        Die laufende Zeit ist Text ohne aria-live: Wer mit dem Screenreader
+        dorthin navigiert, hört den Stand; jede Minute ungefragt vorgelesen
+        würde er die Arbeit am Formular unterbrechen. Sekunden stehen nicht
+        mehr da -- sie tickten sichtbar und sagten nichts, was man braucht.
+        Die Farben sind --primary / --primary-text, also in jedem der vier
+        Schemata das geprüfte Paar der Haupttaste.
+      */}
+      <section
+        aria-labelledby="stempeluhr-titel"
+        className="min-w-0 p-[18px] sm:p-6 rounded-[var(--rv-radius-xl)] bg-[var(--primary)] text-[var(--primary-text)] shadow-[var(--rv-shadow-lg)] break-words hyphens-auto"
+      >
+        <h3 id="stempeluhr-titel" className="text-base font-bold flex items-center gap-2 min-w-0">
+          {clockInTime ? (
+            <>
+              <span className="w-2.5 h-2.5 rounded-full bg-[var(--primary-text)] flex-shrink-0" aria-hidden="true" />
+              <span className="min-w-0 [overflow-wrap:anywhere]">
+                Eingestempelt seit{" "}
+                {new Date(clockInTime).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr
+              </span>
+            </>
+          ) : (
+            <>
+              <Clock className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+              <span>Stempeluhr</span>
+            </>
+          )}
+        </h3>
+
+        {clockInTime ? (
+          <>
+            <p className="mt-3 flex flex-wrap items-baseline gap-x-2">
+              <span className="text-5xl font-black tabular-nums leading-none" aria-hidden="true">{laufzeit}</span>
+              <span className="text-xl font-bold" aria-hidden="true">Std.</span>
+              {/* „3:48" läse ein Screenreader als Uhrzeit. */}
+              <span className="sr-only">{laufzeitGesprochen}</span>
+            </p>
+            <p className="mt-2 text-sm leading-relaxed">
+              Laufende Arbeitszeit · seit {new Date(clockInTime).toLocaleDateString("de-DE")}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="mt-2 text-xl sm:text-2xl font-black [overflow-wrap:anywhere]">Nicht eingestempelt</p>
+            <p className="mt-1 text-sm leading-relaxed">
               Starten Sie Ihre Schicht. Die App läuft im Hintergrund weiter
               (auch wenn Sie den Browser schließen).
-            </span>
-          </div>
+            </p>
+          </>
+        )}
+
+        {!clockInTime ? (
           <button
             type="button"
             onClick={handleStartClockIn}
-            className="w-full sm:w-auto py-3 px-6 font-black bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] rounded-[var(--rv-radius-md)] cursor-pointer text-sm transition-all focus-visible:ring-4 flex items-center justify-center gap-2 shadow-[var(--rv-shadow-md)] active:scale-95"
+            className="mt-5 w-full min-h-[56px] px-4 py-2 rounded-[var(--rv-radius-lg)] bg-[var(--card-bg)] text-[var(--text-color)] text-base font-black cursor-pointer transition-all focus-visible:ring-4 flex items-center justify-center gap-2 shadow-[var(--rv-shadow-md)] active:scale-95"
           >
-            <Play className="w-4 h-4 fill-current" />
-            <span>Jetzt Einstempeln (Kommen)</span>
+            <Play className="w-5 h-5 fill-current flex-shrink-0" aria-hidden="true" />
+            <span className="min-w-0">Jetzt Einstempeln (Kommen)</span>
           </button>
-        </div>
-      ) : (
-        // Clock-out View
-        <div className="space-y-3.5">
-          {!isFormOpen ? (
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-3 rounded-[var(--rv-radius-md)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-              <div className="text-center md:text-left space-y-1">
-                <span className="text-[0.75rem] font-black text-[var(--text-muted)]">
-                  Laufende Arbeitszeit
-                </span>
-                <div className="text-3xl font-black font-mono text-[var(--text-color)]">
-                  {elapsed || "00:00:00"}
-                </div>
-                <span className="block text-[0.75rem] text-[var(--text-muted)] font-bold">
-                  Eingestempelt seit{" "}
-                  {new Date(clockInTime).toLocaleTimeString("de-DE", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}{" "}
-                  Uhr am {new Date(clockInTime).toLocaleDateString("de-DE")}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleOpenClockOutForm}
-                className="w-full md:w-auto py-3.5 px-6 font-black bg-[var(--danger-solid)] hover:brightness-110 text-[var(--danger-solid-text)] rounded-[var(--rv-radius-md)] cursor-pointer text-sm transition-all focus-visible:ring-4 flex items-center justify-center gap-2 shadow-[var(--rv-shadow-md)] active:scale-95"
+        ) : !isFormOpen ? (
+          <button
+            type="button"
+            onClick={handleOpenClockOutForm}
+            className="mt-5 w-full min-h-[56px] px-4 py-2 rounded-[var(--rv-radius-lg)] bg-[var(--card-bg)] text-[var(--text-color)] text-base font-black cursor-pointer transition-all focus-visible:ring-4 flex items-center justify-center gap-2 shadow-[var(--rv-shadow-md)] active:scale-95"
+          >
+            <LogOut className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+            <span className="min-w-0">Ausstempeln (Gehen)</span>
+          </button>
+        ) : null}
+      </section>
+
+      {clockInTime && isFormOpen && (
+        // Clock-out Booking Form (Accessible inline design)
+        <form
+          onSubmit={handleSaveShift}
+          className="p-4 rounded-[var(--rv-radius-md)] border border-[var(--card-border)] bg-[var(--bg-color)] space-y-4 animate-slide-up"
+        >
+          <h4 className="text-xs font-black text-[var(--accent)]">
+            Arbeitszeit verbuchen
+          </h4>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Break input */}
+            <div className="space-y-1">
+              <label
+                htmlFor="break-input"
+                className="text-xs font-bold text-[var(--text-muted)] block"
               >
-                <Square className="w-3.5 h-3.5 fill-current" />
-                <span>Ausstempeln (Gehen)</span>
-              </button>
-            </div>
-          ) : (
-            // Clock-out Booking Form (Accessible inline design)
-            <form
-              onSubmit={handleSaveShift}
-              className="p-4 rounded-[var(--rv-radius-md)] border border-[var(--card-border)] bg-[var(--bg-color)] space-y-4 animate-slide-up"
-            >
-              <h4 className="text-xs font-black text-[var(--accent)]">
-                Arbeitszeit verbuchen
-              </h4>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Break input */}
-                <div className="space-y-1">
-                  <label
-                    htmlFor="break-input"
-                    className="text-xs font-bold text-[var(--text-muted)] block"
-                  >
-                    Pause abziehen (Minuten):
-                  </label>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setBreakMinutes((prev) => Math.max(0, prev - 15))
-                      }
-                      className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] active:scale-90"
-                      aria-label="-15: Pause um 15 Minuten verringern"
-                    >
-                      -15
-                    </button>
-                    <input
-                      id="break-input"
-                      type="number"
-                      min="0"
-                      max="240"
-                      step="5"
-                      value={breakMinutes}
-                      onChange={(e) =>
-                        setBreakMinutes(
-                          Math.max(0, parseInt(e.target.value) || 0),
-                        )
-                      }
-                      className="flex-1 min-w-[64px] min-h-[44px] p-1.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded text-center outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setBreakMinutes((prev) => Math.min(240, prev + 15))
-                      }
-                      className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] active:scale-90"
-                      aria-label="+15: Pause um 15 Minuten erhöhen"
-                    >
-                      +15
-                    </button>
-                  </div>
-                  <span className="text-[0.75rem] text-[var(--text-muted)] block font-normal">
-                    (Vorgeschrieben: 30 Min ab 6h, 45 Min ab 9h)
-                  </span>
-                </div>
-
-                {/* Split ratio selector (ACCESSIBLE Presets) */}
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-[var(--text-muted)] block">
-                    Aufteilung der Stunden:
-                  </label>
-                  <div
-                    className="grid grid-cols-2 gap-1"
-                    role="radiogroup"
-                    aria-label="Arbeitszeit Aufteilung"
-                  >
-                    {[
-                      { id: "half", label: "50% / 50%" },
-                      { id: "office", label: "100% Büro" },
-                      { id: "field", label: "100% Außen" },
-                      { id: "custom", label: "Eigene %" },
-                    ].map((p) => {
-                      const isActive = preset === p.id;
-                      return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          role="radio"
-                          aria-checked={isActive}
-                          onClick={() => {
-                            setPreset(p.id as any);
-                            if (p.id === "office") setOfficeRatio(1.0);
-                            if (p.id === "field") setOfficeRatio(0.0);
-                            if (p.id === "half") setOfficeRatio(0.5);
-                          }}
-                          className={`p-1.5 min-h-[44px] inline-flex items-center justify-center rounded border text-[0.75rem] font-black cursor-pointer transition-all ${
-                            isActive
-                              ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-text)]"
-                              : "bg-[var(--card-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
-                          }`}
-                        >
-                          {p.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Custom ratio slider if selected */}
-              {preset === "custom" && (
-                <div className="p-3 rounded-[var(--rv-radius-sm)] border border-[var(--card-border)] bg-[var(--card-bg)] space-y-2 animate-slide-up">
-                  <label
-                    htmlFor="custom-ratio-slider"
-                    className="text-[0.75rem] font-black text-[var(--text-muted)] flex justify-between"
-                  >
-                    <span>
-                      Aufteilung: {customRatio}% Büro / {100 - customRatio}%
-                      Außendienst
-                    </span>
-                  </label>
-                  <input
-                    id="custom-ratio-slider"
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={customRatio}
-                    aria-valuetext={`${customRatio} Prozent Büro, ${100 - customRatio} Prozent Außendienst`}
-                    onChange={(e) => setCustomRatio(parseInt(e.target.value))}
-                    /* `rv-slider` statt `h-1.5 appearance-none`: Nachgemessen am
-                   2026-09-01 hatte dieser Regler eine Trefferfläche von
-                   168 × 6 px -- weit unter den 24 px aus WCAG 2.5.8 -- und
-                   `appearance: none` ohne eigenen Griff, womit Chrome gar
-                   keinen zeichnet. Genau diese Kombination beschreibt der
-                   Kommentar zu `.rv-slider` in index.css als behoben; die
-                   Klasse war aber nur im A11y-Fenster gesetzt, nicht hier. */
-                className="rv-slider w-full accent-[var(--accent)]"
-                  />
-                </div>
-              )}
-
-              {/* Direct manual hours entry */}
-              <div className="p-3 rounded-[var(--rv-radius-md)] border border-[var(--card-border)] bg-[var(--card-bg)] space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[0.75rem] font-black text-[var(--text-color)] flex items-center gap-1">
-                    Büro vs. Außendienst h
-                  </span>
-                  {(typedOfficeHours !== "" || typedFieldHours !== "") && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTypedOfficeHours("");
-                        setTypedFieldHours("");
-                      }}
-                      className="text-[0.75rem] text-[var(--danger)] hover:underline font-black cursor-pointer"
-                    >
-                      Zurücksetzen auf Automatik
-                    </button>
-                  )}
-                </div>
-                <p className="text-[0.75rem] text-[var(--text-muted)] font-normal leading-relaxed">
-                  Tragen Sie die Stunden bei Bedarf direkt manuell ein (mit 2
-                  Nachkommastellen):
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="typed-office-hours"
-                      className="text-[0.75rem] font-bold text-[var(--text-muted)] block"
-                    >
-                      Stunden Büro (h):
-                    </label>
-                    <input
-                      id="typed-office-hours"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder={calculatedOfficeHrs.toFixed(2)}
-                      value={typedOfficeHours}
-                      onChange={(e) => setTypedOfficeHours(e.target.value)}
-                      className="w-full min-w-0 min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="typed-field-hours"
-                      className="text-[0.75rem] font-bold text-[var(--text-muted)] block"
-                    >
-                      Stunden Außendienst (h):
-                    </label>
-                    <input
-                      id="typed-field-hours"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder={calculatedFieldHrs.toFixed(2)}
-                      value={typedFieldHours}
-                      onChange={(e) => setTypedFieldHours(e.target.value)}
-                      className="w-full min-w-0 min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
-                    />
-                  </div>
-                </div>
-                {/* min-w-0 + flex-wrap: Die Beschriftung ist ein langes
-                    deutsches Wortband und gibt ihre Breite sonst nicht unter
-                    ihren Inhalt preis. Auf dem CI-Laeufer, der weder "Segoe
-                    UI" noch dessen Mono-Pendant hat, sprengte diese Zeile bei
-                    "Extra gross" das 360-px-Fenster (368 px gemessen) -- hier
-                    unsichtbar, weil die Schriften vorhanden sind. */}
-                <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex flex-wrap justify-between gap-x-2 bg-[var(--bg-color)] p-2 rounded-[var(--rv-radius-sm)]">
-                  <span className="min-w-0 [overflow-wrap:anywhere]">Gesamtstunden dieser Schicht:</span>
-                  <span className="font-mono text-[var(--total-text)] flex-shrink-0">
-                    {(typedOfficeHours !== "" || typedFieldHours !== ""
-                      ? (parseFloat(typedOfficeHours) || 0) +
-                        (parseFloat(typedFieldHours) || 0)
-                      : calculatedOfficeHrs + calculatedFieldHrs
-                    ).toFixed(2)}
-                    h
-                  </span>
-                </div>
-              </div>
-
-              {/* Quick shift commentary/notes */}
-              <div className="space-y-1">
-                <label
-                  htmlFor="shift-notes"
-                  className="text-xs font-bold text-[var(--text-muted)] block"
-                >
-                  Kurzkommentar / besuchte Schule / Ort (optional):
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  <input
-                    id="shift-notes"
-                    type="text"
-                    placeholder="z.B. Schulung an blindenschule Hannover, wewalk vorführung..."
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    className="flex-1 min-w-[64px] min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
-                  />
-                </div>
-              </div>
-
-              {/* Form buttons */}
-              <div className="pt-2 flex gap-2">
+                Pause abziehen (Minuten):
+              </label>
+              <div className="flex flex-wrap items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setIsFormOpen(false)}
-                  className="flex-1 min-w-0 min-h-[44px] py-2 px-3 border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-bold rounded-[var(--rv-radius-sm)] cursor-pointer hover:bg-[var(--bg-color)] [overflow-wrap:anywhere]"
+                  onClick={() =>
+                    setBreakMinutes((prev) => Math.max(0, prev - 15))
+                  }
+                  className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] active:scale-90"
+                  aria-label="-15: Pause um 15 Minuten verringern"
                 >
-                  Abbrechen
+                  -15
                 </button>
+                <input
+                  id="break-input"
+                  type="number"
+                  min="0"
+                  max="240"
+                  step="5"
+                  value={breakMinutes}
+                  onChange={(e) =>
+                    setBreakMinutes(
+                      Math.max(0, parseInt(e.target.value) || 0),
+                    )
+                  }
+                  className="flex-1 min-w-[64px] min-h-[44px] p-1.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded text-center outline-none"
+                />
                 <button
-                  type="submit"
-                  className="flex-1 min-w-0 min-h-[44px] py-2 px-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] text-xs font-black rounded-[var(--rv-radius-sm)] cursor-pointer flex items-center justify-center gap-1 [&>span]:min-w-0 [&>span]:[overflow-wrap:anywhere]"
+                  type="button"
+                  onClick={() =>
+                    setBreakMinutes((prev) => Math.min(240, prev + 15))
+                  }
+                  className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] active:scale-90"
+                  aria-label="+15: Pause um 15 Minuten erhöhen"
                 >
-                  <Check className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>Schicht verbuchen</span>
+                  +15
                 </button>
               </div>
-            </form>
+              <span className="text-[0.75rem] text-[var(--text-muted)] block font-normal">
+                (Vorgeschrieben: 30 Min ab 6h, 45 Min ab 9h)
+              </span>
+            </div>
+
+            {/* Split ratio selector (ACCESSIBLE Presets) */}
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-[var(--text-muted)] block">
+                Aufteilung der Stunden:
+              </label>
+              <div
+                className="grid grid-cols-2 gap-1"
+                role="radiogroup"
+                aria-label="Arbeitszeit Aufteilung"
+              >
+                {[
+                  { id: "half", label: "50% / 50%" },
+                  { id: "office", label: "100% Büro" },
+                  { id: "field", label: "100% Außen" },
+                  { id: "custom", label: "Eigene %" },
+                ].map((p) => {
+                  const isActive = preset === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={isActive}
+                      onClick={() => {
+                        setPreset(p.id as any);
+                        if (p.id === "office") setOfficeRatio(1.0);
+                        if (p.id === "field") setOfficeRatio(0.0);
+                        if (p.id === "half") setOfficeRatio(0.5);
+                      }}
+                      className={`p-1.5 min-h-[44px] inline-flex items-center justify-center rounded border text-[0.75rem] font-black cursor-pointer transition-all ${
+                        isActive
+                          ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-text)]"
+                          : "bg-[var(--card-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Custom ratio slider if selected */}
+          {preset === "custom" && (
+            <div className="p-3 rounded-[var(--rv-radius-sm)] border border-[var(--card-border)] bg-[var(--card-bg)] space-y-2 animate-slide-up">
+              <label
+                htmlFor="custom-ratio-slider"
+                className="text-[0.75rem] font-black text-[var(--text-muted)] flex justify-between"
+              >
+                <span>
+                  Aufteilung: {customRatio}% Büro / {100 - customRatio}%
+                  Außendienst
+                </span>
+              </label>
+              <input
+                id="custom-ratio-slider"
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={customRatio}
+                aria-valuetext={`${customRatio} Prozent Büro, ${100 - customRatio} Prozent Außendienst`}
+                onChange={(e) => setCustomRatio(parseInt(e.target.value))}
+                /* `rv-slider` statt `h-1.5 appearance-none`: Nachgemessen am
+               2026-09-01 hatte dieser Regler eine Trefferfläche von
+               168 × 6 px -- weit unter den 24 px aus WCAG 2.5.8 -- und
+               `appearance: none` ohne eigenen Griff, womit Chrome gar
+               keinen zeichnet. Genau diese Kombination beschreibt der
+               Kommentar zu `.rv-slider` in index.css als behoben; die
+               Klasse war aber nur im A11y-Fenster gesetzt, nicht hier. */
+            className="rv-slider w-full accent-[var(--accent)]"
+              />
+            </div>
           )}
-        </div>
+
+          {/* Direct manual hours entry */}
+          <div className="p-3 rounded-[var(--rv-radius-md)] border border-[var(--card-border)] bg-[var(--card-bg)] space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[0.75rem] font-black text-[var(--text-color)] flex items-center gap-1">
+                Büro vs. Außendienst h
+              </span>
+              {(typedOfficeHours !== "" || typedFieldHours !== "") && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTypedOfficeHours("");
+                    setTypedFieldHours("");
+                  }}
+                  className="text-[0.75rem] text-[var(--danger)] hover:underline font-black cursor-pointer"
+                >
+                  Zurücksetzen auf Automatik
+                </button>
+              )}
+            </div>
+            <p className="text-[0.75rem] text-[var(--text-muted)] font-normal leading-relaxed">
+              Tragen Sie die Stunden bei Bedarf direkt manuell ein (mit 2
+              Nachkommastellen):
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label
+                  htmlFor="typed-office-hours"
+                  className="text-[0.75rem] font-bold text-[var(--text-muted)] block"
+                >
+                  Stunden Büro (h):
+                </label>
+                <input
+                  id="typed-office-hours"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder={calculatedOfficeHrs.toFixed(2)}
+                  value={typedOfficeHours}
+                  onChange={(e) => setTypedOfficeHours(e.target.value)}
+                  className="w-full min-w-0 min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
+                />
+              </div>
+              <div className="space-y-1">
+                <label
+                  htmlFor="typed-field-hours"
+                  className="text-[0.75rem] font-bold text-[var(--text-muted)] block"
+                >
+                  Stunden Außendienst (h):
+                </label>
+                <input
+                  id="typed-field-hours"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder={calculatedFieldHrs.toFixed(2)}
+                  value={typedFieldHours}
+                  onChange={(e) => setTypedFieldHours(e.target.value)}
+                  className="w-full min-w-0 min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
+                />
+              </div>
+            </div>
+            {/* min-w-0 + flex-wrap: Die Beschriftung ist ein langes
+                deutsches Wortband und gibt ihre Breite sonst nicht unter
+                ihren Inhalt preis. Auf dem CI-Laeufer, der weder "Segoe
+                UI" noch dessen Mono-Pendant hat, sprengte diese Zeile bei
+                "Extra gross" das 360-px-Fenster (368 px gemessen) -- hier
+                unsichtbar, weil die Schriften vorhanden sind. */}
+            <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex flex-wrap justify-between gap-x-2 bg-[var(--bg-color)] p-2 rounded-[var(--rv-radius-sm)]">
+              <span className="min-w-0 [overflow-wrap:anywhere]">Gesamtstunden dieser Schicht:</span>
+              <span className="font-mono text-[var(--total-text)] flex-shrink-0">
+                {(typedOfficeHours !== "" || typedFieldHours !== ""
+                  ? (parseFloat(typedOfficeHours) || 0) +
+                    (parseFloat(typedFieldHours) || 0)
+                  : calculatedOfficeHrs + calculatedFieldHrs
+                ).toFixed(2)}
+                h
+              </span>
+            </div>
+          </div>
+
+          {/* Quick shift commentary/notes */}
+          <div className="space-y-1">
+            <label
+              htmlFor="shift-notes"
+              className="text-xs font-bold text-[var(--text-muted)] block"
+            >
+              Kurzkommentar / besuchte Schule / Ort (optional):
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <input
+                id="shift-notes"
+                type="text"
+                placeholder="z.B. Schulung an blindenschule Hannover, wewalk vorführung..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="flex-1 min-w-[64px] min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
+              />
+            </div>
+          </div>
+
+          {/* Form buttons */}
+          <div className="pt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setIsFormOpen(false)}
+              className="flex-1 min-w-0 min-h-[44px] py-2 px-3 border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-bold rounded-[var(--rv-radius-sm)] cursor-pointer hover:bg-[var(--bg-color)] [overflow-wrap:anywhere]"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              className="flex-1 min-w-0 min-h-[44px] py-2 px-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] text-xs font-black rounded-[var(--rv-radius-sm)] cursor-pointer flex items-center justify-center gap-1 [&>span]:min-w-0 [&>span]:[overflow-wrap:anywhere]"
+            >
+              <Check className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>Schicht verbuchen</span>
+            </button>
+          </div>
+        </form>
       )}
+
+      {nachDerUhr}
 
       {/* Manual Entry Toggle Button */}
       {!isManualOpen && !isFormOpen && (
-        <div className="pt-2 border-t border-[var(--card-border)] flex justify-center">
+        <div className="flex justify-center">
           <button
             type="button"
             onClick={() => {
@@ -676,7 +694,7 @@ export default React.memo(function ClockInWidget({
                 "Formular für manuelles Nachtragen geöffnet.",
               );
             }}
-            className="w-full py-2.5 px-3 border border-dashed border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-xs font-bold rounded-[var(--rv-radius-md)] cursor-pointer hover:bg-[var(--bg-color)] hover:border-[var(--border-focus)] transition-all flex items-center justify-center gap-2 active:scale-95"
+            className="w-full min-h-[48px] py-2.5 px-3 border border-dashed border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] text-sm font-bold rounded-[var(--rv-radius-lg)] cursor-pointer hover:bg-[var(--bg-color)] hover:border-[var(--border-focus)] transition-all flex items-center justify-center gap-2 active:scale-95"
           >
             <Plus className="w-4 h-4 text-[var(--accent)]" />
             <span>Vergessene Schicht manuell nachtragen</span>
@@ -1022,10 +1040,12 @@ export default React.memo(function ClockInWidget({
         Lesefluss und die Suche des Screenreaders findet ihn.
       */}
       {timeLogs.length > 0 && (
-        <div className="pt-2 border-t border-[var(--card-border)]">
-          <h3 className="py-1.5 text-xs font-black text-[var(--text-muted)] min-w-0 [overflow-wrap:anywhere]">
-            Schicht-Protokoll ({timeLogs.length}{" "}
-            {timeLogs.length === 1 ? "Eintrag" : "Einträge"})
+        <div className="p-4 sm:p-5 rounded-[var(--rv-radius-xl)] border border-[var(--card-border)] bg-[var(--bg-color)]">
+          <h3 className="text-lg font-black text-[var(--text-color)] min-w-0 [overflow-wrap:anywhere]">
+            Schicht-Protokoll{" "}
+            <span className="text-base font-normal text-[var(--text-muted)]">
+              ({timeLogs.length} {timeLogs.length === 1 ? "Eintrag" : "Einträge"})
+            </span>
           </h3>
 
           {(
@@ -1034,7 +1054,7 @@ export default React.memo(function ClockInWidget({
                 <button
                   type="button"
                   onClick={onExportExcel}
-                  className="w-full py-2.5 px-3.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] rounded-[var(--rv-radius-md)] text-xs font-black cursor-pointer transition-all flex items-center justify-center gap-2 active:scale-95 shadow-[var(--rv-shadow-sm)]"
+                  className="w-full min-h-[44px] py-2.5 px-3.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] rounded-[var(--rv-radius-md)] text-sm font-bold cursor-pointer transition-all flex items-center justify-center gap-2 active:scale-95 shadow-[var(--rv-shadow-sm)]"
                 >
                   <FileSpreadsheet className="w-4 h-4" />
                   <span>Schichtprotokoll als Excel exportieren</span>
@@ -1047,7 +1067,7 @@ export default React.memo(function ClockInWidget({
               <div
                 id="shift-logs-list"
                 tabIndex={0}
-                className="divide-y divide-[var(--border-color)] max-h-56 overflow-y-auto overflow-x-hidden space-y-1.5 pr-1 focus-visible:ring-4 rounded-[var(--rv-radius-sm)]"
+                className="divide-y divide-[var(--card-border)] max-h-80 overflow-y-auto overflow-x-hidden space-y-1.5 pr-1 focus-visible:ring-4 rounded-[var(--rv-radius-sm)]"
                 role="region"
                 aria-label="Monatliche Schichtliste"
               >
@@ -1057,36 +1077,37 @@ export default React.memo(function ClockInWidget({
                   return (
                     <div
                       key={log.id}
-                      className="py-2 flex items-center justify-between gap-2.5 text-xs"
+                      className="py-3 flex items-center gap-3 text-sm"
                     >
+                      {/* Datumskachel wie im Entwurf: Tag groß, Monat klein.
+                          Gesprochen wird das Datum im Zeilentext unten. */}
+                      <span
+                        className="w-12 h-12 flex-shrink-0 rounded-[var(--rv-radius-md)] bg-[var(--cat-4-soft)] text-[var(--cat-4-text)] flex flex-col items-center justify-center leading-none"
+                        aria-hidden="true"
+                      >
+                        <span className="text-lg font-black">{d}</span>
+                        <span className="text-[0.75rem] font-bold mt-0.5">{MONATE_KURZ[parseInt(m, 10) - 1] || m}</span>
+                      </span>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-black text-[var(--text-color)] bg-[var(--bg-color)] border border-[var(--card-border)] px-1.5 py-0.2 rounded font-mono">
-                            {formattedDate}
+                        <p className="flex flex-wrap items-baseline justify-between gap-x-3 text-[var(--text-color)] tabular-nums">
+                          <span className="font-bold text-base">
+                            <span className="sr-only">{formattedDate}, </span>
+                            {log.clockIn} – {log.clockOut}
                           </span>
-                          <span className="font-bold text-[var(--text-color)]">
-                            {log.duration.toFixed(2)}h
+                          <span className="text-base font-black">
+                            {log.duration.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} h
                           </span>
-                          <span className="text-[0.75rem] text-[var(--text-muted)] font-normal">
-                            ({log.clockIn} - {log.clockOut}, Pause{" "}
-                            {log.breakMinutes}m)
-                          </span>
-                        </div>
-
-                        <div className="text-[0.75rem] text-[var(--text-muted)] font-bold mt-0.5 flex flex-wrap gap-x-2">
-                          <span>Büro: {log.officeHours.toFixed(2)}h</span>
-                          <span>Außen: {log.fieldHours.toFixed(2)}h</span>
-                        </div>
-
+                        </p>
+                        <p className="text-[var(--text-muted)] leading-snug">
+                          Pause {log.breakMinutes} Min. · Büro {log.officeHours.toLocaleString("de-DE", { maximumFractionDigits: 2 })} h · Außen {log.fieldHours.toLocaleString("de-DE", { maximumFractionDigits: 2 })} h
+                        </p>
                         {log.notes && (
-                          <p
-                            className="text-[0.75rem] text-[var(--text-muted)] italic font-normal mt-0.5 truncate"
-                            title={log.notes}
-                          >
-                            "{log.notes}"
+                          <p className="text-[var(--text-muted)] italic mt-0.5 truncate" title={log.notes}>
+                            „{log.notes}"
                           </p>
                         )}
                       </div>
+
 
                       <button
                         type="button"

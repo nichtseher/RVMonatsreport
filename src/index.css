@@ -544,9 +544,36 @@ body {
   bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
 }
 
-button, input, select, textarea {
-  font: inherit;
+/* Mindestgrößen für Bedienelemente (0.9.71) -- eine EIGENE Ebene, die nach
+   Tailwinds `utilities` deklariert ist und sie deshalb überschreibt.
+
+   Bis 0.9.70 hielt die fehlerhafte Regel oben alle Felder und Tasten auf der
+   geerbten Grundschrift (16 px). Ohne sie wirken die Klassen -- und darunter
+   waren 12- und 14-px-Felder (Schicht nachtragen, Ziele, Jahreskonto, Suche)
+   und 12-px-Tasten. Zwei Folgen, beide gemessen:
+   - Eingabefelder unter 16 px lassen Safari auf dem iPhone beim Antippen
+     hineinzoomen. Die Kollegen arbeiten auf dem iPhone.
+   - 12 px fette Tastenbeschriftung ist für die sehbehinderte Hälfte der
+     Zielgruppe zu klein; angezeigt wurden sie bis dahin in 16 px.
+   Die Regel greift nur an Elementen, die ausdrücklich eine kleine Stufe
+   tragen -- große Felder (Monat, Name, Zählerzahl) bleiben unberührt. */
+@layer rv-mindestgroesse {
+  :is(input, select, textarea):is(.text-xs, .text-sm, [class~="text-[0.75rem]"]) {
+    font-size: 1rem;
+  }
+  button:is(.text-xs, [class~="text-[0.75rem]"]) {
+    font-size: 0.875rem;
+  }
 }
+
+/* Hier stand bis 0.9.70 `button, input, select, textarea { font: inherit; }`
+   -- AUSSERHALB der Tailwind-Ebenen. Ungeschichtetes CSS schlägt jede
+   @layer-Regel, also auch jede Utility: Seit dem 2026-09-02 wirkten an
+   keiner Taste, keinem Eingabefeld und keiner Auswahlliste `text-*` und
+   `font-*`. Gefunden, weil die Monatsauswahl im Kopf `text-4xl` trug und in
+   16 px erschien. Tailwinds Preflight setzt `font: inherit` bereits in der
+   base-Ebene, wo die Utilities es überschreiben dürfen -- die Zeile war also
+   doppelt und schädlich zugleich. */
 
 .skip-link {
   position: absolute;

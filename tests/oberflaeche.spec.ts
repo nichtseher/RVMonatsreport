@@ -2596,7 +2596,7 @@ test.describe("Feldkonfiguration beim Blick ins Archiv", () => {
     await page.waitForTimeout(800);
 
     // Zurück auf den eigenen Monat, so wie man es über die Kopfzeile täte.
-    await page.locator("#meta-month-input").fill("2026-09");
+    await page.locator("#meta-month-input").selectOption("2026-09");
     await page.waitForTimeout(800);
 
     const nachher = await page.evaluate(
