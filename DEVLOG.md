@@ -201,6 +201,48 @@ Neuladen durch die Doku-Änderung zuschlug. Während dieses Laufs wurde keine
 Datei im Projekt verändert.
 
 
+
+### Nachgereicht: Der erste Deploy von 0.9.66 scheiterte -- an einem Test, der seit 0.9.60 wackelt
+
+Deploy-Lauf #112 (`5961c62`): 616 bestanden, **1 fehlgeschlagen** --
+„Grenze der abgeschalteten Stempeluhr › Schichten löschen räumt Archiv und
+laufenden Monat": erwartet „(2)", gelesen „(1)", 15 Sekunden lang
+unverändert. Produktion blieb auf 0.9.65, wie vom Tor vorgesehen. Derselbe
+Test hat mit **wortgleicher** Meldung schon den ersten Anlauf von 0.9.65
+(Lauf #111, Versuch 1) zu Fall gebracht und davor 0.9.60–0.9.62; lokal lief
+er in beiden vollen Läufen grün.
+
+**Die Deutung aus 0.9.63 war falsch.** Dort hieß es, der Zähler sei auf dem
+CI-Läufer nur noch nicht fertig geladen, und aus einer Momentaufnahme wurde
+eine Prüfung mit 15 Sekunden Wiederholung. Hätte es am Laden gelegen, wäre
+die Zahl binnen 15 Sekunden auf (2) gesprungen -- sie stand die ganze Zeit
+auf (1). Die Daten fehlten wirklich.
+
+**Die tatsächliche Ursache, nachgestellt:** Der Test lud zuerst die App
+(`page.goto("/")`) und schrieb erst danach seine Testdaten in die
+IndexedDB. Die laufende App schreibt rund eine Sekunde nach dem Laden ihren
+Archiv-Spiegel -- aus ihrem eigenen, leeren Anfangsstand, über die eben
+angelegten Daten. Gemessen mit demselben Ablauf und einer Wartezeit
+zwischen Befüllen und Neuladen:
+
+| Befüllt bei | 0 ms | 1,5 s | 3 s |
+|---|---|---|---|
+| laufender App (bisher) | (2) | **(1)** | **(1)** |
+| leerer Seite gleicher Herkunft | -- | (2) | (2) |
+
+Lokal vergeht zwischen den beiden Schritten fast nichts, auf dem Läufer
+manchmal über eine Sekunde. Die übrigen Tests der Datei befüllen längst über
+eine Leerseite (`legeArchivAn` und andere, samt Kommentar, der genau diesen
+Fall beschreibt); diesem einen fehlte sie. Umgestellt, danach
+`--repeat-each=5`: 5/5.
+
+**Was das über die App sagt (nicht behoben, ROADMAP):** Eine laufende
+Instanz überschreibt, was eine andere Instanz derselben Herkunft
+zwischenzeitlich in die IndexedDB geschrieben hat. Im Test war die andere
+Instanz der Test selbst. Im Betrieb wären es zwei gleichzeitig offene
+Fenster der App auf demselben Gerät -- das ist abgeleitet, nicht mit zwei
+Fenstern gemessen.
+
 ---
 
 ## 2026-09-20 — v0.9.65: Das Design-System aus `index.css` tatsächlich benutzen

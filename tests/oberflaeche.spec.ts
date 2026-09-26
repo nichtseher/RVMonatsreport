@@ -4586,7 +4586,21 @@ test.describe("Grenze der abgeschalteten Stempeluhr", () => {
         );
       };
     });
-    await page.goto("/");
+    /*
+      Befüllt wird auf einer leeren Seite gleicher Herkunft, NICHT bei
+      laufender App (bis 0.9.66 hier `page.goto("/")`). Die laufende App
+      schreibt rund eine Sekunde nach dem Laden ihren Archiv-Spiegel -- aus
+      ihrem eigenen, leeren Anfangsstand, über die eben angelegten Daten.
+      Nachgestellt am 2026-09-26: vergeht zwischen Befüllen und Neuladen
+      0 ms, zeigt die Taste "(2)"; bei 1,5 s und 3 s "(1)" -- genau der
+      Fehlschlag, der den Deploy von 0.9.65 im ersten und den von 0.9.66
+      scheitern ließ, weil der CI-Läufer langsamer ist. Mit der Leerseite
+      "(2)" bei jeder Wartezeit. Dasselbe Muster wie legeArchivAn().
+    */
+    await page.route("**/leerseite-fuer-schichtenloeschen", (route) =>
+      route.fulfill({ contentType: "text/html", body: "<!doctype html><title>leer</title>" }),
+    );
+    await page.goto("/leerseite-fuer-schichtenloeschen");
     await page.evaluate(() => (window as unknown as { __vorbereiten: () => Promise<void> }).__vorbereiten());
     await page.goto("/?tab=options");
     await page.waitForTimeout(1200);

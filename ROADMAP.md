@@ -1093,6 +1093,19 @@ Scheibe mit denselben Wächtern und einem vollen `check:ui`.
 - **Kalendersymbol im Monatsfeld** in den dunklen Schemata 1,16:1 bzw. 1:1
   -- fehlendes `color-scheme`, jetzt 18,1:1 bzw. 21:1.
 
+### Offen: zwei offene Fenster derselben App überschreiben sich
+
+Beim Aufklären des wackelnden Deploy-Tests gemessen (DEVLOG 0.9.66): Eine
+laufende Instanz schreibt ihren Archiv-Spiegel aus ihrem eigenen Stand und
+überschreibt damit, was eine andere Instanz derselben Herkunft inzwischen
+in die IndexedDB geschrieben hat. Im Betrieb träfe das -- abgeleitet, nicht
+mit zwei Fenstern gemessen -- zwei gleichzeitig offene Fenster der App auf
+demselben Gerät (auf Android teilen sich die
+installierte App und ein Browser-Tab den Speicher; auf dem iPhone hat die
+installierte App einen eigenen). Nicht behoben; ein Kandidat für einen
+`BroadcastChannel`, der die anderen Fenster nach jedem Schreiben neu laden
+lässt, oder für die Web-Locks-API.
+
 ### Sync: Die „zwei Codes" sind nur beim ersten Mal nötig (gemessen, nicht gebaut)
 
 Diese Datei und `CLAUDE.md` halten fest, dass die Live-Verbindung ohne
