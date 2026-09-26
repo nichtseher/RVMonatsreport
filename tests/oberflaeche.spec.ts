@@ -5088,3 +5088,58 @@ test.describe("Zwei Fenster", () => {
     }
   });
 });
+
+/*
+  Die Zählerzeile bei 440 px -- iPhone Pro Max hochkant (0.9.69).
+
+  Seit 0.9.69 entscheidet der Platz der Zeile selbst (Container-Abfrage), ob
+  Beschriftung und Minus/Zahl/Plus nebeneinander stehen. Alle Handy-Profile
+  dieses Tors laufen aber bei 360 px -- dort wird noch gestapelt. Die neue
+  Anordnung hat damit KEINE Prüfung gesehen, auch nicht in WebKit, obwohl
+  genau sie der Anlass war (Rückmeldung vom iPhone des Projektinhabers). Im
+  ersten Entwurf ragte das Plus dort 17 px aus der Zeile und die Seite
+  scrollte 10 px seitwärts -- beides nur von Hand gemessen.
+
+  Mit der erzwungenen Breitschrift, weil der CI-Läufer eine breitere Schrift
+  hat als dieser Rechner und genau solche knappen Zeilen dort zuerst reißen.
+*/
+test.describe("Zählerzeile bei 440 px", () => {
+  for (const breit of [false, true]) {
+    test(`nebeneinander, nichts ragt heraus${breit ? " (breite Schrift)" : ""}`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name === "schreibtisch", "Handy-Breite, nicht Schreibtisch");
+      await page.setViewportSize({ width: 440, height: 956 });
+      if (breit) await erzwingeBreiteSchrift(page);
+      await oeffne(page, "form");
+      await page.locator('button[aria-label="Erhöhen"]').first().waitFor();
+
+      const befund = await page.evaluate(() => {
+        const fehler: string[] = [];
+        if (document.documentElement.scrollWidth > window.innerWidth + 0.5) {
+          fehler.push(`Seite scrollt waagerecht: ${document.documentElement.scrollWidth} > ${window.innerWidth}`);
+        }
+        let nebeneinander = 0;
+        const plusTasten = [...document.querySelectorAll<HTMLElement>('button[aria-label="Erhöhen"]')];
+        for (const plus of plusTasten) {
+          const zeile = plus.closest(".\\@container")?.firstElementChild as HTMLElement | null;
+          const label = zeile?.querySelector<HTMLElement>("label");
+          if (!zeile || !label) continue;
+          const z = zeile.getBoundingClientRect();
+          const p = plus.getBoundingClientRect();
+          const l = label.getBoundingClientRect();
+          const name = (label.textContent || "").trim();
+          if (p.right > z.right + 0.5) fehler.push(`${name}: Plus ragt ${Math.round(p.right - z.right)} px aus der Zeile`);
+          if (label.scrollWidth > label.clientWidth + 1) fehler.push(`${name}: Beschriftung abgeschnitten`);
+          if (p.top < l.bottom) nebeneinander++;
+        }
+        return { fehler, nebeneinander, zeilen: plusTasten.length };
+      });
+
+      expect(befund.zeilen, "keine Zählerzeilen gefunden").toBeGreaterThan(3);
+      expect(befund.fehler, befund.fehler.join("\n")).toEqual([]);
+      expect(
+        befund.nebeneinander,
+        "Bei 440 px und normaler Schrift sollen Beschriftung und Tasten nebeneinander stehen",
+      ).toBe(befund.zeilen);
+    });
+  }
+});

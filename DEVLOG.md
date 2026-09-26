@@ -46,7 +46,15 @@ und das ist irgendwie unübersichtlich". Für große Bildschirme gewählt:
 - Inhaltsbreite ohne Obergrenze, auch auf dem Tablet.
 
 **Nicht gemessen:** WebKit (hier nicht installiert; das Deploy-Tor prüft es
-mit dem Profil `handy-webkit`), ein echtes iPhone. Die Silbentrennung ist im
+mit dem Profil `handy-webkit`), ein echtes iPhone.
+
+**Nachtrag nach dem Deploy:** Das Tor lief grün (618 bestanden, WebKit
+eingeschlossen) -- aber alle Handy-Profile messen bei 360 px, wo die Zeile
+noch stapelt. Die neue Anordnung hatte also in KEINEM Motor eine Prüfung.
+Neu: „Zählerzeile bei 440 px" (normal und mit Breitschrift, in `handy` und
+`handy-webkit`): kein Seitwärtsscrollen, Plus innerhalb der Zeile, keine
+abgeschnittene Beschriftung, alle Zeilen nebeneinander. Gegenprobe: mit den
+alten 88-px-Tasten schlägt sie an („Plus ragt 25 px aus der Zeile"). Die Silbentrennung ist im
 kopflosen Chromium ohne Wörterbuch nicht sichtbar -- ob Safari
 „Beratungs-stellen" trennt, ist abgeleitet, nicht gesehen.
 
