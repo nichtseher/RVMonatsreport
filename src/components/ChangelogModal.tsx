@@ -26,6 +26,22 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       />
 
       <div className="space-y-6">
+        {/* Eine Zeile: Anordnung und Ruhe, nichts Neues zu tun oder zu wissen. */}
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.70: Verbesserungen</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
+            <li>
+              Ruhigerer Report-Anfang: Die Erinnerung an die Abgabe steht jetzt in der Monatskarte statt in einem
+              eigenen Kasten, der Tipp zum Zahlenfeld als schlichte Zeile. Hinweise in normaler statt fetter Schrift.
+              Im Querformat ist die untere Leiste flacher.
+            </li>
+          </ul>
+        </div>
+
         {/* Eine Zeile: Anordnung, nichts Neues zu tun oder zu wissen (Regel seit 0.9.40). */}
         <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">

@@ -2038,7 +2038,7 @@ export default function App() {
         <div className={`animate-fade-in ${isDesktop ? 'lg:pb-8' : 'pb-24'}`}>
           {/* HEADER SECTION (Accessible, modern responsive layout, removed duplicate buttons for clean tidiness) */}
           <header
-            className="p-4 sm:p-5 mb-3 sm:mb-4 rounded-[var(--rv-radius-xl)] border bg-[var(--card-bg)] border-[var(--card-border)] flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-5 shadow-[var(--rv-shadow-sm)]"
+            className="p-4 sm:p-5 mb-3 sm:mb-4 rounded-[var(--rv-radius-xl)] border bg-[var(--card-bg)] border-[var(--card-border)] flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-5 shadow-[var(--rv-shadow-sm)]"
           >
         <div className="space-y-1.5 flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2.5">
@@ -2070,7 +2070,7 @@ export default function App() {
               Fenster (gemessen 2026-09-09: 385 px in 360, 384 px in 320 --
               ohne Abzeichen jeweils genau die Fensterbreite). Kein Geschwister
               traegt hier flex-1, deshalb greift der Umbruch auch wirklich. */}
-          <div className="flex flex-wrap items-center gap-1.5 text-[0.75rem] font-bold text-[var(--text-muted)] pt-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm text-[var(--text-muted)] pt-1">
             {saveStatus === "saving" ? (
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--warning-border)] animate-pulse"></span>
@@ -2220,6 +2220,11 @@ export default function App() {
         aktivitaeten={s1Total + s2Total + s3Total}
         felder={[...appFields.s1, ...appFields.s2, ...appFields.s3, ...appFields.s4]}
         zeitstempel={reportData.valuesUpdatedAt}
+        abgabeHinweis={
+          deadlineInfo.sichtbar && !deadlineInfo.isUrgent
+            ? "Abgabe: Bitte senden Sie den Report bis zum 8. des Folgemonats als Excel-Datei an die Vertriebsleitung (VL)."
+            : null
+        }
       />
 
       {/* SCHNELL-ERFASSUNG: Ein Tipp direkt nach dem Termin */}
@@ -2266,7 +2271,7 @@ export default function App() {
                 >
                   <div className="flex items-start gap-2.5 flex-1 min-w-0">
                     <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                    <p className="text-sm font-semibold leading-snug">
+                    <p className="text-sm font-medium leading-relaxed">
                       {speicherUrteil.ansage}
                       {speicherUrteil.rat ? " " + speicherUrteil.rat : ""}
                     </p>
@@ -2275,11 +2280,11 @@ export default function App() {
                       gestapelt: Nebeneinander ragten die beiden Knoepfe bei
                       Schriftgroesse "Extra groß" 51 px aus dem 360-px-Bildschirm
                       (nachgemessen 2026-08-31). */}
-                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:flex-shrink-0">
+                  <div className="flex flex-wrap gap-2 sm:flex-shrink-0">
                     <button
                       type="button"
                       onClick={() => setActiveTab("backup")}
-                      className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-[var(--rv-radius-md)] font-black text-sm bg-[var(--primary)] text-[var(--primary-text)] hover:brightness-110 transition-all cursor-pointer"
+                      className="px-4 py-2 min-h-[44px] flex-[1_1_auto] sm:flex-none rounded-[var(--rv-radius-md)] font-black text-sm bg-[var(--primary)] text-[var(--primary-text)] hover:brightness-110 transition-all cursor-pointer"
                     >
                       Jetzt sichern
                     </button>
@@ -2288,7 +2293,7 @@ export default function App() {
                         type="button"
                         onClick={() => setSpeicherHinweisAusgeblendet(true)}
                         aria-label="Hinweis zum Speicherzustand ausblenden"
-                        className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-[var(--rv-radius-md)] font-black text-sm border-2 border-current hover:brightness-110 transition-all cursor-pointer"
+                        className="px-4 py-2 min-h-[44px] flex-[1_1_auto] sm:flex-none rounded-[var(--rv-radius-md)] font-black text-sm border-2 border-current hover:brightness-110 transition-all cursor-pointer"
                       >
                         Ausblenden
                       </button>
@@ -2306,13 +2311,13 @@ export default function App() {
               <div className="p-4 mb-4 rounded-[var(--rv-radius-lg)] border border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)] flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex items-start gap-2.5 flex-1 min-w-0">
                   <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                  <p className="text-sm font-semibold leading-snug">{sicherungUrteil.ansage}</p>
+                  <p className="text-sm font-medium leading-relaxed">{sicherungUrteil.ansage}</p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:flex-shrink-0">
+                <div className="flex flex-wrap gap-2 sm:flex-shrink-0">
                   <button
                     type="button"
                     onClick={() => setActiveTab("backup")}
-                    className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-[var(--rv-radius-md)] font-black text-sm bg-[var(--primary)] text-[var(--primary-text)] hover:brightness-110 transition-all cursor-pointer"
+                    className="px-4 py-2 min-h-[44px] flex-[1_1_auto] sm:flex-none rounded-[var(--rv-radius-md)] font-black text-sm bg-[var(--primary)] text-[var(--primary-text)] hover:brightness-110 transition-all cursor-pointer"
                   >
                     Jetzt sichern
                   </button>
@@ -2320,7 +2325,7 @@ export default function App() {
                     type="button"
                     onClick={() => setSicherungHinweisAusgeblendet(true)}
                     aria-label="Später. Erinnerung an die Datensicherung ausblenden."
-                    className="px-4 py-2 min-h-[44px] w-full sm:w-auto rounded-[var(--rv-radius-md)] font-black text-sm border-2 border-current hover:brightness-110 transition-all cursor-pointer"
+                    className="px-4 py-2 min-h-[44px] flex-[1_1_auto] sm:flex-none rounded-[var(--rv-radius-md)] font-black text-sm border-2 border-current hover:brightness-110 transition-all cursor-pointer"
                   >
                     Später
                   </button>
@@ -2336,7 +2341,7 @@ export default function App() {
               >
                 <div className="flex items-start gap-2.5 flex-1">
                   <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                  <p className="text-sm font-semibold leading-snug">
+                  <p className="text-sm font-medium leading-relaxed">
                     Speichern fehlgeschlagen! Ihre letzten Änderungen sind eventuell nicht dauerhaft
                     gesichert. Bitte erstellen Sie jetzt ein Backup, bevor Sie weiterarbeiten.
                   </p>
@@ -2360,7 +2365,7 @@ export default function App() {
               >
                 <div className="flex items-start gap-2.5 flex-1 min-w-0">
                   <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                  <p className="text-sm font-semibold leading-snug">
+                  <p className="text-sm font-medium leading-relaxed">
                     Live-Verbindung unterbrochen. Ihre Eingaben werden weiter auf
                     diesem Gerät gespeichert, aber nicht mehr auf das andere Gerät
                     übertragen.
@@ -2371,14 +2376,14 @@ export default function App() {
                     breiten Band -- 34 px Ueberlauf (nachgemessen 2026-08-31).
                     Faellt nur auf, wenn eine Live-Verbindung tatsaechlich
                     abreisst, und war deshalb nie jemandem aufgefallen. */}
-                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:flex-shrink-0">
+                <div className="flex flex-wrap gap-2 sm:flex-shrink-0">
                   <button
                     type="button"
                     onClick={() => {
                       setSyncAbbruchAusgeblendet(true);
                       setActiveTab("sync");
                     }}
-                    className="min-h-[44px] px-4 py-2 w-full sm:w-auto rounded-[var(--rv-radius-md)] font-black text-sm bg-[var(--warning-solid)] text-[var(--warning-solid-text)] hover:brightness-110 transition-all cursor-pointer focus-visible:ring-4"
+                    className="min-h-[44px] px-4 py-2 flex-[1_1_auto] sm:flex-none rounded-[var(--rv-radius-md)] font-black text-sm bg-[var(--warning-solid)] text-[var(--warning-solid-text)] hover:brightness-110 transition-all cursor-pointer focus-visible:ring-4"
                   >
                     Neu verbinden
                   </button>
@@ -2386,7 +2391,7 @@ export default function App() {
                     type="button"
                     onClick={() => setSyncAbbruchAusgeblendet(true)}
                     aria-label="Hinweis zur unterbrochenen Live-Verbindung ausblenden"
-                    className="min-h-[44px] px-4 py-2 w-full sm:w-auto rounded-[var(--rv-radius-md)] font-bold text-sm border border-[var(--warning-border)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--warning-bg)] transition-all cursor-pointer focus-visible:ring-4"
+                    className="min-h-[44px] px-4 py-2 flex-[1_1_auto] sm:flex-none rounded-[var(--rv-radius-md)] font-bold text-sm border border-[var(--warning-border)] bg-[var(--bg-color)] text-[var(--text-color)] hover:bg-[var(--warning-bg)] transition-all cursor-pointer focus-visible:ring-4"
                   >
                     Ausblenden
                   </button>
@@ -2395,12 +2400,14 @@ export default function App() {
             )}
 
             {/* DEADLINE NOTIFICATION BANNER -- nur im relevanten Zeitfenster */}
-      {deadlineInfo.sichtbar && (
+      {/* Nur noch die dringende Fassung als eigener Kasten -- die ruhige steht
+          seit 0.9.70 als Zeile in der Monatskarte. */}
+      {deadlineInfo.sichtbar && deadlineInfo.isUrgent && (
         <div
           role="alert"
-          className={`p-3.5 mb-4 rounded-[var(--rv-radius-lg)] border flex gap-2.5 items-center text-sm font-semibold leading-snug ${
+          className={`p-3.5 mb-4 rounded-[var(--rv-radius-lg)] border flex gap-2.5 items-center text-sm font-medium leading-relaxed ${
             deadlineInfo.isUrgent
-              ? "bg-[var(--danger-bg)] border-[var(--danger-border)] text-[var(--danger-text)] animate-pulse"
+              ? "bg-[var(--danger-bg)] border-[var(--danger-border)] text-[var(--danger-text)]"
               : "bg-[var(--alert-bg)] border-[var(--alert-border)] text-[var(--alert-text)]"
           }`}
         >
@@ -2414,14 +2421,14 @@ export default function App() {
 
       {/* Bento Header title & interactive filter toggle */}
       <div className="flex items-center justify-between mb-2 px-1">
-        <span className="text-[0.75rem] font-black text-[var(--text-muted)] flex items-center gap-1.5">
+        <span className="text-sm font-bold text-[var(--text-color)] flex flex-wrap items-baseline gap-x-1.5">
           Monats-Fortschritt{" "}
           {/*
             `lowercase` ist mit 0.9.47 entfallen -- es war das Gegengift zum
             `uppercase` der Elternzeile und hätte ohne sie "(bereich anklicken
             zum filtern)" ergeben, also ein kleingeschriebenes Substantiv.
           */}
-          <span className="text-xs text-[var(--text-muted)]">
+          <span className="text-sm font-normal text-[var(--text-muted)]">
             (Bereich anklicken zum Filtern)
           </span>
         </span>
@@ -2433,7 +2440,7 @@ export default function App() {
               setActiveSectionTab("all");
               announceToAriaAndSpeech("Alle Filter aufgehoben.");
             }}
-            className="text-[0.75rem] font-black text-[var(--danger)] hover:text-[var(--danger-text)] hover:underline flex items-center gap-1 cursor-pointer bg-[var(--danger-bg)] px-2 py-0.5 rounded-md transition-all active:scale-95"
+            className="text-sm font-bold text-[var(--danger-text)] hover:underline flex items-center gap-1 cursor-pointer bg-[var(--danger-bg)] px-3 min-h-[44px] rounded-[var(--rv-radius-md)] transition-all active:scale-95 flex-shrink-0 focus-visible:ring-4"
           >
             <span>Filter aufheben</span>
           </button>
@@ -2995,7 +3002,7 @@ export default function App() {
           ohnehin aus dessen eigener Beschreibung (`CounterField.tsx`,
           `sr-only`), also genau dort, wo sie hilft.
         */}
-        <p className="flex items-start gap-2 mb-4 px-3.5 py-3 rounded-[var(--rv-radius-lg)] border border-[var(--card-border)] bg-[var(--info-bg)] text-[var(--info-text)] text-sm font-semibold leading-snug">
+        <p className="flex items-start gap-2 mb-4 px-1 text-sm text-[var(--text-muted)] leading-relaxed">
           <Info className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
           <span className="min-w-0 [overflow-wrap:anywhere]">
             Tipp: Sie können jede Zahl direkt in das Feld eintippen — auch größere
@@ -3535,7 +3542,11 @@ export default function App() {
           /* 0.9.66: Haarlinie und Schatten der Skala statt kraeftigem Umriss
              und fester rgba-Schatten -- die Leiste ist ein Behaelter, kein
              Bedienelement. Undurchsichtig bleibt sie, aus dem Grund oben. */
-          className={`fixed rv-safe-nav-bottom left-1/2 -translate-x-1/2 w-[96%] max-w-xl z-[200] bg-[var(--card-bg)] border border-[var(--card-border)] py-2 px-2 rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] transition-all ${isDesktop ? 'lg:hidden' : ''}`}
+          /* Bei wenig Bildschirmhöhe (Handy quer, z. B. im Autohalter) stehen
+             Symbol und Beschriftung nebeneinander (0.9.70): Die Leiste bedeckte
+             dort gut ein Fünftel des Bildschirms. Die Beschriftung bleibt --
+             sie wegzulassen hieße, die Stationen nur am Symbol zu erkennen. */
+          className={`fixed rv-safe-nav-bottom left-1/2 -translate-x-1/2 w-[96%] max-w-xl z-[200] bg-[var(--card-bg)] border border-[var(--card-border)] py-2 px-2 [@media(max-height:500px)]:py-1 rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] transition-all ${isDesktop ? 'lg:hidden' : ''}`}
           role="navigation"
           aria-label="Hauptnavigation"
         >
@@ -3558,18 +3569,18 @@ export default function App() {
                      Schrift mit Strich darunter: Die Flaeche ist auch ohne
                      Farbwahrnehmung als Form erkennbar, der Strich war 4 px
                      breit. Im Hochkontrast tauschen Flaeche und Schrift. */
-                  className={`flex-1 min-w-0 flex flex-col items-center justify-center py-1.5 rounded-[var(--rv-radius-lg)] relative transition-all active:scale-90 cursor-pointer ${
+                  className={`flex-1 min-w-0 flex flex-col [@media(max-height:500px)]:flex-row [@media(max-height:500px)]:gap-1.5 [@media(max-height:500px)]:min-h-[44px] items-center justify-center py-1.5 [@media(max-height:500px)]:py-0.5 rounded-[var(--rv-radius-lg)] relative transition-all active:scale-90 cursor-pointer ${
                     isSelected
                       ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-text)] font-black"
                       : "text-[var(--text-muted)] hover:text-[var(--text-color)] font-bold"
                   }`}
                 >
-                  <div className="relative p-1">
+                  <div className="relative p-1 [@media(max-height:500px)]:p-0">
                     <IconComp
                       className={`w-5 h-5 transition-transform ${isSelected ? "stroke-[2.5]" : "stroke-[1.8]"}`}
                     />
                   </div>
-                  <span className="text-[0.75rem] mt-0.5 truncate max-w-full">
+                  <span className="text-[0.75rem] mt-0.5 [@media(max-height:500px)]:mt-0 truncate max-w-full">
                     {tab.label}
                   </span>
                 </button>

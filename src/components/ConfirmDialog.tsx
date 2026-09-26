@@ -161,7 +161,7 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
         <div className="p-6 space-y-4">
           <div className="flex items-start gap-3">
             <div
-              className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${
+              className={`w-11 h-11 rounded-[var(--rv-radius-md)] flex items-center justify-center flex-shrink-0 ${
                 danger
                   ? "bg-[var(--danger-bg)] text-[var(--danger-text)]"
                   : "bg-[var(--success-bg)] text-[var(--success-text)]"

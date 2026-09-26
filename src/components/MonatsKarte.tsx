@@ -1,4 +1,4 @@
-import { CircleCheck, CircleDashed } from "lucide-react";
+import { CircleCheck, CircleDashed, Send } from "lucide-react";
 import { FieldConfig } from "../types";
 import { formatMonthGerman } from "../utils/dateUtils";
 import { findeLetzteAenderung, formatiereZuletzt, ohneZuletzt } from "../utils/zuletztGeaendert";
@@ -12,6 +12,14 @@ interface MonatsKarteProps {
   felder: FieldConfig[];
   /** `valuesUpdatedAt` des laufenden Monats */
   zeitstempel?: Record<string, string>;
+  /**
+   * Die Abgabe-Erinnerung im ruhigen Fall (0.9.70). Bis dahin ein eigener
+   * gelber Kasten mit `role="alert"` -- der Screenreader rief ihn bei JEDEM
+   * Start aus, obwohl er an den letzten Tagen des Monats immer gleich lautet.
+   * Die dringende Fassung (ungesendete Zahlen nach dem 8.) bleibt ein
+   * eigener Kasten mit Alarm; sie ist tatsächlich eine Warnung.
+   */
+  abgabeHinweis?: string | null;
 }
 
 /**
@@ -26,7 +34,7 @@ interface MonatsKarteProps {
  * Kein `aria-live`: Jede Änderung wird bereits über announceToAriaAndSpeech
  * angesagt. Eine zweite Ansage an dieser Stelle wäre eine Dopplung.
  */
-export default function MonatsKarte({ monat, aktivitaeten, felder, zeitstempel }: MonatsKarteProps) {
+export default function MonatsKarte({ monat, aktivitaeten, felder, zeitstempel, abgabeHinweis }: MonatsKarteProps) {
   const letzte = findeLetzteAenderung(
     zeitstempel,
     felder.map((f) => f.id),
@@ -93,6 +101,13 @@ export default function MonatsKarte({ monat, aktivitaeten, felder, zeitstempel }
           </p>
         )}
       </div>
+
+      {abgabeHinweis && (
+        <p className="mt-3 pt-3 border-t border-[var(--card-border)] flex items-start gap-3 text-sm text-[var(--text-color)] leading-relaxed">
+          <Send className="w-5 h-5 flex-shrink-0 mt-0.5 text-[var(--accent)]" aria-hidden="true" />
+          <span className="min-w-0 [overflow-wrap:anywhere]">{abgabeHinweis}</span>
+        </p>
+      )}
     </section>
   );
 }

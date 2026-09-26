@@ -28,7 +28,7 @@ export default function FensterHinweis() {
         className="w-full max-w-md rounded-[var(--rv-radius-xl)] border border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-color)] p-6 shadow-[var(--rv-shadow-md)] flex flex-col gap-4"
       >
         <span
-          className="w-12 h-12 rounded-[var(--rv-radius-md)] bg-[var(--primary)] text-[var(--primary-text)] flex items-center justify-center"
+          className="w-12 h-12 rounded-[var(--rv-radius-md)] bg-[var(--nav-active-bg)] text-[var(--nav-active-text)] flex items-center justify-center"
           aria-hidden="true"
         >
           <AppWindow className="w-6 h-6" />

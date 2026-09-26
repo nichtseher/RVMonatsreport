@@ -10,6 +10,57 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-26 — v0.9.70: Ruhigerer Report-Anfang, flache Leiste im Querformat
+
+Auftrag: „mach alles" -- die vier offenen Design-Punkte nach 0.9.69.
+
+### Report-Anfang
+
+Gemessen bei 390 px: acht Kästen vor dem ersten Zähler, der erste Zähler
+bei y = 2133 px.
+
+- **Abgabe-Erinnerung** (ruhige Fassung, letzte fünf Tage des Monats und
+  bis zum 8.) ist jetzt eine Zeile in der Monatskarte. Vorher ein eigener
+  gelber Kasten mit `role="alert"` -- der Screenreader rief ihn bei jedem
+  Start aus, obwohl er tagelang gleich lautet. Die dringende Fassung
+  (ungesendete Zahlen nach dem 8.) bleibt ein Kasten mit Alarm, aber ohne
+  `animate-pulse`: dauerhaft pulsierender Text ohne Anhalten ist ein
+  Problem für 2.2.2.
+- **Tipp zum Zahlenfeld** ohne Kasten, als gedämpfte Zeile.
+- **Warnkästen** (Speicher, Sicherung, Speicherfehler, Live-Abbruch): Text
+  `font-medium` statt `font-semibold`, Tasten nebeneinander mit
+  `flex-[1_1_auto]` + `flex-wrap` statt immer gestapelt über die volle
+  Breite (bei „Extra groß" brechen sie weiterhin um).
+- „Monats-Fortschritt" als lesbare Beschriftung (`text-sm`), „Filter
+  aufheben" von ca. 20 px Höhe auf 44 px -- die Taste erscheint nur bei
+  aktivem Filter, deshalb hatte das Tor sie nie gemessen.
+- Kopfkarte: Speicherstand in `text-sm` normal; Monat/Name erst ab `lg`
+  neben dem Titel (bei 768 px war der Titelblock gequetscht).
+
+Erster Zähler jetzt bei y = 2037 px (390 px), also rund 100 px früher und
+zwei Kästen weniger. Beim Tablet 1484 → 1518 px, weil der Kopf dort jetzt
+stapelt statt zu quetschen.
+
+### Querformat
+
+Bei Fensterhöhe ≤ 500 px stehen Symbol und Beschriftung der unteren Leiste
+nebeneinander. Gemessen bei 844 × 390: Leiste 54 px hoch (14 % der Höhe,
+vorher rund 20 %), Tasten 138 × 44, keine Beschriftung abgeschnitten, auch
+bei „Extra groß" (58 px). Hochkant unverändert (88 × 60).
+
+### Einstieg, Rückfragen, Fensterhinweis
+
+Angesehen in hell und dunkel: stimmig. Angeglichen: das Symbol der Rückfrage
+(rund → Kachel wie im Ansichtskopf) und das des Fensterhinweises (gefüllt →
+weiche Kachel). Der blaue Fokusring bleibt bewusst blau -- auf den grünen
+Tasten wäre ein grüner Ring schlechter zu erkennen.
+
+### Prüfung
+
+`tsc` sauber, `npm run check` 212/212. `check:ui` lokal (Chromium, `handy` und `schreibtisch`): 556 bestanden, 1 rot -- der QR-Kamera-Test, der hier auch am Ausgangsstand scheitert.
+
+---
+
 ## 2026-09-26 — v0.9.69: Responsiv nach Platz, nicht nach Gerätesorte
 
 Rückmeldung des Projektinhabers nach 0.9.68: am PC „toll", aber auf dem
