@@ -3372,11 +3372,11 @@ export default function App() {
              Symbol und Beschriftung nebeneinander (0.9.70): Die Leiste bedeckte
              dort gut ein Fünftel des Bildschirms. Die Beschriftung bleibt --
              sie wegzulassen hieße, die Stationen nur am Symbol zu erkennen. */
-          className={`fixed rv-safe-nav-bottom left-1/2 -translate-x-1/2 w-[96%] max-w-xl z-[200] bg-[var(--card-bg)] border border-[var(--card-border)] py-2 px-2 [@media(max-height:500px)]:py-1 rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] transition-all ${isDesktop ? 'lg:hidden' : ''}`}
+          className={`fixed rv-safe-nav-bottom left-1/2 -translate-x-1/2 w-[96%] max-w-xl z-[200] bg-[var(--card-bg)] border border-[var(--card-border)] py-2 px-[6px] [@media(max-height:500px)]:py-1 rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] transition-all ${isDesktop ? 'lg:hidden' : ''}`}
           role="navigation"
           aria-label="Hauptnavigation"
         >
-          <div className="flex items-center justify-between gap-0.5">
+          <div className="flex items-center justify-between gap-0">
             {hauptnavigation
             .filter((tab) => tab.visible)
             .map((tab) => {
@@ -3397,8 +3397,8 @@ export default function App() {
                      breit. Im Hochkontrast tauschen Flaeche und Schrift. */
                   className={`flex-1 min-w-0 flex flex-col [@media(max-height:500px)]:flex-row [@media(max-height:500px)]:gap-1.5 [@media(max-height:500px)]:min-h-[44px] items-center justify-center py-1.5 [@media(max-height:500px)]:py-0.5 rounded-[var(--rv-radius-lg)] relative transition-all active:scale-90 cursor-pointer ${
                     isSelected
-                      ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-text)] font-black"
-                      : "text-[var(--text-muted)] hover:text-[var(--text-color)] font-bold"
+                      ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-text)] font-bold"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-color)] font-semibold"
                   }`}
                 >
                   <div className="relative p-1 [@media(max-height:500px)]:p-0">

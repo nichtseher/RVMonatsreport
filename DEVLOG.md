@@ -84,6 +84,12 @@ Schicht nachtragen" am Rechner (41 px). Alle drei behoben.
   nicht um. Jetzt `clamp(1rem, 7vw, 2.25rem)`, Pfeil und Abstand in Pixeln;
   gemessen passt „September 2026" bei 320–1280 px in allen drei Stufen.
   Danach zweiter voller Lauf: 556 bestanden, 1 rot (QR-Kamera).
+- Untere Leiste bei 320 px/„Extra groß": „Report" brauchte 69 px und hatte
+  68 -- sichtbar als „Rep…". Das Tor lässt 1 px Rundung zu und blieb grün.
+  Ursache: Seit der Schriftkorrektur wirkt `font-black` an der aktiven
+  Station. Innenabstand der Leiste fest 6 px statt `px-2` (rem), keine
+  Lücken zwischen den Stationen, Gewicht 700/600. Dritter voller Lauf: 556
+  bestanden, 1 rot (QR-Kamera).
 - „Gelb auf Schwarz": Der inaktive Reiter der Zeit-Ansicht war gelb auf gelb
   (`--hover-bg`). Jetzt `--nav-active-*` wie die Navigation.
 - Barrierefreiheitsbaum (Playwright `ariaSnapshot`) für Kopf, Monatskarte,
