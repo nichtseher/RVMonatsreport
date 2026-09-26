@@ -2028,7 +2028,7 @@ export default function App() {
         Abschnittsgliederung richtig.
       */}
       <main id="main-content" className={`w-full relative ${isDesktop ? 'lg:flex-1 lg:overflow-y-auto lg:h-screen lg:px-6' : ''}`}>
-        <div className={`mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative ${isDesktop ? 'lg:max-w-5xl lg:pb-12 xl:max-w-6xl' : 'max-w-2xl'}`}>
+        <div className={`mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative ${isDesktop ? 'lg:pb-12' : ''}`}>
       {/* Off-screen live announcer region for screen readers */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {ariaAnnouncement}

@@ -26,6 +26,22 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       />
 
       <div className="space-y-6">
+        {/* Eine Zeile: Anordnung, nichts Neues zu tun oder zu wissen (Regel seit 0.9.40). */}
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.69: Verbesserungen</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
+            <li>
+              Auf großen Handys (etwa iPhone Pro Max) stehen Minus, Zahl und Plus jetzt neben der Beschriftung statt
+              darunter. Tablet und Rechner nutzen die volle Bildschirmbreite; die Kacheln der Schnell-Erfassung brechen
+              keine Wörter mehr mitten durch.
+            </li>
+          </ul>
+        </div>
+
         {/*
           Ausgeschrieben, weil sich sichtbare Namen geändert haben: Wer
           „RV Archiv" oder „Hilfe & Handbuch" sucht, findet es sonst nicht

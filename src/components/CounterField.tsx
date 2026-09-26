@@ -148,6 +148,13 @@ export default React.memo(function CounterField({
   const buttonSize = isCompact
     ? "w-[64px] h-[48px] min-w-[48px]"
     : "w-[88px] h-[64px] min-w-[60px]";
+  /*
+    Nebeneinander in einer mittelbreiten Zeile (23-36rem, z. B. iPhone Pro
+    Max hochkant): kompaktere Tasten, sonst bleibt der Beschriftung zu wenig
+    Platz und Woerter brechen mitten durch (gemessen 0.9.69: 75 px Rest, das
+    Plus ragte 17 px aus der Zeile). 56 px bleiben ueber den 44 px aus 2.5.5.
+  */
+  const zeilenTaste = isCompact ? "" : "@min-[23rem]:w-[56px] @min-[23rem]:min-w-[56px] @min-[23rem]:h-[56px] @min-[36rem]:w-[88px] @min-[36rem]:h-[64px]";
   const iconSize = isCompact ? "w-5 h-5" : "w-7 h-7";
   // Die Zahl selbst ist Text und MUSS mitwachsen (WCAG 1.4.4), darf dafuer
   // aber schrumpfen, wenn der Platz knapp wird.
@@ -158,6 +165,17 @@ export default React.memo(function CounterField({
   const inputSize = isCompact ? "h-[48px] text-lg rounded-[var(--rv-radius-sm)]" : "h-[64px] text-2xl rounded-[var(--rv-radius-md)]";
 
   return (
+    /*
+      Nebeneinander oder gestapelt entscheidet seit 0.9.69 der Platz der
+      Zeile selbst (Container-Abfrage), nicht die Fensterbreite. Vorher kippte
+      die Zeile erst ab 640 px Fensterbreite (`sm:`) ins Nebeneinander -- auf
+      einem iPhone Pro Max (440 px) standen die Tasten deshalb unter der
+      Beschriftung, obwohl daneben Platz war (Rückmeldung des Projektinhabers).
+      Die Schwelle steht in rem und wächst damit mit der Schriftgröße: Bei
+      „Groß" und „Extra groß" bleibt es auf dem Handy beim Stapeln, das dort
+      gemessen nötig ist.
+    */
+    <div className="@container">
     <div 
       /* Innenabstand in Pixeln: Er muss nicht mit der Schriftgroesse wachsen
          und nahm der Bedienzeile sonst genau den Platz weg, den sie braucht.
@@ -174,9 +192,9 @@ export default React.memo(function CounterField({
          Rahmenfarbe der Bedienelemente ist gegen --bg-color auf 3:1 abgestimmt
          (WCAG 1.4.11). Auf dem alten slate-Hintergrund kam sie nur auf
          2,55-2,98:1 -- die Tastenumrisse waren zu schwach. */
-      className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] p-[6px] sm:p-4 border border-[var(--card-border)] transition-all focus-within:ring-2 focus-within:ring-[var(--border-focus)] hover:border-[var(--border-focus)] gap-3`}
+      className={`flex flex-col @min-[23rem]:flex-row @min-[23rem]:items-center justify-between rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] p-[6px] @min-[23rem]:p-2.5 @min-[36rem]:p-4 border border-[var(--card-border)] transition-all focus-within:ring-2 focus-within:ring-[var(--border-focus)] hover:border-[var(--border-focus)] gap-3 @min-[23rem]:gap-2`}
     >
-      <div className="flex-1 pr-2 min-w-0">
+      <div className="flex-1 pr-2 @min-[23rem]:pr-0 min-w-0 @min-[23rem]:min-w-[7rem]">
         <label 
           id={`label-${config.id}`} 
           htmlFor={inputId} 
@@ -190,7 +208,7 @@ export default React.memo(function CounterField({
             if (config.icon) return <span className="text-xl flex-shrink-0 mt-0.5" aria-hidden="true">{config.icon}</span>;
             return null;
           })()}
-          <span className="min-w-0 break-words">{config.label}</span>
+          <span className="min-w-0 break-words hyphens-auto">{config.label}</span>
         </label>
         {config.isCustom && (
           <span className="inline-block mt-1 text-[0.75rem] font-bold px-2 py-0.5 rounded-full bg-[var(--cat-3-soft)] text-[var(--cat-3-text)]">
@@ -226,7 +244,7 @@ export default React.memo(function CounterField({
         geworden. Der Umbruch bleibt als Notnagel fuer sehr schmale Geraete mit
         sehr grosser Schrift.
       */}
-      <div className="flex flex-nowrap items-center justify-center gap-2 w-full sm:w-auto sm:justify-end select-none">
+      <div className="flex flex-nowrap items-center justify-center gap-2 @min-[23rem]:gap-1.5 @min-[36rem]:gap-2 w-full @min-[23rem]:w-auto @min-[23rem]:justify-end select-none">
         {/* Decrement Button (Optimized for Touch-Only) */}
         <button
           type="button"
@@ -236,7 +254,7 @@ export default React.memo(function CounterField({
              ein dunkler Kreis aus fester Palettenfarbe (slate-800): Im dunklen
              Schema war das Minus kaum vom Kartenhintergrund zu unterscheiden,
              waehrend das Plus als leuchtender Kreis danebenstand. */
-          className={`${buttonSize} rounded-[var(--rv-radius-md)] flex items-center justify-center border-2 border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:bg-[var(--hover-bg)] touch-manipulation`}
+          className={`${buttonSize} ${zeilenTaste} rounded-[var(--rv-radius-md)] flex items-center justify-center border-2 border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:bg-[var(--hover-bg)] touch-manipulation`}
         >
           <Minus className={iconSize} aria-hidden="true" />
         </button>
@@ -249,7 +267,7 @@ export default React.memo(function CounterField({
             Weg, mit dem man mehrere Zaehlungen auf einmal eintraegt, seit die
             Fuenferschritte weg sind. Es soll aussehen wie ein Feld, in das man
             tippt, nicht wie eine Anzeige zwischen zwei Tasten. */}
-        <div className="relative flex-1 min-w-[76px] max-w-[120px] sm:flex-none sm:w-28 sm:max-w-none">
+        <div className="relative flex-1 min-w-[76px] max-w-[120px] @min-[23rem]:flex-none @min-[23rem]:w-[56px] @min-[23rem]:min-w-[56px] @min-[36rem]:w-28 @min-[36rem]:max-w-none">
           <input
             id={inputId}
             type="number"
@@ -282,7 +300,7 @@ export default React.memo(function CounterField({
             }}
             onBlur={onBlur}
             placeholder="0"
-            className={`${inputSize} w-full text-center font-black border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] focus:border-[var(--border-focus)] outline-none touch-manipulation`}
+            className={`${inputSize} ${isCompact ? "" : "@min-[23rem]:h-[56px] @min-[36rem]:h-[64px]"} w-full text-center font-black border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] focus:border-[var(--border-focus)] outline-none touch-manipulation`}
           />
           {zuletzt && (
             <p id={zuletztId} className="sr-only">
@@ -301,11 +319,12 @@ export default React.memo(function CounterField({
           aria-label="Erhöhen"
           /* Einzige gefuellte Taste der Zeile: Ein Tipp = plus eins ist die
              haeufigste Handlung und darf als einzige hervorstechen. */
-          className={`${buttonSize} rounded-[var(--rv-radius-md)] flex items-center justify-center border-2 border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-text)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:opacity-85 touch-manipulation`}
+          className={`${buttonSize} ${zeilenTaste} rounded-[var(--rv-radius-md)] flex items-center justify-center border-2 border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-text)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:opacity-85 touch-manipulation`}
         >
           <Plus className={iconSize} aria-hidden="true" />
         </button>
       </div>
+    </div>
     </div>
   );
 });

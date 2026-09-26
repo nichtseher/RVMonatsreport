@@ -10,6 +10,52 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-26 — v0.9.69: Responsiv nach Platz, nicht nach Gerätesorte
+
+Rückmeldung des Projektinhabers nach 0.9.68: am PC „toll", aber auf dem
+iPhone Pro Max stehen „+ und − unter dem Text, für den die Schalter sind,
+und das ist irgendwie unübersichtlich". Für große Bildschirme gewählt:
+„Volle Breite".
+
+### Gemessen (neun Größen, 320 × 640 bis 1920 × 1080, auch Handy quer)
+
+- Kein waagerechter Überlauf bei irgendeiner Größe -- das war nie das Problem.
+- **Zählerzeile:** kippte erst ab 640 px Fensterbreite (`sm:`) ins
+  Nebeneinander. Das iPhone Pro Max hat 440 px -- also gestapelt, obwohl die
+  Zeile 382 px Platz hat.
+- **Schnell-Erfassung:** `minmax(7.5rem, 1fr)` erzeugte ab 600 px so viele
+  Spalten, dass „Vorführunge-n" und „Auslieferun-gen" mitten im Wort brachen
+  (600, 768, 1024 px).
+- **Breite:** Inhalt endete bei 1120 px (`xl:max-w-6xl`), Tablet hatte
+  `max-w-2xl` (640 von 768 px).
+
+### Geändert
+
+- `CounterField`: Container-Abfrage (`@container`, `@min-[23rem]`) statt
+  Fensterbreite. Die Schwelle steht in rem, wächst also mit der Schriftgröße:
+  bei „Groß"/„Extra groß" bleibt es auf dem Handy beim Stapeln. Zwischen 23
+  und 36 rem kompaktere Tasten (56 statt 88 px, weiter über 44 px) und ein
+  56 px breites Zahlenfeld -- im ersten Versuch mit den großen Tasten blieben
+  der Beschriftung 75 px, Wörter brachen, und das Plus ragte 17 px aus der
+  Zeile; mit 8rem Mindestbreite scrollte die Seite bei 440 px 10 px seitwärts.
+  Jetzt 142 px Beschriftung; nur „Beratungsstellen" (154) und
+  „Veranstaltungen" (150) brauchen die Silbentrennung (`hyphens-auto`,
+  `lang="de"` ist gesetzt).
+- Schnell-Erfassung: `minmax(9rem, 1fr)` -- 0 Wortbrüche bei 320–1440 px
+  und bei „Groß"/„Extra groß".
+- Inhaltsbreite ohne Obergrenze, auch auf dem Tablet.
+
+**Nicht gemessen:** WebKit (hier nicht installiert; das Deploy-Tor prüft es
+mit dem Profil `handy-webkit`), ein echtes iPhone. Die Silbentrennung ist im
+kopflosen Chromium ohne Wörterbuch nicht sichtbar -- ob Safari
+„Beratungs-stellen" trennt, ist abgeleitet, nicht gesehen.
+
+### Prüfung
+
+`tsc` sauber, `npm run check` 212/212. `check:ui` lokal (Chromium, `handy` und `schreibtisch`): 554 bestanden, 1 rot -- der QR-Kamera-Test, der hier auch am Ausgangsstand scheitert.
+
+---
+
 ## 2026-09-26 — v0.9.68: Ein Kopf für alle Ansichten, eine Breite für alle
 
 Auftrag: „überarbeite alles, dass alles einheitlich ist" -- und mitten in der

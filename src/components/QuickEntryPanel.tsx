@@ -237,10 +237,12 @@ export default function QuickEntryPanel({
         tragen jetzt 14 px statt 12 px Schrift und eine große Zahl. Bei „Groß"
         und „Extra groß" passen zwei Spalten nicht mehr in ein Handy -- dann
         stehen die Kacheln untereinander, statt ihre Beschriftung abzuschneiden.
-        Derselbe Weg wie die Kacheln der Analyse (minmax(7.5rem, 1fr)).
+        Derselbe Weg wie die Kacheln der Analyse. 9rem statt 7.5rem seit 0.9.69: Mit
+        7.5rem entstanden ab 600 px Fensterbreite so viele Spalten, dass
+        „Vorführungen" und „Auslieferungen" mitten im Wort brachen.
       */}
       <div
-        className="grid grid-cols-[repeat(auto-fit,minmax(7.5rem,1fr))] gap-2.5"
+        className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-2.5"
         role="group"
         aria-label="Schnell-Erfassungs-Tasten"
       >
