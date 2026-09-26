@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Package, Plus, Trash2, Volume2, Pencil, Info } from "lucide-react";
+import { Package, Plus, Trash2, Volume2, Pencil, Info } from "lucide-react";
 import { Bestandsposten } from "../types";
 import { rueckfrageOffen } from "../utils/rueckfrage";
 import { ConfirmRequest } from "./ConfirmDialog";
+import AnsichtsKopf from "./AnsichtsKopf";
 
 interface BestandModalProps {
   isOpen: boolean;
@@ -163,29 +164,14 @@ export default function BestandModal({
 
   return (
     <div className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--card-border)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] animate-fade-in [overflow-wrap:anywhere]">
-      {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
-      {/* flex-col sm:flex-row: siehe CarryoverModal -- bei "Extra gross"
-          blieben der Ueberschrift sonst nur 58 px neben Taste und Icon. */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-4">
-        <div className="flex items-center gap-3">
-          <button
-            ref={closeButtonRef}
-            type="button"
-            onClick={onClose}
-            aria-label="Zurück zu den Optionen"
-            className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95"
-          >
-            <ArrowLeft className="w-6 h-6" aria-hidden="true" />
-          </button>
-          <Package className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
-        </div>
-        {/* min-w-0: sonst gibt das Flex-Element seine Breite nicht unter den
-            Inhalt preis und die Überschrift schiebt die Seite waagerecht auf. */}
-        <h2 tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black flex-1 min-w-0 [overflow-wrap:anywhere]">Meine Demogeräte</h2>
-      </div>
+      <AnsichtsKopf
+        titel="Meine Demogeräte"
+        symbol={Package}
+        zurueck={{ beschriftung: "Zurück zu den Optionen", onClick: onClose, ref: closeButtonRef }}
+      />
 
-      <div className="p-3.5 mb-5 rounded-[var(--rv-radius-md)] bg-[var(--cat-4-soft)] border border-[var(--cat-4)]/10 flex gap-2.5 items-start text-xs font-bold leading-relaxed">
-        <Info className="w-4 h-4 flex-shrink-0 text-[var(--cat-4-text)] mt-0.5" aria-hidden="true" />
+      <div className="p-3.5 mb-5 rounded-[var(--rv-radius-md)] bg-[var(--info-bg)] text-[var(--info-text)] border border-[var(--card-border)] flex gap-2.5 items-start text-sm leading-relaxed">
+        <Info className="w-4 h-4 flex-shrink-0 text-[var(--info-border)] mt-1" aria-hidden="true" />
         <p className="flex-1">
           Ihre eigene Liste der Vorführgeräte, die Sie gerade dabeihaben – damit Sie
           nachsehen können, wenn jemand fragt. Schreiben Sie hinein, was Ihnen hilft;
@@ -265,7 +251,7 @@ export default function BestandModal({
       </div>
 
       {posten.length === 0 ? (
-        <p className="text-sm font-bold text-[var(--text-muted)] leading-relaxed">
+        <p className="text-sm text-[var(--text-muted)] leading-relaxed">
           Tragen Sie oben ein, was Sie gerade dabeihaben. Die Liste ist freiwillig –
           sie soll Ihnen helfen, nicht Sie kontrollieren.
         </p>
@@ -279,7 +265,7 @@ export default function BestandModal({
               <div className="min-w-0 flex-1">
                 <p className="font-black text-sm break-words">{p.text}</p>
                 {p.notiz && (
-                  <p className="text-xs font-bold text-[var(--text-muted)] mt-1 break-words">
+                  <p className="text-xs text-[var(--text-muted)] mt-1 break-words">
                     {p.notiz}
                   </p>
                 )}

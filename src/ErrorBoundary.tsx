@@ -56,11 +56,11 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   private handleHardReset = async () => {
-    if (confirm("Möchten Sie die App wirklich komplett zurücksetzen? Alle gespeicherten Daten (inkl. RV Archiv) werden gelöscht! Sichern Sie vorher Ihre Daten über die Schaltfläche \"Daten als Datei sichern\".")) {
+    if (confirm("Möchten Sie die App wirklich komplett zurücksetzen? Alle gespeicherten Daten (inkl. Archiv) werden gelöscht! Sichern Sie vorher Ihre Daten über die Schaltfläche \"Daten als Datei sichern\".")) {
       /*
         Beide Speicher, über `loescheAllesLokal` -- dieselbe Funktion, die seit
         0.9.43 auch hinter „Alle Daten löschen" in den Optionen steht. Der
-        Bericht und das RV Archiv liegen in IndexedDB, nicht in localStorage;
+        Bericht und das Archiv liegen in IndexedDB, nicht in localStorage;
         ohne das Leeren der IndexedDB waere diese Meldung falsch UND ein
         Absturz durch beschaedigte Archivdaten kaeme sofort wieder.
       */

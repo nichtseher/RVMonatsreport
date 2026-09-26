@@ -1,4 +1,5 @@
-import { ArrowLeft, Accessibility } from "lucide-react";
+import { Accessibility } from "lucide-react";
+import AnsichtsKopf from "./AnsichtsKopf";
 import { APP_VERSION } from "../version";
 
 interface BarrierefreiheitModalProps {
@@ -40,33 +41,14 @@ export default function BarrierefreiheitModal({ onClose }: BarrierefreiheitModal
        vererbt und die langen Wörter hier in den Absätzen stehen:
        „Barrierefreiheitserklärung" ist mit 26 Zeichen länger als alles, was
        die Changelog-Ansicht 2026-09-14 auf 408 px getrieben hat. */
-    <div className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--card-border)] p-5 md:p-8 relative shadow-[var(--rv-shadow-lg)] flex flex-col gap-6 animate-fade-in pb-24 [overflow-wrap:anywhere]">
-      {/* flex-col sm:flex-row: siehe CarryoverModal -- "Barrierefreiheitserklärung"
-          ist mit 26 Zeichen laenger als alles, was die Changelog-Ansicht schon
-          auf 408 px getrieben hat, und brach bei "Extra gross" trotz
-          flex-1/min-w-0 in eine senkrechte Buchstabenspalte. */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 border-b border-[var(--card-border)] pb-4">
-        <button
-          onClick={onClose}
-          className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-colors active:scale-95 cursor-pointer"
-          aria-label="Zurück"
-        >
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <div className="flex-1 min-w-0">
-          <h2
-            tabIndex={-1}
-            data-ansicht-titel=""
-            className="text-xl md:text-2xl font-black flex items-center gap-2 min-w-0 [overflow-wrap:anywhere]"
-          >
-            <Accessibility className="w-7 h-7 flex-shrink-0 text-[var(--accent)]" aria-hidden="true" />
-            <span className="min-w-0">Erklärung zur Barrierefreiheit</span>
-          </h2>
-          <p className="text-sm font-bold text-[var(--text-muted)] mt-1">
-            Stand: 17.09.2026 · Fassung {APP_VERSION} · Selbstauskunft
-          </p>
-        </div>
-      </div>
+    <div className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--card-border)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] flex flex-col gap-6 animate-fade-in pb-24 [overflow-wrap:anywhere] [&_p]:max-w-[75ch] [&_li]:max-w-[75ch]">
+      <AnsichtsKopf
+        titel="Erklärung zur Barrierefreiheit"
+        untertitel={`Stand: 17.09.2026 · Fassung ${APP_VERSION} · Selbstauskunft`}
+        symbol={Accessibility}
+        zurueck={{ beschriftung: "Zurück zu den Optionen", onClick: onClose }}
+        className=""
+      />
 
       <section className="space-y-3">
         <p className="text-base font-normal leading-relaxed">
@@ -75,7 +57,7 @@ export default function BarrierefreiheitModal({ onClose }: BarrierefreiheitModal
         </p>
         <div className="p-4 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)] space-y-2">
           <p className="text-sm font-black">Kurz gesagt</p>
-          <p className="text-sm font-bold text-[var(--text-muted)] leading-relaxed">
+          <p className="text-sm text-[var(--text-muted)] leading-relaxed">
             Die Anwendung ist <strong>teilweise vereinbar</strong> mit EN 301 549 (Stufe AA). Auf dieser
             Stufe ist <strong>keine Barriere bekannt</strong>. „Teilweise" steht hier, weil an drei
             Stellen der Nachweis fehlt — nicht, weil etwas kaputt wäre. Welche das sind, steht weiter
@@ -86,7 +68,7 @@ export default function BarrierefreiheitModal({ onClose }: BarrierefreiheitModal
 
       <section className="space-y-3">
         <h3 className="text-lg font-black">Was erfüllt ist — und nachgemessen</h3>
-        <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)] leading-relaxed">
+        <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)] leading-relaxed">
           <li>Jede Funktion ist ohne Maus und ohne Zeigegerät erreichbar.</li>
           <li>
             Nach jedem Wechsel der Ansicht steht die Tastatur auf deren Überschrift; der Hauptbereich
@@ -102,7 +84,7 @@ export default function BarrierefreiheitModal({ onClose }: BarrierefreiheitModal
           </li>
           <li>Jede Rückmeldung der App wird angesagt, wahlweise zusätzlich vorgelesen.</li>
         </ul>
-        <p className="text-sm font-bold text-[var(--text-muted)] leading-relaxed">
+        <p className="text-sm text-[var(--text-muted)] leading-relaxed">
           Geprüft wird das bei <strong>jeder</strong> Veröffentlichung: 198 Prüfungen der Rechenkerne und
           über 590 Prüfungen der Oberfläche über drei Geräteprofile, darunter die Browser-Engine der
           iPhones. Schlägt eine fehl, bleibt die vorherige Fassung online.
@@ -111,7 +93,7 @@ export default function BarrierefreiheitModal({ onClose }: BarrierefreiheitModal
 
       <section className="space-y-3">
         <h3 className="text-lg font-black">Was nicht barrierefrei ist</h3>
-        <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)] leading-relaxed">
+        <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)] leading-relaxed">
           <li>
             <strong>Der Kamera-Weg beim Geräteabgleich</strong> (QR-Code abfilmen) setzt Sehen voraus.
             <strong> Es gibt zwei gleichwertige Wege ohne Kamera:</strong> den kopierbaren Textcode und
@@ -123,7 +105,7 @@ export default function BarrierefreiheitModal({ onClose }: BarrierefreiheitModal
             geht auch über die Tastatur.
           </li>
         </ul>
-        <p className="text-sm font-bold text-[var(--text-muted)] leading-relaxed">
+        <p className="text-sm text-[var(--text-muted)] leading-relaxed">
           Kein Punkt ist mit „unverhältnismäßiger Belastung" begründet. Diesen Ausnahmegrund nimmt diese
           Erklärung nicht in Anspruch.
         </p>
@@ -131,7 +113,7 @@ export default function BarrierefreiheitModal({ onClose }: BarrierefreiheitModal
 
       <section className="space-y-3">
         <h3 className="text-lg font-black">Was noch nicht nachgewiesen ist</h3>
-        <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)] leading-relaxed">
+        <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)] leading-relaxed">
           <li>
             <strong>Der vollständige Durchlauf mit Screenreader auf der aktuellen Fassung steht aus.</strong>{" "}
             Der letzte vollständige Durchlauf durch einen blinden Kollegen lief auf Fassung 0.9.22 und
@@ -151,7 +133,7 @@ export default function BarrierefreiheitModal({ onClose }: BarrierefreiheitModal
 
       <section className="space-y-3">
         <h3 className="text-lg font-black">Ihre Daten bleiben auf Ihrem Gerät</h3>
-        <p className="text-sm font-bold text-[var(--text-muted)] leading-relaxed">
+        <p className="text-sm text-[var(--text-muted)] leading-relaxed">
           Die App arbeitet ohne Server: keine Nutzerkonten, keine Cloud, keine externen Schriften, keine
           Auswertung. Der Geräteabgleich läuft direkt zwischen zwei Geräten. Das steht in dieser
           Erklärung, weil es zur Wahlfreiheit gehört: Wer ein Hilfsmittel nutzt, soll dafür nicht mehr
@@ -166,13 +148,13 @@ export default function BarrierefreiheitModal({ onClose }: BarrierefreiheitModal
             Ansprechpartner für alle Belange dieser App ist <strong>Marc Petry Stramov</strong> (Entwicklung).
             Melden Sie Barrieren bitte auf dem üblichen innerbetrieblichen Weg — auch Kleinigkeiten.
           </p>
-          <p className="text-sm font-bold text-[var(--text-muted)] leading-relaxed">
+          <p className="text-sm text-[var(--text-muted)] leading-relaxed">
             Hilfreich sind vier Angaben: welche Ansicht, welches Hilfsmittel (NVDA, JAWS, VoiceOver,
             Vergrößerung), welche Schriftgröße und welches Farbschema eingestellt waren. Sie entscheiden
             meistens darüber, ob sich ein Fehler nachstellen lässt.
           </p>
         </div>
-        <p className="text-sm font-bold text-[var(--text-muted)] leading-relaxed">
+        <p className="text-sm text-[var(--text-muted)] leading-relaxed">
           Hilft das nicht weiter, stehen Ihnen die innerbetrieblichen Stellen offen: Vorgesetzte,
           Schwerbehindertenvertretung, Betriebsrat und der Inklusionsbeauftragte des Arbeitgebers
           (§ 181 SGB IX).
@@ -181,7 +163,7 @@ export default function BarrierefreiheitModal({ onClose }: BarrierefreiheitModal
 
       <section className="space-y-3 border-t border-[var(--card-border)] pt-5">
         <h3 className="text-lg font-black">Rechtlicher Rahmen und Grenzen dieser Erklärung</h3>
-        <p className="text-sm font-bold text-[var(--text-muted)] leading-relaxed">
+        <p className="text-sm text-[var(--text-muted)] leading-relaxed">
           RV Mobil ist ein <strong>Arbeitsmittel für Beschäftigte</strong>. Damit gilt weder das
           Barrierefreiheitsstärkungsgesetz (es betrifft Dienstleistungen für Verbraucher) noch die BITV
           2.0 (sie betrifft öffentliche Stellen); maßgeblich sind die Pflichten des Arbeitgebers zur
@@ -189,7 +171,7 @@ export default function BarrierefreiheitModal({ onClose }: BarrierefreiheitModal
           ArbStättV. Diese Erklärung ist deshalb <strong>freiwillig</strong> und folgt dem Aufbau, den
           § 12b BITV 2.0 für öffentliche Stellen vorschreibt.
         </p>
-        <p className="text-sm font-bold text-[var(--text-muted)] leading-relaxed">
+        <p className="text-sm text-[var(--text-muted)] leading-relaxed">
           Sie ist eine <strong>Selbstauskunft der Entwicklung</strong>, kein Gutachten und keine Prüfung
           durch eine unabhängige Stelle. Grundlage ist eine Selbstbewertung nach EN 301 549 V3.2.1,
           Abschnitt 9 (WCAG 2.1, Stufen A und AA). Sie wird bei jeder Fassung überprüft, die Ansichten,

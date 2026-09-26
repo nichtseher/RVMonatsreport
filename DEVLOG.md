@@ -10,6 +10,65 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-26 — v0.9.68: Ein Kopf für alle Ansichten, eine Breite für alle
+
+Auftrag: „überarbeite alles, dass alles einheitlich ist" -- und mitten in der
+Arbeit: „kannst du das nicht voll responsiv an die displaygröße machen?"
+
+### Bestandsaufnahme (gemessen, nicht erinnert)
+
+Alle 15 Ansichten und Untermenüs per Skript angeklickt und fotografiert
+(`?tab=` erreicht nur sechs, der Rest braucht Klicks). Ergebnis: sechs
+Spielarten von Kopfzeilen -- Symbol über oder neben der Überschrift, grauer
+Balken oder keiner, Symbol grün/blau/violett, Zurück-Taste 44 oder 48 px,
+Untertitel fett oder normal; die Analyse ohne Zurück-Taste, obwohl sie nur
+über „Mehr" erreichbar ist; die Erklärung zur Barrierefreiheit ohne
+markierte Station in der unteren Leiste. Überschriften wichen von den
+Menüeinträgen ab („Hilfe & Anleitung" → „Hilfe & Handbuch", „Geräte-Sync" →
+„Geräte-Synchronisation", die Sync-Überschrift war zudem abgeschnitten).
+
+### Was sich geändert hat
+
+- **`src/components/AnsichtsKopf.tsx`**: ein Kopf für alle zwölf Ansichten
+  und die zwei Untermenüs der Optionen. Gestapelt (Taste + Symbol, darunter
+  die Überschrift), weil die nebeneinanderliegende Form bei „Extra groß"
+  mehrfach gemessen in Buchstabenspalten zerbrach. Die Überschrift trägt die
+  Markierung für `useAnsichtsFokus`; Untermenüs setzen `markiert={false}`.
+- **`scripts/checks/ansichtsfokus.ts`** zählt jetzt rohe Markierungen UND
+  markierende `<AnsichtsKopf`-Aufrufe -- sonst hätte die Wache jede Ansicht
+  als unmarkiert gemeldet.
+- **Namen = Menüeinträge**: Archiv, Analyse, Hilfe & Anleitung, Geräte-Sync,
+  Jahreskonto, Eigene Felder löschen. „RV Archiv"/„RV Analyse" auch in
+  Ansagen, Hinweisen und der Hilfe (die untere Leiste hatte das „RV" schon
+  0.9.44 verloren). Ältere Changelog-Einträge bleiben, wie sie waren.
+- **Eine Breite**: Elf Ansichten steckten in einem zweiten Rahmen
+  (`max-w-2xl` + eigenes Padding) innerhalb des Rahmens, den das Formular
+  benutzt. Gemessen bei 1280 px: Formular 912 px, alle anderen 640 px; auf
+  dem Handy waren sie 24 px schmaler als das Formular. Der innere Rahmen ist
+  entfallen. Lesetexte (Hilfe, Neues, Erklärung) sind auf 75 Zeichen
+  Zeilenlänge begrenzt, damit breite Bildschirme keine 130-Zeichen-Zeilen
+  erzeugen.
+- **Raster nach verfügbarem Platz statt fester Spaltenzahl**
+  (`repeat(auto-fit,minmax(…rem,1fr))`): Schriftgrößen-Tasten,
+  Farbschemata, Sync-Schritte. Weil das Minimum in `rem` steht, reagiert es
+  auf Bildschirmbreite UND Schriftgröße. Vorher bei „Extra groß", 360 px:
+  „Stan/da/rd", „He|", „Ferti/g", „Empf/ange/n".
+- **Kleintexte**: 103 gedämpfte Sekundärtexte in `text-xs`/`text-sm` von
+  fett auf normal (Muster: `text-[var(--text-muted)]` + kleine Stufe +
+  `font-bold`); Beschriftungen und Werte bleiben fett. Hinweiskästen mit
+  feiner Kante statt kräftigem Rand.
+- Hilfe: Taste „Hilfe schließen" entfernt (doppelt zur Zurück-Taste), Rand
+  4 px → 1 px wie alle Karten. Damit entfiel auch die einzige
+  `shadow-inner`-Ausnahme; `gestaltung.ts` erlaubt jetzt keine mehr.
+
+### Prüfung
+
+`tsc` sauber, `npm run check` 212/212. `check:ui` lokal (Chromium, `handy` und `schreibtisch`): 554 bestanden, 1 rot -- wieder nur der QR-Kamera-Test, der hier auch am Ausgangsstand scheitert. Sichtprüfung per Bildschirmfoto:
+alle 15 Ansichten bei 360 px hell, Stichproben bei „Extra groß" (360 und
+320 px, dunkel und hell) und alle bei 1280 px.
+
+---
+
 ## 2026-09-26 — v0.9.67: Nur ein Fenster schreibt; die übrigen Ansichten im neuen Design
 
 Zwei Aufträge aus der Liste „wo müssen wir noch ran?" (Punkte 2 und 3).

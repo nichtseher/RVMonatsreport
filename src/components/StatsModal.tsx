@@ -7,6 +7,7 @@ import {
    AlertCircle,
    Table
 } from "lucide-react";
+import AnsichtsKopf from "./AnsichtsKopf";
 import { ReportData, SectionsConfig, HistoryRecord } from "../types";
 
 interface StatsModalProps {
@@ -14,13 +15,16 @@ interface StatsModalProps {
   appFields: SectionsConfig;
   history: Record<string, HistoryRecord>;
   announceToAriaAndSpeech: (message: string, immediate?: boolean) => void;
+  /** Rückweg zu den Optionen -- seit 0.9.45 der einzige Weg hierher. */
+  onClose?: () => void;
 }
 
 export default function StatsModal({
   reportData,
   appFields,
   history,
-  announceToAriaAndSpeech
+  announceToAriaAndSpeech,
+  onClose,
 }: StatsModalProps) {
   const [activeTab, setActiveTab] = useState<"current" | "trends">("current");
   const [viewType, setViewType] = useState<"visual" | "table">("visual");
@@ -105,24 +109,17 @@ export default function StatsModal({
   const sortedMonths = Object.values(allMonthsMap).sort((a, b) => a.month.localeCompare(b.month));
 
   return (
-    <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-[var(--rv-radius-xl)] w-full max-w-2xl shadow-[var(--rv-shadow-lg)] overflow-hidden focus:outline-none flex flex-col animate-fade-in mx-auto">
-      {/* Header */}
-      <div className="p-6 border-b border-[var(--card-border)] flex items-center justify-between bg-[var(--bg-color)]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-[var(--rv-radius-md)] bg-[var(--cat-3-soft)] text-[var(--cat-3-text)] flex items-center justify-center border border-[var(--cat-3)]">
-            <BarChart3 className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 id="stats-title" tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black text-[var(--text-color)] min-w-0 [overflow-wrap:anywhere]">
-              RV Analyse & Trends
-            </h2>
-            <p className="text-sm text-[var(--text-muted)] mt-0.5">
-              Automatische Auswertung für {formatMonthGerman(reportData.month)}
-            </p>
-          </div>
-        </div>
+    <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-[var(--rv-radius-xl)] w-full shadow-[var(--rv-shadow-lg)] overflow-hidden focus:outline-none flex flex-col animate-fade-in">
+      <div className="px-6 pt-6 md:px-8 md:pt-8">
+        <AnsichtsKopf
+          id="stats-title"
+          titel="Analyse"
+          untertitel={`Auswertung für ${formatMonthGerman(reportData.month)} und die Monate davor`}
+          symbol={BarChart3}
+          zurueck={onClose ? { beschriftung: "Zurück zu den Optionen", onClick: onClose } : undefined}
+          className=""
+        />
       </div>
-
         {/* Segmented Toggles */}
         <div className="px-6 pt-4 pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--bg-color)] border-b border-[var(--card-border)]">
           <div className="flex bg-[var(--bg-color)] p-1 rounded-[var(--rv-radius-md)] self-start flex-wrap gap-0.5">
@@ -266,7 +263,7 @@ export default function StatsModal({
                   {totalActions === 0 ? (
                     <div className="py-10 text-center space-y-2">
                       <AlertCircle className="w-8 h-8 text-[var(--text-muted)] mx-auto animate-pulse" />
-                      <p className="text-sm font-bold text-[var(--text-muted)]">
+                      <p className="text-sm text-[var(--text-muted)]">
                         Keine Daten für diesen Monat eingetragen.
                       </p>
                       <p className="text-xs text-[var(--text-muted)]">
@@ -348,7 +345,7 @@ export default function StatsModal({
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs font-black text-[var(--text-color)] truncate">{category.title}</span>
-                                  <span className="text-xs font-bold text-[var(--text-muted)]">{category.val} ({pct}%)</span>
+                                  <span className="text-xs text-[var(--text-muted)]">{category.val} ({pct}%)</span>
                                 </div>
                                 <span className="block text-[0.75rem] text-[var(--text-muted)] truncate">{category.desc}</span>
                               </div>
@@ -409,7 +406,7 @@ export default function StatsModal({
                   <div className="text-xs space-y-1.5 leading-relaxed font-bold">
                     <p className="font-normal">Nicht genügend historische Daten für eine Trendanalyse vorhanden.</p>
                     <p>
-                      Die Trendanalyse vergleicht Ihre Monatsdaten über einen längeren Zeitraum. Sobald Sie Berichte für weitere Monate im RV Archiv sichern (dies geschieht automatisch, wenn Sie auf "Nächsten Monat starten" klicken), wird hier ein automatischer Monatsvergleich gezeichnet.
+                      Die Trendanalyse vergleicht Ihre Monatsdaten über einen längeren Zeitraum. Sobald Sie Berichte für weitere Monate im Archiv sichern (dies geschieht automatisch, wenn Sie auf "Nächsten Monat starten" klicken), wird hier ein automatischer Monatsvergleich gezeichnet.
                     </p>
                     <p className="font-normal underline mt-1">Tipp: Ihr aktueller Monat ist bereits als erster Datenpunkt registriert!</p>
                   </div>

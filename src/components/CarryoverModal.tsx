@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Calendar, Save, Info } from "lucide-react";
+import { Calendar, Save } from "lucide-react";
+import AnsichtsKopf from "./AnsichtsKopf";
 import { YearlyCarryover } from "../types";
 import { rueckfrageOffen } from "../utils/rueckfrage";
 
@@ -112,44 +113,13 @@ export default function CarryoverModal({
       ref={modalRef}
       className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--card-border)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] animate-fade-in"
     >
-      {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
-      {/* flex-col sm:flex-row: Bei "Extra gross" wuchsen Zurueck-Taste (rem-
-          basiert, 48 -> 72 px) und Kalender-Icon (32 -> 48 px) so weit mit,
-          dass der Ueberschrift in einem 360-px-Fenster nur noch 58 px Breite
-          blieben -- mit [overflow-wrap:anywhere] brach sie dort in eine
-          senkrechte Buchstabenspalte ueber den ganzen Bildschirm, gemessen
-          2026-09-20. Gestapelt steht ihr die volle Kartenbreite zur
-          Verfuegung; ab sm: ist wieder reichlich Platz fuer eine Zeile. */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-4">
-        <div className="flex items-center gap-3">
-          <button
-            ref={closeButtonRef}
-            type="button"
-            onClick={onClose}
-            aria-label="Zurück zur Zeiterfassung"
-            className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95"
-          >
-            <ArrowLeft className="w-6 h-6" aria-hidden="true" />
-          </button>
-          <Calendar className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
-        </div>
-        <h2
-          tabIndex={-1}
-          data-ansicht-titel=""
-          id="carryover-modal-title"
-          className="text-xl md:text-2xl font-black flex-1 min-w-0 [overflow-wrap:anywhere]"
-        >
-          Jahreskonto & Einstellungen
-        </h2>
-      </div>
-
-        {/* Info text */}
-        <div className="p-3.5 mb-5 rounded-[var(--rv-radius-md)] bg-[var(--cat-4-soft)] border border-[var(--cat-4)]/10 flex gap-2.5 items-start text-xs font-bold leading-relaxed">
-          <Info className="w-4 h-4 flex-shrink-0 text-[var(--cat-4-text)] mt-0.5" aria-hidden="true" />
-          <p className="flex-1">
-            Hier können Sie Ihre Startwerte für Urlaub und Überstunden eintragen.
-          </p>
-        </div>
+      <AnsichtsKopf
+        id="carryover-modal-title"
+        titel="Jahreskonto"
+        untertitel="Hier tragen Sie Ihre Startwerte für Urlaub und Überstunden ein."
+        symbol={Calendar}
+        zurueck={{ beschriftung: "Zurück zur Zeiterfassung", onClick: onClose, ref: closeButtonRef }}
+      />
 
         <form onSubmit={handleFormSubmit} className="space-y-5">
           {/* Section 1: Urlaubskonto */}

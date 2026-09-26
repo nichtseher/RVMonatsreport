@@ -7,6 +7,7 @@ import {
   Umbrella, 
   Table 
 } from "lucide-react";
+import AnsichtsKopf from "./AnsichtsKopf";
 import ClockInWidget from "./ClockInWidget";
 import { TimeLog, YearlyCarryover, ReportData, HistoryRecord } from "../types";
 
@@ -193,48 +194,13 @@ export default function TimeModal({
       ref={modalRef}
       className="w-full bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] border border-[var(--card-border)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] flex flex-col gap-5 animate-fade-in"
     >
-      {/* Header */}
-      {/*
-        Die Kopfzeile stapelt auf schmalen Geräten, und der Textblock hat
-        min-w-0. Beides ist kein Feinschliff:
-
-        Ohne min-w-0 ist der Textblock ein Flex-Kind mit `min-width: auto` und
-        kann nicht unter seine Mindestbreite schrumpfen. Die gibt hier das
-        unteilbare Wort "Zeiterfassung" vor -- bei 360 px und Schriftgröße
-        extra-large brauchte es 270,4 px und schob die Ansicht 1,4 px über den
-        Rand. Auf diesem Rechner blieb es knapp darunter; gefunden hat es der
-        Linux-Läufer des Deploy-Tors. Auf den Android-Geräten der Kollegen wäre
-        es genauso aufgetreten.
-
-        min-w-0 allein reichte aber nicht: Icon, Abstand und die mit der
-        Schriftgröße mitwachsende Kartenpolsterung ließen dem Text nur 149 px,
-        und das Wort brach mitten hindurch ("Zeiterfass/ung"). Gestapelt steht
-        die volle Kartenbreite zur Verfügung, das Wort bleibt ganz.
-      */}
-      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3 border-b border-[var(--card-border)] pb-4">
-          <Clock className="w-8 h-8 shrink-0 text-[var(--accent)]" aria-hidden="true" />
-          <div className="min-w-0">
-            {/*
-              hyphens-auto trennt "Zeit-erfassung" sauber, ABER nur wenn das
-              deutsche Trennwörterbuch geladen ist -- Chromium liefert die
-              nach, ein frisch aufgesetzter Browser hat sie womöglich nicht.
-              Nachgemessen mit erzwungenem `hyphens: none`: Das Wort braucht
-              dann 193 px in einem 148 px breiten Kasten. break-words ist
-              deshalb kein Doppel, sondern der Boden darunter.
-            */}
-            <h2
-              tabIndex={-1}
-              data-ansicht-titel=""
-              id="time-modal-title"
-              className="text-xl md:text-2xl font-black hyphens-auto break-words"
-            >
-              Zeiterfassung
-            </h2>
-            <p className="text-sm text-[var(--text-muted)] mt-0.5">
-              Hier erfassen Sie Ihre Arbeitszeiten und sehen Ihr Arbeitszeitkonto.
-            </p>
-          </div>
-        </div>
+      <AnsichtsKopf
+        id="time-modal-title"
+        titel="Zeiterfassung"
+        untertitel="Hier erfassen Sie Ihre Arbeitszeiten und sehen Ihr Arbeitszeitkonto."
+        symbol={Clock}
+        className=""
+      />
 
         {/* Navigation Tabs */}
         <div className="flex border-b border-[var(--card-border)] select-none">

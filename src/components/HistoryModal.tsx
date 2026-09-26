@@ -14,6 +14,7 @@ import {
   Check,
   Undo2
 } from "lucide-react";
+import AnsichtsKopf from "./AnsichtsKopf";
 import { SectionsConfig, HistoryRecord } from "../types";
 import { triggerFileDownload } from "../utils/excelUtils";
 import { formatMonthGerman } from "../utils/dateUtils";
@@ -264,7 +265,7 @@ export default function HistoryModal({
       const formatted = formatMonthGerman(deleteConfirm);
       onDeleteRecord(deleteConfirm);
       triggerToast(`Eintrag für ${formatted} gelöscht.`);
-      announceToAriaAndSpeech(`Eintrag für ${formatted} aus dem RV Archiv gelöscht.`);
+      announceToAriaAndSpeech(`Eintrag für ${formatted} aus dem Archiv gelöscht.`);
       setDeleteConfirm(null);
     }
   };
@@ -293,14 +294,14 @@ export default function HistoryModal({
 
   return (
     <div className="w-full bg-[var(--card-bg)] border-2 border-[var(--card-border)] rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] overflow-hidden flex flex-col focus:outline-none animate-fade-in" tabIndex={-1}>
-      {/* Header */}
-      <div className="p-5 border-b border-[var(--card-border)] flex items-center justify-between bg-[var(--bg-color)]">
-        <div className="flex items-center gap-2.5">
-          <History className="w-5 h-5 text-[var(--accent)]" aria-hidden="true" />
-          <h2 id="history-modal-title" tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black text-[var(--text-color)] flex-1 min-w-0 [overflow-wrap:anywhere]">
-            RV Archiv - Gespeicherte Monate
-          </h2>
-        </div>
+      <div className="px-5 pt-5 md:px-8 md:pt-8">
+        <AnsichtsKopf
+          id="history-modal-title"
+          titel="Archiv"
+          untertitel="Ihre gespeicherten Monate"
+          symbol={History}
+          className=""
+        />
       </div>
 
       {/* Scrollable Content */}
@@ -627,7 +628,7 @@ export default function HistoryModal({
                                         <button
                                           type="button"
                                           onClick={() => setDeleteConfirm(record.month)}
-                                          aria-label={`${formatMonthGerman(record.month)} aus RV Archiv löschen`}
+                                          aria-label={`${formatMonthGerman(record.month)} aus dem Archiv löschen`}
                                           className="min-w-[44px] min-h-[44px] px-3 rounded-[var(--rv-radius-md)] border border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger-text)] font-black text-xs flex items-center justify-center cursor-pointer hover:brightness-110 active:scale-95 transition-all focus-visible:ring-4"
                                         >
                                           <Trash2 className="w-4 h-4" aria-hidden="true" />

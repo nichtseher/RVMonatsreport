@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useState } from "react";
 import { 
-  ArrowLeft, HelpCircle, BookOpen, Clock, FileText,
+  HelpCircle, BookOpen, Clock, FileText,
   Share2, Lock, AlertTriangle, Play,
   CalendarDays, BarChart3, LayoutGrid, Shield, Zap, Keyboard
 , Package } from "lucide-react";
 import { SectionsConfig } from "../types";
+import AnsichtsKopf from "./AnsichtsKopf";
 import { VORLAGE_STAND } from "../utils/vorlageStand";
 import { rueckfrageOffen } from "../utils/rueckfrage";
 
@@ -86,37 +87,17 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
   */
   return (
     <div className="animate-fade-in" ref={modalRef}>
-      <div className="bg-[var(--card-bg)] rounded-[var(--rv-radius-xl)] overflow-hidden shadow-[var(--rv-shadow-lg)] border-4 border-[var(--card-border)] flex flex-col max-h-[85vh]">
+      <div className="bg-[var(--card-bg)] rounded-[var(--rv-radius-xl)] overflow-hidden shadow-[var(--rv-shadow-lg)] border border-[var(--card-border)] flex flex-col max-h-[85vh] [&_p]:max-w-[75ch] [&_li]:max-w-[75ch]">
         
-        {/* Header */}
-        <div className="bg-[var(--bg-color)] p-6 border-b-2 border-[var(--card-border)] flex items-center justify-between sticky top-0 z-10">
-          {/* Zurück-Pfeil links (einheitliches Navigationsmuster) */}
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              onClick={onClose}
-              className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95 focus-visible:ring-4"
-              aria-label="Zurück zu den Optionen"
-            >
-              <ArrowLeft className="w-6 h-6" aria-hidden="true" />
-            </button>
-            {/* text-[var(--primary-text)] statt text-white: --primary ist in
-                "Weiß auf Schwarz" selbst #ffffff und in "Gelb auf Schwarz"
-                #ffff00 -- das Fragezeichen war dort unsichtbar.
-                shadow-inner bewusst außerhalb der --rv-shadow-*-Skala: Ein
-                Innenschatten zeigt eine eingelassene Flaeche, keine
-                Elevation ueber der Seite -- ein anderer Effekt, keine
-                fehlende Anbindung. scripts/checks/gestaltung.ts kennt genau
-                diese eine Ausnahme. */}
-            <div className="w-12 h-12 bg-[var(--primary)] rounded-full hidden sm:flex items-center justify-center text-[var(--primary-text)] shadow-inner flex-shrink-0">
-              <HelpCircle className="w-6 h-6" aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <h2 id="help-modal-title" tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black text-[var(--text-color)]">
-                Hilfe & Handbuch
-              </h2>
-              <p className="text-sm font-bold text-[var(--text-muted)] mt-1">Ausführliche Erklärungen zur RV Mobil App</p>
-            </div>
-          </div>
+        <div className="px-6 pt-6 md:px-8 md:pt-8">
+          <AnsichtsKopf
+            id="help-modal-title"
+            titel="Hilfe & Anleitung"
+            untertitel="So funktioniert RV Mobil, Schritt für Schritt"
+            symbol={HelpCircle}
+            zurueck={{ beschriftung: "Zurück zu den Optionen", onClick: onClose }}
+            className=""
+          />
         </div>
 
         {/* Tab Navigation */}
@@ -188,7 +169,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
           
           {activeTab === "general" && (
             <div className="space-y-6 animate-fade-in">
-              <div className="bg-[var(--info-bg)] p-5 rounded-[var(--rv-radius-lg)] border border-[var(--info-border)]">
+              <div className="bg-[var(--info-bg)] p-5 rounded-[var(--rv-radius-lg)] border border-[var(--card-border)]">
                 <h3 className="font-black text-lg text-[var(--info-text)] mb-2 flex items-center gap-2">
                   <Play className="w-5 h-5" />
                   Erste Schritte
@@ -253,7 +234,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                     <li><strong>Alt+Umschalt+N</strong> – zum Feld „Mitarbeiter/in“ springen</li>
                     <li><strong>Alt+Umschalt+O</strong> – zum Notizfeld springen</li>
                     <li><strong>Alt+Umschalt+T</strong> – RV Zeit (Stempeluhr) öffnen. Ist die Stempeluhr in den Optionen abgeschaltet, sagt die App das an und bleibt, wo sie ist.</li>
-                    <li><strong>Alt+Umschalt+H</strong> – RV Archiv öffnen</li>
+                    <li><strong>Alt+Umschalt+H</strong> – Archiv öffnen</li>
                     <li><strong>Alt+Umschalt+S</strong> – Sprachansagen ein- oder ausschalten</li>
                     <li><strong>Alt+Umschalt+L</strong> – Ein-Hand-Modus ein- oder ausschalten</li>
                   </ul>
@@ -303,8 +284,8 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   title="Wo finde ich was? Die vier Schaltflächen unten"
                 >
                   <p>Unten stehen vier Bereiche: <strong>Report</strong> (Ihre Zahlen), <strong>Zeit</strong> (Stempeluhr und Schichten), <strong>Archiv</strong> (frühere Monate und der Versand) und <strong>Mehr</strong>.</p>
-                  <p>Unter <strong>Mehr</strong> liegt alles Übrige – darunter <strong>RV Analyse</strong> mit der Auswertung über mehrere Monate, das Jahreskonto, Meine Demogeräte, die Datensicherung, der Geräteabgleich und diese Hilfe.</p>
-                  <p>Die Beschriftungen sind kurz, weil sie bei der Schriftgröße <strong>Extra groß</strong> sonst abgeschnitten werden. Die Bereiche selbst heißen weiterhin RV Report, RV Zeit und RV Archiv.</p>
+                  <p>Unter <strong>Mehr</strong> liegt alles Übrige – darunter <strong>Analyse</strong> mit der Auswertung über mehrere Monate, das Jahreskonto, Meine Demogeräte, die Datensicherung, der Geräteabgleich und diese Hilfe.</p>
+                  <p>Die Beschriftungen sind kurz, weil sie bei der Schriftgröße <strong>Extra groß</strong> sonst abgeschnitten werden. Die Bereiche selbst heißen weiterhin RV Report, RV Zeit und Archiv.</p>
                 </FAQItem>
 
                 <FAQItem 
@@ -313,11 +294,11 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 >
                   <p>Zuerst kommt eine <strong>Rückfrage</strong>. Sie zeigt Ihnen, was gesichert wird – wie viele Vorgänge Sie gezählt und wie viele Schichten Sie erfasst haben. Erst wenn Sie dort auf „Monat abschließen“ tippen, passieren zwei Dinge:</p>
                   <ul className="list-disc pl-4 space-y-1 mt-2">
-                    <li>Ihre aktuellen Zählerstände und Notizen werden eingefroren und im <strong>RV Archiv</strong> gespeichert.</li>
+                    <li>Ihre aktuellen Zählerstände und Notizen werden eingefroren und im <strong>Archiv</strong> gespeichert.</li>
                     <li>Die Zähler auf der Startseite werden alle wieder auf <strong>0</strong> gesetzt, und der Monat springt automatisch eins weiter (z.B. von Januar auf Februar).</li>
                   </ul>
                   <p className="mt-2">Danach erscheint oben ein Streifen mit der Taste <strong>Rückgängig</strong>. Damit sind Sie sofort wieder im alten Monat, als wäre nichts gewesen. Der Streifen verschwindet, sobald Sie im neuen Monat den ersten Wert erfassen – ein Rücksprung würde diesen sonst gefährden.</p>
-                  <p className="mt-2">Auch ohne Rückgängig ist nichts verloren: Sie können sich die archivierten Monate jederzeit über den Reiter „RV Archiv“ wieder ansehen, nachträglich bearbeiten oder exportieren.</p>
+                  <p className="mt-2">Auch ohne Rückgängig ist nichts verloren: Sie können sich die archivierten Monate jederzeit über den Reiter „Archiv“ wieder ansehen, nachträglich bearbeiten oder exportieren.</p>
                 </FAQItem>
 
                 <FAQItem
@@ -335,8 +316,8 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 >
                   <p>Ganz unten im RV Report finden Sie den Knopf <strong>Bericht an VL senden (Teilen/E-Mail)</strong>. Damit erzeugt die App den Monatsbericht als Excel-Datei und öffnet den Teilen-Dialog Ihres Geräts – dort wählen Sie selbst, wie Sie ihn verschicken (z. B. per E-Mail). <strong>Die Empfängeradresse ist nicht hinterlegt</strong>, Sie geben sie im E-Mail-Programm ein. Auf Geräten ohne Teilen-Funktion (meist am PC) wird die Datei stattdessen heruntergeladen.</p>
                   <p>Vor dem Senden prüft die App Ihren Bericht kurz auf Auffälligkeiten (z. B. fehlender Name oder Stunden, die nicht zur Stempeluhr passen) und fragt gegebenenfalls nach. Danach fragt sie in jedem Fall, welche Tabellenblätter mitgehen sollen – siehe unten.</p>
-                  <p>Zusätzlich können Sie im <strong>RV Archiv</strong> jederzeit rückwirkend Excel-Dateien für jeden vergangenen Monat herunterladen oder teilen.</p>
-                  <p className="mt-2">Im RV Archiv trägt jeder Monat ein Abzeichen: <strong>„Gesendet"</strong> mit Datum oder <strong>„Noch offen"</strong>. Es wird automatisch gesetzt, sobald Sie den Monat exportiert und die Datei wirklich verschickt haben – brechen Sie den Teilen-Dialog ab, bleibt der Monat offen. Mit der Schaltfläche <strong>Als gesendet markieren</strong> können Sie es jederzeit von Hand korrigieren.</p>
+                  <p>Zusätzlich können Sie im <strong>Archiv</strong> jederzeit rückwirkend Excel-Dateien für jeden vergangenen Monat herunterladen oder teilen.</p>
+                  <p className="mt-2">Im Archiv trägt jeder Monat ein Abzeichen: <strong>„Gesendet"</strong> mit Datum oder <strong>„Noch offen"</strong>. Es wird automatisch gesetzt, sobald Sie den Monat exportiert und die Datei wirklich verschickt haben – brechen Sie den Teilen-Dialog ab, bleibt der Monat offen. Mit der Schaltfläche <strong>Als gesendet markieren</strong> können Sie es jederzeit von Hand korrigieren.</p>
                   <p className="mt-2 text-[var(--info-text)] font-normal">Vor jedem Senden fragt die App, <strong>was mitgehen soll</strong>. <strong>Nur Vorlage senden</strong> schickt allein das Blatt <strong>Monatsinfo</strong> – exakt das gewohnte Formular der Vertriebsleitung, gleiche Zeilen, gleiche gelbe Felder, gleiche Summenformel. Das ist die vorgeschlagene Antwort, und sie reicht der Vertriebsleitung.</p>
                   <p className="mt-2"><strong>Welche Formularfassung steckt drin?</strong> Die App bringt das Formular der Vertriebsleitung in der Fassung <strong>{VORLAGE_STAND}</strong> mit. Diese Angabe steht auch in jeder erzeugten Datei – in den Dateieigenschaften und, sofern mitgesendet, auf dem Blatt <strong>Zusatzangaben</strong>. Gibt die Vertriebsleitung ein neues Formular heraus, melden Sie sich bitte: Die App erkennt das nicht von selbst.</p>
                   <p className="mt-2">Wählen Sie stattdessen <strong>Alle drei Blätter</strong>, kommen zwei weitere dazu: Auf <strong>RV Mobil - Zusatzangaben</strong> stehen alle Werte, für die es im Formular keine Zeile gibt (etwa Urlaubs- und Krankheitstage, Reisezeit und Ihre eigenen Kategorien) samt der Summen je Bereich. Auf <strong>RV Mobil - Arbeitszeiten</strong> stehen Ihre einzelnen Schichten aus der Stempeluhr – mit Kommen, Gehen, Pause und Kommentar. Ist die Stempeluhr abgeschaltet, entfällt dieses Blatt, und die Antwort heißt <strong>Beide Blätter</strong>.</p>
@@ -356,7 +337,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <p>Wenn Sie Feierabend machen, drücken Sie auf <strong>Ausstempeln</strong>. Es öffnet sich ein Dialog, in dem Sie Ihre Pausenzeit anpassen und die gearbeitete Zeit auf Büro- und Außendienst aufteilen können. Bestätigen Sie dies, um den Eintrag zu speichern.</p>
                   <p className="mt-2 text-[var(--info-text)] font-normal">Automatisch übernommen werden: Ihre Arbeitsstunden (Büro und Außendienst) sowie die Anzahl der Arbeitstage – diese müssen Sie nicht doppelt eintragen.</p>
                   <p className="mt-2 text-[var(--warning-text)] font-normal">Bitte selbst eintragen: <strong>Urlaubs-, Krankheits- und Feiertage</strong> tragen Sie im RV Report (Bereich 4 „Arbeitszeit &amp; Büro") von Hand ein. Die Stempeluhr erfasst diese nicht automatisch – sie rechnet aber mit allen dreien in der Jahresübersicht weiter, und ein fehlender Eintrag zeigt dort ein zu hohes Soll.</p>
-                  <p className="mt-2"><strong>Sie müssen die Stempeluhr nicht benutzen.</strong> Unter <strong>Optionen → Anzeige &amp; Bedienung</strong> lässt sie sich abschalten; dann verschwindet der Bereich „RV Zeit", und Sie tragen Ihre Bürostunden und Arbeitstage im RV Report von Hand ein. Ist sie abgeschaltet und liegen noch Schichten auf dem Gerät, erscheint dort außerdem <strong>Erfasste Schichten löschen</strong>. Das entfernt die Aufzeichnungen aus dem laufenden Monat und aus dem RV Archiv – <strong>Ihre Zählerstände im Bericht bleiben dabei unverändert</strong>.</p>
+                  <p className="mt-2"><strong>Sie müssen die Stempeluhr nicht benutzen.</strong> Unter <strong>Optionen → Anzeige &amp; Bedienung</strong> lässt sie sich abschalten; dann verschwindet der Bereich „RV Zeit", und Sie tragen Ihre Bürostunden und Arbeitstage im RV Report von Hand ein. Ist sie abgeschaltet und liegen noch Schichten auf dem Gerät, erscheint dort außerdem <strong>Erfasste Schichten löschen</strong>. Das entfernt die Aufzeichnungen aus dem laufenden Monat und aus dem Archiv – <strong>Ihre Zählerstände im Bericht bleiben dabei unverändert</strong>.</p>
                 </FAQItem>
 
                 <FAQItem 
@@ -408,7 +389,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   icon={<Lock className="text-[var(--danger-text)]" />}
                   title="Wie lösche ich alle Daten – zum Beispiel, wenn ich das Gerät zurückgebe?"
                 >
-                  <p>Ganz unten in den <strong>Optionen</strong> steht <strong>„Alle Daten von diesem Gerät löschen“</strong>. Damit ist die App danach wie neu: Zählerstände, RV Archiv, erfasste Schichten, eigene Kategorien, Einstellungen, Jahreskonto und die Liste „Meine Demogeräte“ sind weg.</p>
+                  <p>Ganz unten in den <strong>Optionen</strong> steht <strong>„Alle Daten von diesem Gerät löschen“</strong>. Damit ist die App danach wie neu: Zählerstände, Archiv, erfasste Schichten, eigene Kategorien, Einstellungen, Jahreskonto und die Liste „Meine Demogeräte“ sind weg.</p>
                   <p>Die App fragt vorher nach und zeigt Ihnen, was betroffen ist – wie viele Monate im Archiv liegen, wie viele Schichten erfasst sind und wie viele eigene Kategorien es gibt. In derselben Rückfrage können Sie auch <strong>„Zuerst Daten sichern“</strong> wählen; das führt Sie in die Datensicherung, ohne etwas zu löschen.</p>
                   <p><strong>Es gibt keine Kopie auf einem Server</strong>, aus der sich etwas zurückholen liesse – gelöscht ist gelöscht. Wenn Sie die Daten noch einmal brauchen könnten, legen Sie vorher ein Backup an und bewahren Sie die Datei außerhalb des Geräts auf.</p>
                 </FAQItem>
@@ -418,15 +399,6 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
 
         </div>
 
-        {/* Footer */}
-        <div className="p-5 bg-[var(--bg-color)] border-t-2 border-[var(--card-border)] flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-6 py-3 bg-[var(--primary)] hover:opacity-90 text-[var(--primary-text)] font-black rounded-[var(--rv-radius-md)] transition-all active:scale-95 focus-visible:ring-4 shadow-[var(--rv-shadow-sm)]"
-          >
-            Hilfe schließen
-          </button>
-        </div>
       </div>
     </div>
   );

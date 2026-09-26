@@ -109,7 +109,7 @@ function BereichLaedt({ name }: { name: string }) {
   return (
     <div
       role="status"
-      className="p-6 text-sm font-bold text-[var(--text-muted)] flex items-center gap-2"
+      className="p-6 text-sm text-[var(--text-muted)] flex items-center gap-2"
     >
       <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" aria-hidden="true" />
       {name} wird geladen …
@@ -742,7 +742,7 @@ export default function App() {
     if (!speicherFehler) return;
     announceToAriaAndSpeech(
       speicherFehler === "archiv"
-        ? "Achtung: Das RV Archiv konnte nicht gespeichert werden. Bitte jetzt ein Backup erstellen."
+        ? "Achtung: Das Archiv konnte nicht gespeichert werden. Bitte jetzt ein Backup erstellen."
         : "Achtung: Speichern fehlgeschlagen. Bitte jetzt ein Backup erstellen, damit keine Daten verloren gehen.",
       true,
     );
@@ -1089,7 +1089,7 @@ export default function App() {
     setConfirmRequest({
       title: "Erfasste Schichten löschen?",
       message:
-        "Alle Schicht-Aufzeichnungen werden von diesem Gerät entfernt – im laufenden Monat und im RV Archiv. Ihre Zählerstände im Bericht bleiben unverändert.",
+        "Alle Schicht-Aufzeichnungen werden von diesem Gerät entfernt – im laufenden Monat und im Archiv. Ihre Zählerstände im Bericht bleiben unverändert.",
       details: ["Das lässt sich nicht rückgängig machen."],
       confirmLabel: "Endgültig löschen",
       tone: "danger",
@@ -1144,7 +1144,7 @@ export default function App() {
       message:
         "Danach ist die App wie neu. Alles liegt nur auf diesem Gerät – es gibt keinen Server, von dem sich etwas zurückholen liesse.",
       details: [
-        `RV Archiv: ${monate} ${monate === 1 ? "gespeicherter Monat" : "gespeicherte Monate"}`,
+        `Archiv: ${monate} ${monate === 1 ? "gespeicherter Monat" : "gespeicherte Monate"}`,
         `Erfasste Schichten: ${schichten}`,
         `Eigene Kategorien: ${eigeneFelder}`,
         "Dazu der laufende Monat, alle Einstellungen, das Jahreskonto und die Liste Meine Demogeräte.",
@@ -1483,7 +1483,7 @@ export default function App() {
    * Monatsabschluss ist der folgenschwerste Knopf der App: Er wechselt den
    * Arbeitsmonat und leert das Formular. Bisher geschah das ohne jede
    * Rueckfrage -- ein Fehlgriff auf dem Handy genuegte. Die Daten gehen dabei
-   * zwar nicht verloren (der Monat wandert vollstaendig ins RV Archiv,
+   * zwar nicht verloren (der Monat wandert vollstaendig ins Archiv,
    * nachgemessen: Zaehler, Kommentar, Schichten und Feld-Aufbau), aber der
    * Nutzer sieht das nicht und weiss nicht, wie er zurueckkommt.
    * Deshalb: vorher fragen, hinterher Rueckgaengig anbieten.
@@ -1513,7 +1513,7 @@ export default function App() {
     const details = [
       `Gezählte Vorgänge: ${zaehlungen}`,
       `Erfasste Schichten: ${schichten}`,
-      "Der Monat bleibt vollständig im RV Archiv und lässt sich dort jederzeit wieder laden.",
+      "Der Monat bleibt vollständig im Archiv und lässt sich dort jederzeit wieder laden.",
     ];
     if (!monthHasContent(reportData)) {
       details.unshift(
@@ -1523,7 +1523,7 @@ export default function App() {
 
     setConfirmRequest({
       title: `${formatMonthGerman(currentMonth)} abschließen?`,
-      message: `${formatMonthGerman(currentMonth)} wird im RV Archiv gesichert. Danach arbeiten Sie in ${formatMonthGerman(nextMonthStr)} mit leerem Formular weiter.`,
+      message: `${formatMonthGerman(currentMonth)} wird im Archiv gesichert. Danach arbeiten Sie in ${formatMonthGerman(nextMonthStr)} mit leerem Formular weiter.`,
       details,
       confirmLabel: "Monat abschließen",
       onConfirm: () => {
@@ -1802,7 +1802,7 @@ export default function App() {
     Taste, auf vier 62 px. Ohne das Praefix "RV" passt dann jedes Wort:
     Report 53, Analyse 61, Archiv 49, Zeit 30, Mehr 42 px.
 
-    Gewichen ist RV Analyse -- ein Rueckblick ueber Monate, den man bewusst
+    Gewichen ist Analyse -- ein Rueckblick ueber Monate, den man bewusst
     oeffnet und nicht zwischen zwei Terminen, und mit 88 px die laengste
     Beschriftung von allen. Sie steht jetzt in "Mehr" unter "Meine Sachen".
     Die Stempeluhr bleibt: Sie ist eine Handlung, die zweimal taeglich
@@ -1814,8 +1814,8 @@ export default function App() {
   const hauptnavigation = [
     { id: "form" as const, label: "Report", icon: LayoutGrid, ansage: "RV Report Hauptformular angezeigt", active: activeTab === "form", visible: true },
     { id: "time" as const, label: "Zeit", icon: Clock, ansage: "RV Zeit und Stempeluhr geöffnet", active: activeTab === "time" || activeTab === "carryover", visible: accessibility.enableTimeTracking !== false },
-    { id: "history" as const, label: "Archiv", icon: History, ansage: "RV Archiv geöffnet", active: activeTab === "history", visible: true },
-    { id: "options" as const, label: "Mehr", icon: Settings, ansage: "Weitere Ansichten und Optionen geöffnet", active: activeTab === "options" || activeTab === "help" || activeTab === "backup" || activeTab === "manage" || activeTab === "sync" || activeTab === "changelog" || activeTab === "stats" || activeTab === "bestand", visible: true },
+    { id: "history" as const, label: "Archiv", icon: History, ansage: "Archiv geöffnet", active: activeTab === "history", visible: true },
+    { id: "options" as const, label: "Mehr", icon: Settings, ansage: "Weitere Ansichten und Optionen geöffnet", active: activeTab === "options" || activeTab === "help" || activeTab === "backup" || activeTab === "manage" || activeTab === "sync" || activeTab === "changelog" || activeTab === "stats" || activeTab === "bestand" || activeTab === "erklaerung", visible: true },
   ];
 
   /** Ansicht wechseln aus der Hauptnavigation -- beide Leisten nutzen diesen Weg. */
@@ -1975,7 +1975,7 @@ export default function App() {
                </span>
                RV Mobil
              </h1>
-             <p className="text-xs text-[var(--text-muted)] font-bold mt-1">Desktop Ansicht</p>
+             <p className="text-xs text-[var(--text-muted)] mt-1">Desktop Ansicht</p>
           </div>
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             {hauptnavigation
@@ -2190,7 +2190,7 @@ export default function App() {
         >
           <p className="flex-1 min-w-0 text-sm font-bold text-[var(--text-color)] leading-snug">
             <Check className="w-4 h-4 inline-block align-[-2px] mr-1" aria-hidden="true" />
-            {formatMonthGerman(lastMonthClose.from)} ist im RV Archiv gesichert.
+            {formatMonthGerman(lastMonthClose.from)} ist im Archiv gesichert.
             Sie arbeiten jetzt in {formatMonthGerman(lastMonthClose.to)}.
           </p>
           <div className="flex gap-2">
@@ -2421,7 +2421,7 @@ export default function App() {
             `uppercase` der Elternzeile und hätte ohne sie "(bereich anklicken
             zum filtern)" ergeben, also ein kleingeschriebenes Substantiv.
           */}
-          <span className="font-bold text-xs text-[var(--text-muted)]">
+          <span className="text-xs text-[var(--text-muted)]">
             (Bereich anklicken zum Filtern)
           </span>
         </span>
@@ -2995,7 +2995,7 @@ export default function App() {
           ohnehin aus dessen eigener Beschreibung (`CounterField.tsx`,
           `sr-only`), also genau dort, wo sie hilft.
         */}
-        <p className="flex items-start gap-2 mb-4 px-3.5 py-3 rounded-[var(--rv-radius-lg)] border border-[var(--info-border)] bg-[var(--info-bg)] text-[var(--info-text)] text-sm font-semibold leading-snug">
+        <p className="flex items-start gap-2 mb-4 px-3.5 py-3 rounded-[var(--rv-radius-lg)] border border-[var(--card-border)] bg-[var(--info-bg)] text-[var(--info-text)] text-sm font-semibold leading-snug">
           <Info className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
           <span className="min-w-0 [overflow-wrap:anywhere]">
             Tipp: Sie können jede Zahl direkt in das Feld eintippen — auch größere
@@ -3044,7 +3044,7 @@ export default function App() {
         !hasVisibleFields(appFields.s3) &&
         !hasVisibleFields(appFields.s4) && (
           <div className="p-8 text-center border-2 border-dashed border-[var(--card-border)] rounded-[var(--rv-radius-lg)] bg-[var(--card-bg)] mb-5 animate-fade-in">
-            <p className="text-sm font-bold text-[var(--text-muted)]">
+            <p className="text-sm text-[var(--text-muted)]">
               Keine passenden Einträge gefunden für "{searchQuery}".
             </p>
             <button
@@ -3084,7 +3084,7 @@ export default function App() {
              Vorher hieß die Taste sichtbar „Monat abschließen & neu starten
              (Auto-Archiv)", zugänglich aber „Nächsten Monat starten…" — wer
              per Sprachsteuerung „Klick Monat abschließen" sagt, traf nichts. */
-          aria-label="Monat abschließen und neu starten. Auto-Archiv: Der aktuelle Monat wird automatisch im RV Archiv gesichert."
+          aria-label="Monat abschließen und neu starten. Auto-Archiv: Der aktuelle Monat wird automatisch im Archiv gesichert."
           className="w-full py-4 px-6 rounded-[var(--rv-radius-lg)] font-black bg-[var(--primary)] hover:opacity-90 text-[var(--primary-text)] text-base md:text-lg flex items-center justify-center gap-2.5 shadow-[var(--rv-shadow-md)] cursor-pointer transition-all active:scale-[0.99] focus-visible:ring-4 mb-4"
         >
           <CalendarPlus
@@ -3157,7 +3157,7 @@ export default function App() {
 
       {/* HELP & BACKUP MODAL */}
       {activeTab === "help" && (
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
+        <div className="relative">
           <React.Suspense fallback={<BereichLaedt name="Hilfe" />}>
             <HelpModal
               isOpen={true}
@@ -3170,7 +3170,7 @@ export default function App() {
 
       {/* SECURE BACKUP MODAL */}
       {activeTab === "backup" && (
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
+        <div className="relative">
           {/* Backup und Geräte-Sync nutzen dieselbe Paketform und denselben
               Weg zurück -- siehe buildSyncPayload / ersetzeGesamtstand. */}
           <React.Suspense fallback={<BereichLaedt name="Datensicherung" />}>
@@ -3233,7 +3233,7 @@ export default function App() {
 
       {/* TIME MODAL (ZEITBEREICH) */}
       {activeTab === "time" && (
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
+        <div className="relative">
           <React.Suspense fallback={<BereichLaedt name="RV Zeit" />}>
             <TimeModal
               clockInTime={clockInTime}
@@ -3259,7 +3259,7 @@ export default function App() {
 
       {/* MANAGEMENT MODAL */}
       {activeTab === "manage" && (
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
+        <div className="relative">
           <React.Suspense fallback={<BereichLaedt name="Formularfelder" />}>
             <ManageModal
               isOpen={true}
@@ -3274,8 +3274,8 @@ export default function App() {
 
       {/* HISTORY MODAL */}
       {activeTab === "history" && (
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
-          <React.Suspense fallback={<BereichLaedt name="RV Archiv" />}>
+        <div className="relative">
+          <React.Suspense fallback={<BereichLaedt name="Archiv" />}>
             <HistoryModal
               appFields={appFields}
               history={history}
@@ -3294,13 +3294,14 @@ export default function App() {
 
       {/* STATS & TRENDS MODAL */}
       {activeTab === "stats" && (
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
-          <React.Suspense fallback={<BereichLaedt name="RV Analyse" />}>
+        <div className="relative">
+          <React.Suspense fallback={<BereichLaedt name="Analyse" />}>
             <StatsModal
               reportData={reportData}
               appFields={appFields}
               history={history}
               announceToAriaAndSpeech={announceToAriaAndSpeech}
+              onClose={() => zurueckZuOptionen("menu-stats")}
             />
           </React.Suspense>
         </div>
@@ -3308,7 +3309,7 @@ export default function App() {
 
       {/* ACCESSIBILITY & DISPLAY MODAL */}
       {activeTab === "options" && (
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
+        <div className="relative">
           <A11yModal
             settings={accessibility}
             onChange={setAccessibility}
@@ -3368,7 +3369,7 @@ export default function App() {
       )}
       
       {activeTab === "changelog" && (
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
+        <div className="relative">
           <React.Suspense fallback={<BereichLaedt name="Neuigkeiten" />}>
             <ChangelogModal onClose={() => zurueckZuOptionen("menu-changelog")} />
           </React.Suspense>
@@ -3377,7 +3378,7 @@ export default function App() {
 
       {/* ERKLAERUNG ZUR BARRIEREFREIHEIT -- eigene Ansicht, siehe Kopf der Datei dort */}
       {activeTab === "erklaerung" && (
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
+        <div className="relative">
           <React.Suspense fallback={<BereichLaedt name="Erklärung zur Barrierefreiheit" />}>
             <BarrierefreiheitModal onClose={() => zurueckZuOptionen("menu-erklaerung")} />
           </React.Suspense>
@@ -3385,7 +3386,7 @@ export default function App() {
       )}
       {/* MEIN BESTAND -- freiwillige Liste der Vorfuehrgeraete */}
       {activeTab === "bestand" && (
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
+        <div className="relative">
           <React.Suspense fallback={<BereichLaedt name="Meine Demogeräte" />}>
             <BestandModal
               isOpen={true}
@@ -3400,7 +3401,7 @@ export default function App() {
       )}
 
       {activeTab === "carryover" && (
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative">
+        <div className="relative">
           <React.Suspense fallback={<BereichLaedt name="Jahreskonto" />}>
             <CarryoverModal
               isOpen={true}

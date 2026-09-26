@@ -37,7 +37,7 @@ export interface ExportParameter {
   appFields: SectionsConfig;
   /**
    * Nur zum Nachsehen, ob ein Monat ueberhaupt im Archiv liegt. Die Ansage
-   * nach dem Export behauptete bis 0.9.21 IMMER "im RV Archiv als gesendet
+   * nach dem Export behauptete bis 0.9.21 IMMER "im Archiv als gesendet
    * markiert" -- auch dann, wenn `setzeVersandStatus` wortlos ausgestiegen
    * war, weil es den Monat dort gar nicht gibt (ein Monat ohne Inhalt wird
    * nach `monthHasContent` nicht archiviert und laesst sich trotzdem ueber
@@ -193,14 +193,14 @@ export function useExport(p: ExportParameter): ExportFunktionen {
         // wortlos aus, wenn der Monat nicht im Archiv liegt.
         announceToAriaAndSpeech(
           imArchiv
-            ? `Excel-Report ${ergebnis}. Der Monat ist im RV Archiv als gesendet markiert.`
-            : `Excel-Report ${ergebnis}. Dieser Monat liegt nicht im RV Archiv und konnte dort nicht als gesendet markiert werden.`,
+            ? `Excel-Report ${ergebnis}. Der Monat ist im Archiv als gesendet markiert.`
+            : `Excel-Report ${ergebnis}. Dieser Monat liegt nicht im Archiv und konnte dort nicht als gesendet markiert werden.`,
         );
       } else {
-        triggerToast(`Excel-Report ${ergebnis}. Bitte danach im RV Archiv als gesendet markieren.`);
+        triggerToast(`Excel-Report ${ergebnis}. Bitte danach im Archiv als gesendet markieren.`);
         announceToAriaAndSpeech(
           `Excel-Report ${ergebnis}, aber noch nicht als gesendet markiert. ` +
-            `Bitte schicken Sie die Datei an die Vertriebsleitung und markieren Sie den Monat danach im RV Archiv als gesendet.`,
+            `Bitte schicken Sie die Datei an die Vertriebsleitung und markieren Sie den Monat danach im Archiv als gesendet.`,
           true,
         );
       }

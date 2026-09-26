@@ -547,13 +547,13 @@ const EINSTIEGE = [
     start: "options",
     einstieg: /Formular anpassen/,
     dann: /Eigene Felder löschen/,
-    ueberschrift: /Formularfelder verwalten/,
+    ueberschrift: /^Eigene Felder löschen$/,
   },
   {
     name: "Geräte-Sync",
     start: "options",
     einstieg: /Geräte-Sync/,
-    ueberschrift: /Geräte-Synchronisation/,
+    ueberschrift: /^Geräte-Sync$/,
   },
   {
     name: "Datensicherung",
@@ -565,13 +565,13 @@ const EINSTIEGE = [
     name: "Hilfe",
     start: "options",
     einstieg: /Hilfe & Anleitung/,
-    ueberschrift: /Hilfe & Handbuch/,
+    ueberschrift: /^Hilfe & Anleitung$/,
   },
   {
     name: "Jahreskonto",
     start: "time",
     einstieg: /Jahreskonto-Einstellungen/,
-    ueberschrift: /Jahreskonto & Einstellungen/,
+    ueberschrift: /^Jahreskonto$/,
   },
   {
     /*
@@ -584,7 +584,7 @@ const EINSTIEGE = [
     name: "Jahreskonto über Optionen",
     start: "options",
     einstieg: /Jahreskonto/,
-    ueberschrift: /Jahreskonto & Einstellungen/,
+    ueberschrift: /^Jahreskonto$/,
   },
   {
     /*
@@ -593,10 +593,10 @@ const EINSTIEGE = [
       Klickweg ungeprueft, und genau so ist `manage` von 0.9.18 bis 0.9.21
       durchs Netz gefallen.
     */
-    name: "RV Analyse über Mehr",
+    name: "Analyse über Mehr",
     start: "options",
-    einstieg: /RV Analyse/,
-    ueberschrift: /RV Analyse & Trends/,
+    einstieg: /^Analyse/,
+    ueberschrift: /^Analyse$/,
   },
   {
     // Punkt statt Apostroph: Die Quelle kann ' oder ’ enthalten, und daran
@@ -999,26 +999,26 @@ const FOKUS_WEGE = [
   // Ueber die untere Navigationsleiste (bzw. die Seitenleiste am Schreibtisch).
   { name: "Formular", start: "options", nav: "Report", titel: /^RV Report$/ },
   { name: "Zeit", start: "form", nav: "Zeit", titel: /Zeiterfassung/ },
-  { name: "Archiv", start: "form", nav: "Archiv", titel: /RV Archiv/ },
+  { name: "Archiv", start: "form", nav: "Archiv", titel: /^Archiv$/ },
   { name: "Mehr", start: "form", nav: "Mehr", titel: /^Optionen$/ },
   /*
     Die Analyse ist seit 0.9.45 keine Station mehr, sondern eine Menuezeile in
     "Mehr" -- deshalb steht sie hier mit `menue` statt mit `nav`.
   */
-  { name: "Analyse", start: "options", menue: /RV Analyse/, titel: /RV Analyse & Trends/ },
+  { name: "Analyse", start: "options", menue: /^Analyse/, titel: /^Analyse$/ },
   // Ueber das Optionen-Menue.
   { name: "Was gibt's Neues", start: "options", menue: /Was gibt.s Neues/, titel: /Was gibt.s Neues/ },
-  { name: "Jahreskonto", start: "options", menue: /Jahreskonto/, titel: /Jahreskonto & Einstellungen/ },
+  { name: "Jahreskonto", start: "options", menue: /Jahreskonto/, titel: /^Jahreskonto$/ },
   { name: "Demogeraete", start: "options", menue: /Demogeräte/, titel: /Meine Demogeräte/ },
-  { name: "Geraete-Sync", start: "options", menue: /Geräte-Sync/, titel: /Geräte-Synchronisation/ },
+  { name: "Geraete-Sync", start: "options", menue: /Geräte-Sync/, titel: /^Geräte-Sync$/ },
   { name: "Datensicherung", start: "options", menue: /Datensicherung/, titel: /Datensicherung/ },
-  { name: "Hilfe", start: "options", menue: /Hilfe & Anleitung/, titel: /Hilfe & Handbuch/ },
+  { name: "Hilfe", start: "options", menue: /Hilfe & Anleitung/, titel: /^Hilfe & Anleitung$/ },
   {
     name: "Felder verwalten",
     start: "options",
     menue: /Formular anpassen/,
     dann: /Eigene Felder löschen/,
-    titel: /Formularfelder verwalten/,
+    titel: /^Eigene Felder löschen$/,
   },
 ] as const;
 
@@ -1079,7 +1079,7 @@ test.describe("Fokus beim Ansichtswechsel", () => {
   }) => {
     await oeffne(page, "options");
     await page.getByRole("button", { name: /Hilfe & Anleitung/ }).locator("visible=true").first().click();
-    await page.getByRole("heading", { name: /Hilfe & Handbuch/ }).first().waitFor({ state: "visible", timeout: 20_000 });
+    await page.getByRole("heading", { name: /^Hilfe & Anleitung$/ }).first().waitFor({ state: "visible", timeout: 20_000 });
 
     await page.getByRole("button", { name: /Zurück zu den Optionen/ }).locator("visible=true").first().click();
     await page.getByRole("heading", { name: /^Optionen$/ }).first().waitFor({ state: "visible", timeout: 20_000 });
@@ -1115,7 +1115,7 @@ test.describe("Fokus beim Ansichtswechsel", () => {
     */
     await oeffne(page, "options");
     await page.getByRole("button", { name: /Hilfe & Anleitung/ }).locator("visible=true").first().click();
-    await page.getByRole("heading", { name: /Hilfe & Handbuch/ }).first().waitFor({ state: "visible", timeout: 20_000 });
+    await page.getByRole("heading", { name: /^Hilfe & Anleitung$/ }).first().waitFor({ state: "visible", timeout: 20_000 });
 
     await page.getByRole("button", { name: "Mehr", exact: true }).locator("visible=true").first().click();
     await page.getByRole("heading", { name: /^Optionen$/ }).first().waitFor({ state: "visible", timeout: 20_000 });
@@ -2005,7 +2005,7 @@ const SYNC_ZUSTAENDE = [
 async function oeffneSyncZustand(page: Page, eintrag: (typeof SYNC_ZUSTAENDE)[number]) {
   await oeffne(page, "options");
   await page.getByRole("button", { name: /Geräte-Sync/ }).first().click();
-  await page.getByRole("heading", { name: /Geräte-Synchronisation/ }).first()
+  await page.getByRole("heading", { name: /^Geräte-Sync$/ }).first()
     .waitFor({ state: "visible", timeout: 15_000 });
   const start = page.getByRole("button", { name: eintrag.einstieg });
   await start.first().click();
@@ -2199,7 +2199,7 @@ async function oeffneArchiv(page: Page, zustand: ArchivZustand) {
   }
 
   if (zustand === "loeschabfrage") {
-    await page.getByRole("button", { name: /August 2026 aus RV Archiv löschen/ }).click();
+    await page.getByRole("button", { name: /August 2026 aus dem Archiv löschen/ }).click();
     await page
       .getByRole("button", { name: /Wirklich löschen/ })
       .first()
@@ -3202,7 +3202,7 @@ async function oeffneSyncErsetzenAbfrage(p: Page) {
   await p.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await oeffne(p, "options");
   await p.getByRole("button", { name: /Geräte-Sync/ }).first().click();
-  await p.getByRole("heading", { name: /Geräte-Synchronisation/ }).first().waitFor({ timeout: 20_000 });
+  await p.getByRole("heading", { name: /^Geräte-Sync$/ }).first().waitFor({ timeout: 20_000 });
   await p.getByRole("button", { name: /Daten an anderes Gerät senden/ }).click();
   const kopieren = p.getByRole("button", { name: /Code kopieren/ });
   await kopieren.waitFor({ state: "visible", timeout: 20_000 });
@@ -3213,7 +3213,7 @@ async function oeffneSyncErsetzenAbfrage(p: Page) {
 
   await p.reload({ waitUntil: "domcontentloaded" });
   await p.getByRole("button", { name: /Geräte-Sync/ }).first().click();
-  await p.getByRole("heading", { name: /Geräte-Synchronisation/ }).first().waitFor({ timeout: 20_000 });
+  await p.getByRole("heading", { name: /^Geräte-Sync$/ }).first().waitFor({ timeout: 20_000 });
   await p.getByRole("button", { name: /Daten von anderem Gerät übernehmen/ }).click();
   await p.locator("#paste-code-input").waitFor({ state: "visible", timeout: 20_000 });
   await p.locator("#paste-code-input").fill(code);
@@ -3255,7 +3255,7 @@ async function oeffneFelderVerwalten(page: Page) {
   await oeffne(page, "options");
   await page.getByRole("button", { name: /Formular anpassen/ }).first().click();
   await page.getByRole("button", { name: /Eigene Felder löschen/ }).first().click();
-  await page.getByRole("heading", { name: /Formularfelder verwalten/ }).first().waitFor({ timeout: 15_000 });
+  await page.getByRole("heading", { name: /^Eigene Felder löschen$/ }).first().waitFor({ timeout: 15_000 });
   await page.waitForTimeout(250);
 }
 
@@ -3607,7 +3607,7 @@ test.describe("Zustände der Rückfragen", () => {
   for (const fall of [
     {
       name: "Feldverwaltung",
-      dahinter: /Formularfelder verwalten/,
+      dahinter: /^Eigene Felder löschen$/,
       danach: /Optionen/,
       oeffne: async (p: Page) => {
         await oeffneFelderVerwalten(p);
@@ -3616,7 +3616,7 @@ test.describe("Zustände der Rückfragen", () => {
     },
     {
       name: "Geräte-Sync",
-      dahinter: /Geräte-Synchronisation/,
+      dahinter: /^Geräte-Sync$/,
       danach: /Optionen/,
       oeffne: oeffneSyncErsetzenAbfrage,
       // Nach dem Abbrechen muss das empfangene Paket noch da sein.
@@ -3726,7 +3726,7 @@ async function oeffneSyncMitBestand(
   await page.goto("/?tab=options", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: /Geräte-Sync/ }).first().click();
   await page
-    .getByRole("heading", { name: /Geräte-Synchronisation/ })
+    .getByRole("heading", { name: /^Geräte-Sync$/ })
     .first()
     .waitFor({ state: "visible", timeout: 20_000 });
 }
@@ -4538,7 +4538,7 @@ test.describe("Grenze der abgeschalteten Stempeluhr", () => {
     await page.waitForTimeout(900);
     await page.getByRole("button", { name: /Jahreskonto/ }).first().click();
     await page
-      .getByRole("heading", { name: /Jahreskonto & Einstellungen/ })
+      .getByRole("heading", { name: /^Jahreskonto$/ })
       .first()
       .waitFor({ state: "visible", timeout: 15_000 });
 

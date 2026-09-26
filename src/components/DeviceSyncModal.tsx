@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import {
-  ArrowLeft,
   Smartphone,
   Monitor,
   CheckCircle2,
@@ -20,6 +19,7 @@ import {
   ClipboardPaste,
   RefreshCw,
 } from "lucide-react";
+import AnsichtsKopf from "./AnsichtsKopf";
 import { QRCodeSVG } from "qrcode.react";
 import { Html5Qrcode } from "html5-qrcode";
 import { motion } from "framer-motion";
@@ -715,7 +715,7 @@ export default function DeviceSyncModal({
   const renderSyncSteps = () => {
     const currentStep = mode === "select" ? 1 : mode === "confirm" ? 3 : 2;
     return (
-      <ol className="mb-5 grid grid-cols-3 gap-2 text-[0.75rem] font-black text-[var(--text-muted)] list-none p-0">
+      <ol className="mb-5 grid grid-cols-[repeat(auto-fit,minmax(5rem,1fr))] gap-2 text-[0.75rem] font-black text-[var(--text-muted)] list-none p-0">
         {[
           { label: "1. Wahl", help: "Senden oder Empfangen" },
           { label: "2. QR-Code", help: "Zeigen & Scannen" },
@@ -724,14 +724,14 @@ export default function DeviceSyncModal({
           <li
             key={step.label}
             aria-current={currentStep === idx + 1 ? "step" : undefined}
-            className={`rounded-[var(--rv-radius-lg)] border px-3 py-2 text-center ${
+            className={`min-w-0 rounded-[var(--rv-radius-lg)] border px-1.5 py-2 text-center [overflow-wrap:anywhere] hyphens-auto ${
               currentStep === idx + 1
                 ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--text-color)]"
                 : "border-[var(--card-border)] bg-[var(--bg-color)]"
             }`}
           >
             <div className="text-[0.75rem] font-black mb-1">{step.label}</div>
-            <div className="text-[0.75rem] font-bold">{step.help}</div>
+            <div className="text-[0.75rem] font-normal">{step.help}</div>
           </li>
         ))}
       </ol>
@@ -946,7 +946,7 @@ export default function DeviceSyncModal({
               style={{ width: `${Math.round((receivedCount / expectedTotal) * 100)}%` }}
             />
           </div>
-          <p className="text-xs text-center font-bold text-[var(--text-muted)] mt-1.5">
+          <p className="text-xs text-center text-[var(--text-muted)] mt-1.5">
             {receivedCount} von {expectedTotal} Teilen
           </p>
         </div>
@@ -1012,20 +1012,15 @@ export default function DeviceSyncModal({
         ref={modalRef}
         className="bg-[var(--card-bg)] w-full max-w-md rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] overflow-hidden border border-[var(--card-border)] flex flex-col max-h-[90vh]"
       >
-        {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
-        <div className="p-3 border-b border-[var(--card-border)] flex items-center gap-2.5 bg-[var(--bg-color)]">
-          <button
-            ref={closeButtonRef}
-            onClick={onClose}
-            aria-label="Zurück zu den Optionen"
-            className="w-11 h-11 min-w-[44px] min-h-[44px] flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--card-bg)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-colors cursor-pointer active:scale-95"
-          >
-            <ArrowLeft className="w-5 h-5" aria-hidden="true" />
-          </button>
-          <h2 id="sync-modal-title" tabIndex={-1} data-ansicht-titel="" className="font-black text-xl md:text-2xl flex items-center gap-2 flex-1 min-w-0">
-            <ArrowRightLeft className="w-5 h-5 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
-            <span className="truncate">Geräte-Synchronisation</span>
-          </h2>
+        <div className="px-6 pt-5">
+          <AnsichtsKopf
+            id="sync-modal-title"
+            titel="Geräte-Sync"
+            untertitel="Daten zwischen Ihren Geräten übertragen, ohne Cloud"
+            symbol={ArrowRightLeft}
+            zurueck={{ beschriftung: "Zurück zu den Optionen", onClick: onClose, ref: closeButtonRef }}
+            className=""
+          />
         </div>
 
         {/* overflow-x-hidden: `overflow-y-auto` zieht die x-Achse nach

@@ -2,9 +2,10 @@ import React, { useRef, useState } from "react";
 import { AccessibilitySettings, AccessibilityTheme, SectionsConfig } from "../types";
 import {
   Type, Volume2, Sparkles, HelpCircle, Lock, Settings2, ChevronRight,
-  ArrowLeft, Clock, Sliders, Smartphone, Bell, Monitor, Palette, CalendarDays, Package,
+  LayoutGrid, Clock, Sliders, Smartphone, Bell, Monitor, Palette, CalendarDays, Package,
   BarChart3, Accessibility,
 } from "lucide-react";
+import AnsichtsKopf from "./AnsichtsKopf";
 
 interface A11yModalProps {
   settings: AccessibilitySettings;
@@ -48,8 +49,8 @@ interface A11yModalProps {
   /** Gerät zurückgeben: löscht beide Speicher vollständig -- fragt selbst zurück. */
   onAllesLoeschen?: () => void;
   /**
-   * RV Analyse. Seit 0.9.45 nicht mehr in der unteren Leiste: Bei „Extra groß"
-   * war dort jede der fünf Beschriftungen abgeschnitten, und „RV Analyse" war
+   * Analyse. Seit 0.9.45 nicht mehr in der unteren Leiste: Bei „Extra groß"
+   * war dort jede der fünf Beschriftungen abgeschnitten, und „Analyse" war
    * mit 88 px die längste von allen. Vier Stationen tragen ihre Wörter, fünf
    * nicht.
    */
@@ -100,8 +101,8 @@ function MenuRow({
         {icon}
       </span>
       <span className="flex-1 min-w-0">
-        <span className="block font-black text-[var(--text-color)] text-sm leading-tight">{label}</span>
-        <span className="block text-xs font-bold text-[var(--text-muted)] truncate">{hint}</span>
+        <span className="block font-black text-[var(--text-color)] text-sm leading-tight [overflow-wrap:anywhere] hyphens-auto">{label}</span>
+        <span className="block text-xs text-[var(--text-muted)] truncate">{hint}</span>
       </span>
       <ChevronRight className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors flex-shrink-0" aria-hidden="true" />
     </button>
@@ -126,13 +127,13 @@ function ToggleRow({
 }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3.5">
-      <span className="w-9 h-9 rounded-[var(--rv-radius-md)] bg-[var(--input-bg)] border border-[var(--card-border)] text-[var(--accent)] flex items-center justify-center flex-shrink-0" aria-hidden="true">
+      <span className="w-[36px] h-[36px] rounded-[var(--rv-radius-md)] bg-[var(--input-bg)] border border-[var(--card-border)] text-[var(--accent)] flex items-center justify-center flex-shrink-0" aria-hidden="true">
         {icon}
       </span>
       <span className="flex-1 min-w-0">
-        <span className="block font-black text-[var(--text-color)] text-sm leading-tight">{label}</span>
+        <span className="block font-black text-[var(--text-color)] text-sm leading-tight [overflow-wrap:anywhere] hyphens-auto">{label}</span>
         {hint && (
-          <span id={describedById} className="block text-xs font-bold text-[var(--text-muted)] leading-snug mt-0.5">
+          <span id={describedById} className="block text-xs text-[var(--text-muted)] leading-snug mt-0.5">
             {hint}
           </span>
         )}
@@ -264,38 +265,24 @@ export default function A11yModal({
   /* ----- Hauptmenü: DSGVO-Hinweis + 2 gruppierte Karten statt 7 großer Buttons ----- */
   const renderMainMenu = () => (
     <div className="space-y-4 animate-fade-in">
-      {/*
-        Gestapelt auf schmalen Geraeten -- dasselbe Muster wie in der Kopfzeile
-        von TimeModal, und aus demselben Grund.
-
-        Die Taste "Was gibt's Neues?" traegt `flex-shrink-0` und braucht bei
-        "Extra gross" 230 px, mit einer breiteren Schrift als "Segoe UI" sogar
-        256 px. In einem 320-px-Fenster sprengte sie die Zeile.
-
-        `flex-wrap` allein genuegte NICHT: Die Ueberschrift daneben hat
-        `flex-1` und damit die Basisbreite 0, wodurch alle drei Elemente
-        rechnerisch in eine Zeile passen -- die Taste bleibt stehen und ragt
-        heraus. Erst das Stapeln gibt ihr die volle Kartenbreite. Gemessen:
-        324 px mit flex-wrap, 320 px gestapelt.
-      */}
-      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3 px-1">
-        <Settings2 className="w-7 h-7 text-[var(--accent)]" aria-hidden="true" />
-        <div className="flex-1 min-w-0">
-          <h2 id="a11y-modal-title" tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black">
-            Optionen
-          </h2>
-        </div>
-        {onOpenChangelog && (
-          <button
-            type="button"
-            onClick={onOpenChangelog}
-            id="menu-changelog"
-            className="text-xs font-black px-3 min-h-[44px] inline-flex items-center rounded-full bg-[var(--success-bg)] text-[var(--success-text)] border border-[var(--success-border)] hover:bg-[var(--bg-color)] transition-colors cursor-pointer flex-shrink-0"
-          >
-            Was gibt's Neues?
-          </button>
-        )}
-      </div>
+      <AnsichtsKopf
+        id="a11y-modal-title"
+        titel="Optionen"
+        symbol={Settings2}
+        className=""
+        rechts={
+          onOpenChangelog && (
+            <button
+              type="button"
+              onClick={onOpenChangelog}
+              id="menu-changelog"
+              className="text-sm font-bold px-4 min-h-[44px] inline-flex items-center rounded-full bg-[var(--success-bg)] text-[var(--success-text)] border border-[var(--success-border)] hover:bg-[var(--bg-color)] transition-colors cursor-pointer flex-shrink-0"
+            >
+              Was gibt's Neues?
+            </button>
+          )
+        }
+      />
 
       <p className="flex items-start gap-2 px-1 text-sm text-[var(--text-muted)] leading-relaxed">
         <Lock className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
@@ -327,7 +314,7 @@ export default function A11yModal({
           <MenuRow
             icon={<BarChart3 className="w-5 h-5" />}
             iconClass="bg-[var(--cat-2)] text-[var(--primary-text)]"
-            label="RV Analyse"
+            label="Analyse"
             hint="Ihre Zahlen über mehrere Monate, mit Trends"
             onClick={onOpenStats}
             id="menu-stats"
@@ -436,21 +423,18 @@ export default function A11yModal({
   /* ----- Einstellungen: kompakte Gruppen mit Switches ----- */
   const renderA11yMenu = () => (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex items-center gap-3 border-b border-[var(--card-border)] pb-3">
-        <button
-          onClick={() => setActiveMenu("main")}
-          className="w-12 h-12 flex items-center justify-center rounded-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-colors active:scale-95 cursor-pointer flex-shrink-0"
-          aria-label="Zurück zum Hauptmenü Optionen"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h2 className="text-lg md:text-xl font-black">Anzeige & Bedienung</h2>
-      </div>
+      <AnsichtsKopf
+        titel="Anzeige & Bedienung"
+        symbol={Sliders}
+        zurueck={{ beschriftung: "Zurück zum Hauptmenü Optionen", onClick: () => setActiveMenu("main") }}
+        markiert={false}
+        className=""
+      />
 
       {/* Schriftgröße: eine kompakte Segment-Reihe */}
       <SectionCard title="Schriftgröße">
         <div className="p-3" role="group" aria-label="Schriftgröße anpassen">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(5.5rem,1fr))] gap-2">
             {(["normal", "large", "extra-large"] as const).map((size) => {
               const labelMap = { normal: "Standard", large: "Groß", "extra-large": "Sehr groß" };
               const isActive = settings.fontSize === size;
@@ -460,7 +444,7 @@ export default function A11yModal({
                   type="button"
                   onClick={() => updateSetting("fontSize", size)}
                   aria-pressed={isActive}
-                  className={`py-3 px-2 text-sm font-black rounded-[var(--rv-radius-md)] border-2 transition-all cursor-pointer text-center active:scale-95 flex items-center justify-center gap-1.5 ${
+                  className={`min-w-0 min-h-[64px] py-2.5 px-1.5 text-sm font-black rounded-[var(--rv-radius-md)] border-2 transition-all cursor-pointer text-center active:scale-95 flex flex-col items-center justify-center gap-1 [overflow-wrap:anywhere] hyphens-auto ${
                     isActive
                       ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-text)]"
                       : "bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
@@ -477,7 +461,7 @@ export default function A11yModal({
 
       {/* Design: EINE Gruppe mit 4 Optionen (2×2) */}
       <SectionCard title="Design & Kontrast">
-        <fieldset className="p-3 grid grid-cols-2 gap-2" aria-label="Design und Kontrast wählen">
+        <fieldset className="p-3 grid grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] gap-2" aria-label="Design und Kontrast wählen">
           {themes.map((t) => {
             const isActive = settings.theme === t.id;
             return (
@@ -614,16 +598,13 @@ export default function A11yModal({
   /* ----- Formular anpassen (inkl. Link zu "Felder löschen") ----- */
   const renderFormMenu = () => (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex items-center gap-3 border-b border-[var(--card-border)] pb-3">
-        <button
-          onClick={() => setActiveMenu("main")}
-          className="w-12 h-12 flex items-center justify-center rounded-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-colors active:scale-95 cursor-pointer flex-shrink-0"
-          aria-label="Zurück zum Hauptmenü Optionen"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h2 className="text-lg md:text-xl font-black">Formular anpassen</h2>
-      </div>
+      <AnsichtsKopf
+        titel="Formular anpassen"
+        symbol={LayoutGrid}
+        zurueck={{ beschriftung: "Zurück zum Hauptmenü Optionen", onClick: () => setActiveMenu("main") }}
+        markiert={false}
+        className=""
+      />
 
       <SectionCard title="Neues Feld hinzufügen">
         <form

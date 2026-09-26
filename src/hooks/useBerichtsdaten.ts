@@ -180,7 +180,7 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
    */
   const handleHistoryPersistFailure = useCallback(
     (context: string, err: unknown) => {
-      console.error(`Speichern des RV Archivs fehlgeschlagen (${context})`, err);
+      console.error(`Speichern des Archivs fehlgeschlagen (${context})`, err);
       setArchivFehler(true);
       melde("archiv");
     },

@@ -3,7 +3,7 @@ import { TimeLog } from "../types";
 /**
  * Hat dieser Monat echten Inhalt -- also etwas, das verloren gehen koennte?
  *
- * Entscheidet, ob ein Monat ueberhaupt ins RV Archiv wandert. Wird an zwei
+ * Entscheidet, ob ein Monat ueberhaupt ins Archiv wandert. Wird an zwei
  * Stellen gebraucht (automatisches Spiegeln und Monatswechsel), lag bis 0.9.15
  * auf Modulebene in `App.tsx`.
  *

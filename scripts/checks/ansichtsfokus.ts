@@ -121,34 +121,86 @@ pruefe("jede Ansicht aus activeTab hat eine zugeordnete Datei", () => {
   );
 });
 
+/*
+  Seit 0.9.68 tragen die Ansichten ihre Überschrift über den gemeinsamen
+  `AnsichtsKopf` -- die Markierung steht dann EINMAL in dessen Datei und gar
+  nicht mehr in der Ansicht. Gezählt wird deshalb beides: die rohe Markierung
+  und jeder `<AnsichtsKopf`, der nicht ausdrücklich `markiert={false}` trägt
+  (die Untermenüs der Optionen tun das -- sie sind keine eigene Ansicht).
+*/
+const KOPF_DATEI = "components/AnsichtsKopf.tsx";
+
+/** Wie viele `<AnsichtsKopf …/>` in diesem Text die Überschrift markieren. */
+function markierteKoepfe(inhalt: string): number {
+  let n = 0;
+  let stelle = inhalt.indexOf("<AnsichtsKopf");
+  while (stelle !== -1) {
+    const ende = inhalt.indexOf("/>", stelle);
+    const tag = inhalt.slice(stelle, ende === -1 ? undefined : ende);
+    if (!tag.includes("markiert={false}")) n++;
+    stelle = inhalt.indexOf("<AnsichtsKopf", stelle + 1);
+  }
+  return n;
+}
+
+function markierungen(datei: string): number {
+  const inhalt = readFileSync(join(WURZEL, datei), "utf8");
+  return inhalt.split(MARKE_ATTR).length - 1 + markierteKoepfe(inhalt);
+}
+
 pruefe("jede Ansicht trägt genau eine markierte Überschrift", () => {
   for (const [ansicht, datei] of Object.entries(ANSICHT_DATEI)) {
-    const inhalt = readFileSync(join(WURZEL, datei), "utf8");
-    const n = inhalt.split(MARKE_ATTR).length - 1;
+    const n = markierungen(datei);
     gleich(
       n,
       1,
-      `${datei} (Ansicht „${ansicht}") trägt ${n} Markierungen ${MARKE}, ` +
-        `erwartet genau eine. Der Haken sucht mit querySelector, nimmt also ` +
-        `die erste im Dokument -- bei zweien landet der Fokus irgendwo.`,
+      `${datei} (Ansicht „${ansicht}") trägt ${n} Markierungen ${MARKE} ` +
+        `(roh oder über AnsichtsKopf), erwartet genau eine. Der Haken sucht ` +
+        `mit querySelector, nimmt also die erste im Dokument -- bei zweien ` +
+        `landet der Fokus irgendwo.`,
     );
   }
 });
 
 pruefe("die Markierung sitzt nirgends sonst", () => {
-  const gefunden = dateienMitMarke();
+  const roh = dateienMitMarke();
+  gleich(
+    roh.filter((d) => d === KOPF_DATEI).length,
+    1,
+    `${KOPF_DATEI} muss die Markierung genau einmal tragen.`,
+  );
+  const gefunden = roh.filter((d) => d !== KOPF_DATEI);
+  const gehe = (verzeichnis: string) => {
+    for (const eintrag of readdirSync(verzeichnis, { withFileTypes: true })) {
+      const pfad = join(verzeichnis, eintrag.name);
+      if (eintrag.isDirectory()) {
+        gehe(pfad);
+        continue;
+      }
+      if (!/\.tsx$/.test(eintrag.name)) continue;
+      const n = markierteKoepfe(readFileSync(pfad, "utf8"));
+      for (let i = 0; i < n; i++) gefunden.push(pfad.slice(WURZEL.length + 1).replace(/\\/g, "/"));
+    }
+  };
+  gehe(WURZEL);
   const erwartet = Object.values(ANSICHT_DATEI).sort();
   gleich(
     gefunden.sort().join(", "),
     erwartet.join(", "),
-    `Die Markierung ${MARKE} steht in anderen Dateien als den zwölf ` +
-      `Ansichten. Zur Laufzeit ist immer nur eine Ansicht im Dokument; eine ` +
-      `zweite Markierung anderswo macht daraus ein Ratespiel.`,
+    `Die Markierung ${MARKE} steht in anderen Dateien als den Ansichten. ` +
+      `Zur Laufzeit ist immer nur eine Ansicht im Dokument; eine zweite ` +
+      `Markierung anderswo macht daraus ein Ratespiel.`,
   );
 });
 
 pruefe("die markierte Überschrift ist fokussierbar", () => {
-  for (const [ansicht, datei] of Object.entries(ANSICHT_DATEI)) {
+  const dateien = [
+    ...Object.entries(ANSICHT_DATEI).filter(([, d]) =>
+      readFileSync(join(WURZEL, d), "utf8").includes(MARKE_ATTR),
+    ),
+    ["AnsichtsKopf", KOPF_DATEI] as [string, string],
+  ];
+  for (const [ansicht, datei] of dateien) {
     const inhalt = readFileSync(join(WURZEL, datei), "utf8");
     const stelle = inhalt.indexOf(MARKE_ATTR);
     // Das Element-Tag um die Markierung herum: von "<" davor bis ">" danach.
@@ -157,13 +209,13 @@ pruefe("die markierte Überschrift ist fokussierbar", () => {
     const tag = inhalt.slice(anfang, ende);
     wahr(
       tag.includes("tabIndex={-1}"),
-      `${datei} (Ansicht „${ansicht}"): Die markierte Überschrift hat kein ` +
+      `${datei} („${ansicht}"): Die markierte Überschrift hat kein ` +
         `tabIndex={-1}. Ohne das tut focus() auf einer Überschrift nichts, ` +
         `und der Wechsel landet wieder beim Dokumentanfang.`,
     );
     wahr(
       /^<h[1-6]/.test(tag),
-      `${datei} (Ansicht „${ansicht}"): Die Markierung sitzt an „${tag.slice(0, 24)}…", ` +
+      `${datei} („${ansicht}"): Die Markierung sitzt an „${tag.slice(0, 24)}…", ` +
         `nicht an einer Überschrift. Der Fokus soll dorthin, wo der ` +
         `Screenreader „Überschrift" vorliest.`,
     );

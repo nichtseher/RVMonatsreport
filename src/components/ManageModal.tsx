@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { ArrowLeft, Trash2, Settings, RotateCcw } from "lucide-react";
+import { Trash2, Settings, RotateCcw } from "lucide-react";
+import AnsichtsKopf from "./AnsichtsKopf";
 import { SectionsConfig } from "../types";
 import { rueckfrageOffen } from "../utils/rueckfrage";
 
@@ -105,41 +106,12 @@ export default function ManageModal({
       ref={modalRef}
       className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--card-border)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] animate-fade-in"
     >
-      {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
-      {/* flex-col sm:flex-row: dieselbe Massnahme wie in CarryoverModal --
-          bei "Extra gross" blieben der Ueberschrift neben der mitwachsenden
-          Zurueck-Taste und dem Zahnrad-Icon nur 58 px, und sie brach in eine
-          senkrechte Buchstabenspalte statt lesbar umzubrechen. */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-6">
-        <div className="flex items-center gap-3">
-          <button
-            ref={closeButtonRef}
-            type="button"
-            onClick={onClose}
-            aria-label="Zurück zu den Optionen"
-            className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95"
-          >
-            <ArrowLeft className="w-6 h-6" aria-hidden="true" />
-          </button>
-          <Settings className="w-8 h-8 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
-        </div>
-        {/*
-          min-w-0 und overflow-wrap: Ohne beides gab die Überschrift als
-          Flex-Kind ihre Breite nicht unter den Inhalt preis (`min-width:
-          auto`). Gemessen am 2026-09-07 durch Ausblenden bisektiert: mit dem
-          <h2> 531 px Inhalt in einem 360-px-Fenster, ohne es exakt 360. Neunter
-          Fall dieser Klasse in diesem Projekt -- und der erste in einer
-          Ansicht, die vorher keine Prüfung erreichte.
-        */}
-        <h2
-          tabIndex={-1}
-          data-ansicht-titel=""
-          id="manage-modal-title"
-          className="text-xl md:text-2xl font-black flex-1 min-w-0 [overflow-wrap:anywhere]"
-        >
-          Formularfelder verwalten
-        </h2>
-      </div>
+      <AnsichtsKopf
+        id="manage-modal-title"
+        titel="Eigene Felder löschen"
+        symbol={Settings}
+        zurueck={{ beschriftung: "Zurück zu den Optionen", onClick: onClose, ref: closeButtonRef }}
+      />
 
         <p className="text-sm text-[var(--text-muted)] mb-5 leading-relaxed">
           Hier können Sie Kategorien löschen. <strong>Vorsicht:</strong> Wenn Sie eine Kategorie löschen, werden auch die eingetragenen Zahlen dafür gelöscht.

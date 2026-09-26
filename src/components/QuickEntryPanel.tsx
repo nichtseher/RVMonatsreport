@@ -311,7 +311,7 @@ export default function QuickEntryPanel({
               <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
               Automatisch (meistgenutzt)
             </button>
-            <span className="text-xs font-bold text-[var(--text-muted)]">
+            <span className="text-xs text-[var(--text-muted)]">
               oder bis zu {MAX_QUICK_FIELDS} Kategorien selbst wählen:
             </span>
           </div>

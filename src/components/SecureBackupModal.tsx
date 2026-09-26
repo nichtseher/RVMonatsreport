@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
-import { ArrowLeft, Download, Upload, Share2, Lock, AlertTriangle, CheckCircle2 } from "lucide-react";
+import AnsichtsKopf from "./AnsichtsKopf";
+import { Download, Upload, Share2, Lock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { encryptData, decryptData } from "../utils/crypto";
 import { merkeSicherung } from "../utils/speicherSchutz";
 import { motion } from "framer-motion";
@@ -148,25 +149,14 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
 
   return (
     <div className="bg-[var(--card-bg)] rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] w-full overflow-hidden flex flex-col border border-[var(--card-border)] animate-fade-in relative">
-      {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
-      {/* flex-col sm:flex-row: siehe CarryoverModal. Hier war der Effekt am
-          staerksten -- das gepolsterte Schloss-Icon allein nahm bei "Extra
-          gross" schon so viel Breite, dass "Datensicherung" nur noch 34 px
-          Restbreite blieben. */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-6 md:p-8 border-b border-[var(--card-border)] bg-[var(--bg-color)]">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onClose}
-            className="w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center border border-[var(--border-color)] bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] cursor-pointer transition-colors active:scale-95"
-            aria-label="Zurück zu den Optionen"
-          >
-            <ArrowLeft className="w-6 h-6" aria-hidden="true" />
-          </button>
-          <div className="p-3 bg-[var(--info-bg)] text-[var(--cat-4-text)] rounded-[var(--rv-radius-md)] flex-shrink-0">
-            <Lock className="w-6 h-6" aria-hidden="true" />
-          </div>
-        </div>
-        <h2 id="backup-title" tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black text-[var(--text-color)] flex-1 min-w-0 [overflow-wrap:anywhere]">Datensicherung</h2>
+      <div className="px-6 pt-6 md:px-8 md:pt-8">
+        <AnsichtsKopf
+          id="backup-title"
+          titel="Datensicherung"
+          symbol={Lock}
+          zurueck={{ beschriftung: "Zurück zu den Optionen", onClick: onClose }}
+          className=""
+        />
       </div>
 
       {/* overflow-x-hidden + break-words: `overflow-y-auto` zieht die x-Achse
@@ -176,7 +166,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
           umbrachen. Gescrollt werden soll hier nur senkrecht. */}
       <div className="p-6 md:p-8 space-y-6 overflow-y-auto overflow-x-hidden break-words">
           
-          <div className="bg-[var(--info-bg)] text-[var(--info-text)] p-4 rounded-[var(--rv-radius-md)] text-sm leading-relaxed border border-[var(--info-border)]">
+          <div className="bg-[var(--info-bg)] text-[var(--info-text)] p-4 rounded-[var(--rv-radius-md)] text-sm leading-relaxed border border-[var(--card-border)]">
             Sichern Sie Ihre Daten oder übertragen Sie diese auf ein neues Gerät. 
             Mit einem <strong>Passwort</strong> können Sie die Datei sicher per E-Mail oder Messenger teilen.
           </div>
@@ -247,7 +237,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
               className={`p-4 rounded-[var(--rv-radius-md)] flex items-start gap-3 ${
                 status.type === "success" ? "bg-[var(--success-bg)] text-[var(--success-text)] border border-[var(--success-border)]" :
                 status.type === "error" ? "bg-[var(--danger-bg)] text-[var(--danger-text)] border border-[var(--danger-border)]" :
-                "bg-[var(--info-bg)] text-[var(--info-text)] border border-[var(--info-border)]"
+                "bg-[var(--info-bg)] text-[var(--info-text)] border border-[var(--card-border)]"
               }`}
               role="alert"
               aria-live="assertive"

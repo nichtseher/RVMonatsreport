@@ -98,17 +98,17 @@ pruefe("Schatten laufen ausschließlich über --rv-shadow-*, nicht über Tailwin
 });
 
 /*
-  Eine Ausnahme, im Quelltext an der Stelle selbst begründet
-  (`HelpModal.tsx`, direkt über der betroffenen Klasse) und hier nachgetragen:
-  ein Innenschatten zeigt eine eingelassene Fläche, keine Elevation über der
-  Seite -- ein anderer Effekt als die --rv-shadow-*-Skala, keine fehlende
-  Anbindung.
+  Bis 0.9.67 gab es hier eine Ausnahme: das Fragezeichen-Symbol im Kopf der
+  Hilfe mit Innenschatten. Mit dem gemeinsamen AnsichtsKopf (0.9.68) ist
+  der Fall entfallen -- und eine Ausnahme ohne Fall ist eine offene Tür.
+  Wer wieder eine braucht, begründet sie an der Stelle selbst und trägt
+  die Datei hier ein.
 */
-pruefe("shadow-inner bleibt genau die eine begründete Ausnahme", () => {
+pruefe("kein shadow-inner", () => {
   gleich(
     verstoesse(/\bshadow-inner\b/g),
-    ["src/components/HelpModal.tsx"],
-    "shadow-inner ist an anderen oder zusätzlichen Stellen aufgetaucht",
+    [],
+    "shadow-inner ist aufgetaucht -- Schatten laufen über --rv-shadow-*",
   );
 });
 

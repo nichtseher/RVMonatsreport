@@ -186,7 +186,7 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
               {request.message}
             </p>
             {request.details && request.details.length > 0 && (
-              <ul className="list-disc pl-5 space-y-1 text-sm font-bold text-[var(--text-muted)]">
+              <ul className="list-disc pl-5 space-y-1 text-sm text-[var(--text-muted)]">
                 {request.details.map((d, i) => (
                   <li key={i}>{d}</li>
                 ))}
