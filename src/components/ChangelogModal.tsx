@@ -15,11 +15,11 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
        "Extra gross" nicht mehr in eine Zeile. Die Seite wuchs dadurch auf
        408 px in einem 360-px-Fenster, auf dem CI-Laeufer auf 412.
        WCAG 1.4.10 Reflow. */
-    <div className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--border-color)] p-5 md:p-8 relative shadow-[var(--rv-shadow-lg)] flex flex-col gap-6 animate-fade-in pb-24 [overflow-wrap:anywhere]">
+    <div className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--card-border)] p-5 md:p-8 relative shadow-[var(--rv-shadow-lg)] flex flex-col gap-6 animate-fade-in pb-24 [overflow-wrap:anywhere]">
       {/* flex-col sm:flex-row: siehe CarryoverModal -- bei "Extra gross"
           brach "Was gibt's Neues?" trotz flex-1/min-w-0 in eine senkrechte
           Buchstabenspalte, weil die Zurueck-Taste kaum Rest liess. */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 border-b border-[var(--border-color)] pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 border-b border-[var(--card-border)] pb-4">
         <button
           onClick={onClose}
           /* flex-shrink-0: Ohne das schrumpfte die Taste als Flex-Element auf
@@ -44,11 +44,36 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
       <div className="space-y-6">
         {/*
+          Ausgeschrieben, weil man den neuen Hinweis kennen muss, um nicht an
+          einen Fehler zu glauben, wenn ein älteres Fenster plötzlich nicht mehr
+          speichert (Regel seit 0.9.40: neu wissen muss).
+        */}
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.67: Nur noch ein Fenster speichert</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>
+              <strong>Ist RV Mobil in zwei Fenstern oder Tabs gleichzeitig geöffnet, speichert nur noch das zuletzt
+              geöffnete.</strong> Das ältere zeigt den Hinweis „RV Mobil ist in einem anderen Fenster geöffnet“ und die
+              Taste „Hier weiterarbeiten“. Vorher konnten sich zwei Fenster gegenseitig Einträge überschreiben, ohne
+              jede Warnung.
+            </li>
+            <li>
+              Verbesserungen: Zeit, Archiv, Analyse, Optionen und die übrigen Ansichten tragen jetzt das neue
+              Erscheinungsbild. Hinweiskästen sind ruhiger und in größerer Schrift gesetzt.
+            </li>
+          </ul>
+        </div>
+
+        {/*
           Ausgeschrieben, weil die Monatskarte etwas Neues ist, das man
           wissen muss, um es zu nutzen. Farben und Rahmen allein wären nur
           eine Zeile „Verbesserungen" (Regel seit 0.9.40).
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.66: Neues Erscheinungsbild und ein Überblick über den Monat</span>
@@ -82,7 +107,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           Kategorie + Zeile: Betrifft nur die Reihenfolge dieser Liste
           selbst, keine Funktion der App.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.65: Aufgeräumter, und der Ein-Hand-Modus ist umgezogen</span>
@@ -102,7 +127,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.64: Fehlerbehebungen</span>
@@ -118,7 +143,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           Kategorie + Zeile: Nur eine Pruefung robuster gemacht (tests/
           oberflaeche.spec.ts), keine App-Datei geaendert.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.63: Wartung</span>
@@ -134,7 +159,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           man BEDIENEN muesste -- wer per Sprachsteuerung "Zurück" sagte,
           traf ohnehin schon nichts, das ist jetzt behoben, nicht neu.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.62: Fehlerbehebungen</span>
@@ -151,7 +176,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           Kategorie + Zeile: Nur Testdaten korrigiert (tests/oberflaeche.
           spec.ts), keine App-Datei geaendert.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.61: Wartung</span>
@@ -166,7 +191,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           Kategorie + Zeile: Nur das Pruefnetz betroffen (ansichtsfokus.ts),
           keine App-Datei geaendert.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.60: Wartung</span>
@@ -180,7 +205,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
         {/*
           Kategorie + Zeile: Rein intern, nichts zu wissen oder zu tun.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.59: Wartung</span>
@@ -197,7 +222,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           Rueckfrage, die vorher nicht da war -- das soll nicht wie ein
           Fehler wirken, sondern erklaert sein.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.58: Der Monatsabschluss-Check gilt jetzt auch im Archiv</span>
@@ -219,7 +244,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           tun -- die App ist nach einem Update im Funkloch jetzt vollstaendig
           nutzbar statt neun von elf Ansichten.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.57: Fehlerbehebungen</span>
@@ -237,7 +262,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           rot dargestellten Gesamtsaldo gesehen hat, soll erfahren, dass
           das eine Rechenungenauigkeit war und keine echte Abweichung.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.56: Das Jahreskonto rechnete den laufenden Monat als bereits beendet</span>
@@ -259,7 +284,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           Download fuer "erledigt" hielt, muss jetzt wissen, dass er selbst
           noch einen Schritt hat -- sonst bleibt ein Monat unbemerkt offen.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.55: Ein Download war nicht dasselbe wie ein Versand</span>
@@ -285,7 +310,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           kaputt oder ihr Geraet blockiere das Teilen. Das gehoert richtig-
           gestellt, nicht stillschweigend uebersprungen.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.54: „Trotzdem senden" konnte wirkungslos bleiben</span>
@@ -309,7 +334,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           Ein-Satz-Fix, weil das Verschwinden einer Zahl aus einer Exportdatei
           sonst wie ein Datenverlust aussehen koennte.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.53: Fehlerbehebungen</span>
@@ -325,7 +350,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           muss jetzt etwas WISSEN, um sein Jahreskonto zu korrigieren --
           reines Verschweigen waere hier keine Barmherzigkeit.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.52: Die Hilfe zur Stempeluhr nannte nur zwei von drei Feldern</span>
@@ -350,7 +375,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           Kategorie + Zeile -- betrifft nur, WIE die App eine bestehende
           Einstellung bestaetigt, nicht was der Nutzer damit tun kann.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.51: Fehlerbehebungen</span>
@@ -366,7 +391,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           um es zu nutzen -- der Ziele-Editor tut, was er vorher tat, nur
           liest ein Screenreader die Felder jetzt mit Namen statt stumm vor.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.50: Fehlerbehebungen</span>
@@ -384,7 +409,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           muesste]". Niemand muss etwas anders tun; eine Taste, die vorher
           beim Ueberfahren unlesbar wurde, ist es jetzt nicht mehr.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.49: Fehlerbehebungen</span>
@@ -406,7 +431,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           "Fehlerbehebungen" waere es genau die Auskunft, die er braucht, die
           fehlt.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.48: Verschlüsselte Sicherungen lassen sich wieder einspielen</span>
@@ -447,7 +472,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           Grossbuchstaben verschwinden sieht und keine Zeile dazu findet, haelt
           es fuer einen Fehler.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.47: Direkt zum Hauptbereich, und ein ruhigeres Schriftbild</span>
@@ -476,7 +501,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           Knapp: Es ist dieselbe Auskunft an derselben Stelle, nur frueher im
           Vorlesen. Wer sie sehen kann, merkt nichts.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.46: Verbesserungen</span>
@@ -487,7 +512,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.45: Die Leiste unten ist jetzt lesbar – und jeder Zähler sagt, wann Sie zuletzt gezählt haben</span>
@@ -501,7 +526,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.44: Die App heißt überall „RV Mobil“</span>
@@ -514,7 +539,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.43: Alle Daten löschen – für die Rückgabe des Geräts</span>
@@ -534,7 +559,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           dasselbe erzeugt wie vorher -- es gibt also buchstäblich nichts, was
           ein Nutzer wissen müsste, um zu handeln.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.42: Wartung</span>
@@ -545,7 +570,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.41: Nach dem Wechsel stehen Sie in der neuen Ansicht</span>
@@ -557,7 +582,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.40: Wartung</span>
@@ -568,7 +593,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.39: Fehlerbehebungen</span>
@@ -579,7 +604,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.38: Das Diktat fragt jetzt, bevor es einen fremden Dienst nutzt</span>
@@ -592,7 +617,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.37: Fehlerbehebungen</span>
@@ -603,7 +628,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.36: Meine Demogeräte – Ihre eigene Geräteliste</span>
@@ -616,7 +641,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             <li>Die Liste bleibt <strong>auf Ihrem Gerät</strong> und geht nicht in den Monatsreport. Sie wandert in die Datensicherung mit, damit sie einen Gerätewechsel übersteht.</li>
           </ul>
         </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.35: Jede Datei sagt jetzt, welches Formular drinsteckt</span>
@@ -628,7 +653,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.34: Wartung</span>
@@ -639,7 +664,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.33: Sie entscheiden jetzt, was die Vertriebsleitung bekommt</span>
@@ -655,7 +680,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.32: Fehlerbehebungen</span>
@@ -666,7 +691,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.31: Fehlerbehebungen</span>
@@ -676,7 +701,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             <li>Fehler behoben.</li>
           </ul>
         </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.30: Fehlerbehebungen</span>
@@ -686,7 +711,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             <li>Fehler behoben.</li>
           </ul>
         </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.29: Verbesserungen</span>
@@ -696,7 +721,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             <li>Bedienung verbessert.</li>
           </ul>
         </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.28: Fehlerbehebungen</span>
@@ -706,7 +731,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             <li>Fehler behoben.</li>
           </ul>
         </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.27: Wartung</span>
@@ -716,7 +741,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
           </ul>
         </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.26: Die Schnell-Erfassung und der Ein-Hand-Modus</span>
@@ -729,7 +754,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             <li><strong>Warum das erst jetzt auffiel:</strong> Beide Bereiche erscheinen nur nach einem Klick beziehungsweise nur, wenn der Ein-Hand-Modus eingeschaltet ist – und die automatische Prüfung hat sie deshalb nie zu Gesicht bekommen. Sie sind jetzt fest im Prüflauf.</li>
           </ul>
         </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.25: Verbesserungen</span>
@@ -739,7 +764,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             <li>Bedienung verbessert.</li>
           </ul>
         </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.24: Verbesserungen</span>
@@ -749,7 +774,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             <li>Bedienung verbessert.</li>
           </ul>
         </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.23: Fehlerbehebungen</span>
@@ -759,7 +784,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             <li>Fehler behoben.</li>
           </ul>
         </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.22: Verbesserungen</span>
@@ -770,7 +795,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.21: Fehlerbehebungen</span>
@@ -781,7 +806,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.20: Verbesserungen</span>
@@ -792,7 +817,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           {/* [&>span]:min-w-0 — an allen 31 Versionsueberschriften gleich.
               Ein Flex-Element gibt seine Breite standardmaessig nicht unter
               den Inhalt preis (`min-width: auto`), die Ueberschrift konnte
@@ -811,7 +836,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.18: Fehlerbehebungen</span>
@@ -822,7 +847,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.17: Der Geräte-Abgleich ohne Kamera</span>
@@ -837,7 +862,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--danger)]" />
             <span>Version 0.9.16: Schutz vor Datenverlust</span>
@@ -851,7 +876,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.15: Wartung</span>
@@ -862,7 +887,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.14: Fehlerbehebungen</span>
@@ -873,7 +898,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.13: Fehlerbehebungen</span>
@@ -884,7 +909,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.12: Sie sehen jetzt, welcher Monat noch offen ist</span>
@@ -898,7 +923,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.9.11: Der Export ist jetzt das Formular der Vertriebsleitung</span>
@@ -913,7 +938,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.10: Fehlerbehebungen</span>
@@ -924,7 +949,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.9: Fehlerbehebungen</span>
@@ -935,7 +960,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.8: Verbesserungen</span>
@@ -946,7 +971,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.7: Fehlerbehebungen</span>
@@ -957,7 +982,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.6: Verbesserungen</span>
@@ -968,7 +993,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.5: Wartung</span>
@@ -979,7 +1004,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.4: Wartung</span>
@@ -990,7 +1015,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.3: Fehlerbehebungen</span>
@@ -1001,7 +1026,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.2: Fehlerbehebungen</span>
@@ -1012,7 +1037,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.9.1: Fehlerbehebungen</span>
@@ -1023,7 +1048,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--info-border)]" />
             <span>Version 0.9.0: Zähler bleiben erreichbar & Monatsabschluss mit Rückfrage</span>
@@ -1039,7 +1064,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.8.1: Fehlerbehebungen</span>
@@ -1050,7 +1075,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.8.0: Mehr Platz auf dem Handy & geführter Einstieg</span>
@@ -1064,7 +1089,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.7.0: Verbesserungen</span>
@@ -1075,7 +1100,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.6.0: Verlässlicheres Zählen & Sync im Hintergrund</span>
@@ -1089,7 +1114,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.5.0: Sync ohne Kamera & Abschluss-Check</span>
@@ -1102,7 +1127,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.4.0: Schnell-Erfassung</span>
@@ -1115,7 +1140,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.3.0: Live-Sync & Zusammenführen</span>
@@ -1128,7 +1153,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             <span>Version 0.2.0: Geräte-Synchronisation</span>
@@ -1141,7 +1166,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
             <span>Version 0.1.0: Wartung</span>
@@ -1152,7 +1177,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Activity className="w-5 h-5 text-[var(--warning-border)]" />
             Neue Funktionen
@@ -1165,7 +1190,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           </ul>
         </div>
 
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--danger)]" />
             Fehlerbehebungen

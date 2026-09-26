@@ -1093,7 +1093,7 @@ Scheibe mit denselben Wächtern und einem vollen `check:ui`.
 - **Kalendersymbol im Monatsfeld** in den dunklen Schemata 1,16:1 bzw. 1:1
   -- fehlendes `color-scheme`, jetzt 18,1:1 bzw. 21:1.
 
-### Offen: zwei offene Fenster derselben App überschreiben sich
+### Behoben (0.9.67): zwei offene Fenster derselben App überschrieben sich
 
 Beim Aufklären des wackelnden Deploy-Tests gemessen (DEVLOG 0.9.66): Eine
 laufende Instanz schreibt ihren Archiv-Spiegel aus ihrem eigenen Stand und
@@ -1102,9 +1102,16 @@ in die IndexedDB geschrieben hat. Im Betrieb träfe das -- abgeleitet, nicht
 mit zwei Fenstern gemessen -- zwei gleichzeitig offene Fenster der App auf
 demselben Gerät (auf Android teilen sich die
 installierte App und ein Browser-Tab den Speicher; auf dem iPhone hat die
-installierte App einen eigenen). Nicht behoben; ein Kandidat für einen
-`BroadcastChannel`, der die anderen Fenster nach jedem Schreiben neu laden
-lässt, oder für die Web-Locks-API.
+installierte App einen eigenen). **Behoben in 0.9.67** (`src/utils/einFenster.ts`), nachdem es mit zwei
+Fenstern doch gemessen wurde: Fenster B zählt, danach Fenster A -- ein
+frisch geöffnetes Fenster kennt nur noch As Eintrag. Es schreibt jetzt nur
+das zuletzt geöffnete Fenster; ältere zeigen einen Hinweis mit „Hier
+weiterarbeiten". Gewählt wurde ein synchron gelesener `localStorage`-
+Schlüssel, nicht `BroadcastChannel` (ein eingefrorenes Fenster verpasst
+Nachrichten) und nicht Web Locks (asynchron, lässt sich nicht vor einem
+synchronen Notfall-Schreiben beim `visibilitychange` prüfen). Nicht
+gemessen: das Verhalten auf echten Geräten, insbesondere wenn iOS ein
+eingefrorenes Fenster wieder aufweckt.
 
 ### Sync: Die „zwei Codes" sind nur beim ersten Mal nötig (gemessen, nicht gebaut)
 

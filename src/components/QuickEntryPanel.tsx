@@ -290,7 +290,7 @@ export default function QuickEntryPanel({
 
       {isEditorOpen && (
         <div
-          className="mt-4 pt-4 border-t border-[var(--border-color)] space-y-3 animate-fade-in"
+          className="mt-4 pt-4 border-t border-[var(--card-border)] space-y-3 animate-fade-in"
           role="group"
           aria-label="Schnell-Erfassung konfigurieren"
         >

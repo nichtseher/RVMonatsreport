@@ -10,6 +10,60 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-26 — v0.9.67: Nur ein Fenster schreibt; die übrigen Ansichten im neuen Design
+
+Zwei Aufträge aus der Liste „wo müssen wir noch ran?" (Punkte 2 und 3).
+
+### Zwei Fenster überschrieben sich (Datenverlust, behoben)
+
+Bis 0.9.66 nur abgeleitet (ROADMAP), jetzt gemessen: zwei Seiten im selben
+Browser-Kontext, Fenster B zählt „Vorführungen Schule/Bildung" und speichert,
+danach zählt Fenster A „Vorführungen Arbeitsplatz". Ein drittes, frisch
+geöffnetes Fenster kennt nur noch den Eintrag aus A -- der aus B ist still
+verschwunden. Ursache: Jedes Fenster schreibt seinen kompletten Stand in die
+IndexedDB, beim Speichern und beim Wechsel in den Hintergrund.
+
+Lösung `src/utils/einFenster.ts`: Beim Start trägt sich das Fenster mit
+einer Zufalls-ID in `localStorage` ein. Bericht (`useBerichtsdaten`), die
+Notfallkopie und `persistHistory` prüfen vor jedem Schreiben synchron, ob
+sie noch eingetragen sind. Ein älteres Fenster schreibt nichts mehr und zeigt
+`FensterHinweis` (`role="alert"`, Fokus auf die Überschrift, Taste „Hier
+weiterarbeiten" = Neuladen und Übernehmen). Das `storage`-Ereignis lässt den
+Hinweis sofort erscheinen; die Sicherheit hängt aber am Nachlesen vor dem
+Schreiben, nicht am Ereignis.
+
+Neue UI-Prüfung „Zwei Fenster": am alten Stand rot, mit der Änderung grün,
+dreimal hintereinander; sie misst im Hinweis auch axe, Trefferflächen und
+Überlauf. **Nicht gemessen:** echte Geräte, und ob iOS ein eingefrorenes
+Fenster beim Aufwecken sauber in den Hinweis schickt (abgeleitet: ja, weil
+vor jedem Schreiben nachgelesen wird).
+
+### Die übrigen Ansichten im neuen Design
+
+- 174 Container-Rahmen in 18 Dateien von `--border-color` auf die feine
+  `--card-border` umgestellt -- per Skript, das Bedienelemente ausließ
+  (Tasten, Eingaben, Auswahllisten, Labels, Links, Elemente mit `onClick`
+  oder `role`): Deren Rahmen trägt die 3:1 für Nicht-Text-Kontrast und
+  bleibt kräftig. In den Kontrast-Designs ist `--card-border` gleich
+  `--border-color`, dort ändert sich nichts.
+- Die Info-Farben waren noch das alte Blau (`#1d4ed8` auf `#eff6ff`) und
+  passten nicht zum warmen Grund. Neu hell `#1c4252` auf `#e8f0f2` (9,32:1),
+  Symbolfarbe `#3f7186` (5,36:1 auf Weiß, 4,64:1 auf dem Kasten); dunkel
+  `#a8d4e6` auf `#11232b` (10,18:1), Symbol `#5fa3bf` (6,04:1 auf der Karte).
+- Untertitel von Zeit und Analyse, der DSGVO-Satz in den Optionen, der
+  Archiv-Hinweis und der Stempeluhr-Hinweis im Formular: von `text-xs
+  font-bold` auf `text-sm` in normaler Stärke. Fett in kleiner Schrift las
+  sich wie eine Warnung und war schlechter lesbar als die größere Stufe.
+- Zeitkonto-Karte: Rahmen fein, Taste „Jahreskonto-Einstellungen bearbeiten"
+  mit `text-sm` und einem 16-px-Symbol statt 14 px, das beim Umbruch nicht
+  mehr gestaucht wird.
+
+### Prüfung
+
+`tsc` sauber, `npm run check` 212/212. `check:ui` lokal (Chromium, Profile `handy` und `schreibtisch`): 554 bestanden, 1 rot -- der QR-Kamera-Test, der in dieser Umgebung auch am Ausgangsstand e353c8c scheitert (Umgebung, nicht Code). WebKit läuft erst im Deploy-Gate.
+
+---
+
 ## 2026-09-26 — v0.9.66: „Warmes Grün" — das neue Erscheinungsbild, erste Scheibe
 
 Auftrag des Projektinhabers: Die Oberfläche wirke „langweilig und sehr trist",

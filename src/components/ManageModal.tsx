@@ -103,7 +103,7 @@ export default function ManageModal({
   return (
     <div
       ref={modalRef}
-      className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--border-color)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] animate-fade-in"
+      className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--card-border)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] animate-fade-in"
     >
       {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
       {/* flex-col sm:flex-row: dieselbe Massnahme wie in CarryoverModal --
@@ -172,7 +172,7 @@ export default function ManageModal({
                       zur Verfügung standen -- der Bereich wurde damit still
                       seitwärts scrollbar. `break-words` genügt dagegen nicht,
                       es ändert die intrinsische Mindestbreite nicht. */}
-                  <h3 className="text-sm font-bold text-[var(--text-muted)] border-b border-[var(--border-color)] pb-1 [overflow-wrap:anywhere]">
+                  <h3 className="text-sm font-bold text-[var(--text-muted)] border-b border-[var(--card-border)] pb-1 [overflow-wrap:anywhere]">
                     {sectionLabels[secKey]}
                   </h3>
                   <div className="space-y-1.5">
@@ -190,7 +190,7 @@ export default function ManageModal({
                       */
                       <div
                         key={field.id}
-                        className="flex items-center justify-between gap-2 p-3.5 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[var(--rv-radius-md)]"
+                        className="flex items-center justify-between gap-2 p-3.5 bg-[var(--bg-color)] border border-[var(--card-border)] rounded-[var(--rv-radius-md)]"
                       >
                         <span className="font-bold text-sm leading-snug min-w-0 [overflow-wrap:anywhere]">
                           {field.label}
@@ -220,7 +220,7 @@ export default function ManageModal({
         </div>
 
         {/* Factory Reset */}
-        <div className="border-t border-dashed border-[var(--border-color)] mt-8 pt-6">
+        <div className="border-t border-dashed border-[var(--card-border)] mt-8 pt-6">
           <button
             type="button"
             onClick={onFactoryReset}

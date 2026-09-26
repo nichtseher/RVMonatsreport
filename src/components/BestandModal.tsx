@@ -162,7 +162,7 @@ export default function BestandModal({
   };
 
   return (
-    <div className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--border-color)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] animate-fade-in [overflow-wrap:anywhere]">
+    <div className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--card-border)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] animate-fade-in [overflow-wrap:anywhere]">
       {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
       {/* flex-col sm:flex-row: siehe CarryoverModal -- bei "Extra gross"
           blieben der Ueberschrift sonst nur 58 px neben Taste und Icon. */}
@@ -274,7 +274,7 @@ export default function BestandModal({
           {posten.map((p) => (
             <li
               key={p.id}
-              className="rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--bg-color)] p-3.5 flex flex-col sm:flex-row sm:items-start gap-2.5"
+              className="rounded-[var(--rv-radius-md)] border border-[var(--card-border)] bg-[var(--bg-color)] p-3.5 flex flex-col sm:flex-row sm:items-start gap-2.5"
             >
               <div className="min-w-0 flex-1">
                 <p className="font-black text-sm break-words">{p.text}</p>

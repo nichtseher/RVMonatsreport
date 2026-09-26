@@ -1883,7 +1883,7 @@ export default function App() {
       icon: <Clock className="w-5 h-5" />,
       felder: appFields.s4,
       hinweis: (accessibility.enableTimeTracking !== false ? (
-        <div className="mb-4 p-3 rounded-[var(--rv-radius-md)] bg-[var(--info-bg)] border border-[var(--info-border)] text-[var(--info-text)] text-xs font-bold flex items-start gap-2">
+        <div className="mb-4 p-3 rounded-[var(--rv-radius-md)] bg-[var(--info-bg)] border border-[var(--card-border)] text-[var(--info-text)] text-sm leading-relaxed flex items-start gap-2">
           <Clock className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <p>Diese Werte werden automatisch aus Ihrer Stempeluhr (RV Zeit) berechnet und beim Ausstempeln hier eingetragen.</p>
         </div>
@@ -3043,7 +3043,7 @@ export default function App() {
         !hasVisibleFields(appFields.s2) &&
         !hasVisibleFields(appFields.s3) &&
         !hasVisibleFields(appFields.s4) && (
-          <div className="p-8 text-center border-2 border-dashed border-[var(--border-color)] rounded-[var(--rv-radius-lg)] bg-[var(--card-bg)] mb-5 animate-fade-in">
+          <div className="p-8 text-center border-2 border-dashed border-[var(--card-border)] rounded-[var(--rv-radius-lg)] bg-[var(--card-bg)] mb-5 animate-fade-in">
             <p className="text-sm font-bold text-[var(--text-muted)]">
               Keine passenden Einträge gefunden für "{searchQuery}".
             </p>
@@ -3149,7 +3149,7 @@ export default function App() {
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:right-8 md:translate-x-0 bg-[var(--primary)] text-[var(--primary-text)] font-black py-3.5 px-6 rounded-full shadow-[var(--rv-shadow-lg)] z-50 text-sm border border-[var(--border-color)] animate-bounce"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:right-8 md:translate-x-0 bg-[var(--primary)] text-[var(--primary-text)] font-black py-3.5 px-6 rounded-full shadow-[var(--rv-shadow-lg)] z-50 text-sm border border-[var(--card-border)] animate-bounce"
         >
           {toastText}
         </div>

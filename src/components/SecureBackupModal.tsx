@@ -147,13 +147,13 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
   };
 
   return (
-    <div className="bg-[var(--card-bg)] rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] w-full overflow-hidden flex flex-col border border-[var(--border-color)] animate-fade-in relative">
+    <div className="bg-[var(--card-bg)] rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] w-full overflow-hidden flex flex-col border border-[var(--card-border)] animate-fade-in relative">
       {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
       {/* flex-col sm:flex-row: siehe CarryoverModal. Hier war der Effekt am
           staerksten -- das gepolsterte Schloss-Icon allein nahm bei "Extra
           gross" schon so viel Breite, dass "Datensicherung" nur noch 34 px
           Restbreite blieben. */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-6 md:p-8 border-b border-[var(--border-color)] bg-[var(--bg-color)]">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-6 md:p-8 border-b border-[var(--card-border)] bg-[var(--bg-color)]">
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
@@ -181,7 +181,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
             Mit einem <strong>Passwort</strong> können Sie die Datei sicher per E-Mail oder Messenger teilen.
           </div>
 
-          <div className="space-y-4 bg-[var(--bg-color)] p-5 rounded-[var(--rv-radius-md)] border border-[var(--border-color)]">
+          <div className="space-y-4 bg-[var(--bg-color)] p-5 rounded-[var(--rv-radius-md)] border border-[var(--card-border)]">
             <h3 className="font-bold text-[var(--text-color)] flex items-center gap-2">
               <Lock className="w-4 h-4 text-[var(--text-muted)]" />
               Sicherheit
@@ -286,7 +286,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
             {/* Die Wahl faellt VOR der Dateiauswahl, wie beim
                 Verschluesselungs-Schalter oben -- nicht in einem Dialog danach,
                 den man mit Screenreader erst wieder suchen muesste. */}
-            <div className="sm:col-span-2 p-3 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--bg-color)]">
+            <div className="sm:col-span-2 p-3 rounded-[var(--rv-radius-md)] border border-[var(--card-border)] bg-[var(--bg-color)]">
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"

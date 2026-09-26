@@ -126,7 +126,7 @@ function ToggleRow({
 }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3.5">
-      <span className="w-9 h-9 rounded-[var(--rv-radius-md)] bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--accent)] flex items-center justify-center flex-shrink-0" aria-hidden="true">
+      <span className="w-9 h-9 rounded-[var(--rv-radius-md)] bg-[var(--input-bg)] border border-[var(--card-border)] text-[var(--accent)] flex items-center justify-center flex-shrink-0" aria-hidden="true">
         {icon}
       </span>
       <span className="flex-1 min-w-0">
@@ -153,7 +153,7 @@ function ToggleRow({
           className={`relative block w-14 h-8 rounded-full border-2 transition-colors ${
             checked
               ? "bg-[var(--accent)] border-[var(--accent)]"
-              : "bg-[var(--input-bg)] border-[var(--border-color)]"
+              : "bg-[var(--input-bg)] border-[var(--card-border)]"
           }`}
         >
           {/* Der Knopf war fest weiss. Gemessen gegen die jeweilige Spur war er
@@ -179,7 +179,7 @@ function ToggleRow({
 /** Abschnitts-Karte mit Titel; gruppiert zusammengehörige Zeilen. */
 function SectionCard({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--bg-color)] shadow-[var(--rv-shadow-sm)] overflow-hidden">
+    <section className="rounded-[var(--rv-radius-lg)] border border-[var(--card-border)] bg-[var(--bg-color)] shadow-[var(--rv-shadow-sm)] overflow-hidden">
       {title && (
         <h3 className="px-4 pt-3 pb-1 text-xs font-black text-[var(--text-muted)]">
           {title}
@@ -297,7 +297,7 @@ export default function A11yModal({
         )}
       </div>
 
-      <p className="flex items-start gap-2 px-1 text-xs font-bold text-[var(--cat-1-text)] leading-relaxed">
+      <p className="flex items-start gap-2 px-1 text-sm text-[var(--text-muted)] leading-relaxed">
         <Lock className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
         <span>
           DSGVO-konform: Alle Daten bleiben lokal auf dem Gerät. Der Geräte-Sync läuft
@@ -436,7 +436,7 @@ export default function A11yModal({
   /* ----- Einstellungen: kompakte Gruppen mit Switches ----- */
   const renderA11yMenu = () => (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex items-center gap-3 border-b border-[var(--border-color)] pb-3">
+      <div className="flex items-center gap-3 border-b border-[var(--card-border)] pb-3">
         <button
           onClick={() => setActiveMenu("main")}
           className="w-12 h-12 flex items-center justify-center rounded-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-colors active:scale-95 cursor-pointer flex-shrink-0"
@@ -614,7 +614,7 @@ export default function A11yModal({
   /* ----- Formular anpassen (inkl. Link zu "Felder löschen") ----- */
   const renderFormMenu = () => (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex items-center gap-3 border-b border-[var(--border-color)] pb-3">
+      <div className="flex items-center gap-3 border-b border-[var(--card-border)] pb-3">
         <button
           onClick={() => setActiveMenu("main")}
           className="w-12 h-12 flex items-center justify-center rounded-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-colors active:scale-95 cursor-pointer flex-shrink-0"
@@ -738,7 +738,7 @@ export default function A11yModal({
   return (
     <div
       ref={modalRef}
-      className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--border-color)] p-4 md:p-6 relative shadow-[var(--rv-shadow-lg)] flex flex-col gap-4 animate-fade-in"
+      className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--card-border)] p-4 md:p-6 relative shadow-[var(--rv-shadow-lg)] flex flex-col gap-4 animate-fade-in"
     >
       {activeMenu === "main" && renderMainMenu()}
       {activeMenu === "a11y" && renderA11yMenu()}

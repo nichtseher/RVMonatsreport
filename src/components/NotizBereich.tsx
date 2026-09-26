@@ -33,10 +33,10 @@ export default function NotizBereich({
     <>
   {/* SECTION 5: NOTES & ANMERKUNGEN */}
   <section
-    className={`p-4 sm:p-5 mb-5 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] border-[var(--border-color)]`}
+    className={`p-4 sm:p-5 mb-5 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] border-[var(--card-border)]`}
     aria-labelledby="notes-heading"
   >
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b-2 border-[var(--border-color)]">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b-2 border-[var(--card-border)]">
       <h2
         id="notes-heading"
         className="text-lg md:text-xl font-black text-[var(--text-color)]"

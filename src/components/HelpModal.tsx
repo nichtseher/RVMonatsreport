@@ -86,10 +86,10 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
   */
   return (
     <div className="animate-fade-in" ref={modalRef}>
-      <div className="bg-[var(--card-bg)] rounded-[var(--rv-radius-xl)] overflow-hidden shadow-[var(--rv-shadow-lg)] border-4 border-[var(--border-color)] flex flex-col max-h-[85vh]">
+      <div className="bg-[var(--card-bg)] rounded-[var(--rv-radius-xl)] overflow-hidden shadow-[var(--rv-shadow-lg)] border-4 border-[var(--card-border)] flex flex-col max-h-[85vh]">
         
         {/* Header */}
-        <div className="bg-[var(--bg-color)] p-6 border-b-2 border-[var(--border-color)] flex items-center justify-between sticky top-0 z-10">
+        <div className="bg-[var(--bg-color)] p-6 border-b-2 border-[var(--card-border)] flex items-center justify-between sticky top-0 z-10">
           {/* Zurück-Pfeil links (einheitliches Navigationsmuster) */}
           <div className="flex items-center gap-3 min-w-0">
             <button
@@ -127,7 +127,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
             aussen ist das von einem Fehler nicht zu unterscheiden. */}
         <div
           data-scroll-x="absicht"
-          className="flex flex-shrink-0 border-b border-[var(--border-color)] overflow-x-auto"
+          className="flex flex-shrink-0 border-b border-[var(--card-border)] overflow-x-auto"
         >
           {/*
             Die Reiter heissen bewusst NICHT wie die Ansichten, zu denen sie
@@ -419,7 +419,7 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-5 bg-[var(--bg-color)] border-t-2 border-[var(--border-color)] flex justify-end">
+        <div className="p-5 bg-[var(--bg-color)] border-t-2 border-[var(--card-border)] flex justify-end">
           <button
             onClick={onClose}
             className="px-6 py-3 bg-[var(--primary)] hover:opacity-90 text-[var(--primary-text)] font-black rounded-[var(--rv-radius-md)] transition-all active:scale-95 focus-visible:ring-4 shadow-[var(--rv-shadow-sm)]"
@@ -434,8 +434,8 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
 
 function FAQItem({ icon, title, children }: { icon: React.ReactNode, title: string, children: React.ReactNode }) {
   return (
-    <div className="bg-[var(--bg-color)] border border-[var(--border-color)] rounded-[var(--rv-radius-md)] overflow-hidden shadow-[var(--rv-shadow-sm)]">
-      <div className="p-4 bg-[var(--bg-color)] border-b border-[var(--border-color)]">
+    <div className="bg-[var(--bg-color)] border border-[var(--card-border)] rounded-[var(--rv-radius-md)] overflow-hidden shadow-[var(--rv-shadow-sm)]">
+      <div className="p-4 bg-[var(--bg-color)] border-b border-[var(--card-border)]">
         <h4 className="font-black text-sm text-[var(--text-color)] flex items-center gap-2">
           {icon}
           {title}

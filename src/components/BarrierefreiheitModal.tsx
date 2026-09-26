@@ -40,12 +40,12 @@ export default function BarrierefreiheitModal({ onClose }: BarrierefreiheitModal
        vererbt und die langen Wörter hier in den Absätzen stehen:
        „Barrierefreiheitserklärung" ist mit 26 Zeichen länger als alles, was
        die Changelog-Ansicht 2026-09-14 auf 408 px getrieben hat. */
-    <div className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--border-color)] p-5 md:p-8 relative shadow-[var(--rv-shadow-lg)] flex flex-col gap-6 animate-fade-in pb-24 [overflow-wrap:anywhere]">
+    <div className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--card-border)] p-5 md:p-8 relative shadow-[var(--rv-shadow-lg)] flex flex-col gap-6 animate-fade-in pb-24 [overflow-wrap:anywhere]">
       {/* flex-col sm:flex-row: siehe CarryoverModal -- "Barrierefreiheitserklärung"
           ist mit 26 Zeichen laenger als alles, was die Changelog-Ansicht schon
           auf 408 px getrieben hat, und brach bei "Extra gross" trotz
           flex-1/min-w-0 in eine senkrechte Buchstabenspalte. */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 border-b border-[var(--border-color)] pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 border-b border-[var(--card-border)] pb-4">
         <button
           onClick={onClose}
           className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] transition-colors active:scale-95 cursor-pointer"
@@ -73,7 +73,7 @@ export default function BarrierefreiheitModal({ onClose }: BarrierefreiheitModal
           Diese Erklärung gilt für die Anwendung <strong>RV Mobil</strong> (RV Monatsreport) — im Browser
           und als installierte App auf Smartphone, Tablet und Rechner.
         </p>
-        <div className="p-4 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)] space-y-2">
+        <div className="p-4 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)] space-y-2">
           <p className="text-sm font-black">Kurz gesagt</p>
           <p className="text-sm font-bold text-[var(--text-muted)] leading-relaxed">
             Die Anwendung ist <strong>teilweise vereinbar</strong> mit EN 301 549 (Stufe AA). Auf dieser
@@ -161,7 +161,7 @@ export default function BarrierefreiheitModal({ onClose }: BarrierefreiheitModal
 
       <section className="space-y-3">
         <h3 className="text-lg font-black">Eine Barriere melden</h3>
-        <div className="p-4 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)] space-y-2">
+        <div className="p-4 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)] space-y-2">
           <p className="text-sm font-bold leading-relaxed">
             Ansprechpartner für alle Belange dieser App ist <strong>Marc Petry Stramov</strong> (Entwicklung).
             Melden Sie Barrieren bitte auf dem üblichen innerbetrieblichen Weg — auch Kleinigkeiten.
@@ -179,7 +179,7 @@ export default function BarrierefreiheitModal({ onClose }: BarrierefreiheitModal
         </p>
       </section>
 
-      <section className="space-y-3 border-t border-[var(--border-color)] pt-5">
+      <section className="space-y-3 border-t border-[var(--card-border)] pt-5">
         <h3 className="text-lg font-black">Rechtlicher Rahmen und Grenzen dieser Erklärung</h3>
         <p className="text-sm font-bold text-[var(--text-muted)] leading-relaxed">
           RV Mobil ist ein <strong>Arbeitsmittel für Beschäftigte</strong>. Damit gilt weder das

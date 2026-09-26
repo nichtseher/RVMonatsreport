@@ -129,9 +129,9 @@
      damit unter den 4,5:1 fuer normalen Text. Altbestandsfehler, kein neuer. */
   --warning-solid: #92400e;
   --warning-solid-text: #ffffff;
-  --info-bg: #eff6ff;
-  --info-border: #1d4ed8;
-  --info-text: #1e3a8a;
+  --info-bg: #e8f0f2;
+  --info-border: #3f7186;
+  --info-text: #1c4252;
   --danger-bg: #fef2f2;
   --danger-border: #b91c1c;
   --danger-text: #7f1d1d;
@@ -264,9 +264,9 @@
   --warning-text: #fcd34d;
   --warning-solid: #b45309;
   --warning-solid-text: #ffffff;
-  --info-bg: #0b1e3d;
-  --info-border: #3b82f6;
-  --info-text: #93c5fd;
+  --info-bg: #11232b;
+  --info-border: #5fa3bf;
+  --info-text: #a8d4e6;
   --danger-bg: #3f0a0a;
   --danger-border: #ef4444;
   --danger-text: #fca5a5;

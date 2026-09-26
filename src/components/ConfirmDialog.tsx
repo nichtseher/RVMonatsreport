@@ -156,7 +156,7 @@ export default function ConfirmDialog({ request, onClose, announce }: ConfirmDia
     >
       <div
         ref={dialogRef}
-        className="bg-[var(--card-bg)] w-full max-w-md rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] border border-[var(--border-color)] overflow-hidden"
+        className="bg-[var(--card-bg)] w-full max-w-md rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] border border-[var(--card-border)] overflow-hidden"
       >
         <div className="p-6 space-y-4">
           <div className="flex items-start gap-3">

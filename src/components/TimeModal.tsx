@@ -191,7 +191,7 @@ export default function TimeModal({
   return (
     <div
       ref={modalRef}
-      className="w-full bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] border border-[var(--border-color)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] flex flex-col gap-5 animate-fade-in"
+      className="w-full bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] border border-[var(--card-border)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] flex flex-col gap-5 animate-fade-in"
     >
       {/* Header */}
       {/*
@@ -211,7 +211,7 @@ export default function TimeModal({
         und das Wort brach mitten hindurch ("Zeiterfass/ung"). Gestapelt steht
         die volle Kartenbreite zur Verfügung, das Wort bleibt ganz.
       */}
-      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3 border-b border-[var(--border-color)] pb-4">
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3 border-b border-[var(--card-border)] pb-4">
           <Clock className="w-8 h-8 shrink-0 text-[var(--accent)]" aria-hidden="true" />
           <div className="min-w-0">
             {/*
@@ -230,14 +230,14 @@ export default function TimeModal({
             >
               Zeiterfassung
             </h2>
-            <p className="text-xs text-[var(--text-muted)] font-bold mt-0.5">
+            <p className="text-sm text-[var(--text-muted)] mt-0.5">
               Hier erfassen Sie Ihre Arbeitszeiten und sehen Ihr Arbeitszeitkonto.
             </p>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-[var(--border-color)] select-none">
+        <div className="flex border-b border-[var(--card-border)] select-none">
           <button
             type="button"
             onClick={() => {
@@ -271,10 +271,10 @@ export default function TimeModal({
         {activeTab === "stempeln" ? (
           <div className="space-y-4 flex flex-col flex-1">
             {/* Info Card / Carryover Integration */}
-            <div className="p-4 rounded-[var(--rv-radius-md)] border border-[var(--info-border)] bg-[var(--info-bg)] flex flex-col gap-3">
+            <div className="p-4 rounded-[var(--rv-radius-md)] border border-[var(--card-border)] bg-[var(--info-bg)] flex flex-col gap-3">
               <div className="flex gap-3 text-[var(--text-color)]">
                 <Briefcase className="w-5 h-5 flex-shrink-0 mt-0.5 text-[var(--cat-4-text)]" aria-hidden="true" />
-                <div className="text-xs space-y-1 leading-relaxed font-bold">
+                <div className="text-sm space-y-1 leading-relaxed">
                   <p className="font-black text-sm">Arbeitszeit- &amp; Urlaubskonto</p>
                   <p className="text-[var(--text-muted)]">
                     Sollzeit: <strong className="text-[var(--text-color)]">{(carryover.dailyTargetHours * 5).toFixed(1)}h/Woche</strong> | 
@@ -292,10 +292,10 @@ export default function TimeModal({
                    2026-09-02 fuer alles im Tab-Lauf gilt. Gefunden hat das
                    nicht das Auge, sondern das verschaerfte Pruefgate im
                    Schreibtisch-Profil. */
-                className="w-full min-h-[44px] py-2 px-3 bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] border border-[var(--border-color)] text-[var(--text-color)] text-xs font-bold rounded-[var(--rv-radius-sm)] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                className="w-full min-h-[44px] py-2 px-3 bg-[var(--bg-color)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] border border-[var(--border-color)] text-[var(--text-color)] text-sm font-bold rounded-[var(--rv-radius-md)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                 aria-label="Jahreskonto-Einstellungen bearbeiten"
               >
-                <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" />
+                <Calendar className="w-4 h-4 flex-shrink-0 text-[var(--accent)]" aria-hidden="true" />
                 <span>Jahreskonto-Einstellungen bearbeiten</span>
               </button>
             </div>
@@ -320,7 +320,7 @@ export default function TimeModal({
             {/* Grid Container for Vacation and Overtime */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Overtime (Überstunden) Card */}
-              <div className="p-4 rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--bg-color)] shadow-[var(--rv-shadow-sm)] flex flex-col justify-between">
+              <div className="p-4 rounded-[var(--rv-radius-lg)] border border-[var(--card-border)] bg-[var(--bg-color)] shadow-[var(--rv-shadow-sm)] flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-8 h-8 rounded-[var(--rv-radius-md)] bg-[var(--cat-4-soft)] text-[var(--cat-4-text)] flex items-center justify-center" aria-hidden="true">
@@ -340,7 +340,7 @@ export default function TimeModal({
                         {yearlyOvertime.totalOvertimeAccumulated >= 0 ? "+" : ""}{yearlyOvertime.totalOvertimeAccumulated.toFixed(2)}h
                       </span>
                     </div>
-                    <div className="border-t border-dashed border-[var(--border-color)] pt-2 mt-2 flex justify-between items-baseline">
+                    <div className="border-t border-dashed border-[var(--card-border)] pt-2 mt-2 flex justify-between items-baseline">
                       <span className="text-xs font-bold text-[var(--text-color)]">Gesamt-Saldo:</span>
                       <span className={`text-xl font-black font-mono ${
                         yearlyOvertime.totalBalance > 0 
@@ -355,7 +355,7 @@ export default function TimeModal({
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-[var(--border-color)] flex justify-between items-center text-[0.75rem] font-bold text-[var(--text-muted)]">
+                <div className="mt-4 pt-3 border-t border-[var(--card-border)] flex justify-between items-center text-[0.75rem] font-bold text-[var(--text-muted)]">
                   <span>Sollzeit:</span>
                   <span className="bg-[var(--bg-color)] px-2 py-0.5 rounded text-[var(--text-color)] font-black">
                     {(carryover.dailyTargetHours * 5).toFixed(1)}h/Woche
@@ -364,7 +364,7 @@ export default function TimeModal({
               </div>
 
               {/* Vacation (Urlaubskonto) Card */}
-              <div className="p-4 rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--bg-color)] shadow-[var(--rv-shadow-sm)] flex flex-col justify-between">
+              <div className="p-4 rounded-[var(--rv-radius-lg)] border border-[var(--card-border)] bg-[var(--bg-color)] shadow-[var(--rv-shadow-sm)] flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-8 h-8 rounded-[var(--rv-radius-md)] bg-[var(--cat-1-soft)] text-[var(--cat-1-text)] flex items-center justify-center" aria-hidden="true">
@@ -388,7 +388,7 @@ export default function TimeModal({
                       <span className="text-[var(--text-muted)]">Genommen (YTD):</span>
                       <span className="font-mono font-bold text-[var(--danger-text)]">-{yearlyVacation.totalUrlaubTaken} Tage</span>
                     </div>
-                    <div className="border-t border-dashed border-[var(--border-color)] pt-2 mt-2 flex justify-between items-baseline">
+                    <div className="border-t border-dashed border-[var(--card-border)] pt-2 mt-2 flex justify-between items-baseline">
                       <span className="text-xs font-bold text-[var(--text-color)]">Resturlaub aktuell:</span>
                       <span className="text-xl font-black font-mono text-[var(--cat-1-text)]">
                         {yearlyVacation.remainingVacation} Tage
@@ -397,7 +397,7 @@ export default function TimeModal({
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-[var(--border-color)] flex justify-between items-center text-[0.75rem] font-bold text-[var(--text-muted)]">
+                <div className="mt-4 pt-3 border-t border-[var(--card-border)] flex justify-between items-center text-[0.75rem] font-bold text-[var(--text-muted)]">
                   <span>Fehltage (YTD):</span>
                   <span className="flex gap-2">
                     <span className="bg-[var(--warning-bg)] text-[var(--warning-text)] px-1.5 py-0.5 rounded flex items-center gap-0.5 font-black">
@@ -418,11 +418,11 @@ export default function TimeModal({
                 <span>Monatlicher Stunden-Verlauf ({activeYear})</span>
               </h4>
 
-              <div className="overflow-hidden rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--bg-color)]">
+              <div className="overflow-hidden rounded-[var(--rv-radius-md)] border border-[var(--card-border)] bg-[var(--bg-color)]">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-[0.75rem]" aria-label="Monatliche Arbeitszeit-Aufschlüsselung">
                     <thead>
-                      <tr className="bg-[var(--bg-color)] border-b border-[var(--border-color)] text-[var(--text-color)] font-black">
+                      <tr className="bg-[var(--bg-color)] border-b border-[var(--card-border)] text-[var(--text-color)] font-black">
                         <th className="p-2.5">Monat</th>
                         <th className="p-2.5 text-right">Ist-Stunden</th>
                         <th className="p-2.5 text-right">Soll-Stunden</th>

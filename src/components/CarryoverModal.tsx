@@ -110,7 +110,7 @@ export default function CarryoverModal({
   return (
     <div
       ref={modalRef}
-      className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--border-color)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] animate-fade-in"
+      className="bg-[var(--card-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-xl)] w-full border border-[var(--card-border)] p-6 md:p-8 relative shadow-[var(--rv-shadow-lg)] animate-fade-in"
     >
       {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
       {/* flex-col sm:flex-row: Bei "Extra gross" wuchsen Zurueck-Taste (rem-
@@ -153,7 +153,7 @@ export default function CarryoverModal({
 
         <form onSubmit={handleFormSubmit} className="space-y-5">
           {/* Section 1: Urlaubskonto */}
-          <div className="space-y-3 p-4 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--bg-color)]">
+          <div className="space-y-3 p-4 rounded-[var(--rv-radius-md)] border border-[var(--card-border)] bg-[var(--bg-color)]">
             <h3 className="text-xs font-black text-[var(--accent)] flex items-center gap-1.5">
               Urlaubskonto-Konfiguration
             </h3>
@@ -195,7 +195,7 @@ export default function CarryoverModal({
               </div>
             </div>
 
-            <div className="space-y-1 pt-1.5 border-t border-[var(--border-color)]">
+            <div className="space-y-1 pt-1.5 border-t border-[var(--card-border)]">
               <label htmlFor="vacation-carryover-input" className="text-xs font-bold text-[var(--text-muted)] block">
                 Resturlaub / Start-Übertrag (Tage):
               </label>
@@ -216,7 +216,7 @@ export default function CarryoverModal({
           </div>
 
           {/* Section 2: Arbeitszeit & Überstunden */}
-          <div className="space-y-3 p-4 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--bg-color)]">
+          <div className="space-y-3 p-4 rounded-[var(--rv-radius-md)] border border-[var(--card-border)] bg-[var(--bg-color)]">
             <h3 className="text-xs font-black text-[var(--accent)] flex items-center gap-1.5">
               ⏱️ Überstunden & Sollarbeitszeit
             </h3>
@@ -268,7 +268,7 @@ export default function CarryoverModal({
               schob "Speichern" die Seite dadurch auf 442 px in einem
               360-px-Fenster. Jetzt brechen die Tasten untereinander um, statt
               die Seite zu verbreitern -- WCAG 1.4.10 Reflow. */}
-          <div className="pt-4 border-t border-[var(--border-color)] flex flex-wrap gap-3 [&>button]:min-w-0">
+          <div className="pt-4 border-t border-[var(--card-border)] flex flex-wrap gap-3 [&>button]:min-w-0">
             <button
               type="button"
               onClick={onClose}

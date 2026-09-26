@@ -727,7 +727,7 @@ export default function DeviceSyncModal({
             className={`rounded-[var(--rv-radius-lg)] border px-3 py-2 text-center ${
               currentStep === idx + 1
                 ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--text-color)]"
-                : "border-[var(--border-color)] bg-[var(--bg-color)]"
+                : "border-[var(--card-border)] bg-[var(--bg-color)]"
             }`}
           >
             <div className="text-[0.75rem] font-black mb-1">{step.label}</div>
@@ -805,7 +805,7 @@ export default function DeviceSyncModal({
         <div className="mt-4 w-full max-w-[300px] space-y-3">
           {/* Passwortschutz nur für Nutzdaten -- Kopplungscodes enthalten keine. */}
           {sendPayloadRef.current && (
-            <div className="rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--bg-color)] p-3 space-y-2">
+            <div className="rounded-[var(--rv-radius-md)] border border-[var(--card-border)] bg-[var(--bg-color)] p-3 space-y-2">
               <p className="text-[0.75rem] font-bold text-[var(--text-color)] leading-snug">
                 Der QR-Code bleibt auf dem Bildschirm – er verlässt das Gerät nicht.
                 Der <strong>kopierte Textcode</strong> dagegen ist ohne Passwort
@@ -934,7 +934,7 @@ export default function DeviceSyncModal({
       {expectedTotal > 1 && (
         <div className="w-full max-w-[300px] mb-4">
           <div
-            className="h-3 w-full rounded-full bg-[var(--bg-color)] border border-[var(--border-color)] overflow-hidden"
+            className="h-3 w-full rounded-full bg-[var(--bg-color)] border border-[var(--card-border)] overflow-hidden"
             role="progressbar"
             aria-valuemin={0}
             aria-valuemax={expectedTotal}
@@ -1010,10 +1010,10 @@ export default function DeviceSyncModal({
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         ref={modalRef}
-        className="bg-[var(--card-bg)] w-full max-w-md rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] overflow-hidden border border-[var(--border-color)] flex flex-col max-h-[90vh]"
+        className="bg-[var(--card-bg)] w-full max-w-md rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] overflow-hidden border border-[var(--card-border)] flex flex-col max-h-[90vh]"
       >
         {/* Kopfzeile mit Zurück-Pfeil (einheitliches Navigationsmuster) */}
-        <div className="p-3 border-b border-[var(--border-color)] flex items-center gap-2.5 bg-[var(--bg-color)]">
+        <div className="p-3 border-b border-[var(--card-border)] flex items-center gap-2.5 bg-[var(--bg-color)]">
           <button
             ref={closeButtonRef}
             onClick={onClose}
@@ -1065,7 +1065,7 @@ export default function DeviceSyncModal({
 
           {mode === "select" && !liveConnected && (
             <div className="space-y-4">
-              <div className="mb-6 p-4 rounded-[var(--rv-radius-md)] bg-[var(--bg-color)] border border-[var(--border-color)] flex items-start gap-3">
+              <div className="mb-6 p-4 rounded-[var(--rv-radius-md)] bg-[var(--bg-color)] border border-[var(--card-border)] flex items-start gap-3">
                 <ShieldCheck className="w-6 h-6 text-[var(--accent)] flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <p className="text-sm text-[var(--text-muted)]">
                   <strong className="text-[var(--text-color)]">100 % serverlos &amp; DSGVO-konform:</strong>{" "}

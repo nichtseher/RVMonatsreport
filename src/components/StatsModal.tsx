@@ -105,9 +105,9 @@ export default function StatsModal({
   const sortedMonths = Object.values(allMonthsMap).sort((a, b) => a.month.localeCompare(b.month));
 
   return (
-    <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-[var(--rv-radius-xl)] w-full max-w-2xl shadow-[var(--rv-shadow-lg)] overflow-hidden focus:outline-none flex flex-col animate-fade-in mx-auto">
+    <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-[var(--rv-radius-xl)] w-full max-w-2xl shadow-[var(--rv-shadow-lg)] overflow-hidden focus:outline-none flex flex-col animate-fade-in mx-auto">
       {/* Header */}
-      <div className="p-6 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-color)]">
+      <div className="p-6 border-b border-[var(--card-border)] flex items-center justify-between bg-[var(--bg-color)]">
         <div className="flex items-center gap-2.5">
           <div className="w-10 h-10 rounded-[var(--rv-radius-md)] bg-[var(--cat-3-soft)] text-[var(--cat-3-text)] flex items-center justify-center border border-[var(--cat-3)]">
             <BarChart3 className="w-5 h-5" />
@@ -116,7 +116,7 @@ export default function StatsModal({
             <h2 id="stats-title" tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black text-[var(--text-color)] min-w-0 [overflow-wrap:anywhere]">
               RV Analyse & Trends
             </h2>
-            <p className="text-xs text-[var(--text-muted)] font-bold">
+            <p className="text-sm text-[var(--text-muted)] mt-0.5">
               Automatische Auswertung für {formatMonthGerman(reportData.month)}
             </p>
           </div>
@@ -124,7 +124,7 @@ export default function StatsModal({
       </div>
 
         {/* Segmented Toggles */}
-        <div className="px-6 pt-4 pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--bg-color)] border-b border-[var(--border-color)]">
+        <div className="px-6 pt-4 pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--bg-color)] border-b border-[var(--card-border)]">
           <div className="flex bg-[var(--bg-color)] p-1 rounded-[var(--rv-radius-md)] self-start flex-wrap gap-0.5">
             <button
               type="button"
@@ -207,7 +207,7 @@ export default function StatsModal({
                 unter „Reflow" versteht.
               */}
               <div className="grid grid-cols-[repeat(auto-fit,minmax(7.5rem,1fr))] md:grid-cols-4 gap-3">
-                <div className="p-3 sm:p-4 rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--cat-3-soft)] text-center">
+                <div className="p-3 sm:p-4 rounded-[var(--rv-radius-lg)] border border-[var(--card-border)] bg-[var(--cat-3-soft)] text-center">
                   <span className="block text-[0.75rem] font-black hyphens-auto break-words text-[var(--cat-3-text)] mb-1">
                     Aktivitäten
                   </span>
@@ -219,7 +219,7 @@ export default function StatsModal({
                   </span>
                 </div>
 
-                <div className="p-3 sm:p-4 rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--cat-1-soft)] text-center">
+                <div className="p-3 sm:p-4 rounded-[var(--rv-radius-lg)] border border-[var(--card-border)] bg-[var(--cat-1-soft)] text-center">
                   <span className="block text-[0.75rem] font-black hyphens-auto break-words text-[var(--cat-1-text)] mb-1">
                     Vorführungen
                   </span>
@@ -231,7 +231,7 @@ export default function StatsModal({
                   </span>
                 </div>
 
-                <div className="p-3 sm:p-4 rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--cat-2-soft)] text-center">
+                <div className="p-3 sm:p-4 rounded-[var(--rv-radius-lg)] border border-[var(--card-border)] bg-[var(--cat-2-soft)] text-center">
                   <span className="block text-[0.75rem] font-black hyphens-auto break-words text-[var(--cat-2-text)] mb-1">
                     Schulungen
                   </span>
@@ -243,7 +243,7 @@ export default function StatsModal({
                   </span>
                 </div>
 
-                <div className="p-3 sm:p-4 rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--cat-4-soft)] text-center">
+                <div className="p-3 sm:p-4 rounded-[var(--rv-radius-lg)] border border-[var(--card-border)] bg-[var(--cat-4-soft)] text-center">
                   <span className="block text-[0.75rem] font-black hyphens-auto break-words text-[var(--cat-4-text)] mb-1">
                     Bürozeit
                   </span>
@@ -258,7 +258,7 @@ export default function StatsModal({
 
               {/* Graphical View (Donut Chart representation) */}
               {viewType === "visual" && (
-                <div className="p-5 rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--bg-color)] space-y-4">
+                <div className="p-5 rounded-[var(--rv-radius-lg)] border border-[var(--card-border)] bg-[var(--bg-color)] space-y-4">
                   <h3 className="text-xs font-black text-[var(--text-muted)]">
                     Verteilung der Aktivitäten dieses Monats
                   </h3>
@@ -343,7 +343,7 @@ export default function StatsModal({
                         ].map((category, idx) => {
                           const pct = totalActions > 0 ? ((category.val / totalActions) * 100).toFixed(0) : "0";
                           return (
-                            <div key={idx} className="flex items-start gap-2.5 p-2 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] bg-[var(--card-bg)]">
+                            <div key={idx} className="flex items-start gap-2.5 p-2 rounded-[var(--rv-radius-md)] border border-[var(--card-border)] bg-[var(--card-bg)]">
                               <span className={`w-3 h-3 rounded-full ${category.color} mt-1`} />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between">
@@ -363,10 +363,10 @@ export default function StatsModal({
 
               {/* Tabular View */}
               {viewType === "table" && (
-                <div className="overflow-hidden rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--bg-color)]">
+                <div className="overflow-hidden rounded-[var(--rv-radius-lg)] border border-[var(--card-border)] bg-[var(--bg-color)]">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className="bg-[var(--bg-color)] border-b border-[var(--border-color)] text-[var(--text-color)] font-black">
+                      <tr className="bg-[var(--bg-color)] border-b border-[var(--card-border)] text-[var(--text-color)] font-black">
                         <th className="p-4">Bereich / Kategorie</th>
                         <th className="p-4 text-right">Anzahl / Stunden</th>
                         <th className="p-4 text-right">Anteil (%)</th>
@@ -404,7 +404,7 @@ export default function StatsModal({
           {activeTab === "trends" && (
             <div className="space-y-6">
               {sortedMonths.length < 2 ? (
-                <div className="p-6 rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--cat-2-soft)] flex gap-3 text-[var(--warning-text)]">
+                <div className="p-6 rounded-[var(--rv-radius-lg)] border border-[var(--card-border)] bg-[var(--cat-2-soft)] flex gap-3 text-[var(--warning-text)]">
                   <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                   <div className="text-xs space-y-1.5 leading-relaxed font-bold">
                     <p className="font-normal">Nicht genügend historische Daten für eine Trendanalyse vorhanden.</p>
@@ -418,7 +418,7 @@ export default function StatsModal({
                 <div className="space-y-6">
                   {/* Visual Trend Chart */}
                   {viewType === "visual" && (
-                    <div className="p-5 rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--bg-color)] space-y-4">
+                    <div className="p-5 rounded-[var(--rv-radius-lg)] border border-[var(--card-border)] bg-[var(--bg-color)] space-y-4">
                       <h3 className="text-xs font-black text-[var(--text-muted)] flex items-center justify-between">
                         <span>Aktivitätsvergleich über {sortedMonths.length} Monate</span>
                         <span className="text-[0.75rem] font-bold text-[var(--cat-1-text)] flex items-center gap-1">
@@ -548,7 +548,7 @@ export default function StatsModal({
                         und die Zuordnung zur Kurve nicht mehr herstellbar. Die Muster stehen
                         wörtlich so auch im Diagramm darüber.
                       */}
-                      <div className="flex flex-wrap gap-x-5 gap-y-2 justify-center pt-2 border-t border-[var(--border-color)]">
+                      <div className="flex flex-wrap gap-x-5 gap-y-2 justify-center pt-2 border-t border-[var(--card-border)]">
                         {[
                           { farbe: "var(--cat-1)", muster: undefined, text: "1. Vorführungen" },
                           { farbe: "var(--cat-2)", muster: "9 5", text: "2. Schulungen" },
@@ -574,11 +574,11 @@ export default function StatsModal({
 
                   {/* Tabular View */}
                   {viewType === "table" && (
-                    <div className="overflow-hidden rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--bg-color)]">
+                    <div className="overflow-hidden rounded-[var(--rv-radius-lg)] border border-[var(--card-border)] bg-[var(--bg-color)]">
                       <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse text-xs min-w-[500px]">
                           <thead>
-                            <tr className="bg-[var(--bg-color)] border-b border-[var(--border-color)] text-[var(--text-color)] font-black">
+                            <tr className="bg-[var(--bg-color)] border-b border-[var(--card-border)] text-[var(--text-color)] font-black">
                               <th className="p-4">Monat</th>
                               <th className="p-4 text-right text-[var(--cat-1-text)]">1. Vorführungen</th>
                               <th className="p-4 text-right text-[var(--cat-2-text)]">2. Schulungen</th>

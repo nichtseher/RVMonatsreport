@@ -141,7 +141,7 @@ export default function OnboardingModal({
     >
       <div
         ref={dialogRef}
-        className="bg-[var(--card-bg)] w-full max-w-lg rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] border border-[var(--border-color)] flex flex-col max-h-[92vh]"
+        className="bg-[var(--card-bg)] w-full max-w-lg rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] border border-[var(--card-border)] flex flex-col max-h-[92vh]"
       >
         {/* Fortschritt: als Text UND als Balken, nicht nur als Punkte */}
         <div className="px-5 pt-5 pb-3">
@@ -149,7 +149,7 @@ export default function OnboardingModal({
             Schritt {step + 1} von {STEP_COUNT}
           </p>
           <div
-            className="h-2 w-full rounded-full bg-[var(--bg-color)] border border-[var(--border-color)] overflow-hidden"
+            className="h-2 w-full rounded-full bg-[var(--bg-color)] border border-[var(--card-border)] overflow-hidden"
             role="progressbar"
             aria-valuemin={1}
             aria-valuemax={STEP_COUNT}
@@ -336,7 +336,7 @@ export default function OnboardingModal({
                 Welche Tasten dort erscheinen, richtet sich automatisch danach, was Sie am
                 häufigsten nutzen. Sie können sie aber auch selbst festlegen.
               </p>
-              <div className="p-3 rounded-[var(--rv-radius-md)] bg-[var(--bg-color)] border border-[var(--border-color)] text-[0.75rem] text-[var(--text-muted)]">
+              <div className="p-3 rounded-[var(--rv-radius-md)] bg-[var(--bg-color)] border border-[var(--card-border)] text-[0.75rem] text-[var(--text-muted)]">
                 <strong className="text-[var(--text-color)]">Tipp:</strong> Wenn Sie die App
                 auf dem Startbildschirm installieren und das Symbol gedrückt halten, springen
                 Sie direkt zur Erfassung oder zur Stempeluhr.
@@ -372,7 +372,7 @@ export default function OnboardingModal({
         </div>
 
         {/* Steuerung */}
-        <div className="p-5 pt-3 border-t border-[var(--border-color)] space-y-2.5">
+        <div className="p-5 pt-3 border-t border-[var(--card-border)] space-y-2.5">
           <div className="flex gap-2.5">
             {step > 0 && (
               <button

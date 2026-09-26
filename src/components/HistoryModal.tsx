@@ -292,9 +292,9 @@ export default function HistoryModal({
   const sortedYears = Object.keys(recordsByYear).sort((a, b) => b.localeCompare(a));
 
   return (
-    <div className="w-full bg-[var(--card-bg)] border-2 border-[var(--border-color)] rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] overflow-hidden flex flex-col focus:outline-none animate-fade-in" tabIndex={-1}>
+    <div className="w-full bg-[var(--card-bg)] border-2 border-[var(--card-border)] rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] overflow-hidden flex flex-col focus:outline-none animate-fade-in" tabIndex={-1}>
       {/* Header */}
-      <div className="p-5 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-color)]">
+      <div className="p-5 border-b border-[var(--card-border)] flex items-center justify-between bg-[var(--bg-color)]">
         <div className="flex items-center gap-2.5">
           <History className="w-5 h-5 text-[var(--accent)]" aria-hidden="true" />
           <h2 id="history-modal-title" tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black text-[var(--text-color)] flex-1 min-w-0 [overflow-wrap:anywhere]">
@@ -306,7 +306,7 @@ export default function HistoryModal({
       {/* Scrollable Content */}
       <div className="p-5 space-y-4 flex-1">
           {/* Storage Information box */}
-          <div className="p-3.5 rounded-[var(--rv-radius-md)] bg-[var(--cat-4-soft)] text-[var(--info-text)] border border-[var(--info-border)] text-xs font-bold leading-relaxed">
+          <div className="p-3.5 rounded-[var(--rv-radius-md)] bg-[var(--info-bg)] text-[var(--info-text)] border border-[var(--card-border)] text-sm leading-relaxed">
             <strong>Ihre Daten sind sicher:</strong> Alle Ihre Monatsdaten werden direkt auf Ihrem Gerät gespeichert. Es werden keine Daten ins Internet übertragen.
           </div>
 
@@ -399,7 +399,7 @@ export default function HistoryModal({
                         schlichte Ueberschrift -- es gibt nichts aufzuklappen,
                         alles ist sichtbar. */}
                     {searchQuery ? (
-                      <div className="w-full flex items-center min-h-[44px] px-3 bg-[var(--bg-color)]/60 rounded-[var(--rv-radius-md)] border border-[var(--border-color)] select-none">
+                      <div className="w-full flex items-center min-h-[44px] px-3 bg-[var(--bg-color)]/60 rounded-[var(--rv-radius-md)] border border-[var(--card-border)] select-none">
                         <span className="text-xs font-black text-[var(--text-color)] flex items-center gap-1.5">
                           <Filter className="w-3 h-3 text-[var(--accent)]" aria-hidden="true" />
                           Jahr {year} ({yearRecords.length} {yearRecords.length === 1 ? "Treffer" : "Treffer"})
@@ -435,7 +435,7 @@ export default function HistoryModal({
                           return (
                             <div 
                               key={record.month}
-                              className="rounded-[var(--rv-radius-lg)] border-2 border-[var(--border-color)] bg-[var(--bg-color)] overflow-hidden shadow-[var(--rv-shadow-sm)] hover:border-[var(--border-focus)] transition-all"
+                              className="rounded-[var(--rv-radius-lg)] border-2 border-[var(--card-border)] bg-[var(--bg-color)] overflow-hidden shadow-[var(--rv-shadow-sm)] hover:border-[var(--border-focus)] transition-all"
                               role="listitem"
                             >
                               {/* Collapsible Header Button */}
@@ -492,7 +492,7 @@ export default function HistoryModal({
                                     Mitarbeiter: {record.name ? String(record.name) : "Kein Name eingetragen"}
                                   </p>
                                 </div>
-                                <div className="text-[var(--text-muted)] p-1 rounded-full border border-[var(--border-color)] bg-[var(--card-bg)]">
+                                <div className="text-[var(--text-muted)] p-1 rounded-full border border-[var(--card-border)] bg-[var(--card-bg)]">
                                   {isExpanded ? (
                                     <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
                                   ) : (
@@ -532,9 +532,9 @@ export default function HistoryModal({
 
                               {/* Collapsible content body */}
                               {isExpanded && (
-                                <div className="p-3.5 border-t border-[var(--border-color)] bg-[var(--bg-color)] space-y-3.5 animate-fade-in">
+                                <div className="p-3.5 border-t border-[var(--card-border)] bg-[var(--bg-color)] space-y-3.5 animate-fade-in">
                                   {record.notes && (
-                                    <p className="text-xs italic text-[var(--text-muted)] leading-relaxed bg-[var(--bg-color)]/30 p-2.5 rounded-[var(--rv-radius-md)] border border-[var(--border-color)]">
+                                    <p className="text-xs italic text-[var(--text-muted)] leading-relaxed bg-[var(--bg-color)]/30 p-2.5 rounded-[var(--rv-radius-md)] border border-[var(--card-border)]">
                                       <strong>Kommentar:</strong> "{String(record.notes)}"
                                     </p>
                                   )}
@@ -664,7 +664,7 @@ export default function HistoryModal({
                                           </span>
                                         </button>
                                       ) : (
-                                        <div className="h-11 rounded-[var(--rv-radius-md)] border border-dashed border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-muted)] text-[0.75rem] font-bold flex items-center justify-center select-none">
+                                        <div className="h-11 rounded-[var(--rv-radius-md)] border border-dashed border-[var(--card-border)] bg-[var(--bg-color)] text-[var(--text-muted)] text-[0.75rem] font-bold flex items-center justify-center select-none">
                                           Keine Schichten erfasst
                                         </div>
                                       )}
