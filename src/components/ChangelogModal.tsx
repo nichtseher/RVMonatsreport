@@ -44,6 +44,41 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
       <div className="space-y-6">
         {/*
+          Ausgeschrieben, weil die Monatskarte etwas Neues ist, das man
+          wissen muss, um es zu nutzen. Farben und Rahmen allein wären nur
+          eine Zeile „Verbesserungen" (Regel seit 0.9.40).
+        */}
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--border-color)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.66: Neues Erscheinungsbild und ein Überblick über den Monat</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm font-bold text-[var(--text-muted)]">
+            <li>
+              <strong>Neu oben im Report: eine Monatskarte.</strong> Sie zeigt, wie viele Aktivitäten Sie in
+              diesem Monat erfasst haben und welche Kategorie Sie zuletzt geändert haben, mit Uhrzeit. So sehen Sie
+              nach einem Termin sofort, ob der Eintrag drin ist.
+            </li>
+            <li>
+              Wärmere Farben im hellen und im dunklen Design, ruhigere Rahmen und eine grüne Plus-Taste. In den
+              Kontrast-Designs „Weiß auf Schwarz“ und „Gelb auf Schwarz“ bleiben die Farben, wie sie sind; die neue
+              Anordnung gilt auch dort, und die gewählte Station der unteren Leiste ist jetzt eine ausgefüllte Fläche.
+            </li>
+            <li>
+              Die Kacheln der Schnell-Erfassung zeigen die Farbe ihres Bereichs. Lange Namen brechen am Schrägstrich
+              um statt mitten im Wort.
+            </li>
+            <li>
+              Fehlerbehebungen: Die Kacheln der Schnell-Erfassung bleiben beim Tippen an ihrem Platz – vorher rückte
+              eine getippte Kachel im Modus „Automatisch“ nach vorn, und der nächste Tipp traf ein anderes Feld. Die
+              Kacheln „Monats-Fortschritt“ sagen dem Screenreader, ob ihr Filter aktiv ist. Das Kalendersymbol im
+              Monatsfeld ist im dunklen und in den Kontrast-Designs jetzt sichtbar.
+            </li>
+          </ul>
+        </div>
+
+        {/*
           Kategorie + Zeile: Betrifft nur die Reihenfolge dieser Liste
           selbst, keine Funktion der App.
         */}

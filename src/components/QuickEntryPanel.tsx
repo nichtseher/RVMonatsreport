@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Zap, Settings2, Sparkles } from "lucide-react";
+import { Fragment, useState } from "react";
+import { Zap, Settings2, Sparkles, Plus } from "lucide-react";
 import { FieldConfig, SectionsConfig, HistoryRecord } from "../types";
 import { getIconForString } from "../utils/iconMap";
 import { playAudioFeedback } from "../utils/audioFeedback";
@@ -12,6 +12,40 @@ export interface QuickEntryConfig {
 export const DEFAULT_QUICK_CONFIG: QuickEntryConfig = { mode: "auto", ids: [] };
 
 const MAX_QUICK_FIELDS = 8;
+
+/*
+  Kachelfarbe je Bereich (0.9.66). Die Reihenfolge der Kacheln bleibt die
+  gewählte bzw. die meistgenutzte -- deshalb keine Gruppen, sondern eine
+  Tönung je Kachel. Die Farbe ist dabei Zusatz, nicht Träger: Welches Feld
+  eine Kachel zählt, sagt ihre Beschriftung (WCAG 1.4.1).
+*/
+const KACHEL_FARBE: Record<number, { flaeche: string; zahl: string; symbol: string; plus: string }> = {
+  1: { flaeche: "bg-[var(--cat-1-tile)]", zahl: "text-[var(--cat-1-text)]", symbol: "text-[var(--cat-1)]", plus: "bg-[var(--cat-1)]" },
+  2: { flaeche: "bg-[var(--cat-2-tile)]", zahl: "text-[var(--cat-2-text)]", symbol: "text-[var(--cat-2)]", plus: "bg-[var(--cat-2)]" },
+  3: { flaeche: "bg-[var(--cat-3-tile)]", zahl: "text-[var(--cat-3-text)]", symbol: "text-[var(--cat-3)]", plus: "bg-[var(--cat-3)]" },
+  4: { flaeche: "bg-[var(--cat-4-tile)]", zahl: "text-[var(--cat-4-text)]", symbol: "text-[var(--cat-4)]", plus: "bg-[var(--cat-4)]" },
+};
+
+/*
+  Umbruch nach dem Schrägstrich (0.9.66). Chromium und WebKit brechen
+  „Schulungen/Support" nicht am Schrägstrich um; mit `break-words` wurde
+  daraus bei 360 px „Schulungen/Supp-ort". Ein <wbr> nach jedem Schrägstrich
+  erlaubt den Umbruch genau dort, ohne den Text zu verändern -- vorgelesen
+  und kopiert wird er wie vorher.
+*/
+function mitUmbruchNachSchraegstrich(text: string) {
+  const teile = text.split("/");
+  return teile.map((teil, i) => (
+    <Fragment key={i}>
+      {teil}
+      {i < teile.length - 1 && (
+        <>
+          /<wbr />
+        </>
+      )}
+    </Fragment>
+  ));
+}
 const AUTO_COUNT = 6;
 
 interface QuickEntryPanelProps {
@@ -23,7 +57,30 @@ interface QuickEntryPanelProps {
   onIncrement: (field: FieldConfig) => void;
   audioFeedbackEnabled: boolean;
   announce: (message: string, immediate?: boolean) => void;
+  /** "YYYY-MM" -- ein Monatswechsel berechnet die automatische Reihenfolge neu. */
+  monat: string;
 }
+
+/*
+  Die automatische Reihenfolge wird EINMAL berechnet und dann festgehalten
+  (0.9.66). Bis dahin lief die Berechnung bei jedem Rendern und zählte den
+  Tipp mit, den man gerade gemacht hatte: Die getippte Kachel rückte nach
+  vorn, und der nächste Tipp auf dieselbe Stelle traf ein anderes Feld --
+  gemessen am 2026-09-26, zweimal auf die zweite Kachel, zwei verschiedene
+  Felder gezählt. Im Auto ist das die gefährlichste Stelle der App.
+
+  Eine Modulvariable statt eines Zustands der Komponente, und das ist der
+  Kern: Die Tafel wird beim Wechsel in eine andere Ansicht ausgehängt. Ein
+  useState oder useRef wäre danach weg, und die Kacheln sprängen beim
+  Zurückkommen aus „Zeit" doch. Auch ein useMemo ohne die Werte des Monats
+  reicht nicht -- der Archiv-Spiegel schreibt `history` rund eine Sekunde
+  nach jedem Tipp neu, die Kacheln sprängen dann eben verzögert.
+
+  Neu berechnet wird beim Start der App, beim Monatswechsel und wenn sich
+  die Felder ändern. Die eigene Auswahl („custom") ist davon unberührt; ihre
+  Reihenfolge legt der Nutzer fest.
+*/
+let eingefroreneReihenfolge: { schluessel: string; ids: string[] } | null = null;
 
 /**
  * Schnell-Erfassung: Die meistgenutzten Kategorien als große Tasten –
@@ -31,7 +88,8 @@ interface QuickEntryPanelProps {
  *
  * Auswahl der Tasten:
  * - "auto": aus dem Archiv + aktuellem Monat berechnet, was der/die
- *   Mitarbeitende tatsächlich am meisten nutzt.
+ *   Mitarbeitende tatsächlich am meisten nutzt -- einmal je Sitzung und
+ *   Monat, nicht nach jedem Tipp (siehe oben).
  * - "custom": selbst gewählte Kategorien in Wunsch-Reihenfolge.
  */
 export default function QuickEntryPanel({
@@ -43,6 +101,7 @@ export default function QuickEntryPanel({
   onIncrement,
   audioFeedbackEnabled,
   announce,
+  monat,
 }: QuickEntryPanelProps) {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
@@ -55,6 +114,15 @@ export default function QuickEntryPanel({
 
   const fieldById = (id: string): FieldConfig | undefined =>
     allFields.find((f) => f.id === id);
+
+  const bereichVon = (id: string): number =>
+    appFields.s1.some((f) => f.id === id)
+      ? 1
+      : appFields.s2.some((f) => f.id === id)
+        ? 2
+        : appFields.s3.some((f) => f.id === id)
+          ? 3
+          : 4;
 
   // Nutzungs-Score: Summe der eingetragenen Werte über Archiv + aktuellen Monat.
   // Arbeitszeit-Felder (s4) werden im Auto-Modus ausgelassen – die füllt die Stempeluhr.
@@ -78,10 +146,19 @@ export default function QuickEntryPanel({
     return [...used, ...unused].slice(0, AUTO_COUNT);
   };
 
+  const reihenfolgeSchluessel = `${monat}|${allFields.map((f) => f.id).join(",")}`;
+  let autoIds: string[];
+  if (eingefroreneReihenfolge && eingefroreneReihenfolge.schluessel === reihenfolgeSchluessel) {
+    autoIds = eingefroreneReihenfolge.ids;
+  } else {
+    autoIds = computeAutoFields().map((f) => f.id);
+    eingefroreneReihenfolge = { schluessel: reihenfolgeSchluessel, ids: autoIds };
+  }
+
   const quickFields: FieldConfig[] =
     config.mode === "custom" && config.ids.length > 0
       ? (config.ids.map(fieldById).filter(Boolean) as FieldConfig[])
-      : computeAutoFields();
+      : (autoIds.map(fieldById).filter(Boolean) as FieldConfig[]);
 
   const toggleCustomId = (id: string) => {
     const selected = config.ids.includes(id);
@@ -109,16 +186,16 @@ export default function QuickEntryPanel({
     onIncrement(field);
   };
 
-  const renderIcon = (field: FieldConfig) => {
+  const renderIcon = (field: FieldConfig, farbe: string) => {
     const Icon = getIconForString(field.icon);
-    if (Icon) return <Icon className="w-6 h-6 flex-shrink-0 text-[var(--accent)]" aria-hidden="true" />;
+    if (Icon) return <Icon className={`w-6 h-6 flex-shrink-0 ${farbe}`} aria-hidden="true" />;
     if (field.icon) return <span className="text-2xl flex-shrink-0" aria-hidden="true">{field.icon}</span>;
-    return <Zap className="w-6 h-6 flex-shrink-0 text-[var(--accent)]" aria-hidden="true" />;
+    return <Zap className={`w-6 h-6 flex-shrink-0 ${farbe}`} aria-hidden="true" />;
   };
 
   return (
     <section
-      className="p-4 mb-4 rounded-[var(--rv-radius-lg)] border-2 border-[var(--accent)]/30 bg-[var(--card-bg)] shadow-[var(--rv-shadow-sm)]"
+      className="p-4 sm:p-5 mb-4 rounded-[var(--rv-radius-xl)] border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[var(--rv-shadow-sm)]"
       aria-labelledby="quick-entry-heading"
     >
       <div className="flex items-center justify-between gap-2 mb-3">
@@ -151,32 +228,60 @@ export default function QuickEntryPanel({
         </button>
       </div>
 
-      <p className="text-xs text-[var(--text-muted)] mb-3 leading-relaxed">
+      <p className="text-sm text-[var(--text-muted)] mb-3 leading-relaxed">
         Ein Tipp = direkt nach dem Termin verbucht. Kein Suchen, kein Scrollen.
       </p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5" role="group" aria-label="Schnell-Erfassungs-Tasten">
+      {/*
+        Rasterbreite in rem statt fester zwei Spalten (0.9.66): Die Kacheln
+        tragen jetzt 14 px statt 12 px Schrift und eine große Zahl. Bei „Groß"
+        und „Extra groß" passen zwei Spalten nicht mehr in ein Handy -- dann
+        stehen die Kacheln untereinander, statt ihre Beschriftung abzuschneiden.
+        Derselbe Weg wie die Kacheln der Analyse (minmax(7.5rem, 1fr)).
+      */}
+      <div
+        className="grid grid-cols-[repeat(auto-fit,minmax(7.5rem,1fr))] gap-2.5"
+        role="group"
+        aria-label="Schnell-Erfassungs-Tasten"
+      >
         {quickFields.map((field) => {
           const val = typeof values[field.id] === "number" ? (values[field.id] as number) : 0;
+          const farbe = KACHEL_FARBE[bereichVon(field.id)];
           return (
             <button
               key={field.id}
               type="button"
               onClick={() => handleTap(field)}
               aria-label={`${field.label}. Aktueller Stand ${val}. Tippen erhöht um ${field.step}.`}
-              className="min-h-[76px] p-3 rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--bg-color)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all cursor-pointer flex flex-col items-start justify-between gap-1.5 text-left active:scale-95 focus-visible:ring-4 touch-manipulation"
+              className={`min-h-[112px] px-2.5 py-3 rounded-[var(--rv-radius-xl)] border border-[var(--card-border)] ${farbe.flaeche} hover:border-[var(--border-focus)] transition-all cursor-pointer flex flex-col items-start justify-between gap-2 text-left active:scale-95 focus-visible:ring-4 touch-manipulation`}
             >
-              <div className="flex items-center justify-between w-full gap-1">
-                {renderIcon(field)}
+              <div className="flex items-start justify-between w-full gap-1">
+                <span className="w-10 h-10 rounded-[var(--rv-radius-md)] bg-[var(--card-bg)] shadow-[var(--rv-shadow-sm)] flex items-center justify-center flex-shrink-0">
+                  {renderIcon(field, farbe.symbol)}
+                </span>
+                {/* Zeigt, was ein Tipp tut. Die Kachel selbst ist die Taste. */}
                 <span
-                  className="min-w-[28px] h-7 px-1.5 rounded-full bg-[var(--accent)] text-[var(--accent-text)] text-sm font-black flex items-center justify-center"
+                  className={`w-8 h-8 rounded-full ${farbe.plus} text-[var(--card-bg)] flex items-center justify-center flex-shrink-0`}
                   aria-hidden="true"
                 >
-                  {val}
+                  <Plus className="w-5 h-5" strokeWidth={2.6} />
                 </span>
               </div>
-              <span className="w-full break-words text-[0.75rem] font-bold text-[var(--text-color)] leading-tight line-clamp-2">
-                {field.label.replace(/^Anzahl\s+/i, "")}
+              <span className="w-full" aria-hidden="true">
+                <span className={`block text-3xl font-black leading-none tabular-nums ${farbe.zahl}`}>
+                  {val}
+                </span>
+                {/* hyphens-auto: Lange deutsche Wörter passen bei 14 px und breiter
+                    Schrift knapp nicht in eine halbe Handybreite -- gemessen bei
+                    360 px: „Auslieferungen" braucht in DejaVu Sans 120 px, die
+                    Kachel bot mit 12 px Innenabstand genau 120 (jetzt 124, daher
+                    px-2.5). In Arial-artiger Schrift sind es 102 px.
+                    Mit Silbentrennung wird daraus „Auslie-ferungen" statt
+                    „Auslieferunge-n"; break-words bleibt nur der letzte Ausweg
+                    für Browser ohne deutsches Trennwörterbuch. */}
+                <span className="block mt-1.5 hyphens-auto break-words text-sm font-bold text-[var(--text-color)] leading-tight line-clamp-3">
+                  {mitUmbruchNachSchraegstrich(field.label.replace(/^Anzahl\s+/i, ""))}
+                </span>
               </span>
             </button>
           );

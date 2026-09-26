@@ -174,7 +174,7 @@ export default React.memo(function CounterField({
          Rahmenfarbe der Bedienelemente ist gegen --bg-color auf 3:1 abgestimmt
          (WCAG 1.4.11). Auf dem alten slate-Hintergrund kam sie nur auf
          2,55-2,98:1 -- die Tastenumrisse waren zu schwach. */
-      className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] p-[6px] sm:p-4 border border-[var(--border-color)]/40 transition-all focus-within:ring-2 focus-within:ring-[var(--border-focus)] hover:border-[var(--border-focus)] gap-3`}
+      className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] p-[6px] sm:p-4 border border-[var(--card-border)] transition-all focus-within:ring-2 focus-within:ring-[var(--border-focus)] hover:border-[var(--border-focus)] gap-3`}
     >
       <div className="flex-1 pr-2 min-w-0">
         <label 
@@ -236,7 +236,7 @@ export default React.memo(function CounterField({
              ein dunkler Kreis aus fester Palettenfarbe (slate-800): Im dunklen
              Schema war das Minus kaum vom Kartenhintergrund zu unterscheiden,
              waehrend das Plus als leuchtender Kreis danebenstand. */
-          className={`${buttonSize} rounded-[var(--rv-radius-md)] flex items-center justify-center border-2 border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:bg-[var(--border-color)] touch-manipulation`}
+          className={`${buttonSize} rounded-[var(--rv-radius-md)] flex items-center justify-center border-2 border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] font-bold transition-all cursor-pointer focus-visible:ring-4 active:scale-95 active:bg-[var(--hover-bg)] touch-manipulation`}
         >
           <Minus className={iconSize} aria-hidden="true" />
         </button>

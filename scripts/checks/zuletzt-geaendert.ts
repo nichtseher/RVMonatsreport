@@ -1,5 +1,5 @@
 import { gruppe, pruefe, gleich, wahr } from "../helfer";
-import { formatiereZuletzt } from "../../src/utils/zuletztGeaendert";
+import { formatiereZuletzt, findeLetzteAenderung, ohneZuletzt } from "../../src/utils/zuletztGeaendert";
 
 /*
   „zuletzt: heute, 11:40" am Zähler (0.9.45).
@@ -75,6 +75,69 @@ pruefe("die gesprochene Fassung nennt nie einen Doppelpunkt", () => {
       !!t && !t.gesprochen.includes(":"),
       `"${t?.gesprochen}" enthält einen Doppelpunkt -- Screenreader lesen das ` +
         `je nach Stimme als Datum oder als "Doppelpunkt".`,
+    );
+  }
+});
+
+/*
+  Monatskarte (0.9.66): „Zuletzt geändert" über alle Felder des Monats.
+*/
+gruppe("Zuletzt geändert: Monatskarte");
+
+pruefe("ohne Zeitstempel keine Auskunft", () => {
+  gleich(findeLetzteAenderung(undefined, ["a", "b"]), null);
+  gleich(findeLetzteAenderung({}, ["a", "b"]), null);
+});
+
+pruefe("das jüngste Feld gewinnt, wenn es eindeutig ist", () => {
+  const r = findeLetzteAenderung(
+    { a: "2026-09-15T08:00:00.000Z", b: "2026-09-15T09:40:00.000Z", c: "2026-09-14T17:00:00.000Z" },
+    ["a", "b", "c"],
+  );
+  gleich(r, { iso: "2026-09-15T09:40:00.000Z", feldId: "b" });
+});
+
+pruefe("teilen sich mehrere Felder den jüngsten Zeitpunkt, wird kein Feld behauptet", () => {
+  // Genau das hinterlässt stempelNachtragen beim Laden: denselben Zeitpunkt
+  // für jedes Feld ohne eigenen Stempel. Ein beliebiges davon zu nennen,
+  // wäre eine falsche Auskunft über etwas, das niemand angefasst hat.
+  const r = findeLetzteAenderung(
+    { a: "2026-09-15T09:40:00.000Z", b: "2026-09-15T09:40:00.000Z" },
+    ["a", "b"],
+  );
+  gleich(r, { iso: "2026-09-15T09:40:00.000Z", feldId: null });
+});
+
+pruefe("Felder, die nicht mehr konfiguriert sind, zählen nicht mit", () => {
+  // Ein gelöschtes eigenes Feld hinterlässt seinen Stempel im Monat; die
+  // Karte darf keine Kategorie nennen, die es im Formular nicht gibt.
+  const r = findeLetzteAenderung(
+    { weg: "2026-09-15T12:00:00.000Z", a: "2026-09-15T09:40:00.000Z" },
+    ["a"],
+  );
+  gleich(r, { iso: "2026-09-15T09:40:00.000Z", feldId: "a" });
+});
+
+pruefe("ein unlesbarer Stempel wird übergangen statt 'Invalid Date' zu gewinnen", () => {
+  const r = findeLetzteAenderung({ a: "kein Datum", b: "2026-09-15T09:40:00.000Z" }, ["a", "b"]);
+  gleich(r, { iso: "2026-09-15T09:40:00.000Z", feldId: "b" });
+});
+
+pruefe("ohneZuletzt entfernt das Präfix in jedem Zweig von formatiereZuletzt", () => {
+  const faelle = [
+    new Date(2026, 8, 15, 11, 40), // heute
+    new Date(2026, 8, 14, 23, 50), // gestern
+    new Date(2026, 8, 11, 9, 5), // Wochentag
+    new Date(2026, 8, 1, 9, 5), // Datum
+  ];
+  for (const fall of faelle) {
+    const t = formatiereZuletzt(fall.toISOString(), jetzt);
+    wahr(!!t, "formatiereZuletzt lieferte nichts");
+    const o = ohneZuletzt(t!);
+    wahr(
+      !o.sichtbar.startsWith("zuletzt") && !o.gesprochen.startsWith("zuletzt") && o.sichtbar !== t!.sichtbar,
+      `Präfix nicht entfernt: "${o.sichtbar}" / "${o.gesprochen}" -- hat ein Zweig ` +
+        `von formatiereZuletzt seinen Anfang geändert?`,
     );
   }
 });

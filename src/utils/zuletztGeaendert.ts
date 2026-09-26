@@ -79,3 +79,54 @@ export function formatiereZuletzt(
     gesprochen: `zuletzt geändert am ${zeitpunkt.getDate()}. ${zeitpunkt.getMonth() + 1}. um ${gesprocheneZeit}`,
   };
 }
+
+/**
+ * Dieselbe Auskunft ohne das führende „zuletzt" -- für Stellen, an denen das
+ * Wort schon in der Überschrift steht (Monatskarte, 0.9.66). Beide Fassungen
+ * beginnen in jedem Zweig oben mit genau diesem Präfix; `scripts/checks/
+ * zuletzt-geaendert.ts` hält das fest, damit ein neuer Zweig es nicht bricht.
+ */
+export function ohneZuletzt(text: ZuletztText): ZuletztText {
+  return {
+    sichtbar: text.sichtbar.replace(/^zuletzt:\s*/, ""),
+    gesprochen: text.gesprochen.replace(/^zuletzt geändert\s*/, ""),
+  };
+}
+
+/**
+ * Welches Feld wurde zuletzt geändert? (Monatskarte, 0.9.66)
+ *
+ * Die Antwort ist nur dann ein Feld, wenn sie eindeutig ist. Beim Laden
+ * bekommen alle Felder ohne eigenen Zeitstempel einmalig denselben Zeitpunkt
+ * nachgetragen (`stempelNachtragen`) -- teilen sich danach mehrere Felder den
+ * jüngsten Zeitstempel, weiß niemand, welches davon zuletzt angefasst wurde.
+ * Ein beliebiges davon zu nennen, hieße einem Kollegen zu sagen, er habe
+ * etwas gezählt, das er nie berührt hat. Der Zeitpunkt selbst stimmt dann
+ * trotzdem und wird ohne Feld zurückgegeben.
+ *
+ * @param zeitstempel `valuesUpdatedAt` des Monats
+ * @param feldIds     nur diese Felder zählen (die aktuell konfigurierten)
+ */
+export function findeLetzteAenderung(
+  zeitstempel: Record<string, string> | undefined,
+  feldIds: string[],
+): { iso: string; feldId: string | null } | null {
+  let neuestesMs = -Infinity;
+  let neuestesIso: string | null = null;
+  let kandidaten: string[] = [];
+  for (const id of feldIds) {
+    const iso = zeitstempel?.[id];
+    if (!iso) continue;
+    const ms = new Date(iso).getTime();
+    if (Number.isNaN(ms)) continue;
+    if (ms > neuestesMs) {
+      neuestesMs = ms;
+      neuestesIso = iso;
+      kandidaten = [id];
+    } else if (ms === neuestesMs) {
+      kandidaten.push(id);
+    }
+  }
+  if (neuestesIso === null) return null;
+  return { iso: neuestesIso, feldId: kandidaten.length === 1 ? kandidaten[0] : null };
+}

@@ -4926,3 +4926,81 @@ test.describe("Zuletzt geändert am Zähler", () => {
     ).not.toContain(":");
   });
 });
+
+
+/*
+  Schnell-Erfassung: Die Kacheln bleiben beim Tippen an ihrem Platz (0.9.66).
+
+  Im Modus „Automatisch" stehen die meistgenutzten Kategorien vorn -- und bis
+  0.9.66 wurde diese Reihenfolge nach JEDEM Tipp neu berechnet, einschließlich
+  des Tipps, den man gerade gemacht hatte. Gemessen am 2026-09-26: zweimal auf
+  die zweite Kachel getippt, zwei verschiedene Felder gezählt. Im Auto zählt
+  man so das Falsche, und wer mit VoiceOver wischt, findet die Reihenfolge
+  nach jedem Tipp anders vor.
+
+  Die Wartezeit nach den Tipps ist Absicht: Der Archiv-Spiegel schreibt das
+  Archiv rund eine Sekunde nach jeder Änderung neu (0.9.59). Ein Fix, der die
+  Werte des laufenden Monats bloß aus der Berechnung herausnimmt, springt genau
+  dann -- verzögert statt sofort, aber genauso unter dem Finger weg.
+*/
+test.describe("Schnell-Erfassung", () => {
+  test("die Kacheln bleiben beim Tippen an ihrem Platz", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Die Reihenfolge hängt weder am Motor noch an der Breite");
+    await oeffne(page, "form");
+    const tasten = page.getByRole("group", { name: "Schnell-Erfassungs-Tasten" }).getByRole("button");
+    const namen = () =>
+      tasten.evaluateAll((els) =>
+        els.map((e) => (e.getAttribute("aria-label") || "").split(". Aktueller Stand")[0]),
+      );
+
+    const vorher = await namen();
+    expect(vorher.length, "zu wenige Kacheln, um eine Umsortierung zu sehen").toBeGreaterThan(2);
+
+    for (let i = 0; i < 3; i++) {
+      await tasten.nth(1).click();
+      await page.waitForTimeout(300);
+    }
+    await page.waitForTimeout(1600);
+
+    expect(await namen(), "Die Kacheln haben beim Tippen ihre Reihenfolge geändert").toEqual(vorher);
+    const erwartet = vorher[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    await expect(
+      tasten.nth(1),
+      "Drei Tipps auf dieselbe Stelle haben nicht dreimal dasselbe Feld gezählt",
+    ).toHaveAttribute("aria-label", new RegExp(`^${erwartet}\\. Aktueller Stand 3\\.`));
+
+    // Kurz in die Zeit-Ansicht und zurück: Die Tafel wird dabei ausgehängt und
+    // neu eingehängt. Eine Reihenfolge im Zustand der Komponente wäre danach
+    // neu berechnet -- genau deshalb liegt sie in einer Modulvariable.
+    const leiste = page.getByRole("navigation", { name: "Hauptnavigation" });
+    await leiste.getByRole("button", { name: "Zeit" }).click();
+    await page.waitForTimeout(500);
+    await leiste.getByRole("button", { name: "Report" }).click();
+    await tasten.first().waitFor();
+    await page.waitForTimeout(400);
+    expect(await namen(), "Nach dem Weg über die Zeit-Ansicht standen die Kacheln anders").toEqual(vorher);
+  });
+});
+
+/*
+  Die Filterkacheln „Monats-Fortschritt" schalten um -- und sagen es jetzt
+  auch (0.9.66). Bis dahin zeigten nur Rahmen und Fläche, ob ein Filter
+  aktiv war; ein Screenreader las in beiden Zuständen dasselbe vor.
+*/
+test.describe("Filterkacheln", () => {
+  test("melden, ob sie gedrückt sind", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Der Zustand hängt weder am Motor noch an der Breite");
+    await oeffne(page, "form");
+    const region = page.getByRole("region", { name: "Aktueller Monatsfortschritt Live-Anzeige" });
+    const tasten = region.getByRole("button");
+    await expect(tasten).toHaveCount(4);
+    for (const i of [0, 1, 2, 3]) {
+      await expect(tasten.nth(i), `Kachel ${i + 1} ohne aria-pressed`).toHaveAttribute("aria-pressed", "false");
+    }
+    await tasten.first().click();
+    await expect(tasten.first()).toHaveAttribute("aria-pressed", "true");
+    await expect(region.getByRole("button", { pressed: true })).toHaveCount(1);
+    await tasten.first().click();
+    await expect(tasten.first()).toHaveAttribute("aria-pressed", "false");
+  });
+});

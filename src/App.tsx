@@ -60,6 +60,7 @@ import { formatMonthGerman } from "./utils/dateUtils";
 import { subscribeLiveSync, getLiveSyncSnapshot } from "./utils/liveSync";
 import A11yModal from "./components/A11yModal";
 import QuickEntryPanel from "./components/QuickEntryPanel";
+import MonatsKarte from "./components/MonatsKarte";
 import ConfirmDialog, { ConfirmRequest } from "./components/ConfirmDialog";
 import OnboardingModal from "./components/OnboardingModal";
 
@@ -937,7 +938,7 @@ export default function App() {
     return {
       sichtbar: naheAmMonatsende || currentDay <= 8,
       isUrgent: false,
-      message: `ℹ️ Hinweis für den Monatsabschluss: Bitte senden Sie den Report bis spätestens zum 8. des Folgemonats als Excel-Datei an die Vertriebsleitung (VL).`,
+      message: `Hinweis für den Monatsabschluss: Bitte senden Sie den Report bis spätestens zum 8. des Folgemonats als Excel-Datei an die Vertriebsleitung (VL).`,
     };
   };
 
@@ -1840,12 +1841,12 @@ export default function App() {
       nr: 1,
       schluessel: "s1" as const,
       titel: "1. Vorführungen & Auslieferungen",
-      icon: <Eye className="w-4 h-4" />,
+      icon: <Eye className="w-5 h-5" />,
       felder: appFields.s1,
       hinweis: null as React.ReactNode,
       fuss: (
         <div
-          className="mt-6 p-4 rounded-[var(--rv-radius-md)] bg-[var(--total-bg)] text-[var(--total-text)] font-black text-right text-lg border border-[var(--border-color)]"
+          className="mt-6 p-4 rounded-[var(--rv-radius-lg)] bg-[var(--total-bg)] text-[var(--total-text)] font-black text-right text-lg border border-[var(--card-border)]"
           aria-live="polite"
         >
           <span>Bereichs-Gesamtsumme: </span>
@@ -1857,7 +1858,7 @@ export default function App() {
       nr: 2,
       schluessel: "s2" as const,
       titel: "2. Schulung, Support & Akquise",
-      icon: <GraduationCap className="w-4 h-4" />,
+      icon: <GraduationCap className="w-5 h-5" />,
       felder: appFields.s2,
       hinweis: null as React.ReactNode,
       fuss: null as React.ReactNode,
@@ -1866,7 +1867,7 @@ export default function App() {
       nr: 3,
       schluessel: "s3" as const,
       titel: "3. Spezialprodukte (Fokus)",
-      icon: <Sparkles className="w-4 h-4" />,
+      icon: <Sparkles className="w-5 h-5" />,
       felder: appFields.s3,
       hinweis: null as React.ReactNode,
       fuss: null as React.ReactNode,
@@ -1875,7 +1876,7 @@ export default function App() {
       nr: 4,
       schluessel: "s4" as const,
       titel: "4. Arbeitszeit & Büro",
-      icon: <Clock className="w-4 h-4" />,
+      icon: <Clock className="w-5 h-5" />,
       felder: appFields.s4,
       hinweis: (accessibility.enableTimeTracking !== false ? (
         <div className="mb-4 p-3 rounded-[var(--rv-radius-md)] bg-[var(--info-bg)] border border-[var(--info-border)] text-[var(--info-text)] text-xs font-bold flex items-start gap-2">
@@ -1954,9 +1955,16 @@ export default function App() {
       
       {/* SIDEBAR NAVIGATION (Only visible on Desktop when enabled) */}
       {isDesktop && (
-        <aside className="hidden lg:flex flex-col w-64 xl:w-72 border-r border-[var(--border-color)] bg-[var(--card-bg)] h-screen shrink-0 sticky top-0 z-[150] shadow-[var(--rv-shadow-sm)]">
-          <div className="p-6 pb-4 border-b border-[var(--border-color)]">
-             <h1 className="text-2xl font-black text-[var(--text-color)] flex items-center gap-2">
+        <aside className="hidden lg:flex flex-col w-64 xl:w-72 border-r border-[var(--card-border)] bg-[var(--card-bg)] h-screen shrink-0 sticky top-0 z-[150] shadow-[var(--rv-shadow-sm)]">
+          <div className="p-6 pb-4 border-b border-[var(--card-border)]">
+             <h1 className="text-2xl font-black text-[var(--text-color)] flex items-center gap-2.5">
+               {/* Markenzeichen, rein schmueckend -- der Name steht daneben. */}
+               <span
+                 className="w-9 h-9 rounded-[var(--rv-radius-md)] bg-[var(--primary)] text-[var(--primary-text)] text-sm font-black flex items-center justify-center flex-shrink-0"
+                 aria-hidden="true"
+               >
+                 RV
+               </span>
                RV Mobil
              </h1>
              <p className="text-xs text-[var(--text-muted)] font-bold mt-1">Desktop Ansicht</p>
@@ -1974,8 +1982,8 @@ export default function App() {
                   onClick={() => {
                      wechsleHauptansicht(tab.id, tab.ansage);
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-[var(--rv-radius-md)] transition-all cursor-pointer font-bold ${
-                    isSelected ? "bg-[var(--accent)] text-[var(--accent-text)] shadow-[var(--rv-shadow-md)]" : "text-[var(--text-muted)] hover:bg-[var(--input-bg)] hover:text-[var(--text-color)]"
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-[var(--rv-radius-lg)] transition-all cursor-pointer font-bold ${
+                    isSelected ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-text)] font-black" : "text-[var(--text-muted)] hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)]"
                   }`}
                 >
                   <IconComp className={`w-5 h-5 ${isSelected ? "stroke-[2.5]" : "stroke-[2]"}`} />
@@ -1984,7 +1992,7 @@ export default function App() {
               );
             })}
           </nav>
-          <div className="p-6 text-center border-t border-[var(--border-color)]">
+          <div className="p-6 text-center border-t border-[var(--card-border)]">
              {/* Ohne `opacity-70`: Damit lag der Kontrast bei 3,59:1 statt der
                  geforderten 4,5:1 (WCAG 1.4.3, gemessen von axe-core). */}
              <p className="text-[0.75rem] text-[var(--text-muted)] font-bold">
@@ -2022,10 +2030,19 @@ export default function App() {
         <div className={`animate-fade-in ${isDesktop ? 'lg:pb-8' : 'pb-24'}`}>
           {/* HEADER SECTION (Accessible, modern responsive layout, removed duplicate buttons for clean tidiness) */}
           <header
-            className="p-3 sm:p-5 mb-3 sm:mb-4 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] border-[var(--border-color)] flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-5 shadow-[var(--rv-shadow-sm)]"
+            className="p-4 sm:p-5 mb-3 sm:mb-4 rounded-[var(--rv-radius-xl)] border bg-[var(--card-bg)] border-[var(--card-border)] flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-5 shadow-[var(--rv-shadow-sm)]"
           >
         <div className="space-y-1.5 flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Markenzeichen (0.9.66): rein schmückend, deshalb AUSSERHALB der
+                Überschrift -- in ihr stünde „RV" im Textinhalt, auch wenn der
+                Screenreader es wegen aria-hidden übergeht. */}
+            <span
+              className="w-9 h-9 rounded-[var(--rv-radius-md)] bg-[var(--primary)] text-[var(--primary-text)] text-sm font-black flex items-center justify-center flex-shrink-0"
+              aria-hidden="true"
+            >
+              RV
+            </span>
             {/*
               „RV Report" statt „RV Mobil" (0.9.43): Die Überschrift benennt
               seit 0.9.41 die Ansicht, denn der Fokus landet nach jedem Wechsel
@@ -2037,9 +2054,6 @@ export default function App() {
             <h1 tabIndex={-1} data-ansicht-titel="" className="text-xl md:text-2xl font-black text-[var(--text-color)]">
               RV Report
             </h1>
-            <span className="rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[0.75rem] font-bold text-[var(--success-text)]">
-              DSGVO & barrierefrei
-            </span>
           </div>
 
           {/* Offline Auto-Save live status feedback */}
@@ -2076,6 +2090,13 @@ export default function App() {
                 <span>Live verbunden</span>
               </button>
             )}
+            {/* Das Abzeichen stand bis 0.9.65 neben der Überschrift. Mit dem
+                Markenzeichen davor passte die Zeile auf dem Handy nicht mehr
+                und brach als eigene Zeile um -- hier teilt es sich die Zeile
+                mit dem Speicherstand, zu dem es inhaltlich gehört. */}
+            <span className="rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[0.75rem] font-bold text-[var(--success-text)]">
+              DSGVO & barrierefrei
+            </span>
           </div>
         </div>
 
@@ -2093,16 +2114,21 @@ export default function App() {
             Screenreader-Nutzer erreicht sie im ersten Tab-Durchlauf, in
             beiden Zustaenden, ohne vorher etwas zu aktivieren. Das ist die
             Bedingung, an der ein Verstecken-Muster hier abgelehnt wuerde. */}
-        <div className={`flex flex-row items-stretch gap-2 w-full md:w-auto md:max-w-md ${
+        {/* flex-wrap mit rem-Grundbreite (0.9.66): Die Felder stehen
+            nebeneinander, solange 2 x 8 rem hineinpassen -- bei „Extra groß"
+            also untereinander. Seit die Eingaben 16 px Schrift haben (vorher
+            12 px, darunter zoomt Safari auf dem iPhone bei jedem Antippen ins
+            Feld), braucht ein halbes Handy dafür sonst zu wenig Platz. */}
+        <div className={`flex flex-row flex-wrap items-stretch gap-2 w-full md:w-auto md:max-w-md ${
           stammdatenKompakt
             ? ""
-            : "sm:gap-3 bg-[var(--bg-color)] p-2.5 sm:p-3 rounded-[var(--rv-radius-md)] border border-dashed border-[var(--border-color)]"
+            : "sm:gap-3 bg-[var(--bg-color)] p-2.5 sm:p-3 rounded-[var(--rv-radius-lg)] border border-[var(--card-border)]"
         }`} role="group" aria-label="Berichtsmetadaten">
           {/* Month input */}
-          <div className="flex-1 min-w-0 space-y-1">
+          <div className="flex-1 basis-[8rem] min-w-0 space-y-1">
             <label
               htmlFor="meta-month-input"
-              className="text-[0.75rem] font-black text-[var(--text-muted)] flex items-center gap-1"
+              className="text-[0.75rem] font-bold text-[var(--text-muted)] flex items-center gap-1"
             >
               <Calendar className="w-3 h-3 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
               <span className="truncate">Monat:</span>
@@ -2113,16 +2139,16 @@ export default function App() {
               type="month"
               value={reportData?.month}
               onChange={(e) => handleMonthChange(e.target.value)}
-              className="w-full px-2 py-2.5 min-h-[44px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-sm)] text-xs font-bold focus:border-[var(--border-focus)] outline-none"
+              className="w-full px-3 py-2.5 min-h-[48px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-md)] text-base font-bold focus:border-[var(--border-focus)] outline-none"
               aria-required="true"
             />
           </div>
 
           {/* Name input */}
-          <div className="flex-1 min-w-0 space-y-1">
+          <div className="flex-1 basis-[8rem] min-w-0 space-y-1">
             <label
               htmlFor="meta-name-input"
-              className="text-[0.75rem] font-black text-[var(--text-muted)] flex items-center gap-1"
+              className="text-[0.75rem] font-bold text-[var(--text-muted)] flex items-center gap-1"
             >
               <User className="w-3 h-3 text-[var(--accent)] flex-shrink-0" aria-hidden="true" />
               <span className="truncate">Mitarbeiter/in:</span>
@@ -2138,7 +2164,7 @@ export default function App() {
                   : String(reportData?.name || "")
               }
               onChange={(e) => handleMetaChange("name", e.target.value)}
-              className="w-full px-2 py-2.5 min-h-[44px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-sm)] text-xs font-bold focus:border-[var(--border-focus)] outline-none"
+              className="w-full px-3 py-2.5 min-h-[48px] border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-md)] text-base font-bold focus:border-[var(--border-focus)] outline-none"
               autoComplete="name"
               aria-required="true"
             />
@@ -2180,6 +2206,14 @@ export default function App() {
         </div>
       )}
 
+      {/* MONATSKARTE (0.9.66): Wo stehe ich, und ist das Letzte drin? */}
+      <MonatsKarte
+        monat={reportData.month}
+        aktivitaeten={s1Total + s2Total + s3Total}
+        felder={[...appFields.s1, ...appFields.s2, ...appFields.s3, ...appFields.s4]}
+        zeitstempel={reportData.valuesUpdatedAt}
+      />
+
       {/* SCHNELL-ERFASSUNG: Ein Tipp direkt nach dem Termin */}
       <QuickEntryPanel
         appFields={appFields}
@@ -2190,11 +2224,12 @@ export default function App() {
         onIncrement={handleQuickIncrement}
         audioFeedbackEnabled={accessibility.audioFeedback}
         announce={announceToAriaAndSpeech}
+        monat={reportData.month}
       />
 
       {/* MOBILE COMFORT ACTION BAR */}
       {mobileComfortMode && !isDesktop && (
-        <div className="mb-4 rounded-[var(--rv-radius-lg)] border border-[var(--border-color)] bg-[var(--card-bg)] p-3 shadow-[var(--rv-shadow-sm)]" role="toolbar" aria-label="Schnellzugriffe für den Ein-Hand-Modus">
+        <div className="mb-4 rounded-[var(--rv-radius-xl)] border border-[var(--card-border)] bg-[var(--card-bg)] p-3 shadow-[var(--rv-shadow-sm)]" role="toolbar" aria-label="Schnellzugriffe für den Ein-Hand-Modus">
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => focusAndAnnounce("month")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-4 min-h-[44px] text-xs font-black inline-flex items-center justify-center cursor-pointer focus-visible:ring-4">Monat</button>
             <button type="button" onClick={() => focusAndAnnounce("name")} className="rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] px-4 min-h-[44px] text-xs font-black inline-flex items-center justify-center cursor-pointer focus-visible:ring-4">Name</button>
@@ -2215,7 +2250,7 @@ export default function App() {
               speicherUrteil.stufe !== "sicher" &&
               !(speicherUrteil.stufe !== "kritisch" && speicherHinweisAusgeblendet) && (
                 <div
-                  className={`p-4 mb-4 rounded-[var(--rv-radius-md)] border-2 flex flex-col sm:flex-row sm:items-center gap-3 ${
+                  className={`p-4 mb-4 rounded-[var(--rv-radius-lg)] border-2 flex flex-col sm:flex-row sm:items-center gap-3 ${
                     speicherUrteil.stufe === "kritisch"
                       ? "border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger-text)]"
                       : "border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)]"
@@ -2223,7 +2258,7 @@ export default function App() {
                 >
                   <div className="flex items-start gap-2.5 flex-1 min-w-0">
                     <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                    <p className="text-sm font-bold leading-snug">
+                    <p className="text-sm font-semibold leading-snug">
                       {speicherUrteil.ansage}
                       {speicherUrteil.rat ? " " + speicherUrteil.rat : ""}
                     </p>
@@ -2260,10 +2295,10 @@ export default function App() {
                 Geraeteverlust zu sichern. Fuer Letzteres gab es bis 0.9.16
                 nichts. */}
             {sicherungUrteil && !sicherungHinweisAusgeblendet && (
-              <div className="p-4 mb-4 rounded-[var(--rv-radius-md)] border-2 border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)] flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="p-4 mb-4 rounded-[var(--rv-radius-lg)] border border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)] flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex items-start gap-2.5 flex-1 min-w-0">
                   <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                  <p className="text-sm font-bold leading-snug">{sicherungUrteil.ansage}</p>
+                  <p className="text-sm font-semibold leading-snug">{sicherungUrteil.ansage}</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:flex-shrink-0">
                   <button
@@ -2289,11 +2324,11 @@ export default function App() {
             {storageWriteFailed && (
               <div
                 role="alert"
-                className="p-4 mb-4 rounded-[var(--rv-radius-md)] border-2 border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger-text)] flex flex-col sm:flex-row sm:items-center gap-3"
+                className="p-4 mb-4 rounded-[var(--rv-radius-lg)] border-2 border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger-text)] flex flex-col sm:flex-row sm:items-center gap-3"
               >
                 <div className="flex items-start gap-2.5 flex-1">
                   <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                  <p className="text-sm font-bold leading-snug">
+                  <p className="text-sm font-semibold leading-snug">
                     Speichern fehlgeschlagen! Ihre letzten Änderungen sind eventuell nicht dauerhaft
                     gesichert. Bitte erstellen Sie jetzt ein Backup, bevor Sie weiterarbeiten.
                   </p>
@@ -2313,11 +2348,11 @@ export default function App() {
             {liveSync.failed && !syncAbbruchAusgeblendet && (
               <div
                 role="alert"
-                className="p-4 mb-4 rounded-[var(--rv-radius-md)] border-2 border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)] flex flex-col sm:flex-row sm:items-center gap-3"
+                className="p-4 mb-4 rounded-[var(--rv-radius-lg)] border border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)] flex flex-col sm:flex-row sm:items-center gap-3"
               >
                 <div className="flex items-start gap-2.5 flex-1 min-w-0">
                   <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                  <p className="text-sm font-bold leading-snug">
+                  <p className="text-sm font-semibold leading-snug">
                     Live-Verbindung unterbrochen. Ihre Eingaben werden weiter auf
                     diesem Gerät gespeichert, aber nicht mehr auf das andere Gerät
                     übertragen.
@@ -2355,7 +2390,7 @@ export default function App() {
       {deadlineInfo.sichtbar && (
         <div
           role="alert"
-          className={`p-3.5 mb-4 rounded-[var(--rv-radius-md)] border flex gap-2.5 items-center text-xs font-bold leading-snug ${
+          className={`p-3.5 mb-4 rounded-[var(--rv-radius-lg)] border flex gap-2.5 items-center text-sm font-semibold leading-snug ${
             deadlineInfo.isUrgent
               ? "bg-[var(--danger-bg)] border-[var(--danger-border)] text-[var(--danger-text)] animate-pulse"
               : "bg-[var(--alert-bg)] border-[var(--alert-border)] text-[var(--alert-text)]"
@@ -2398,7 +2433,7 @@ export default function App() {
       </div>
 
       {/* LIVE BENTO DASHBOARD CARDS (Modern, interactive, responsive, screen-reader optimized metrics dashboard of current totals) */}
-      <div className="sticky top-2 z-30 bg-[var(--bg-color)]/95 backdrop-blur-md py-2 -mx-2 px-2 rounded-[var(--rv-radius-md)] mb-4 shadow-[var(--rv-shadow-md)] border border-[var(--border-color)]">
+      <div className="sticky top-2 z-30 bg-[var(--bg-color)]/95 backdrop-blur-md py-2 -mx-2 px-2 rounded-[var(--rv-radius-lg)] mb-4 shadow-[var(--rv-shadow-md)] border border-[var(--card-border)]">
         <div
           className="grid grid-cols-2 sm:grid-cols-4 gap-2.5"
           aria-label="Aktueller Monatsfortschritt Live-Anzeige"
@@ -2407,6 +2442,10 @@ export default function App() {
         {/* Card 1: Vorführungen */}
         <button
           type="button"
+          /* Umschalter, also aria-pressed (0.9.66): Ob der Filter aktiv
+             ist, zeigten bis dahin nur Rahmen und Fläche -- ein Screenreader
+             sagte bei jedem Zustand dasselbe. */
+          aria-pressed={activeSectionTab === "s1"}
           onClick={() => {
             triggerHaptic(15);
             setActiveSectionTab(activeSectionTab === "s1" ? "all" : "s1");
@@ -2419,7 +2458,7 @@ export default function App() {
           className={`p-3 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] flex flex-col justify-between shadow-[var(--rv-shadow-sm)] hover:shadow-[var(--rv-shadow-md)] hover:border-[var(--cat-1)] transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
             activeSectionTab === "s1"
               ? "border-2 border-[var(--cat-1)] bg-[var(--cat-1-soft)]"
-              : "border-[var(--border-color)]"
+              : "border-[var(--card-border)]"
           }`}
           aria-label={
             goalsConfig.enabled
@@ -2466,6 +2505,7 @@ export default function App() {
         {/* Card 2: Schulungen */}
         <button
           type="button"
+          aria-pressed={activeSectionTab === "s2"}
           onClick={() => {
             triggerHaptic(15);
             setActiveSectionTab(activeSectionTab === "s2" ? "all" : "s2");
@@ -2478,7 +2518,7 @@ export default function App() {
           className={`p-3 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] flex flex-col justify-between shadow-[var(--rv-shadow-sm)] hover:shadow-[var(--rv-shadow-md)] hover:border-[var(--cat-2)] transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
             activeSectionTab === "s2"
               ? "border-2 border-[var(--cat-2)] bg-[var(--cat-2-soft)]"
-              : "border-[var(--border-color)]"
+              : "border-[var(--card-border)]"
           }`}
           aria-label={
             goalsConfig.enabled
@@ -2525,6 +2565,7 @@ export default function App() {
         {/* Card 3: Spezialprodukte */}
         <button
           type="button"
+          aria-pressed={activeSectionTab === "s3"}
           onClick={() => {
             triggerHaptic(15);
             setActiveSectionTab(activeSectionTab === "s3" ? "all" : "s3");
@@ -2537,7 +2578,7 @@ export default function App() {
           className={`p-3 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] flex flex-col justify-between shadow-[var(--rv-shadow-sm)] hover:shadow-[var(--rv-shadow-md)] hover:border-[var(--cat-3)] transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
             activeSectionTab === "s3"
               ? "border-2 border-[var(--cat-3)] bg-[var(--cat-3-soft)]"
-              : "border-[var(--border-color)]"
+              : "border-[var(--card-border)]"
           }`}
           aria-label={
             goalsConfig.enabled
@@ -2584,6 +2625,7 @@ export default function App() {
         {/* Card 4: Büro & Arbeitszeit */}
         <button
           type="button"
+          aria-pressed={activeSectionTab === "s4"}
           onClick={() => {
             triggerHaptic(15);
             setActiveSectionTab(activeSectionTab === "s4" ? "all" : "s4");
@@ -2596,7 +2638,7 @@ export default function App() {
           className={`p-3 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] flex flex-col justify-between shadow-[var(--rv-shadow-sm)] hover:shadow-[var(--rv-shadow-md)] hover:border-[var(--cat-4)] transition-all cursor-pointer text-left focus-visible:ring-4 active:scale-95 overflow-hidden ${
             activeSectionTab === "s4"
               ? "border-2 border-[var(--cat-4)] bg-[var(--cat-4-soft)]"
-              : "border-[var(--border-color)]"
+              : "border-[var(--card-border)]"
           }`}
           aria-label={
             goalsConfig.enabled
@@ -2650,7 +2692,7 @@ export default function App() {
         ohnehin, was sie tut --, und die "Ein/Aus"-Plaketten sind durch
         aria-pressed ersetzt, das Screenreader von sich aus vorlesen.
       */}
-      <div className="mb-3 p-2.5 rounded-[var(--rv-radius-md)] border bg-[var(--card-bg)] border-[var(--border-color)] space-y-2 shadow-[var(--rv-shadow-sm)]">
+      <div className="mb-3 p-3 rounded-[var(--rv-radius-xl)] border bg-[var(--card-bg)] border-[var(--card-border)] space-y-2 shadow-[var(--rv-shadow-sm)]">
         <div
           className="flex flex-wrap items-center gap-1.5"
           role="toolbar"
@@ -2766,7 +2808,7 @@ export default function App() {
         {/* Inline goals configuration form */}
         {isGoalsEditorOpen && (
           <div
-            className="pt-2.5 mt-2.5 border-t border-[var(--border-color)] space-y-2.5 animate-slide-up"
+            className="pt-2.5 mt-2.5 border-t border-[var(--card-border)] space-y-2.5 animate-slide-up"
             role="group"
             aria-label="Ziele-Konfiguration"
           >
@@ -2902,7 +2944,7 @@ export default function App() {
         )}
 
         {/* Live Search bar (Incredibly efficient for finding products on-the-go) */}
-        <div className="pt-2 border-t border-[var(--border-color)]">
+        <div className="pt-2 border-t border-[var(--card-border)]">
           <div className="relative">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-[var(--text-muted)]">
               <Search className="w-4 h-4" aria-hidden="true" />
@@ -2945,7 +2987,7 @@ export default function App() {
           ohnehin aus dessen eigener Beschreibung (`CounterField.tsx`,
           `sr-only`), also genau dort, wo sie hilft.
         */}
-        <p className="flex items-start gap-2 mb-4 px-3 py-2.5 rounded-[var(--rv-radius-md)] border border-[var(--info-border)] bg-[var(--info-bg)] text-[var(--info-text)] text-xs font-bold leading-snug">
+        <p className="flex items-start gap-2 mb-4 px-3.5 py-3 rounded-[var(--rv-radius-lg)] border border-[var(--info-border)] bg-[var(--info-bg)] text-[var(--info-text)] text-sm font-semibold leading-snug">
           <Info className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
           <span className="min-w-0 [overflow-wrap:anywhere]">
             Tipp: Sie können jede Zahl direkt in das Feld eintippen — auch größere
@@ -3060,7 +3102,7 @@ export default function App() {
 
       {/* FOOTER */}
       <footer
-        className="mt-12 pt-6 pb-2 border-t border-[var(--border-color)] text-center text-xs font-bold text-[var(--text-muted)] space-y-4"
+        className="mt-12 pt-6 pb-2 border-t border-[var(--card-border)] text-center text-xs font-bold text-[var(--text-muted)] space-y-4"
       >
         {/* Kein `opacity-80` mehr: Auf --text-muted angewandt ergab das einen
             Kontrast von 4,41:1 gegen die geforderten 4,5:1 (WCAG 1.4.3) --
@@ -3389,7 +3431,7 @@ export default function App() {
 
           return (
             <div
-              className="fixed bottom-0 left-0 right-0 z-[100] bg-[var(--card-bg)] border-t border-[var(--border-color)] p-3 shadow-[0_-8px_30px_rgba(0,0,0,0.15)] rv-safe-pb"
+              className="fixed bottom-0 left-0 right-0 z-[100] bg-[var(--card-bg)] border-t border-[var(--card-border)] p-3 shadow-[var(--rv-shadow-lg)] rv-safe-pb"
               role="toolbar"
               aria-label="Mobiles Navigations-Hilfe-Menü"
             >
@@ -3481,7 +3523,10 @@ export default function App() {
             und 7,83:1 im dunklen Schema. Der Weichzeichner ist ersatzlos weg:
             Hinter einer deckenden Flaeche tut er ohnehin nichts.
           */
-          className={`fixed rv-safe-nav-bottom left-1/2 -translate-x-1/2 w-[96%] max-w-xl z-[200] bg-[var(--card-bg)] border border-[var(--border-color)] py-2.5 px-2 rounded-[var(--rv-radius-lg)] shadow-[0_10px_35px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.5)] transition-all ${isDesktop ? 'lg:hidden' : ''}`}
+          /* 0.9.66: Haarlinie und Schatten der Skala statt kraeftigem Umriss
+             und fester rgba-Schatten -- die Leiste ist ein Behaelter, kein
+             Bedienelement. Undurchsichtig bleibt sie, aus dem Grund oben. */
+          className={`fixed rv-safe-nav-bottom left-1/2 -translate-x-1/2 w-[96%] max-w-xl z-[200] bg-[var(--card-bg)] border border-[var(--card-border)] py-2 px-2 rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] transition-all ${isDesktop ? 'lg:hidden' : ''}`}
           role="navigation"
           aria-label="Hauptnavigation"
         >
@@ -3500,23 +3545,24 @@ export default function App() {
                   onClick={() => {
                     wechsleHauptansicht(tab.id, tab.ansage);
                   }}
-                  className={`flex-1 min-w-0 flex flex-col items-center justify-center py-1.5 rounded-[var(--rv-radius-md)] relative transition-all active:scale-90 cursor-pointer ${
+                  /* Aktive Station als weiche Flaeche (0.9.66) statt farbiger
+                     Schrift mit Strich darunter: Die Flaeche ist auch ohne
+                     Farbwahrnehmung als Form erkennbar, der Strich war 4 px
+                     breit. Im Hochkontrast tauschen Flaeche und Schrift. */
+                  className={`flex-1 min-w-0 flex flex-col items-center justify-center py-1.5 rounded-[var(--rv-radius-lg)] relative transition-all active:scale-90 cursor-pointer ${
                     isSelected
-                      ? "text-[var(--accent)] font-black"
+                      ? "bg-[var(--nav-active-bg)] text-[var(--nav-active-text)] font-black"
                       : "text-[var(--text-muted)] hover:text-[var(--text-color)] font-bold"
                   }`}
                 >
                   <div className="relative p-1">
                     <IconComp
-                      className={`w-5 h-5 transition-transform ${isSelected ? "scale-110 stroke-[2.5]" : "stroke-[1.8]"}`}
+                      className={`w-5 h-5 transition-transform ${isSelected ? "stroke-[2.5]" : "stroke-[1.8]"}`}
                     />
                   </div>
                   <span className="text-[0.75rem] mt-0.5 truncate max-w-full">
                     {tab.label}
                   </span>
-                  {isSelected && (
-                    <span className="absolute bottom-0 w-4 h-1 bg-[var(--accent)] rounded-full" />
-                  )}
                 </button>
               );
             })}

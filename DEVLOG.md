@@ -10,6 +10,199 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-09-26 — v0.9.66: „Warmes Grün" — das neue Erscheinungsbild, erste Scheibe
+
+Auftrag des Projektinhabers: Die Oberfläche wirke „langweilig und sehr trist",
+sie solle modern, funktional und schön werden. Vorgehen: erst ein Entwurf als
+eigenständige Vorlage außerhalb der App (zwei Runden, die erste vom
+Projektinhaber als „nicht schön" verworfen, die zweite am Startbildschirm
+nachgeschärft), dann der Einbau in Scheiben. Diese erste Scheibe umfasst die
+Farben (hell und dunkel), die Navigation und die komplette Formularansicht.
+Die übrigen zwölf Ansichten ändern sich nur über die Farbvariablen.
+
+### Befund vor jeder Änderung (gemessen an Bildschirmfotos bei 360 px)
+
+- **Kaltes Blaugrau** (Tailwinds „slate") für Fläche, Schrift und Rahmen, und
+  die häufigste Taste der App — das Plus — war fast schwarz (`#1e293b`).
+- **Jeder Behälter trug denselben 3:1-Umriss wie ein Bedienelement.** Karten
+  in Karten in Karten, alle grau umrandet: Das sah aus wie ein
+  Drahtgittermodell. WCAG 1.4.11 verlangt 3:1 nur für das, was man bedient.
+- **Fast jeder Text fett**, auch Hinweise und Untertitel — damit stach nichts
+  hervor.
+- **Schnell-Kacheln trennten mitten im Wort**: „Schulungen/Supp-ort",
+  „Schulung/Suppor-t". Chromium und WebKit brechen nicht am Schrägstrich um;
+  `break-words` zerschnitt dann das Wort.
+- **„ℹ️" vor dem Monatsabschluss-Hinweis**, obwohl daneben schon ein
+  Info-Symbol steht: sichtbar doppelt, und das Emoji wurde als „Information"
+  vorgelesen.
+- **Monat und Name wurden in 12 px eingegeben.** Safari auf dem iPhone zoomt
+  bei jedem Antippen eines Feldes unter 16 px hinein.
+
+### Geändert
+
+- **`index.css`, helles und dunkles Schema:** warme Sandtöne und Markengrün
+  (`#13795b`) als `--primary`/`--accent`; das dunkle Schema in warmem
+  Dunkelgrün mit Mint. Jede Paarung ist nachgerechnet und steht mit ihrem
+  Verhältnis im Kommentar. Zwei Werte mussten dabei eigens nachgezogen werden,
+  die sonst unbemerkt unter die Schwelle gerutscht wären:
+  - `--hover-bg` war eine Umleitung auf `--border-color`. Der neue, wärmere
+    Umriss trägt Text aber nur mit 4,29:1 — jetzt eine eigene helle Fläche
+    (13,1:1). Im dunklen Schema musste sie ausdrücklich gesetzt werden, sonst
+    hätte es den hellen Wert aus `:root` geerbt und die helle Schrift beim
+    Überfahren verschluckt.
+  - `--danger` als Schrift auf der wärmeren Fläche: `#dc2626` nur 4,28:1,
+    jetzt `#c81e1e` mit 5,10:1.
+- **Neue Variablen**, in allen vier Schemata gesetzt: `--card-border`
+  (Haarlinie für Behälter; im Hochkontrast gleich dem kräftigen Rahmen),
+  `--cat-1…4-tile` (Kachelflächen; im Hochkontrast schwarz),
+  `--nav-active-bg/-text` (aktive Station; im Hochkontrast Tausch der beiden
+  Farben). Die beiden Hochkontrast-Schemata behalten ihre Farben; den neuen Aufbau
+  zeigen sie wie alle anderen.
+- **Navigation:** aktive Station als weiche Fläche statt farbiger Schrift mit
+  4-px-Strich, Haarlinie und Skalenschatten statt fester `rgba`-Werte. Sie
+  bleibt undurchsichtig — aus dem in 0.9.45 gemessenen Kontrastgrund.
+  Seitenleiste am Rechner passend, mit Markenzeichen.
+- **Formularkopf:** Markenzeichen (schmückend, außerhalb der Überschrift),
+  das Abzeichen „DSGVO & barrierefrei" in der Statuszeile. Monat und Name in
+  16 px; die beiden Felder brechen bei großer Schrift untereinander um
+  (`basis-[8rem]`), statt ein halbes Handy zu teilen.
+- **Neu: Monatskarte** (`MonatsKarte.tsx`) über der Schnell-Erfassung: Monat,
+  Zahl der Aktivitäten (derselbe Rechenweg wie „Aktivitäten" in der Analyse:
+  Bereiche 1–3) und „Zuletzt geändert · heute, 11:40 — Vorführungen
+  Arbeitsplatz". Das Feld wird nur genannt, wenn es eindeutig ist: Beim Laden
+  bekommen alle Felder ohne Stempel denselben nachgetragenen Zeitpunkt, und
+  ein beliebiges davon zu nennen wäre eine falsche Auskunft.
+  `findeLetzteAenderung` und `ohneZuletzt` in `zuletztGeaendert.ts`, sechs neue
+  Fälle in `scripts/checks/zuletzt-geaendert.ts` (Prüfungen 206 → 212).
+- **Schnell-Kacheln:** getönt nach Bereich (die Reihenfolge bleibt die
+  gewählte bzw. meistgenutzte, deshalb keine Gruppen), große Zahl,
+  dekoratives Plus, `<wbr>` nach jedem Schrägstrich, Raster
+  `minmax(7.5rem, 1fr)` — bei „Groß" und „Extra groß" eine Spalte.
+- **Bereichskarten und Zähler:** gefülltes Symbolfeld in der Bereichsfarbe,
+  Haarlinien; die Zählerzeile behält ihren Kasten, aber mit Haarlinie; Minus
+  auf der Kartenfläche, Plus grün über `--primary`. Minus, Zahlenfeld und alle
+  Eingaben behalten den 3:1-Umriss.
+- **Behälter im Formular** (Werkzeugleiste, Fortschrittsleiste, Filterkacheln,
+  Fußzeile, Feld-Werkzeugleiste) auf `--card-border`.
+- **Hinweiskästen:** Radius der Skala, dünner Rand bei Warnungen (Fehler
+  behalten den doppelten), Schrift halbfett statt fett; Monatsabschluss ohne
+  Emoji.
+
+### Ein selbst verursachter Fehler, beim Nachfotografieren gefunden
+
+Mit eingetragenen Zahlen fotografiert zeigte die Schnell-Kachel
+„Auslieferunge-n Schule/Bildung" -- also genau die Trennung mitten im Wort,
+die diese Version beheben sollte, nur an einem anderen Wort. Ursache ist die
+größere Kachelschrift (14 statt 12 px). Gemessen bei 360 px: Die Kachel bot
+120 px Innenbreite, „Auslieferungen" braucht in DejaVu Sans fett genau 120 px
+(in Liberation Sans, arialbreit, 102 px). Behoben mit 10 statt 12 px
+waagerechtem Innenabstand (124 px), dazu `hyphens-auto` für Browser mit
+deutschem Trennwörterbuch -- das Chromium dieser Umgebung hat keins, dort
+greift nur der Platzgewinn. Ehrlich bleibt: Wörter ab etwa 15 Buchstaben
+(„Beratungsstellen", „Veranstaltungen/") können in DejaVu bei 360 px weiter
+mitten im Wort brechen, wenn sie auf einer Kachel landen. Kein Wächter sieht
+das: `overflow-wrap` erzeugt keinen Überlauf, und der zugängliche Name bleibt
+vollständig. Nach dem Fix gezielt nachgeprüft: 179/179 (Überlauf, 320 px,
+breite Schrift, Formularzustände, axe, Kontrast, Tastatur).
+
+### Gefunden beim Einbau -- inzwischen behoben
+
+Drei vorbestehende Fehler fielen beim Einbau auf: Die Schnell-Kacheln
+sortierten sich im Modus „Automatisch" nach jedem Tipp um, die
+Filterkacheln „Monats-Fortschritt" trugen kein `aria-pressed`, und das
+Kalendersymbol im Monatsfeld war in den dunklen Schemata nicht zu sehen.
+Alle drei sind im Nachtrag unten behoben und gemessen.
+
+### Verifiziert
+
+- `npx tsc --noEmit`: sauber nach jedem Schritt.
+- `npm run check`: **212/212** (206 bestehende + 6 neue für die Monatskarte).
+  Die neuen Fälle schlagen nachweislich an: Eine Fassung, die bei
+  Gleichstand das erste Feld nennt, fällt im Fall „teilen sich mehrere
+  Felder den jüngsten Zeitpunkt" durch.
+- `npm run check:ui`, voller Lauf über `handy` und `schreibtisch`:
+  **550 bestanden, 244 profilbedingt übersprungen, 2 fehlgeschlagen,
+  21,6 Minuten.** Beide Fehlschläge nachweislich nicht von dieser Änderung:
+  - „Felder verwalten bei Schriftgröße extra-large": `Execution context was
+    destroyed`. Ich hatte während des Laufs `ROADMAP.md` bearbeitet — und
+    Tailwind 4 durchsucht bei seiner automatischen Quellenerkennung auch
+    Markdown-Dateien im Projekt nach Klassennamen. Die Warnung „während des
+    Laufs keine Dateien ändern" in `CLAUDE.md` gilt also auch für Doku.
+    Einzeln wiederholt: bestanden.
+  - „Eine gestellte Kamera liest alle Teilstücke": „Keine Kamera verfügbar".
+    Scheitert auf dem **unveränderten Stand `e353c8c` identisch** (dort
+    gegengeprüft); die Prüfung startet einen eigenen Browser mit gestellter
+    Kamera, und die kommt in dieser Umgebung nicht an. Im Deploy-Gate lief
+    sie zuletzt grün.
+- Monatskarte im Browser: leer „In diesem Monat ist noch nichts
+  eingetragen."; nach zwei Tipps „2 Aktivitäten", „Zuletzt geändert · heute,
+  13:35 / Vorführungen Schule/Bildung", gesprochen „Zuletzt geändert heute
+  um 13 Uhr 35: Vorführungen Schule/Bildung." (`ariaSnapshot`).
+- Bildschirmfotos bei 360 px in allen vier Farbschemata; die
+  Hochkontrast-Schemata behalten ihre Farben, zeigen aber den neuen Aufbau
+  (aktive Station als ausgefüllte Fläche).
+
+### Nicht verifiziert
+
+- Das Profil `handy-webkit` — WebKit ist in dieser Umgebung nicht installiert;
+  es läuft erst im Deploy-Gate.
+- Ein echtes iPhone (Safari-Zoom, Safe Areas) und ein Screenreader-Durchlauf.
+- Die übrigen zwölf Ansichten nur über die Farbvariablen verändert; ihr
+  Aufbau (Karten mit kräftigem Rahmen) folgt in den nächsten Scheiben.
+
+
+### Nachgereicht: die drei vorbestehenden Funde behoben
+
+Auftrag des Projektinhabers nach dem ersten Stand: „behebe die fehler".
+
+**1. Die Schnell-Kacheln sortierten sich beim Tippen um.** Zuerst die
+Prüfung, dann der Fix: `tests/oberflaeche.spec.ts` › „Schnell-Erfassung ›
+die Kacheln bleiben beim Tippen an ihrem Platz" tippt dreimal auf die zweite
+Kachel, wartet über die Sekunde des Archiv-Spiegels hinaus, verlangt dieselbe
+Reihenfolge und dreimal dasselbe Feld (Stand 3), und geht danach über die
+Zeit-Ansicht zurück. **Am alten Stand rot** („Die Kacheln haben beim Tippen
+ihre Reihenfolge geändert"), nach dem Fix grün.
+
+Der Fix hält die automatische Reihenfolge in einer **Modulvariable** fest,
+Schlüssel Monat + Feld-IDs. Zwei naheliegende Wege tragen nicht, beide
+begründet im Quelltext: Ein `useMemo` ohne die Werte des Monats springt
+trotzdem, nur eine Sekunde später — der Archiv-Spiegel schreibt `history`
+nach jedem Tipp neu. Und ein Zustand der Komponente wäre beim Wechsel in eine
+andere Ansicht weg, weil die Tafel dabei ausgehängt wird. Neu berechnet wird
+jetzt beim App-Start, beim Monatswechsel und bei geänderten Feldern.
+
+**2. Die Filterkacheln „Monats-Fortschritt" tragen `aria-pressed`.** Neue
+Prüfung „Filterkacheln › melden, ob sie gedrückt sind": vier Tasten, alle
+`false`, nach einem Tipp genau eine `true`, nach dem zweiten wieder `false`.
+
+**3. Das Kalendersymbol im Monatsfeld ist in allen Schemata sichtbar.** Es
+fehlte `color-scheme`; der Browser zeichnete seine eingebauten Symbole für
+einen hellen Grund. Jetzt `color-scheme: light`, bei `data-dark="true"`
+`dark`. Gemessen per Bildpunkt (Symbol gegen Feldgrund):
+
+| Schema | vorher | nachher |
+|---|---|---|
+| Hell | 21:1 | 21:1 |
+| Dunkel | 1,16:1 | **18,1:1** |
+| Weiß auf Schwarz | 1:1 (unsichtbar) | **21:1** |
+| Gelb auf Schwarz | 1:1 (unsichtbar) | **21:1** |
+
+`color-scheme` färbt auch Scrollleisten und andere eingebaute Teile um;
+deshalb danach der volle Lauf über alle Schemata, nicht nur die gezielte
+Messung.
+
+**Verifiziert nach dem Nachtrag:** `tsc` sauber, `npm run check` 212/212,
+voller `check:ui` über `handy` und `schreibtisch`: **553 bestanden, 246
+profilbedingt übersprungen, 1 fehlgeschlagen, 22,1 Minuten.** Der eine ist
+wieder die QR-Kamera-Prüfung, die auf dem unveränderten Stand identisch
+scheitert (siehe oben). Die im ersten Lauf ausgefallene Prüfung „Felder
+verwalten bei extra-large" besteht -- ein weiterer Beleg, dass dort nur das
+Neuladen durch die Doku-Änderung zuschlug. Während dieses Laufs wurde keine
+Datei im Projekt verändert.
+
+
+---
+
 ## 2026-09-20 — v0.9.65: Das Design-System aus `index.css` tatsächlich benutzen
 
 Auftrag des Projektinhabers: Die Barrierefreiheit ist am Ziel (615/615), jetzt

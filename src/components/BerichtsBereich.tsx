@@ -6,11 +6,17 @@ import type { FieldConfig } from "../types";
     Quelltext auf woertliche Klassennamen, eine zur Laufzeit zusammengesetzte
     Zeichenkette (`bg-[var(--cat-${n}-soft)]`) waere fuer den Scanner nicht
     auffindbar und erzeugte kein CSS. */
+/*
+  Gefülltes Symbolfeld je Bereich (0.9.66, vorher weiche Fläche mit Rand):
+  Der Bereich soll auf einen Blick seine Farbe zeigen. Das Symbol steht in
+  der Kartenfarbe darauf -- weiß im hellen, dunkel im dunklen Schema,
+  schwarz auf Weiß/Gelb im Hochkontrast; als Nicht-Text je über 3:1.
+*/
 const KATEGORIE_BADGE: Record<number, string> = {
-  1: "bg-[var(--cat-1-soft)] text-[var(--cat-1-text)] border-[var(--cat-1)]",
-  2: "bg-[var(--cat-2-soft)] text-[var(--cat-2-text)] border-[var(--cat-2)]",
-  3: "bg-[var(--cat-3-soft)] text-[var(--cat-3-text)] border-[var(--cat-3)]",
-  4: "bg-[var(--cat-4-soft)] text-[var(--cat-4-text)] border-[var(--cat-4)]",
+  1: "bg-[var(--cat-1)] text-[var(--card-bg)] border-[var(--cat-1)]",
+  2: "bg-[var(--cat-2)] text-[var(--card-bg)] border-[var(--cat-2)]",
+  3: "bg-[var(--cat-3)] text-[var(--card-bg)] border-[var(--cat-3)]",
+  4: "bg-[var(--cat-4)] text-[var(--card-bg)] border-[var(--cat-4)]",
 };
 
 interface BerichtsBereichProps {
@@ -82,7 +88,7 @@ export default function BerichtsBereich({
 
   return (
     <section
-      className="p-4 sm:p-5 mb-5 rounded-[var(--rv-radius-lg)] border bg-[var(--card-bg)] border-[var(--border-color)] shadow-[var(--rv-shadow-sm)]"
+      className="p-4 sm:p-5 mb-5 rounded-[var(--rv-radius-xl)] border bg-[var(--card-bg)] border-[var(--card-border)] shadow-[var(--rv-shadow-sm)]"
       aria-labelledby={ueberschriftId}
     >
       {/* flex-wrap: min-w-0 am Titel-Span (unten) reichte allein nicht --
@@ -96,10 +102,10 @@ export default function BerichtsBereich({
           überstehende Elemente, scrollWidth = clientWidth = 320. */}
       <h2
         id={ueberschriftId}
-        className="flex flex-wrap items-center gap-2.5 pb-3 mb-4 border-b-2 border-[var(--border-color)]"
+        className="flex flex-wrap items-center gap-3 pb-3.5 mb-4 border-b border-[var(--card-border)]"
       >
         <span
-          className={`w-8 h-8 rounded-[var(--rv-radius-md)] border flex items-center justify-center flex-shrink-0 ${KATEGORIE_BADGE[nummer] ?? ""}`}
+          className={`w-10 h-10 rounded-[var(--rv-radius-md)] border flex items-center justify-center flex-shrink-0 ${KATEGORIE_BADGE[nummer] ?? ""}`}
           aria-hidden="true"
         >
           {icon}
@@ -108,7 +114,7 @@ export default function BerichtsBereich({
             Inhalt preis (`min-width: auto`) -- bei 320 px schob "3.
             Spezialprodukte (Fokus)" die Seite auf 352 px, achter Fall dieser
             Klasse in diesem Projekt. */}
-        <span className="text-lg font-bold text-[var(--text-color)] min-w-0">{titel}</span>
+        <span className="text-lg font-black text-[var(--text-color)] min-w-0">{titel}</span>
       </h2>
       {hinweis}
       {/*

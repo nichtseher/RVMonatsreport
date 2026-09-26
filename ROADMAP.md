@@ -1059,6 +1059,69 @@ reinen Prüfungen zu `verrechneSchicht` abgedeckt, über die Oberfläche **nicht
 
 ---
 
+## 0.9.66 — „Warmes Grün": das neue Erscheinungsbild — ERSTE SCHEIBE ERLEDIGT (2026-09-26)
+
+Rückmeldung des Projektinhabers: Die Oberfläche wirke „langweilig und sehr
+trist". Der Entwurf entstand als eigenständige Vorlage außerhalb der App und
+ging durch zwei Runden, bevor eine Zeile Code fiel. Eingebaut sind die Farben
+(hell und dunkel), die Navigation und die komplette Formularansicht samt einer
+neuen Monatskarte. Einzelheiten und Messungen im DEVLOG.
+
+**Die Grundentscheidung, die man beim Weiterbauen kennen muss:** Behälter
+tragen `--card-border` (Haarlinie), Bedienelemente weiter `--border-color`
+(3:1). Bis 0.9.65 trug beides denselben kräftigen Umriss — daher der
+Drahtgitter-Eindruck. In den Hochkontrast-Schemata sind beide Variablen
+gleich; dort bleibt alles kräftig umrandet.
+
+### Nächste Scheiben
+
+Die übrigen zwölf Ansichten haben die neuen Farben, aber noch den alten
+Aufbau (Karten mit kräftigem Rahmen, fette Nebentexte). In der Reihenfolge
+der Nutzung: Zeit, Mehr (Optionen), Archiv, Analyse, dann die übrigen. Jede
+Scheibe mit denselben Wächtern und einem vollen `check:ui`.
+
+### Beim Einbau gefunden — BEHOBEN (Nachtrag 0.9.66)
+
+- **Die Schnell-Kacheln sortierten sich im Modus „Automatisch" nach jedem
+  Tipp neu** -- die Taste wanderte unter dem Finger weg. Jetzt einmal je
+  Sitzung und Monat festgehalten (Modulvariable; warum weder `useMemo` noch
+  Komponentenzustand tragen, steht im Quelltext). Abgesichert durch
+  „Schnell-Erfassung › die Kacheln bleiben beim Tippen an ihrem Platz", die
+  am alten Stand rot war.
+- **Filterkacheln „Monats-Fortschritt" ohne `aria-pressed`** -- ergänzt,
+  eigene Prüfung.
+- **Kalendersymbol im Monatsfeld** in den dunklen Schemata 1,16:1 bzw. 1:1
+  -- fehlendes `color-scheme`, jetzt 18,1:1 bzw. 21:1.
+
+### Sync: Die „zwei Codes" sind nur beim ersten Mal nötig (gemessen, nicht gebaut)
+
+Diese Datei und `CLAUDE.md` halten fest, dass die Live-Verbindung ohne
+Vermittlungsserver strukturell zwei Codes braucht. **Für die erste Kopplung
+stimmt das, für jede weitere nicht.** Gemessen am 2026-09-26 mit einer Sonde
+in Chromium (zwei Seiten im selben Browser, keine ICE-Server):
+
+- Beide Geräte behalten ihr `RTCCertificate` (in IndexedDB speicherbar) und
+  feste ICE-Zugangsdaten, die bei der ersten Kopplung vereinbart werden.
+- Beim Wiederverbinden setzt Gerät B sein Angebot mit den festen Zugangsdaten
+  und bildet die Antwort von A **selbst** aus der Vorlage nach. Nur Bs
+  Kandidat (mDNS-Name und Port, rund 25 Zeichen Nutzlast) geht als **ein
+  Code in eine Richtung** an A. A antwortet nicht über einen Code, sondern
+  direkt mit ICE-Prüfpaketen.
+- Ergebnis: Kanal offen, Nachrichten in beide Richtungen. Auch nach **5, 15
+  und 30 Minuten** Wartezeit zwischen Code und Einsetzen. Beim bisherigen
+  Ablauf mit zwei Codes scheiterte die Verbindung nach 5 Minuten.
+
+**Was das nicht ist:** kein Beleg für Safari (WebKit fehlte in der
+Messumgebung), und es beruht darauf, dass der Browser selbst gesetzte
+`ice-ufrag`/`ice-pwd` in der lokalen Beschreibung annimmt. Ohne Server
+bleibt außerdem: gleiches Netz, und das Handy im Mobilfunk erreicht den
+Rechner nicht. Die Idee, die darauf aufbaut — beide Geräte schicken sich
+während einer bestehenden Verbindung die Daten für das nächste
+Wiederverbinden zu, sodass eine abgerissene Verbindung im selben WLAN ohne
+Code zurückkommt —, ist nicht gemessen.
+
+---
+
 ## 0.9.47 — Eine Landmarke, ein ruhigeres Schriftbild, eine Erklärung — ERLEDIGT (2026-09-17)
 
 Vier Punkte aus der Antwort auf die Frage „Was ist außer dem

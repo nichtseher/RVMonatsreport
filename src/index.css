@@ -51,23 +51,39 @@
 }
 
 :root {
-  /* Default Light Theme */
-  --bg-color: #f8fafc;
+  /* Default Light Theme -- "Warmes Gruen" (0.9.66).
+
+     Warme Sandtoene statt des kalten Blaugraus (Tailwind "slate"), das die
+     App bis 0.9.65 trist wirken liess, und Markengruen statt fast schwarzem
+     Navy fuer die Hauptaktion. Jede Paarung unten ist nachgerechnet; die
+     Werte in den Kommentaren sind Kontrastverhaeltnisse nach WCAG. */
+  --bg-color: #f4f1ea;
   --card-bg: #ffffff;
-  --primary: #1e293b;
+  /* Weiss auf #13795b: 5,37:1. Vorher #1e293b -- die haeufigste Taste der
+     App (Plus) war dadurch fast schwarz. */
+  --primary: #13795b;
   --primary-text: #ffffff;
-  --accent: #15803d;
-  --accent-hover: #166534;
+  /* Als Schrift: 5,37:1 auf der Karte, 4,76:1 auf --bg-color. */
+  --accent: #13795b;
+  --accent-hover: #0f6049;
   /* Schriftfarbe AUF der Akzentflaeche -- pro Theme lesbar gewaehlt */
   --accent-text: #ffffff;
-  --text-color: #0f172a;
-  --text-muted: #475569;
+  /* 15,1:1 auf --bg-color, 6,35:1 fuer --text-muted ebendort. */
+  --text-color: #1d1c1a;
+  --text-muted: #5c574f;
   /* Erfuellt WCAG 1.4.11 (3:1) fuer Bedienelement-Umrisse auf BEIDEN Flaechen:
-     3,24:1 gegen die weisse Karte und 3,10:1 gegen --bg-color. Der Wert war
-     bis 0.9.7 nur gegen die weisse Karte geprueft (3,12:1) und lag auf der
-     helleren Flaeche der Zaehlerkarten bei 2,98:1 -- knapp darunter.
-     Vorgeschichte: urspruenglich #cbd5e1 mit nur 1,48:1 (kaum sichtbar). */
-  --border-color: #8290a5;
+     3,97:1 gegen die weisse Karte und 3,59:1 gegen --bg-color (bis 0.9.65:
+     #8290a5 mit 3,24 / 3,10 gegen die alten, kuehleren Flaechen).
+     NUR fuer Bedienelemente gedacht -- Behaelter tragen --card-border, siehe
+     dort. Vorgeschichte: urspruenglich #cbd5e1 mit nur 1,48:1. */
+  --border-color: #857f74;
+  /* Haarlinie fuer BEHAELTER (Karten, Trennlinien), nicht fuer Bedienelemente.
+     WCAG 1.4.11 verlangt 3:1 nur fuer das, was man bedient -- dass bis 0.9.65
+     jede Karte denselben kraeftigen Umriss trug wie eine Taste, hat die
+     Oberflaeche wie ein Drahtgittermodell aussehen lassen. In den
+     Hochkontrast-Themes ist sie bewusst gleich --border-color: Dort sind
+     kraeftige Rahmen gewollt. */
+  --card-border: #e6e0d5;
   --border-focus: #2563eb;
   /* Schwebeflaeche fuer Bedienelemente, deren Text --text-color bleibt
      (z. B. "Abbrechen"-Tasten, Zurueck-Pfeile) -- ausgelagert aus 28
@@ -80,25 +96,32 @@
      gemessen 2026-09-19). --hover-text existiert nur deshalb: eine
      Schwebeflaeche laesst sich ohne Farbwechsel der Schrift nicht auf ein
      Ein-Paar-Theme wie Hochkontrast anwenden. */
-  --hover-bg: var(--border-color);
+  /* Seit 0.9.66 eine eigene helle Flaeche statt der Umleitung auf
+     --border-color: Der neue, waermere Umriss (#857f74) traegt die Schrift
+     nur mit 4,29:1 -- als Schwebeflaeche unter normalem Text zu wenig.
+     #e9e3d8 unter --text-color: 13,1:1. */
+  --hover-bg: #e9e3d8;
   --hover-text: var(--text-color);
-  --danger: #dc2626;
+  /* #c81e1e statt #dc2626: Als Schrift auf der waermeren --bg-color kam
+     #dc2626 nur noch auf 4,28:1, jetzt 5,10:1 (5,75:1 auf der Karte). */
+  --danger: #c81e1e;
   --alert-bg: #fef9c3;
   --alert-border: #eab308;
   --alert-text: #854d0e;
   --input-bg: #ffffff;
-  --total-bg: #f0fdf4;
-  --total-text: #15803d;
-  --custom-bg: #f8fafc;
-  --modal-bg: rgba(15, 23, 42, 0.75);
+  --total-bg: #e0f3ea;
+  /* 7,6:1 auf --total-bg */
+  --total-text: #0a5641;
+  --custom-bg: #f7f4ee;
+  --modal-bg: rgba(29, 25, 18, 0.72);
 
   /* Semantische Statusfarben. Ersetzen die fest verdrahteten Palettenklassen
      (bg-green-50, text-amber-800 ...), die jede Theme-Wahl ignorieren. Je
      Status ein Dreiklang aus Flaeche, Rand und Schrift -- Schrift auf Flaeche
      immer ueber 4,5:1, Rand auf Flaeche immer ueber 3:1. */
-  --success-bg: #f0fdf4;
-  --success-border: #15803d;
-  --success-text: #14532d;
+  --success-bg: #e0f3ea;
+  --success-border: #13795b;
+  --success-text: #0a5641;
   --warning-bg: #fffbeb;
   --warning-border: #b45309;
   --warning-text: #78350f;
@@ -123,30 +146,47 @@
      --accent zusammenfallen. Je Kategorie: Vollton, weiche Flaeche, Schrift.
      In den Hochkontrast-Themes fallen alle vier bewusst auf das eine Farbpaar
      zusammen; dort tragen Beschriftung und Symbol die Unterscheidung. */
-  --cat-1: #15803d;
-  --cat-1-soft: #f0fdf4;
-  --cat-1-text: #14532d;
-  --cat-2: #b45309;
-  --cat-2-soft: #fffbeb;
-  --cat-2-text: #78350f;
-  --cat-3: #4338ca;
-  --cat-3-soft: #eef2ff;
-  --cat-3-text: #312e81;
-  --cat-4: #1d4ed8;
-  --cat-4-soft: #eff6ff;
-  --cat-4-text: #1e3a8a;
+  /* Schrift auf weicher Flaeche: 7,6 / 6,4 / 7,8 / 6,8:1. Die Volltoene
+     tragen als Nicht-Text (Symbol, Kante) je ueber 3:1 gegen ihre Flaeche. */
+  --cat-1: #0f7b5f;
+  --cat-1-soft: #e0f3ea;
+  --cat-1-text: #0a5641;
+  --cat-2: #b9560a;
+  --cat-2-soft: #fcead8;
+  --cat-2-text: #8a3f06;
+  --cat-3: #6b3fd4;
+  --cat-3-soft: #ede7fd;
+  --cat-3-text: #4e2aa9;
+  --cat-4: #1d6db3;
+  --cat-4-soft: #e1edf9;
+  --cat-4-text: #15528a;
+  /* Kraeftigere Flaeche fuer die Schnell-Kacheln (0.9.66): Dort ist die
+     Kachel selbst das Bedienelement und soll ihren Bereich zeigen, nicht nur
+     ein Symbol darin. Die Schrift darauf: 7,2 / 6,1 / 7,3 / 6,4:1. */
+  --cat-1-tile: #d9f0e4;
+  --cat-2-tile: #fbe3cc;
+  --cat-3-tile: #e6defc;
+  --cat-4-tile: #d8e7f7;
+
+  /* Aktive Station der Hauptnavigation: weiche Pille statt nur farbiger
+     Schrift. Schrift darauf 7,5:1. */
+  --nav-active-bg: #ddf3ea;
+  --nav-active-text: #0a5641;
 
   /* Fokus-Schein. Der Ring selbst ist --border-focus; das hier ist der weiche
      Hof darum. In den Hochkontrast-Themes bewusst deckend statt transparent. */
   --focus-glow: rgba(37, 99, 235, 0.28);
 
   /* Elevation. Vorher ad hoc (shadow-lg, feste rgba-Werte). Bewusst weich und
-     zurueckhaltend -- Tiefe soll Struktur zeigen, nicht auffallen.
+     zurueckhaltend -- Tiefe soll Struktur zeigen, nicht auffallen. Seit 0.9.66
+     warm getoent (Braunschwarz statt Blauschwarz) und etwas weiter gestreut:
+     Mit der Haarlinie statt des kraeftigen Umrisses traegt der Schatten jetzt
+     die Abgrenzung der Karte mit.
      rv--Praefix aus demselben Grund wie bei den Radien: --shadow-* gehoert in
      Tailwind 4 den shadow-*-Utilities. */
-  --rv-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08);
-  --rv-shadow-md: 0 2px 4px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.08);
-  --rv-shadow-lg: 0 4px 8px rgba(15, 23, 42, 0.07), 0 12px 32px rgba(15, 23, 42, 0.12);
+  --rv-shadow-sm: 0 1px 2px rgba(40, 32, 20, 0.05), 0 6px 18px rgba(40, 32, 20, 0.07);
+  --rv-shadow-md: 0 2px 6px rgba(40, 32, 20, 0.08), 0 12px 28px rgba(40, 32, 20, 0.10);
+  --rv-shadow-lg: 0 4px 10px rgba(40, 32, 20, 0.08), 0 18px 40px rgba(40, 32, 20, 0.14);
 
   /* Font Size Multipliers */
   --font-scale: 1;
@@ -169,34 +209,56 @@
   --rv-radius-pill: 999px;
 }
 
+/* Native Bedienelemente -- das Kalendersymbol im Monatsfeld, Scrollleisten,
+   Auswahllisten -- zeichnet der Browser nach `color-scheme`. Ohne Angabe
+   rechnet er hell: Im dunklen Schema stand das Kalendersymbol mit 1,16:1 auf
+   dem Feld, in beiden Hochkontrast-Schemata mit 1:1, also unsichtbar
+   (gemessen 2026-09-26). `data-dark` setzt die App passend zum Schema --
+   derselbe Schalter wie fuer Tailwinds dark:-Varianten oben. */
+:root {
+  color-scheme: light;
+}
+:root[data-dark="true"] {
+  color-scheme: dark;
+}
+
 /* Dark Theme */
 [data-theme="dark"] {
-  --bg-color: #020617;
-  --card-bg: #0f172a;
-  /* #2563eb statt #3b82f6: weisse Schrift erreicht damit 5,17:1 (vorher 3,68:1) */
-  --primary: #2563eb;
-  --primary-text: #ffffff;
-  --accent: #22c55e;
-  --accent-hover: #4ade80;
+  /* Warmes Dunkelgruen statt Blauschwarz (0.9.66), passend zum hellen Schema. */
+  --bg-color: #0e1311;
+  --card-bg: #171e1b;
+  /* Seit 0.9.66 Mint mit dunkler Schrift statt Blau mit weisser (9,7:1). Das
+     dunkle Schema folgt damit derselben Markenfarbe wie das helle. */
+  --primary: #7be0b8;
+  --primary-text: #062b20;
+  --accent: #3ddc97;
+  --accent-hover: #6ee7b7;
   --accent-text: #052e16;
-  --text-color: #f8fafc;
-  --text-muted: #94a3b8;
-  /* 3,09:1 gegen die dunkle Karte (vorher #1e293b mit nur 1,22:1) */
-  --border-color: #556780;
+  --text-color: #edf2ef;
+  /* 7,9:1 auf der Karte, 8,7:1 auf --bg-color */
+  --text-muted: #a7b3ad;
+  /* 3,43:1 gegen die dunkle Karte, 3,75:1 gegen --bg-color
+     (vorher #556780 mit 3,09:1; urspruenglich #1e293b mit nur 1,22:1) */
+  --border-color: #66736d;
+  --card-border: #2a3530;
+  /* Eigene Schwebeflaeche: Der helle Wert aus :root wuerde hier die helle
+     Schrift verschlucken. */
+  --hover-bg: #26302b;
   --border-focus: #60a5fa;
   --danger: #ef4444;
-  --alert-bg: #0f172a;
-  --alert-border: #3b82f6;
-  --alert-text: #93c5fd;
-  --input-bg: #020617;
-  --total-bg: #020617;
-  --total-text: #22c55e;
-  --custom-bg: #0f172a;
-  --modal-bg: rgba(2, 6, 23, 0.9);
+  --alert-bg: #221c0e;
+  --alert-border: #eab308;
+  /* 11,7:1 */
+  --alert-text: #fcd34d;
+  --input-bg: #101714;
+  --total-bg: #13302a;
+  --total-text: #8feac3;
+  --custom-bg: #171e1b;
+  --modal-bg: rgba(0, 0, 0, 0.8);
 
-  --success-bg: #052e16;
-  --success-border: #22c55e;
-  --success-text: #86efac;
+  --success-bg: #11271f;
+  --success-border: #3ddc97;
+  --success-text: #8feac3;
   --warning-bg: #2e1a05;
   --warning-border: #f59e0b;
   --warning-text: #fcd34d;
@@ -211,18 +273,26 @@
   --danger-solid: #dc2626;
   --danger-solid-text: #ffffff;
 
-  --cat-1: #22c55e;
-  --cat-1-soft: #052e16;
-  --cat-1-text: #86efac;
-  --cat-2: #f59e0b;
-  --cat-2-soft: #2e1a05;
-  --cat-2-text: #fcd34d;
-  --cat-3: #818cf8;
-  --cat-3-soft: #1e1b4b;
-  --cat-3-text: #c7d2fe;
-  --cat-4: #3b82f6;
-  --cat-4-soft: #0b1e3d;
-  --cat-4-text: #93c5fd;
+  --cat-1: #3ddc97;
+  --cat-1-soft: #11271f;
+  --cat-1-text: #8feac3;
+  --cat-2: #f59e4b;
+  --cat-2-soft: #2c1d10;
+  --cat-2-text: #fbc58f;
+  --cat-3: #a98bfa;
+  --cat-3-soft: #221a38;
+  --cat-3-text: #cdbdfd;
+  --cat-4: #5aa9f0;
+  --cat-4-soft: #10233a;
+  --cat-4-text: #a6cef6;
+  --cat-1-tile: #13302a;
+  --cat-2-tile: #33220f;
+  --cat-3-tile: #2a2045;
+  --cat-4-tile: #132b45;
+
+  /* 9,6:1 */
+  --nav-active-bg: #16352a;
+  --nav-active-text: #9feacb;
 
   --focus-glow: rgba(96, 165, 250, 0.32);
 
@@ -294,6 +364,15 @@
   --cat-4: #ffffff;
   --cat-4-soft: #000000;
   --cat-4-text: #ffffff;
+  /* 0.9.66: Kacheln schwarz, Rahmen kraeftig, aktive Station als Tausch der
+     beiden Farben -- Hochkontrast kennt genau ein Farbpaar. */
+  --cat-1-tile: #000000;
+  --cat-2-tile: #000000;
+  --cat-3-tile: #000000;
+  --cat-4-tile: #000000;
+  --card-border: #ffffff;
+  --nav-active-bg: #ffffff;
+  --nav-active-text: #000000;
 
   --focus-glow: #ffff00;
 
@@ -357,6 +436,13 @@
   --cat-4: #ffff00;
   --cat-4-soft: #000000;
   --cat-4-text: #ffff00;
+  --cat-1-tile: #000000;
+  --cat-2-tile: #000000;
+  --cat-3-tile: #000000;
+  --cat-4-tile: #000000;
+  --card-border: #ffff00;
+  --nav-active-bg: #ffff00;
+  --nav-active-text: #000000;
 
   --focus-glow: #ffffff;
 
