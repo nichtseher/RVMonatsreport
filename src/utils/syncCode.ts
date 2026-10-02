@@ -36,17 +36,44 @@ export async function compressString(
   }
 }
 
+/**
+ * Obergrenze für entpackte Daten (0.9.72). Ein Code ist Eingabe von außen: Ein
+ * paar hundert Kilobyte Deflate können sich zu Gigabyte entpacken und den Tab
+ * zum Absturz bringen, ohne dass auch nur ein Zeichen davon gültig sein muss.
+ * Ein vollständiger Datenstand (Archiv, Schichten, Notizen über Jahre) liegt bei
+ * wenigen hundert Kilobyte -- 32 MiB sind das Hundertfache.
+ */
+export const MAX_ENTPACKT_BYTES = 32 * 1024 * 1024;
+
 export async function decompressString(base64: string, compressed: boolean): Promise<string> {
   const bytes = base64ToBytes(base64);
   if (!compressed) {
+    if (bytes.length > MAX_ENTPACKT_BYTES) throw new Error("Der Code ist zu groß.");
     return new TextDecoder().decode(bytes);
   }
   if (typeof DecompressionStream === "undefined") {
     throw new Error("Dieses Gerät unterstützt die Dekomprimierung nicht.");
   }
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
-  const buffer = await new Response(stream).arrayBuffer();
-  return new TextDecoder().decode(new Uint8Array(buffer));
+  const leser = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw")).getReader();
+  const teile: Uint8Array[] = [];
+  let gesamt = 0;
+  for (;;) {
+    const { done, value } = await leser.read();
+    if (done) break;
+    gesamt += value.length;
+    if (gesamt > MAX_ENTPACKT_BYTES) {
+      await leser.cancel();
+      throw new Error("Der Code ist zu groß.");
+    }
+    teile.push(value);
+  }
+  const alles = new Uint8Array(gesamt);
+  let stelle = 0;
+  for (const teil of teile) {
+    alles.set(teil, stelle);
+    stelle += teil.length;
+  }
+  return new TextDecoder().decode(alles);
 }
 
 /** Kryptografisch sichere, kurze Transfer-ID */

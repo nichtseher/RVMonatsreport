@@ -2,6 +2,7 @@ import { useCallback, useEffect } from "react";
 import {
   AppTab,
   HistoryRecord,
+  Loeschmarken,
   ReportData,
   SectionsConfig,
   YearlyCarryover, Bestandsposten,
@@ -35,6 +36,9 @@ export interface GeraeteSyncParameter {
   setCarryover: (uebertrag: YearlyCarryover) => void;
   reportData: ReportData | null;
   setReportData: (daten: ReportData) => void;
+  /** Gelöschte Archivmonate (0.9.72) -- reisen mit, damit Löschen auch wandert. */
+  geloeschteMonate: Loeschmarken;
+  setGeloeschteMonate: (marken: Loeschmarken) => void;
 
   /** Aus dem Live-Sync-Dienst: Die Verbindung ist abgerissen. */
   liveSyncFailed: boolean;
@@ -67,6 +71,7 @@ export function useGeraeteSync(p: GeraeteSyncParameter): GeraeteSync {
     carryover, setCarryover,
     bestand, setBestand,
     reportData, setReportData,
+    geloeschteMonate, setGeloeschteMonate,
     liveSyncFailed, zeigeAbbruchHinweis,
     announceToAriaAndSpeech, triggerToast, setActiveTab, onPersistFailure,
   } = p;
@@ -88,8 +93,11 @@ export function useGeraeteSync(p: GeraeteSyncParameter): GeraeteSync {
       carryover,
       bestand,
       reportData,
+      // Nur wenn es welche gibt: Ohne Loeschungen bleibt das Paket Byte fuer
+      // Byte das der Vorgaengerfassung.
+      ...(Object.keys(geloeschteMonate).length > 0 ? { geloeschteMonate } : {}),
     });
-  }, [appFields, history, carryover, bestand, reportData]);
+  }, [appFields, history, carryover, bestand, reportData, geloeschteMonate]);
 
   /**
    * Gemeinsame Grundlage fuer "Ersetzen" beim Geraete-Sync und fuer das
@@ -121,8 +129,14 @@ export function useGeraeteSync(p: GeraeteSyncParameter): GeraeteSync {
       */
       if (Array.isArray(paket.bestand)) setBestand(paket.bestand);
       if (paket.reportData) setReportData(paket.reportData);
+      // Ersetzen heisst auch: Die Loeschmarken des Pakets gelten, keine
+      // eigenen daneben. Ein aelteres Paket ohne Marken leert sie.
+      setGeloeschteMonate(paket.geloeschteMonate ?? {});
     },
-    [setAppFields, setHistory, setCarryover, setBestand, setReportData, onPersistFailure],
+    [
+      setAppFields, setHistory, setCarryover, setBestand, setReportData,
+      setGeloeschteMonate, onPersistFailure,
+    ],
   );
 
   const handleSyncImport = useCallback(
@@ -148,11 +162,17 @@ export function useGeraeteSync(p: GeraeteSyncParameter): GeraeteSync {
         const parsed = geprueft.paket;
         if (strategy === "merge") {
           const merged = mergeSyncPayload(
-            { appFields, history: history || {}, carryover, reportData },
+            { appFields, history: history || {}, carryover, reportData, geloeschteMonate },
             parsed,
           );
           setAppFields(merged.appFields);
           setHistory(merged.history);
+          // Nur schreiben, wenn sich etwas geaendert hat: Der Live-Abgleich ruft
+          // das im Dreisekundentakt, und jedes Schreiben loest in anderen
+          // Fenstern ein storage-Ereignis aus.
+          if (stableStringify(merged.geloeschteMonate) !== stableStringify(geloeschteMonate)) {
+            setGeloeschteMonate(merged.geloeschteMonate);
+          }
           // Fehler beim Schreiben muessen sichtbar werden -- gerade beim
           // Zusammenfuehren, wo der Nutzer glaubt, beide Geraete seien gleichauf.
           persistHistory(merged.history, onPersistFailure, "sync-zusammenfuehren");
@@ -180,8 +200,8 @@ export function useGeraeteSync(p: GeraeteSyncParameter): GeraeteSync {
       }
     },
     [
-      appFields, history, carryover, reportData,
-      setAppFields, setHistory, setCarryover, setReportData,
+      appFields, history, carryover, reportData, geloeschteMonate,
+      setAppFields, setHistory, setCarryover, setReportData, setGeloeschteMonate,
       announceToAriaAndSpeech, triggerToast, setActiveTab,
       ersetzeGesamtstand, onPersistFailure,
     ],

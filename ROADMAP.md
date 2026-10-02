@@ -1059,6 +1059,84 @@ reinen Prüfungen zu `verrechneSchicht` abgedeckt, über die Oberfläche **nicht
 
 ---
 
+## 0.9.72 — Was still verloren ging — ERLEDIGT (2026-10-02)
+
+Auftrag: „schau dir nochmals alles an und analysiere den code", dann „setze
+alles so um". Der Befund war ein einziger Gedanke in vier Gestalten: **Zwei
+Stellen, die denselben Monat beschreiben (Bericht und Archiv-Abbild), waren
+nicht mehr deckungsgleich, und der Abgleich baut den Bericht aus dem Archiv
+neu.** Nichts davon erzeugte eine Meldung.
+
+| Befund | Nachgestellt in der echten App | Ursache | Behoben durch |
+|---|---|---|---|
+| Notfallkopie schlägt neueren Stand | Hintergrund → zurück → 4 weitere Tipps → Abbruch ohne Hintergrund-Ereignis: **1 von 5 Tipps** übrig | Die Kopie wurde nie verworfen | `schreibeBericht` räumt sie nach bestätigtem Schreiben weg (Zähler `notfallFolge`) |
+| Abgleich kappt, was getippt wird | zwei gekoppelte Fenster: Notiz mit 91 Zeichen, **die ersten 12 fehlten auf beiden Geräten**; Gegenprobe mit Verzögerung 0: vollständig | Archiv-Abbild hinkt bis 1 s nach (0.9.59), der Bericht wird daraus gebaut | `mergeSyncPayload` legt den laufenden Monat beider Seiten über den Archiveintrag, nur bei echtem Unterschied |
+| Leerer Monat bleibt im Archiv stehen | Zähler 2 → leer: Bericht 0, Archiv **weiter 2**; gekoppelt: gelöschte Schicht samt Stunden kam zurück | `monthHasContent` galt auch für bestehende Einträge | `spiegleMonat`: Wächter nur beim Neuanlegen |
+| Merge kennt keine Löschungen, Notiz nach Datensatz-`savedAt` | (Funktionsebene) Notiz auf A (Mo), B zählt einen Zähler (Di): **Notiz auf beiden weg**; gelöschte Schicht/Monat/Kategorie kehren zurück | Vereinigung ohne Marken; `savedAt` wandert bei jeder Änderung | Zeitstempel je Textfeld, Löschmarken für Schichten und Monate |
+
+**Die Entscheidung, die man beim Weiterbauen kennen muss:** Name und Notiz
+tragen `nameUpdatedAt`/`notesUpdatedAt`, Schichten tragen Löschmarken je Monat
+(`geloeschteSchichten`), gelöschte Archivmonate stehen getrennt in
+`aussendienst_pwa_archiv_geloescht_v1` und reisen als eigenes Paketfeld
+(`geloeschteMonate`) — **nicht** als reservierter Schlüssel im Archiv, den eine
+ältere Fassung per `pruefeSyncPaket` abgelehnt hätte. Ein fehlender Zeitpunkt
+zählt als der älteste, **nie** als `savedAt` (dieselbe Falle wie bei den
+Zählern). Bei Gleichstand schlägt ein Text einen leeren. Ein Monat überlebt eine
+Löschmarke nur, wenn er danach gespeichert wurde — und die Marke wirkt **je
+Seite vor dem Zusammenführen**, sonst flösse alter Inhalt der Gegenseite in
+einen neu angelegten Monat zurück.
+
+**Bewusst NICHT per Löschmarke gelöst: eigene und Standard-Kategorien.** Die
+Feldkonfiguration und der Archiv-Schnappschuss teilen sich eine Variable
+(`setAppFields(fieldsSnapshot)`, 0.9.28; 38 Verwendungsstellen, siehe
+0.9.22). Eine Marke dort ginge beim Anwenden eines Schnappschusses verloren —
+oder, schlimmer, ließe beim Abgleich Felder aus der Ansicht eines alten Monats
+verschwinden (Daten blieben, wären aber unsichtbar). Das Risiko, dass
+sichtbare Daten verschwinden, wiegt schwerer als der Nutzen. Stattdessen sagen
+beide Rückfragen (Kategorie löschen, Formular zurücksetzen) ehrlich, dass die
+Kategorie auf einem gekoppelten Gerät zurückkommen kann. Die saubere Lösung
+bleibt die Trennung in zwei Zustände.
+
+**Datensicherung.** `RVB2:`-Format für Dateien (600.000 PBKDF2-Runden, Version
+und Runden im Kopf, Runden auf 100.000–2.000.000 begrenzt, weil der Kopf Eingabe
+von außen ist); das Altformat bleibt lesbar — ein mit dem Code von 0.9.71
+erzeugter Prüfvektor steht fest in `scripts/checks/backup.ts`. Die Textcodes
+`RVC2` bleiben **bewusst** beim Altformat: Sie leben Minuten, und eine neue
+Fassung hätte gegenüber einer noch nicht aktualisierten (Zwangsfrist 14 Tage)
+„Falsches Passwort" gemeldet — für ein RICHTIGES Passwort, genau die
+Fehlerklasse von 0.9.48. Erkennung beim Einspielen am Inhalt (`{` = Klartext)
+statt am Dateinamen. Mindestlänge 8 gilt nur beim Erzeugen. Abgelehnte Datei:
+Fenster zeigt den Grund (vorher Toast „konnte nicht eingespielt werden" **und**
+dauerhaft „Backup eingespielt", im Produktionsbau gemessen).
+
+**Service Worker.** `CACHE_NAME` v5 → v6 und Aufräumen alter Build-Dateien
+desselben Namens; vorher wuchs der Cache mit jeder Fassung. `server.ts`
+(`npm start`): Die Kopfzeilen-CSP sperrte das Inline-Skript — **gemessen: kein
+Service Worker, keine Fehlermeldung** — und `microphone=()` schaltete das
+Diktat ab.
+
+**Das Tor prüft seit 0.9.72 auch den gebauten Stand** (`npm run check:prod`, im
+Workflow nach „Build Application"): keine Richtlinien-Verstöße in 12 Ansichten,
+Service Worker, Sicherung im neuen und im Altformat, Excel-Export. Der
+Dev-Server, gegen den `check:ui` läuft, kennt weder die Richtlinie noch den
+Service-Worker-Cache — daran sind 0.9.34–0.9.47 dreizehn Fassungen lang
+unbemerkt gescheitert.
+
+**Nicht geprüft, ausdrücklich:**
+- Echte Geräte. Insbesondere ob iOS Safari bei `accept=".json,.enc"` die Datei
+  `….json.enc` auswählbar anbietet — unverändert gelassen, weil nicht messbar.
+- Die Dauer der Schlüsselableitung auf einem Handy. Gemessen nur im kopflosen
+  Chromium am Rechner: **121 ms Export, 101 ms Wiederherstellen** einschließlich
+  600.000 Runden.
+- Der Screenreader-Durchlauf der geänderten Zustände (Wartezustand der
+  Sicherung, die erweiterten Rückfragen).
+- Uhrenabweichung zwischen Geräten: Löschmarken und Zeitstempel sind „letzte
+  Änderung gewinnt" und folgen den Uhren. Wie schon bei den Zählern.
+
+**Folge, die jeder Nutzer sieht:** `sw.js` hat sich geändert. Jeder
+Bestandsnutzer bekommt beim nächsten Online-Start einmalig „Eine neue Fassung
+ist verfügbar" (siehe 0.9.21) — der Changelog sagt es.
+
 ## 0.9.66 — „Warmes Grün": das neue Erscheinungsbild — ERSTE SCHEIBE ERLEDIGT (2026-09-26)
 
 Rückmeldung des Projektinhabers: Die Oberfläche wirke „langweilig und sehr

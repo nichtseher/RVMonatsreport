@@ -26,7 +26,10 @@ const laufend: ReportData = {
   notes: "Messe Frankfurt.",
   values: { vf_schule: 4 },
   valuesUpdatedAt: { vf_schule: "2026-08-20T10:00:00.000Z" },
+  nameUpdatedAt: "2026-08-19T09:00:00.000Z",
+  notesUpdatedAt: "2026-08-20T11:00:00.000Z",
   timeLogs: [],
+  geloeschteSchichten: { alt1: "2026-08-21T08:00:00.000Z" },
 };
 
 const T_VERSAND = "2026-09-03T08:30:00.000Z";
@@ -87,6 +90,30 @@ pruefe("leere Felder werden zu leeren Werten, nicht zu undefined", () => {
   gleich(e.timeLogs, []);
 });
 
+pruefe("Zeitpunkte von Name und Notiz sowie Löschmarken (0.9.72) werden übernommen", () => {
+  // Fehlten sie hier, fiele die Notiz beim naechsten Abgleich wieder auf den
+  // Zeitstempel des ganzen Datensatzes zurueck -- und geloeschte Schichten
+  // kaemen von der Gegenseite wieder.
+  const e = baueArchivEintrag(laufend, felder, undefined, T_SPEICHERN);
+  gleich(e.nameUpdatedAt, "2026-08-19T09:00:00.000Z");
+  gleich(e.notesUpdatedAt, "2026-08-20T11:00:00.000Z");
+  gleich(e.geloeschteSchichten, { alt1: "2026-08-21T08:00:00.000Z" });
+});
+
+pruefe("ohne Zeitpunkte und Marken entstehen auch keine leeren Felder", () => {
+  // Ein leeres Objekt ist ein anderer Text als ein fehlendes Feld und liesse
+  // den Live-Abgleich senden, obwohl sich nichts geaendert hat.
+  const e = baueArchivEintrag(
+    { ...laufend, nameUpdatedAt: undefined, notesUpdatedAt: undefined, geloeschteSchichten: {} },
+    felder,
+    undefined,
+    T_SPEICHERN,
+  );
+  wahr(!("nameUpdatedAt" in e), "nameUpdatedAt als leeres Feld angelegt");
+  wahr(!("notesUpdatedAt" in e), "notesUpdatedAt als leeres Feld angelegt");
+  wahr(!("geloeschteSchichten" in e), "geloeschteSchichten als leeres Objekt angelegt");
+});
+
 pruefe("jedes Feld von HistoryRecord ist abgedeckt", () => {
   /*
     Waechter gegen die naechste Wiederholung: Kommt ein Feld zu HistoryRecord
@@ -96,6 +123,7 @@ pruefe("jedes Feld von HistoryRecord ist abgedeckt", () => {
   const e = baueArchivEintrag(laufend, felder, bisher, T_SPEICHERN);
   const erwartet = [
     "month", "name", "notes", "values", "valuesUpdatedAt",
+    "nameUpdatedAt", "notesUpdatedAt", "geloeschteSchichten",
     "timeLogs", "fieldsSnapshot", "savedAt", "sentAt", "sentUpdatedAt",
   ].sort();
   gleich(Object.keys(e).sort(), erwartet);

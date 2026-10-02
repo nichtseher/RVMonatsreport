@@ -1,15 +1,26 @@
 import React, { useState, useRef } from "react";
 import AnsichtsKopf from "./AnsichtsKopf";
 import { Download, Upload, Share2, Lock, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { encryptData, decryptData } from "../utils/crypto";
+import { encryptBackup, decryptData } from "../utils/crypto";
 import { merkeSicherung } from "../utils/speicherSchutz";
 import { motion } from "framer-motion";
+
+/** Mindestlänge beim ERZEUGEN. Beim Einspielen wird keine Länge geprüft: Alte Sicherungen mit kurzem Passwort müssen gehen. */
+const MIN_PASSWORT = 8;
+
+/**
+ * Ergebnis des Einspielens. Bis 0.9.71 lieferte `onImport` nichts, und das
+ * Fenster meldete in jedem Fall Erfolg -- auch bei einer Datei, die die App
+ * gerade abgelehnt hatte: Toast "konnte nicht eingespielt werden" und darunter
+ * dauerhaft "Backup eingespielt".
+ */
+export type ImportErgebnis = { ok: true } | { ok: false; grund: string };
 
 interface SecureBackupModalProps {
   isOpen: boolean;
   onClose: () => void;
   onExport: () => string; // Returns stringified JSON of all data
-  onImport: (data: string, strategie: "merge" | "replace") => void;
+  onImport: (data: string, strategie: "merge" | "replace") => ImportErgebnis;
 }
 
 export default function SecureBackupModal({ isOpen, onClose, onExport, onImport }: SecureBackupModalProps) {
@@ -29,23 +40,44 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
   const [importErsetzen, setImportErsetzen] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error" | "info"; msg: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /**
+   * Die Ableitung des Schlüssels braucht bewusst Zeit (600.000 Runden, auf dem
+   * Handy ein bis zwei Sekunden). Währenddessen sind die Tasten gesperrt und
+   * der Status sagt, worauf gewartet wird -- sonst tippt man doppelt.
+   */
+  const [beschaeftigt, setBeschaeftigt] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleExport = async () => {
-    try {
-      const dataStr = onExport();
-      let finalData = dataStr;
-      let filename = `zeiterfassung_backup_${new Date().toISOString().split("T")[0]}.json`;
+  /** Inhalt und Dateiname der Sicherung -- verschlüsselt, wenn das Häkchen gesetzt ist. */
+  const bereiteDateiVor = async (): Promise<{ inhalt: string; dateiname: string } | null> => {
+    let inhalt = onExport();
+    let dateiname = `zeiterfassung_backup_${new Date().toISOString().split("T")[0]}.json`;
 
-      if (useEncryption) {
-        if (!password || password.length < 4) {
-          setStatus({ type: "error", msg: "Passwort muss mindestens 4 Zeichen lang sein." });
-          return;
-        }
-        finalData = await encryptData(dataStr, password);
-        filename += ".enc";
+    if (useEncryption) {
+      if (!password || password.length < MIN_PASSWORT) {
+        setStatus({
+          type: "error",
+          msg: `Das Passwort muss mindestens ${MIN_PASSWORT} Zeichen lang sein.`,
+        });
+        return null;
       }
+      setStatus({ type: "info", msg: "Die Sicherung wird verschlüsselt. Das dauert einen Moment." });
+      inhalt = await encryptBackup(inhalt, password);
+      dateiname += ".enc";
+    }
+    return { inhalt, dateiname };
+  };
+
+  const handleExport = async () => {
+    // aria-disabled statt disabled: Die Tastatur bleibt auf der Taste stehen.
+    if (beschaeftigt) return;
+    setBeschaeftigt(true);
+    try {
+      const datei = await bereiteDateiVor();
+      if (!datei) return;
+      const finalData = datei.inhalt;
+      const filename = datei.dateiname;
 
       const blob = new Blob([finalData], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -61,26 +93,27 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
       // Erst hier, nicht vor dem Klick: Die Erinnerung soll nur verstummen,
       // wenn tatsächlich eine Datei entstanden ist.
       merkeSicherung();
-      setStatus({ type: "success", msg: "Backup erfolgreich heruntergeladen." });
+      setStatus({
+        type: "success",
+        msg: useEncryption
+          ? "Backup erfolgreich heruntergeladen – mit Passwort verschlüsselt."
+          : "Backup erfolgreich heruntergeladen.",
+      });
     } catch (error: any) {
       setStatus({ type: "error", msg: `Export fehlgeschlagen: ${error.message}` });
+    } finally {
+      setBeschaeftigt(false);
     }
   };
 
   const handleShare = async () => {
+    if (beschaeftigt) return;
+    setBeschaeftigt(true);
     try {
-      const dataStr = onExport();
-      let finalData = dataStr;
-      let filename = `zeiterfassung_backup_${new Date().toISOString().split("T")[0]}.json`;
-
-      if (useEncryption) {
-        if (!password || password.length < 4) {
-          setStatus({ type: "error", msg: "Passwort muss mindestens 4 Zeichen lang sein." });
-          return;
-        }
-        finalData = await encryptData(dataStr, password);
-        filename += ".enc";
-      }
+      const datei = await bereiteDateiVor();
+      if (!datei) return;
+      const finalData = datei.inhalt;
+      const filename = datei.dateiname;
 
       const blob = new Blob([finalData], { type: "application/json" });
       const file = new File([blob], filename, { type: "application/json" });
@@ -88,7 +121,14 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: "Zeiterfassung Backup",
-          text: "Hier ist mein verschlüsseltes Backup.",
+          /*
+            Der Begleittext sagte bis 0.9.71 IMMER "verschlüsselt" -- auch ohne
+            Häkchen. Er geht als Nachricht an den Empfänger; wer ihn liest,
+            hielte eine Klartextdatei für geschützt.
+          */
+          text: useEncryption
+            ? "Hier ist mein Backup (RV Mobil), mit Passwort verschlüsselt."
+            : "Hier ist mein Backup (RV Mobil) – ohne Passwortschutz.",
           files: [file],
         });
         // Ein abgebrochener Teilen-Dialog landet im catch (AbortError) und
@@ -102,11 +142,18 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
     } catch (error: any) {
       if (error.name !== "AbortError") {
         setStatus({ type: "error", msg: `Teilen fehlgeschlagen: ${error.message}` });
+      } else {
+        // Ein abgebrochener Teilen-Dialog ist kein Fehler -- aber der Hinweis
+        // "wird verschlüsselt" darf nicht stehen bleiben.
+        setStatus(null);
       }
+    } finally {
+      setBeschaeftigt(false);
     }
   };
 
   const handleImportClick = () => {
+    if (beschaeftigt) return;
     fileInputRef.current?.click();
   };
 
@@ -116,22 +163,51 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
 
     const reader = new FileReader();
     reader.onload = async (event) => {
+      setBeschaeftigt(true);
       try {
-        const content = event.target?.result as string;
+        const content = (event.target?.result as string) ?? "";
         let finalDataStr = content;
 
-        if (file.name.endsWith(".enc")) {
+        /*
+          Verschlüsselt oder nicht, entscheidet der INHALT, nicht der Dateiname.
+          Klartext ist JSON und beginnt mit "{". Alles andere ist ein
+          Chiffretext-Kandidat (RVB2:... oder das Altformat, beides Base64).
+          Am Dateinamen ".enc" zu hängen hiess: Eine unterwegs umbenannte Datei
+          (Mail, Messenger, iOS-Dateien) wurde als Klartext gelesen und endete
+          in einem englischen JSON-Syntaxfehler.
+        */
+        const istKlartext = content.trimStart().startsWith("{");
+        if (!istKlartext) {
+          const siehtNachChiffreAus = /^(RVB2:)?[A-Za-z0-9+/=\s]{40,}$/.test(content.trim());
+          if (!siehtNachChiffreAus) {
+            setStatus({
+              type: "error",
+              msg: "Diese Datei enthält keine lesbare RV-Mobil-Sicherung. Bitte wählen Sie eine Datei, die Sie mit „Auf Gerät speichern“ erzeugt haben.",
+            });
+            return;
+          }
           if (!password) {
             setStatus({ type: "error", msg: "Dieses Backup ist verschlüsselt. Bitte tragen Sie oben das Passwort ein und wählen Sie die Datei erneut aus." });
             return;
           }
+          setStatus({ type: "info", msg: "Die Sicherung wird entschlüsselt. Das dauert einen Moment." });
           finalDataStr = await decryptData(content, password);
         }
 
-        // Validate JSON
-        JSON.parse(finalDataStr);
-        
-        onImport(finalDataStr, importErsetzen ? "replace" : "merge");
+        try {
+          JSON.parse(finalDataStr);
+        } catch {
+          throw new Error("Die Datei enthält keine lesbaren Daten. Bitte wählen Sie eine Sicherung aus RV Mobil.");
+        }
+
+        const ergebnis = onImport(finalDataStr, importErsetzen ? "replace" : "merge");
+        if (!ergebnis.ok) {
+          // Die App hat die Datei abgelehnt: Erfolg zu melden waere falsch --
+          // wer nach einem Geraeteverlust zurueckspielt, hielte seine Daten
+          // fuer gerettet.
+          setStatus({ type: "error", msg: ergebnis.grund });
+          return;
+        }
         setStatus({
           type: "success",
           msg: importErsetzen
@@ -140,6 +216,8 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
         });
       } catch (error: any) {
         setStatus({ type: "error", msg: error.message || "Fehler beim Einlesen der Datei." });
+      } finally {
+        setBeschaeftigt(false);
       }
     };
     reader.readAsText(file);
@@ -224,7 +302,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
               />
               <p id="backup-passwort-hinweis" className="text-xs text-[var(--text-muted)] mt-2 leading-relaxed">
                 {useEncryption
-                  ? "Wird zum Verschlüsseln Ihres neuen Backups verwendet – und um ein verschlüsseltes Backup wieder einzuspielen. Ohne dieses Passwort lässt sich die Datei später nicht mehr öffnen."
+                  ? `Mindestens ${MIN_PASSWORT} Zeichen. Wird zum Verschlüsseln Ihres neuen Backups verwendet – und um ein verschlüsseltes Backup wieder einzuspielen. Ohne dieses Passwort lässt sich die Datei später nicht mehr öffnen.`
                   : "Nur nötig, um ein verschlüsseltes Backup (Endung .json.enc) wieder einzuspielen. Für ein neues Backup ohne Passwortschutz können Sie das Feld leer lassen."}
               </p>
             </div>
@@ -250,18 +328,24 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
               onClick={handleExport}
-              className="flex flex-col items-center justify-center gap-2 p-4 rounded-[var(--rv-radius-md)] bg-[var(--primary)] hover:brightness-110 text-[var(--primary-text)] transition-all shadow-[var(--rv-shadow-md)] hover:shadow-[var(--rv-shadow-lg)] focus:ring-4 focus:ring-[var(--border-focus)] outline-none"
+              aria-disabled={beschaeftigt}
+              className="flex flex-col items-center justify-center gap-2 p-4 rounded-[var(--rv-radius-md)] bg-[var(--primary)] hover:brightness-110 text-[var(--primary-text)] transition-all shadow-[var(--rv-shadow-md)] hover:shadow-[var(--rv-shadow-lg)] focus:ring-4 focus:ring-[var(--border-focus)] outline-none aria-disabled:opacity-60 aria-disabled:cursor-wait"
             >
               <Download className="w-6 h-6" />
               <span className="font-bold">Auf Gerät speichern</span>
             </button>
-            
+
+            {/* "Sicher Teilen" stand hier bis 0.9.71 -- auch ohne Häkchen, also bei
+                einer Klartextdatei. Die Beschriftung sagt jetzt, was geschieht. */}
             <button
               onClick={handleShare}
-              className="flex flex-col items-center justify-center gap-2 p-4 rounded-[var(--rv-radius-md)] bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] transition-all shadow-[var(--rv-shadow-md)] hover:shadow-[var(--rv-shadow-lg)] focus:ring-4 focus:ring-[var(--border-focus)] outline-none"
+              aria-disabled={beschaeftigt}
+              className="flex flex-col items-center justify-center gap-2 p-4 rounded-[var(--rv-radius-md)] bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-text)] transition-all shadow-[var(--rv-shadow-md)] hover:shadow-[var(--rv-shadow-lg)] focus:ring-4 focus:ring-[var(--border-focus)] outline-none aria-disabled:opacity-60 aria-disabled:cursor-wait"
             >
               <Share2 className="w-6 h-6" />
-              <span className="font-bold">Sicher Teilen / Senden</span>
+              <span className="font-bold">
+                {useEncryption ? "Verschlüsselt teilen / senden" : "Teilen / senden"}
+              </span>
             </button>
             
             <input
@@ -291,7 +375,9 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
                   <span className="block text-xs text-[var(--text-muted)] mt-0.5 font-normal">
                     Ohne Haken werden beide Stände vereinigt – jede Kategorie einzeln, bei
                     Änderungen an derselben Kategorie gilt die jüngere. Das ist der
-                    empfohlene Weg. Mit Haken wird alles auf diesem Gerät überschrieben.
+                    empfohlene Weg. Schichten und Archivmonate, die Sie inzwischen
+                    gelöscht haben, bleiben dabei gelöscht. Mit Haken wird alles auf
+                    diesem Gerät überschrieben – auch Gelöschtes kommt aus der Datei zurück.
                   </span>
                 </span>
               </label>
@@ -299,7 +385,8 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
 
             <button
               onClick={handleImportClick}
-              className="sm:col-span-2 flex items-center justify-center gap-2 p-4 rounded-[var(--rv-radius-md)] bg-[var(--card-bg)] border-2 border-dashed border-[var(--border-color)] hover:border-[var(--cat-4)] hover:bg-[var(--info-bg)] text-[var(--text-color)] transition-all focus:ring-4 focus:ring-[var(--border-focus)] outline-none group"
+              aria-disabled={beschaeftigt}
+              className="sm:col-span-2 flex items-center justify-center gap-2 p-4 rounded-[var(--rv-radius-md)] bg-[var(--card-bg)] border-2 border-dashed border-[var(--border-color)] hover:border-[var(--cat-4)] hover:bg-[var(--info-bg)] text-[var(--text-color)] transition-all focus:ring-4 focus:ring-[var(--border-focus)] outline-none group aria-disabled:opacity-60 aria-disabled:cursor-wait"
             >
               <Upload className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--cat-4-text)] transition-colors" />
               <span className="font-normal group-hover:text-[var(--cat-4-text)] transition-colors">

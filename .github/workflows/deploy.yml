@@ -78,6 +78,20 @@ jobs:
       - name: Build Application
         run: npm run build
 
+      # Ab 0.9.72, auf Entscheidung des Projektinhabers (2026-10-02). `check:ui`
+      # laeuft gegen den Dev-Server -- ohne die Sicherheitsrichtlinie, ohne
+      # Minifizierung, ohne Service-Worker-Cache. Genau diese drei kommen erst
+      # beim Bauen dazu, und zwei Fehler sind dadurch ungesehen live gegangen:
+      # das Zurueckspielen verschluesselter Sicherungen (0.9.34-0.9.47, dreizehn
+      # Fassungen lang) und `npm start` ohne Service Worker.
+      #
+      # Geprueft wird das eben gebaute `dist/` ueber `vite preview` -- DESHALB
+      # steht der Schritt nach dem Bauen und vor dem Hochladen: Schlaegt er
+      # fehl, wird nichts veroeffentlicht. Der Browser ist schon da (siehe oben);
+      # gebaut wird nicht noch einmal, darum nicht `npm run check:prod`.
+      - name: Gebauten Stand pruefen
+        run: npx playwright test --config=playwright.prod.config.ts
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 

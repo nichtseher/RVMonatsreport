@@ -47,6 +47,15 @@ export interface YearlyCarryover {
  */
 export type ValueTimestamps = Record<string, string>;
 
+/**
+ * Löschmarken (0.9.72): Schicht-ID bzw. Monat -> Zeitpunkt des Löschens (ISO).
+ *
+ * Warum es sie gibt: Der Geräteabgleich vereinigt Schichten und Archivmonate.
+ * Ohne Marke kam alles, was auf einem Gerät gelöscht wurde, vom anderen Gerät
+ * beim nächsten Abgleich zurück -- im Live-Betrieb binnen Sekunden.
+ */
+export type Loeschmarken = Record<string, string>;
+
 export interface ReportData {
   month: string;
   name: string;
@@ -54,7 +63,17 @@ export interface ReportData {
   values: Record<string, number | "">;
   /** Fehlt bei Daten aus älteren Versionen -- dann gilt savedAt des Monats. */
   valuesUpdatedAt?: ValueTimestamps;
+  /**
+   * Wann Name bzw. Notiz zuletzt vom Nutzer geändert wurden (0.9.72). Wie
+   * `valuesUpdatedAt` für die Zähler: Beim Abgleich entscheidet die Änderung am
+   * SELBEN Feld, nicht der Zeitstempel des ganzen Monats. Fehlt bei älteren
+   * Daten -- dann verliert nie ein Text gegen einen leeren.
+   */
+  nameUpdatedAt?: string;
+  notesUpdatedAt?: string;
   timeLogs?: TimeLog[];
+  /** Gelöschte Schichten dieses Monats (Schicht-ID -> Löschzeitpunkt). */
+  geloeschteSchichten?: Loeschmarken;
 }
 
 export interface HistoryRecord {
@@ -64,9 +83,14 @@ export interface HistoryRecord {
   values: Record<string, number | "">;
   /** Fehlt bei Daten aus älteren Versionen -- dann gilt savedAt. */
   valuesUpdatedAt?: ValueTimestamps;
+  /** Siehe `ReportData`: feldweise Zeitstempel für Name und Notiz. */
+  nameUpdatedAt?: string;
+  notesUpdatedAt?: string;
   fieldsSnapshot?: SectionsConfig;
   savedAt: string;
   timeLogs?: TimeLog[];
+  /** Siehe `ReportData`: gelöschte Schichten dieses Monats. */
+  geloeschteSchichten?: Loeschmarken;
 
   /**
    * Wann der Monat an die Vertriebsleitung ging (ISO-Zeit). Fehlt = noch nicht
@@ -106,7 +130,8 @@ export type AppTab =
   | "carryover"
   | "bestand"
   | "sync"
-  | "changelog";
+  | "changelog"
+  | "erklaerung";
 
 export type AccessibilityTheme =
   | "light"

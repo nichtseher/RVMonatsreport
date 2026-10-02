@@ -1,10 +1,18 @@
 import { gruppe, pruefe, gleich } from "../helfer";
-import { mergeValues, mergeSyncPayload, mergeTimeLogs, mergeFields } from "../../src/utils/merge";
+import {
+  mergeValues,
+  mergeSyncPayload,
+  mergeTimeLogs,
+  mergeFields,
+  mergeHistories,
+  mergeLoeschmarken,
+} from "../../src/utils/merge";
 import { stableStringify } from "../../src/utils/stableJson";
 import type {
   SectionsConfig,
   HistoryRecord,
   ReportData,
+  TimeLog,
   YearlyCarryover,
 } from "../../src/types";
 
@@ -198,4 +206,269 @@ pruefe("Schlüsselreihenfolge ändert das Ergebnis nicht", () => {
 pruefe("Reihenfolge in Listen bleibt bedeutungstragend", () => {
   const gleichSortiert = stableStringify([1, 2]) === stableStringify([2, 1]);
   gleich(gleichSortiert, false);
+});
+
+/* ======================================================================
+   0.9.72 -- Was der Abgleich nie wieder verlieren darf.
+
+   Die Faelle sind am 2026-10-02 mit der echten Funktion und zwei gekoppelten
+   Fenstern nachgestellt worden (DEVLOG 0.9.72). Hier stehen sie als reine
+   Pruefung.
+   ====================================================================== */
+
+const ZT = (s: string) => `2026-10-${s}Z`;
+const MONTAG = ZT("05T10:00:00.000");
+const DIENSTAG = ZT("06T09:00:00.000");
+const JETZT = ZT("07T12:00:00.000");
+
+function satz(teil: Partial<HistoryRecord>): HistoryRecord {
+  return { month: "2026-10", name: "M", notes: "", values: {}, savedAt: MONTAG, ...teil };
+}
+function lauf(teil: Partial<ReportData>): ReportData {
+  return { month: "2026-10", name: "M", notes: "", values: {}, timeLogs: [], ...teil };
+}
+function stand(
+  history: Record<string, HistoryRecord>,
+  reportData: ReportData | null,
+  geloeschteMonate?: Record<string, string>,
+) {
+  return { appFields: felder, history, carryover: uebertrag, reportData, geloeschteMonate };
+}
+const schicht = (id: string, tag = "2026-10-01", von = "08:00"): TimeLog => ({
+  id, date: tag, clockIn: von, clockOut: "16:00", breakMinutes: 30,
+  duration: 7.5, officeRatio: 0.5, officeHours: 3.75, fieldHours: 3.75,
+});
+
+gruppe("Frisch Getipptes wird vom Abgleich nicht zurückgesetzt");
+
+/*
+  Der laufende Bericht wird beim Zusammenfuehren aus dem Archiv neu gebaut. Das
+  Archiv hinkt dem Bericht bis zu eine Sekunde hinterher (Bremse des
+  Archiv-Spiegels, 0.9.59); beim Dauertippen in die Notiz durchgehend.
+*/
+const altesArchiv = satz({
+  values: { vf_schule: 4 }, valuesUpdatedAt: { vf_schule: MONTAG }, notes: "",
+});
+
+pruefe("ein frisch getippter Zähler überlebt", () => {
+  const frisch = lauf({ values: { vf_schule: 5 }, valuesUpdatedAt: { vf_schule: DIENSTAG } });
+  const e = mergeSyncPayload(
+    stand({ "2026-10": altesArchiv }, frisch),
+    { appFields: felder, history: { "2026-10": altesArchiv } },
+    JETZT,
+  );
+  gleich(e.reportData?.values.vf_schule, 5, "laufender Bericht");
+  gleich(e.history["2026-10"].values.vf_schule, 5, "Archiv");
+});
+
+pruefe("eine frisch getippte Notiz überlebt", () => {
+  const frisch = lauf({
+    values: { vf_schule: 4 }, valuesUpdatedAt: { vf_schule: MONTAG },
+    notes: "Kunde Meier ruft morgen zurueck", notesUpdatedAt: DIENSTAG,
+  });
+  const e = mergeSyncPayload(
+    stand({ "2026-10": altesArchiv }, frisch),
+    { appFields: felder, history: { "2026-10": altesArchiv } },
+    JETZT,
+  );
+  gleich(e.reportData?.notes, "Kunde Meier ruft morgen zurueck");
+});
+
+pruefe("ohne Unterschied vergibt der Abgleich kein neues savedAt (kein Dauersenden)", () => {
+  const gleichImArchiv = lauf({ values: { vf_schule: 4 }, valuesUpdatedAt: { vf_schule: MONTAG } });
+  const e = mergeSyncPayload(
+    stand({ "2026-10": altesArchiv }, gleichImArchiv),
+    { appFields: felder, history: { "2026-10": altesArchiv } },
+    "2099-01-01T00:00:00.000Z",
+  );
+  gleich(e.history["2026-10"].savedAt, MONTAG);
+});
+
+pruefe("auch mit frischem Stand: zweimal zusammenführen ändert nichts", () => {
+  const frisch = lauf({
+    values: { vf_schule: 5 }, valuesUpdatedAt: { vf_schule: DIENSTAG },
+    notes: "neu", notesUpdatedAt: DIENSTAG,
+  });
+  const fernArchiv = satz({
+    values: { aus_schule: 2 }, valuesUpdatedAt: { aus_schule: DIENSTAG }, savedAt: DIENSTAG,
+  });
+  const fernPaket = { appFields: felder, history: { "2026-10": fernArchiv } };
+  const einmal = mergeSyncPayload(stand({ "2026-10": altesArchiv }, frisch), fernPaket, JETZT);
+  const zweimal = mergeSyncPayload(
+    { ...einmal, carryover: uebertrag },
+    fernPaket,
+    "2030-01-01T00:00:00.000Z",
+  );
+  gleich(stableStringify(zweimal), stableStringify(einmal));
+});
+
+pruefe("beide Geräte landen auf demselben Text (sonst sendet der Live-Abgleich endlos)", () => {
+  const berichtA = lauf({
+    values: { vf_schule: 5 }, valuesUpdatedAt: { vf_schule: DIENSTAG },
+    notes: "Notiz von A", notesUpdatedAt: DIENSTAG,
+  });
+  const archivB = satz({
+    values: { aus_schule: 2 }, valuesUpdatedAt: { aus_schule: DIENSTAG }, savedAt: DIENSTAG,
+  });
+  const berichtB = lauf({ values: { aus_schule: 2 }, valuesUpdatedAt: { aus_schule: DIENSTAG } });
+  const aufA = mergeSyncPayload(
+    stand({ "2026-10": altesArchiv }, berichtA),
+    { appFields: felder, history: { "2026-10": archivB }, reportData: berichtB },
+    JETZT,
+  );
+  const aufB = mergeSyncPayload(
+    stand({ "2026-10": archivB }, berichtB),
+    { appFields: felder, history: { "2026-10": altesArchiv }, reportData: berichtA },
+    JETZT,
+  );
+  gleich(stableStringify(aufA.reportData), stableStringify(aufB.reportData), "laufender Bericht");
+  gleich(aufA.history["2026-10"].values, aufB.history["2026-10"].values, "Zähler im Archiv");
+  gleich(aufA.history["2026-10"].notes, aufB.history["2026-10"].notes, "Notiz im Archiv");
+});
+
+gruppe("Name und Notiz: feldweise statt je Datensatz");
+
+/*
+  Notiz auf A (Montag), B zaehlt am Dienstag nur einen Zaehler. Der Datensatz
+  von B hat den juengeren savedAt -- und loeschte die Notiz auf beiden Geraeten.
+*/
+const aMontag = satz({
+  notes: "Kunde Meier: Rueckruf zugesagt", notesUpdatedAt: MONTAG,
+  values: { vf_schule: 1 }, valuesUpdatedAt: { vf_schule: MONTAG }, savedAt: MONTAG,
+});
+const bDienstag = satz({
+  notes: "", values: { vf_schule: 1, aus_schule: 2 },
+  valuesUpdatedAt: { vf_schule: MONTAG, aus_schule: DIENSTAG }, savedAt: DIENSTAG,
+});
+
+pruefe("die Notiz von A übersteht einen Zähler auf B (beide Richtungen)", () => {
+  const aufB = mergeHistories({ "2026-10": bDienstag }, { "2026-10": aMontag });
+  const aufA = mergeHistories({ "2026-10": aMontag }, { "2026-10": bDienstag });
+  gleich(aufB["2026-10"].notes, "Kunde Meier: Rueckruf zugesagt");
+  gleich(aufA["2026-10"].notes, "Kunde Meier: Rueckruf zugesagt");
+  gleich(aufA["2026-10"].values, { vf_schule: 1, aus_schule: 2 }, "der Zähler von B bleibt");
+});
+
+pruefe("Altdaten ohne Zeitstempel: ein Text schlägt einen leeren", () => {
+  const mitText = satz({ notes: "Messewoche", savedAt: MONTAG });
+  const leer = satz({ notes: "", savedAt: DIENSTAG });
+  gleich(mergeHistories({ "2026-10": mitText }, { "2026-10": leer })["2026-10"].notes, "Messewoche");
+  gleich(mergeHistories({ "2026-10": leer }, { "2026-10": mitText })["2026-10"].notes, "Messewoche");
+});
+
+pruefe("eine bewusst geleerte Notiz setzt sich durch (sie trägt einen Zeitpunkt)", () => {
+  const geleert = satz({ notes: "", notesUpdatedAt: DIENSTAG, savedAt: DIENSTAG });
+  const r = mergeHistories({ "2026-10": aMontag }, { "2026-10": geleert })["2026-10"];
+  gleich(r.notes, "");
+  gleich(r.notesUpdatedAt, DIENSTAG);
+});
+
+pruefe("zwei verschiedene Notizen ohne Zeitstempel: beide Geräte wählen dieselbe", () => {
+  const x = satz({ notes: "Eins", savedAt: MONTAG });
+  const y = satz({ notes: "Zwei", savedAt: MONTAG });
+  gleich(
+    mergeHistories({ "2026-10": x }, { "2026-10": y })["2026-10"].notes,
+    mergeHistories({ "2026-10": y }, { "2026-10": x })["2026-10"].notes,
+  );
+});
+
+pruefe("der Name folgt derselben Regel", () => {
+  const mitName = satz({ name: "Marc Petry", nameUpdatedAt: MONTAG, savedAt: MONTAG });
+  const ohneName = satz({ name: "", savedAt: DIENSTAG, values: { vf_schule: 1 } });
+  gleich(mergeHistories({ "2026-10": ohneName }, { "2026-10": mitName })["2026-10"].name, "Marc Petry");
+});
+
+gruppe("Gelöschte Schichten kehren nicht zurück");
+
+pruefe("Löschmarke: die Schicht bleibt in beide Richtungen gelöscht", () => {
+  const geloescht = satz({ timeLogs: [], geloeschteSchichten: { l1: DIENSTAG }, savedAt: DIENSTAG });
+  const unberuehrt = satz({ timeLogs: [schicht("l1"), schicht("l2", "2026-10-02")] });
+  for (const [lokal, fern] of [[geloescht, unberuehrt], [unberuehrt, geloescht]]) {
+    const r = mergeHistories({ "2026-10": lokal }, { "2026-10": fern })["2026-10"];
+    gleich(r.timeLogs?.map((l) => l.id), ["l2"], "nur die nicht gelöschte Schicht bleibt");
+    gleich(r.geloeschteSchichten, { l1: DIENSTAG });
+  }
+});
+
+pruefe("der laufende Bericht verliert die Löschung nicht wieder (Archiv-Abbild noch alt)", () => {
+  const berichtA = lauf({ timeLogs: [], geloeschteSchichten: { l1: DIENSTAG } });
+  const veraltet = satz({ timeLogs: [schicht("l1")], savedAt: MONTAG });
+  const e = mergeSyncPayload(
+    stand({ "2026-10": veraltet }, berichtA),
+    { appFields: felder, history: { "2026-10": veraltet } },
+    JETZT,
+  );
+  gleich(e.reportData?.timeLogs, [], "laufender Bericht");
+  gleich(e.history["2026-10"].timeLogs, [], "Archiv");
+});
+
+pruefe("Löschmarken werden vereinigt, die jüngere gilt", () => {
+  gleich(
+    mergeLoeschmarken({ a: MONTAG, b: DIENSTAG }, { a: DIENSTAG, c: MONTAG }),
+    { a: DIENSTAG, b: DIENSTAG, c: MONTAG },
+  );
+});
+
+pruefe("Schichten desselben Tages stehen in beiden Richtungen gleich sortiert", () => {
+  const x = [schicht("zz", "2026-10-01", "13:00")];
+  const y = [schicht("aa", "2026-10-01", "08:00")];
+  gleich(mergeTimeLogs(x, y).map((l) => l.id), ["aa", "zz"]);
+  gleich(mergeTimeLogs(y, x).map((l) => l.id), ["aa", "zz"]);
+});
+
+gruppe("Gelöschte Archivmonate kehren nicht zurück");
+
+const august = satz({ month: "2026-08", values: { vf_schule: 3 }, savedAt: MONTAG });
+
+pruefe("ein gelöschter Monat bleibt gelöscht, die Marke wandert mit", () => {
+  const e = mergeSyncPayload(
+    stand({}, null, { "2026-08": DIENSTAG }),
+    { appFields: felder, history: { "2026-08": august } },
+    JETZT,
+  );
+  gleich(Object.keys(e.history), []);
+  gleich(e.geloeschteMonate, { "2026-08": DIENSTAG });
+});
+
+pruefe("die Marke der Gegenseite löscht auch lokal", () => {
+  const e = mergeSyncPayload(
+    stand({ "2026-08": august }, null),
+    { appFields: felder, history: {}, geloeschteMonate: { "2026-08": DIENSTAG } },
+    JETZT,
+  );
+  gleich(Object.keys(e.history), []);
+});
+
+pruefe("ein nach dem Löschen neu bearbeiteter Monat bleibt -- ohne den alten Inhalt der Gegenseite", () => {
+  const neu = satz({
+    month: "2026-08", values: { aus_schule: 1 }, valuesUpdatedAt: { aus_schule: JETZT },
+    savedAt: JETZT,
+  });
+  const e = mergeSyncPayload(
+    stand({ "2026-08": neu }, null, { "2026-08": DIENSTAG }),
+    { appFields: felder, history: { "2026-08": august } },
+    JETZT,
+  );
+  gleich(e.history["2026-08"].values, { aus_schule: 1 });
+});
+
+pruefe("der gespiegelte Stand des Senders (savedAt 1970) fällt unter jede Marke", () => {
+  const e = mergeSyncPayload(
+    stand({}, null, { "2026-09": DIENSTAG }),
+    {
+      appFields: felder, history: {},
+      reportData: lauf({ month: "2026-09", values: { vf_schule: 2 } }),
+    },
+    JETZT,
+  );
+  gleich(Object.keys(e.history), []);
+});
+
+pruefe("kaputte Marken aus einem Fremdpaket bringen den Abgleich nicht zum Absturz", () => {
+  const e = mergeSyncPayload(
+    stand({ "2026-08": august }, null),
+    { appFields: felder, history: {}, geloeschteMonate: "kaputt" as unknown as Record<string, string> },
+    JETZT,
+  );
+  gleich(Object.keys(e.history), ["2026-08"]);
 });

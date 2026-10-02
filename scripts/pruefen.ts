@@ -12,6 +12,7 @@ import "./checks/zeit";
 import "./checks/zusammenfuehren";
 import "./checks/versand";
 import "./checks/archiv-eintrag";
+import "./checks/archiv-spiegel";
 import "./checks/abschluss-check";
 import "./checks/zusammenfassung";
 import "./checks/zeitstempel";
@@ -32,6 +33,7 @@ import "./checks/typografie";
 import "./checks/gestaltung";
 import "./checks/erklaerung";
 import "./checks/inhaltsrichtlinie";
+import "./checks/service-worker";
 import { alleLaufen } from "./helfer";
 
 alleLaufen()

@@ -54,7 +54,17 @@ export function useStempeluhr(p: StempeluhrParameter): Stempeluhr {
    * zweiten Geraet koennte die hier verbuchten Stunden ueberschreiben.
    */
   const verbuche = useCallback(
-    (schicht: TimeLog, richtung: Verrechnung, listeAendern: (bisher: TimeLog[]) => TimeLog[]) => {
+    (
+      schicht: TimeLog,
+      richtung: Verrechnung,
+      listeAendern: (bisher: TimeLog[]) => TimeLog[],
+      /**
+       * Beim Loeschen: die ID der Schicht. Sie bekommt eine Loeschmarke (0.9.72).
+       * Ohne sie kam die Schicht beim naechsten Geraeteabgleich vom anderen
+       * Geraet zurueck -- im Live-Betrieb binnen Sekunden.
+       */
+      geloeschteId?: string,
+    ) => {
       setReportData((prev) => {
         if (!prev) return prev;
         return {
@@ -62,6 +72,14 @@ export function useStempeluhr(p: StempeluhrParameter): Stempeluhr {
           values: verrechneSchicht(prev.values, schicht, richtung),
           valuesUpdatedAt: stempeln(prev.valuesUpdatedAt, [...SCHICHT_FELDER]),
           timeLogs: listeAendern(Array.isArray(prev.timeLogs) ? prev.timeLogs : []),
+          ...(geloeschteId
+            ? {
+                geloeschteSchichten: {
+                  ...(prev.geloeschteSchichten || {}),
+                  [geloeschteId]: new Date().toISOString(),
+                },
+              }
+            : {}),
         };
       });
     },
@@ -105,8 +123,11 @@ export function useStempeluhr(p: StempeluhrParameter): Stempeluhr {
   const handleDeleteLog = useCallback(
     (logToDelete: TimeLog) => {
       triggerHaptic(20);
-      verbuche(logToDelete, "entfernen", (bisher) =>
-        bisher.filter((l) => l.id !== logToDelete.id),
+      verbuche(
+        logToDelete,
+        "entfernen",
+        (bisher) => bisher.filter((l) => l.id !== logToDelete.id),
+        logToDelete.id,
       );
 
       triggerToast("Schicht gelöscht & Stunden korrigiert!");

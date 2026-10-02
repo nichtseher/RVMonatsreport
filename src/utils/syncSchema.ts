@@ -12,7 +12,14 @@
  * Schema-Validierung. Unbekannte Zusatzfelder sind erlaubt, damit ältere und
  * neuere Fassungen zusammenarbeiten können.
  */
-import type { SectionsConfig, HistoryRecord, ReportData, YearlyCarryover, Bestandsposten } from "../types";
+import type {
+  SectionsConfig,
+  HistoryRecord,
+  Loeschmarken,
+  ReportData,
+  YearlyCarryover,
+  Bestandsposten,
+} from "../types";
 
 /** Kennung im Paket, seit 0.9.5 mitgeschrieben. Ältere Pakete haben keine. */
 export const PAKET_APP = "rvmobil";
@@ -26,6 +33,8 @@ export interface SyncPaket {
   carryover?: YearlyCarryover;
   bestand?: Bestandsposten[];
   reportData?: ReportData;
+  /** Gelöschte Archivmonate (0.9.72). Ältere Fassungen kennen das Feld nicht. */
+  geloeschteMonate?: Loeschmarken;
 }
 
 /*
@@ -91,6 +100,38 @@ function schichtenPruefen(schichten: unknown, wo: string): string | null {
   return null;
 }
 
+/**
+ * Löschmarken (0.9.72) -- Schlüssel auf Zeitpunkt. `nurMonate`: Die Schlüssel
+ * sind Archivmonate und müssen das Format JJJJ-MM haben.
+ *
+ * Geprüft wird, weil `mergeLoeschmarken` darauf vertraut, Objekte mit
+ * Text-Werten zu bekommen -- dieselbe Fehlerklasse wie bei den Schichten
+ * (0.9.21): gültiges JSON, falsche Form, Absturz im Zusammenführen.
+ */
+function markenPruefen(marken: unknown, wo: string, nurMonate = false): string | null {
+  if (!istObjekt(marken)) return `Die Löschmarken ${wo} sind beschädigt.`;
+  for (const [schluessel, zeit] of Object.entries(marken)) {
+    if (nurMonate && !MONAT.test(schluessel)) {
+      return `Eine Löschmarke ${wo} nennt „${schluessel}“ statt eines Monats im Format JJJJ-MM.`;
+    }
+    if (typeof zeit !== "string") return `Eine Löschmarke ${wo} hat keinen gültigen Zeitpunkt.`;
+  }
+  return null;
+}
+
+/** Die Zeitpunkte für Name und Notiz und die Schicht-Löschmarken eines Monats. */
+function monatsZusaetzePruefen(datensatz: Record<string, unknown>, wo: string): string | null {
+  for (const feld of ["nameUpdatedAt", "notesUpdatedAt"]) {
+    if (datensatz[feld] !== undefined && typeof datensatz[feld] !== "string") {
+      return `Der Änderungszeitpunkt „${feld}“ ${wo} ist kein Text.`;
+    }
+  }
+  if (datensatz.geloeschteSchichten !== undefined) {
+    return markenPruefen(datensatz.geloeschteSchichten, `der Schichten ${wo}`);
+  }
+  return null;
+}
+
 function werteObjektPruefen(werte: unknown, wo: string): string | null {
   if (!istObjekt(werte)) return `Die Zählerstände ${wo} fehlen oder sind beschädigt.`;
   for (const [id, wert] of Object.entries(werte)) {
@@ -152,7 +193,14 @@ export function pruefeSyncPaket(unbekannt: unknown): PruefErgebnis {
         const schichtFehler = schichtenPruefen(datensatz.timeLogs, `im Archiv-Eintrag ${monat}`);
         if (schichtFehler) return { ok: false, grund: schichtFehler };
       }
+      const zusatzFehler = monatsZusaetzePruefen(datensatz, `im Archiv-Eintrag ${monat}`);
+      if (zusatzFehler) return { ok: false, grund: zusatzFehler };
     }
+  }
+
+  if (unbekannt.geloeschteMonate !== undefined && unbekannt.geloeschteMonate !== null) {
+    const fehler = markenPruefen(unbekannt.geloeschteMonate, "der Archivmonate", true);
+    if (fehler) return { ok: false, grund: fehler };
   }
 
   if (unbekannt.reportData !== undefined && unbekannt.reportData !== null) {
@@ -169,6 +217,8 @@ export function pruefeSyncPaket(unbekannt: unknown): PruefErgebnis {
       const schichtFehler = schichtenPruefen(unbekannt.reportData.timeLogs, "im laufenden Monat");
       if (schichtFehler) return { ok: false, grund: schichtFehler };
     }
+    const zusatzFehler = monatsZusaetzePruefen(unbekannt.reportData, "im laufenden Monat");
+    if (zusatzFehler) return { ok: false, grund: zusatzFehler };
   }
 
   if (unbekannt.carryover !== undefined && unbekannt.carryover !== null) {

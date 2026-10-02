@@ -3,8 +3,10 @@ import { gruppe, pruefe, gleich, wahr } from "../helfer";
 import { pruefeSyncPaket, monateImPaket, PAKET_APP } from "../../src/utils/syncSchema";
 import type { FieldConfig, TimeLog } from "../../src/types";
 
-const { buildTextCode, parseTextCode, istVerschluesselterCode, buildChunks, parseChunk } =
-  await import("../../src/utils/syncCode");
+const {
+  buildTextCode, parseTextCode, istVerschluesselterCode, buildChunks, parseChunk,
+  compressString, decompressString, MAX_ENTPACKT_BYTES,
+} = await import("../../src/utils/syncCode");
 
 const gueltigesPaket = {
   app: PAKET_APP,
@@ -86,9 +88,91 @@ pruefe("unbekannte Zusatzfelder stören nicht", () => {
   wahr(pruefeSyncPaket({ ...gueltigesPaket, neuesFeldAusDerZukunft: { a: 1 } }).ok);
 });
 
+gruppe("Löschmarken und Zeitpunkte (0.9.72)");
+
+const MARKE = "2026-10-06T09:00:00.000Z";
+
+pruefe("ein Paket mit Löschmarken und Zeitpunkten wird angenommen", () => {
+  const paket = {
+    ...gueltigesPaket,
+    geloeschteMonate: { "2026-07": MARKE },
+    history: {
+      "2026-08": {
+        ...gueltigesPaket.history["2026-08"],
+        nameUpdatedAt: MARKE,
+        notesUpdatedAt: MARKE,
+        geloeschteSchichten: { l1: MARKE },
+      },
+    },
+    reportData: {
+      ...gueltigesPaket.reportData,
+      notesUpdatedAt: MARKE,
+      geloeschteSchichten: { l2: MARKE },
+    },
+  };
+  const e = pruefeSyncPaket(paket);
+  wahr(e.ok, e.ok ? "" : e.grund);
+});
+
+pruefe("beschädigte Löschmarken werden abgelehnt, bevor der Abgleich daran abstürzt", () => {
+  const faelle: Array<[string, unknown]> = [
+    ["Monatsmarken sind Text", { ...gueltigesPaket, geloeschteMonate: "kaputt" }],
+    ["Monatsmarken sind eine Liste", { ...gueltigesPaket, geloeschteMonate: ["2026-07"] }],
+    ["Schlüssel ist kein Monat", { ...gueltigesPaket, geloeschteMonate: { Juli: MARKE } }],
+    ["Zeitpunkt ist eine Zahl", { ...gueltigesPaket, geloeschteMonate: { "2026-07": 5 } }],
+    [
+      "Schicht-Marken im Archiv sind Text",
+      { history: { "2026-08": { values: {}, geloeschteSchichten: "kaputt" } } },
+    ],
+    [
+      "Schicht-Marke ohne Zeitpunkt",
+      { history: { "2026-08": { values: {}, geloeschteSchichten: { l1: null } } } },
+    ],
+    [
+      "Notiz-Zeitpunkt ist kein Text",
+      { history: { "2026-08": { values: {}, notesUpdatedAt: 42 } } },
+    ],
+    [
+      "Marken im laufenden Monat sind eine Zahl",
+      { reportData: { month: "2026-09", values: {}, geloeschteSchichten: 7 } },
+    ],
+  ];
+  const durchgerutscht = faelle.filter(([, paket]) => pruefeSyncPaket(paket).ok).map(([name]) => name);
+  gleich(durchgerutscht, [], "diese Fälle wurden fälschlich angenommen");
+});
+
+pruefe("ein Paket ohne Marken (ältere Fassung) bleibt lesbar", () => {
+  wahr(pruefeSyncPaket(gueltigesPaket).ok);
+});
+
 gruppe("Übertragungscodes");
 
 const inhalt = JSON.stringify(gueltigesPaket);
+
+pruefe("ein winziger Code, der sich zu Gigabyte entpacken würde, wird abgelehnt (Dekompressionsbombe)", async () => {
+  // 40 MiB gleichförmiger Text komprimieren auf wenige Dutzend KB. Ohne
+  // Grenze legte das Entpacken die ganze Menge in den Speicher des Tabs.
+  const bombe = "a".repeat(MAX_ENTPACKT_BYTES + 8 * 1024 * 1024);
+  const { data } = await compressString(bombe);
+  wahr(data.length < 200_000, `die Probe ist nicht klein genug (${data.length} Zeichen) -- sie beweist nichts`);
+  const start = Date.now();
+  let abgelehnt = false;
+  try {
+    await decompressString(data, true);
+  } catch {
+    abgelehnt = true;
+  }
+  wahr(abgelehnt, "die Dekompressionsbombe wurde vollständig entpackt");
+  wahr(Date.now() - start < 5000, `das Ablehnen dauerte ${Date.now() - start} ms`);
+  const e = await parseTextCode("RVC1:z:" + data);
+  wahr(!e.ok, "parseTextCode hat die Bombe angenommen");
+});
+
+pruefe("ein gewöhnlicher Datenstand passt weit unter die Grenze und wird entpackt", async () => {
+  const stand = JSON.stringify({ history: Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`2026-${i}`, { notes: "x".repeat(2000) }])) });
+  const { data, compressed } = await compressString(stand);
+  gleich(await decompressString(data, compressed), stand);
+});
 
 pruefe("Textcode ohne Passwort: Umlauf", async () => {
   const code = await buildTextCode(inhalt);

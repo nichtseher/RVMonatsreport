@@ -40,6 +40,9 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./tests",
+  // Der gebaute Stand hat eine eigene Konfiguration (`playwright.prod.config.ts`,
+  // `npm run check:prod`): Er läuft gegen `vite preview`, nicht gegen diesen Server.
+  testIgnore: "produktion.spec.ts",
 
   // SERIELL, UND ZWAR MIT GRUND. Mit mehreren Arbeitern schlugen 9 von 30
   // Prüfungen fehl -- und zwar unregelmäßig: "Formular bei normal" scheiterte,

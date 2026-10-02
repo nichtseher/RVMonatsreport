@@ -26,12 +26,14 @@ import {
 } from "lucide-react";
 
 import {
+  AppTab,
   SectionsConfig,
   AccessibilitySettings,
   FieldConfig,
   HistoryRecord,
 } from "./types";
-import { baueArchivEintrag } from "./utils/archivEintrag";
+import { spiegleMonat } from "./utils/archivEintrag";
+import { markiereGeloescht } from "./utils/merge";
 import { persistHistory, safeSetItem } from "./utils/speicher";
 import { useGeraeteSync } from "./hooks/useGeraeteSync";
 import { useExport } from "./hooks/useExport";
@@ -76,6 +78,8 @@ import OnboardingModal from "./components/OnboardingModal";
   komprimiert) -- Ladezeit zählt im Aussendienst bei schlechtem Netz.
 */
 const SecureBackupModal = React.lazy(() => import("./components/SecureBackupModal"));
+// Nur der Typ -- wird beim Uebersetzen entfernt und zieht die Ansicht nicht ins Startbuendel.
+import type { ImportErgebnis } from "./components/SecureBackupModal";
 const DeviceSyncModal = React.lazy(() => import("./components/DeviceSyncModal"));
 
 /*
@@ -288,7 +292,9 @@ const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
 export default function App() {
   // --- ROUTING / NAVIGATION STATE ---
   // Start-Ansicht per URL-Parameter (für PWA-Shortcuts, z. B. ./?tab=time)
-  const [activeTab, setActiveTab] = useState<"form" | "time" | "stats" | "history" | "options" | "help" | "backup" | "manage" | "carryover" | "bestand" | "sync" | "changelog" | "erklaerung">(() => {
+  // `AppTab` (types.ts) ist die einzige Liste der Ansichten -- die zweite, die hier
+  // stand, kannte "erklaerung" in der ersten nicht.
+  const [activeTab, setActiveTab] = useState<AppTab>(() => {
     try {
       const tab = new URLSearchParams(window.location.search).get("tab");
       // "form" steht hier, obwohl es auch der Standard unten ist: Die
@@ -677,6 +683,7 @@ export default function App() {
     speicherFehler, fehlerZaehler, handleHistoryPersistFailure,
     applyValueDelta, handleValueInput, handleMetaChange,
     lastMonthClose, setLastMonthClose,
+    geloeschteMonate, setGeloeschteMonate,
   } = useBerichtsdaten({
     appFields,
     setShowOnboarding,
@@ -992,15 +999,32 @@ export default function App() {
     const hasData = monthHasContent(reportData);
 
     let updatedHistory = { ...history };
-    if (hasData && currentMonth && reportData) {
-      updatedHistory[currentMonth] = baueArchivEintrag(
+    /*
+      Ein Monat "liegt im Archiv", wenn er Inhalt hat ODER dort schon ein
+      Eintrag steht (0.9.72): Wer den letzten Zaehler wieder geleert hat, hat
+      einen leeren Monat MIT Eintrag -- und der muss den leeren Stand bekommen,
+      nicht auf dem alten stehen bleiben.
+    */
+    const imArchiv = hasData || !!(currentMonth && updatedHistory[currentMonth]);
+    if (currentMonth && reportData) {
+      /*
+        Ueber `spiegleMonat` statt blind neu zu bauen: Es schreibt nur bei einer
+        echten Aenderung. Bis 0.9.71 bekam jeder Monat mit Inhalt beim Verlassen
+        ein neues `savedAt` -- auch ein Archivmonat, den man nur angesehen hat.
+        Mit den Loeschmarken waere das ein Fehler: Ein auf dem anderen Geraet
+        geloeschter Monat gilt als "danach bearbeitet" und kaeme zurueck.
+      */
+      const gespiegelt = spiegleMonat(
+        updatedHistory,
         { ...reportData, month: currentMonth },
         appFields,
-        updatedHistory[currentMonth],
         new Date().toISOString(),
       );
-      setHistory(updatedHistory);
-      persistHistory(updatedHistory, handleHistoryPersistFailure, "month-change");
+      if (gespiegelt) {
+        updatedHistory = gespiegelt;
+        setHistory(updatedHistory);
+        persistHistory(updatedHistory, handleHistoryPersistFailure, "month-change");
+      }
     }
 
     /*
@@ -1027,7 +1051,7 @@ export default function App() {
     */
     if (currentMonth && currentMonth !== newMonth) {
       const abgelegt = leseMonatsfelder();
-      if (hasData) delete abgelegt[currentMonth];
+      if (imArchiv) delete abgelegt[currentMonth];
       else abgelegt[currentMonth] = appFields;
       safeSetItem(MONATSFELDER_SCHLUESSEL, JSON.stringify(abgelegt));
     }
@@ -1035,9 +1059,13 @@ export default function App() {
     // 2. Load the target month state from history or start fresh
     const savedRecord = updatedHistory[newMonth];
     if (savedRecord) {
+      // Hat der Archivstand keinen Namen, bleibt der mitgenommene -- samt seinem
+      // Zeitpunkt (0.9.72), sonst waere er beim Abgleich "der aelteste".
+      const nameAusArchiv = !!savedRecord.name;
+      const nameUpdatedAt = nameAusArchiv ? savedRecord.nameUpdatedAt : reportData?.nameUpdatedAt;
       setReportData({
         month: newMonth,
-        name: savedRecord.name || reportData?.name || "",
+        name: nameAusArchiv ? savedRecord.name : reportData?.name || "",
         notes: savedRecord.notes || "",
         values: savedRecord.values || {},
         // Zeitstempel des Archivstands mitnehmen und fehlende mit dessen
@@ -1049,6 +1077,11 @@ export default function App() {
           savedRecord.savedAt,
         ),
         timeLogs: savedRecord.timeLogs || [],
+        ...(nameUpdatedAt ? { nameUpdatedAt } : {}),
+        ...(savedRecord.notesUpdatedAt ? { notesUpdatedAt: savedRecord.notesUpdatedAt } : {}),
+        ...(savedRecord.geloeschteSchichten
+          ? { geloeschteSchichten: savedRecord.geloeschteSchichten }
+          : {}),
       });
       if (savedRecord.fieldsSnapshot) {
         setAppFields(savedRecord.fieldsSnapshot);
@@ -1066,6 +1099,10 @@ export default function App() {
         notes: "",
         values: {},
         timeLogs: [],
+        // Der mitgenommene Name behaelt seinen Zeitpunkt (0.9.72).
+        ...(reportData?.name && reportData.nameUpdatedAt
+          ? { nameUpdatedAt: reportData.nameUpdatedAt }
+          : {}),
       });
       // Kein Archiveintrag -- also den zuletzt abgelegten Feldstand dieses
       // Monats zurückholen, falls es einen gibt (siehe 1b).
@@ -1111,12 +1148,27 @@ export default function App() {
       tone: "danger",
       onConfirm: () => {
         localStorage.removeItem("aussendienst_pwa_clock_in_time_v2");
-        setReportData((prev) => (prev ? { ...prev, timeLogs: [] } : prev));
+        /*
+          Jede Schicht bekommt eine Loeschmarke (0.9.72). Ohne sie kaeme sie beim
+          naechsten Abgleich vom anderen Geraet zurueck -- und damit genau das,
+          was hier ausdruecklich geloescht werden sollte.
+        */
+        const jetzt = new Date().toISOString();
+        setReportData((prev) => {
+          if (!prev) return prev;
+          const marken = markiereGeloescht(prev.geloeschteSchichten, prev.timeLogs, jetzt);
+          return { ...prev, timeLogs: [], ...(marken ? { geloeschteSchichten: marken } : {}) };
+        });
         setHistory((prev) => {
           if (!prev) return prev;
           const updated: Record<string, HistoryRecord> = {};
           for (const [monat, eintrag] of Object.entries(prev)) {
-            updated[monat] = { ...eintrag, timeLogs: [] };
+            const marken = markiereGeloescht(eintrag.geloeschteSchichten, eintrag.timeLogs, jetzt);
+            updated[monat] = {
+              ...eintrag,
+              timeLogs: [],
+              ...(marken ? { geloeschteSchichten: marken } : {}),
+            };
           }
           persistHistory(updated, handleHistoryPersistFailure, "schichten-loeschen");
           return updated;
@@ -1205,13 +1257,28 @@ export default function App() {
     triggerToast, announceToAriaAndSpeech,
   ]);
 
-  const handleDeleteRecordFromHistory = (monthStr: string) => {
+  /**
+   * Einen Eintrag aus dem Archiv nehmen -- ohne ihn als "gelöscht" zu melden.
+   * Für das Aufräumen beim Rückgängig des Monatsabschlusses: Dort verschwindet
+   * ein leerer Eintrag, den niemand gelöscht hat.
+   */
+  const entferneArchivEintrag = (monthStr: string) => {
     setHistory((prev) => {
       const updated = { ...prev };
       delete updated[monthStr];
       persistHistory(updated, handleHistoryPersistFailure, "delete-record");
       return updated;
     });
+  };
+
+  /**
+   * Ausdrückliches Löschen eines Archivmonats durch den Nutzer. Mit Löschmarke
+   * (0.9.72): Sonst käme der Monat beim nächsten Abgleich vom anderen Gerät
+   * zurück. Wird der Monat danach neu bearbeitet, gilt die neuere Änderung.
+   */
+  const handleDeleteRecordFromHistory = (monthStr: string) => {
+    setGeloeschteMonate({ ...geloeschteMonate, [monthStr]: new Date().toISOString() });
+    entferneArchivEintrag(monthStr);
   };
 
   // --- EXPORT & VERSANDSTAND (ausgelagert nach hooks/useExport) ---
@@ -1274,6 +1341,8 @@ export default function App() {
           return {
             ...prev,
             notes: prevRecord.notes || "",
+            // Die Notiz wird hier bewusst ersetzt -- mit Zeitpunkt (0.9.72).
+            notesUpdatedAt: new Date().toISOString(),
             values: prevRecord.values || {},
             valuesUpdatedAt: stempelnGeaenderte(
               prev.valuesUpdatedAt,
@@ -1434,11 +1503,17 @@ export default function App() {
     setConfirmRequest({
       title: "Kategorie löschen?",
       message: `„${label}“ wird endgültig aus dem Formular entfernt. Der bisher erfasste Wert für diesen Monat geht dabei verloren.`,
-      details: zelle
-        ? [
-            `Diese Kategorie füllt Zeile ${zelle} im Firmenformular. Nach dem Löschen bleibt diese Zeile in jedem Bericht leer.`,
-          ]
-        : undefined,
+      details: [
+        ...(zelle
+          ? [
+              `Diese Kategorie füllt Zeile ${zelle} im Firmenformular. Nach dem Löschen bleibt diese Zeile in jedem Bericht leer.`,
+            ]
+          : []),
+        // Kategorien gleichen sich beim Geräteabgleich als Vereinigung ab. Eine
+        // Löschmarke gibt es hier bewusst nicht (siehe ROADMAP, 0.9.72): Die
+        // Konfiguration und der Archiv-Schnappschuss teilen sich eine Variable.
+        "Auf einem gekoppelten Gerät bleibt die Kategorie bestehen und kann beim nächsten Abgleich zurückkommen. Löschen Sie sie dort ebenfalls.",
+      ],
       confirmLabel: "Endgültig löschen",
       tone: "danger",
       onConfirm: () => {
@@ -1472,6 +1547,9 @@ export default function App() {
       title: "Formular zurücksetzen?",
       message:
         "Alle Formularfelder werden auf den Auslieferungszustand zurückgesetzt. Ihre selbst erstellten Kategorien und die Zählerstände dieses Monats werden dabei gelöscht.",
+      details: [
+        "Auf einem gekoppelten Gerät bleiben die eigenen Kategorien bestehen und können beim nächsten Abgleich zurückkommen. Setzen Sie das Formular dort ebenfalls zurück.",
+      ],
       confirmLabel: "Zurücksetzen",
       tone: "danger",
       onConfirm: () => {
@@ -1531,7 +1609,9 @@ export default function App() {
       `Erfasste Schichten: ${schichten}`,
       "Der Monat bleibt vollständig im Archiv und lässt sich dort jederzeit wieder laden.",
     ];
-    if (!monthHasContent(reportData)) {
+    // Liegt schon ein Eintrag im Archiv, wird er mit dem leeren Stand
+    // aktualisiert (0.9.72) -- dann stimmt "es wird nichts archiviert" nicht.
+    if (!monthHasContent(reportData) && !history?.[currentMonth]) {
       details.unshift(
         "Achtung: In diesem Monat ist noch nichts erfasst – es wird nichts archiviert.",
       );
@@ -1569,7 +1649,7 @@ export default function App() {
     triggerHaptic(25);
 
     if (!monthHasContent(reportData) && history?.[to]) {
-      handleDeleteRecordFromHistory(to);
+      entferneArchivEintrag(to);
     }
     setLastMonthClose(null);
     handleMonthChange(from);
@@ -1593,6 +1673,8 @@ export default function App() {
     setCarryover,
     reportData,
     setReportData,
+    geloeschteMonate,
+    setGeloeschteMonate,
     liveSyncFailed: liveSync.failed,
     zeigeAbbruchHinweis: () => setSyncAbbruchAusgeblendet(false),
     announceToAriaAndSpeech,
@@ -3011,6 +3093,17 @@ export default function App() {
             onClose={() => zurueckZuOptionen("menu-backup")}
             onExport={buildSyncPayload}
             onImport={(dataStr, strategie) => {
+              /*
+                Das Ergebnis geht an das Fenster zurueck (0.9.72): Es zeigt bei
+                einer abgelehnten Datei den Grund statt "Backup eingespielt".
+                Toast und Ansage bleiben -- wer die App nur hoert, hat sonst
+                keine Rueckmeldung.
+              */
+              const abgelehnt = (grund: string): ImportErgebnis => {
+                triggerToast(grund);
+                announceToAriaAndSpeech(grund, true);
+                return { ok: false, grund };
+              };
               try {
                 // Gleiche Struktur-Prüfung wie beim Geräte-Sync: Eine
                 // beschädigte Backup-Datei darf die App nicht in den
@@ -3019,21 +3112,14 @@ export default function App() {
                 // Modus nichts.
                 const geprueft = pruefeSyncPaket(JSON.parse(dataStr));
                 if (!geprueft.ok) {
-                  const text = `Diese Datei konnte nicht eingespielt werden. ${geprueft.grund}`;
-                  triggerToast(text);
-                  announceToAriaAndSpeech(text, true);
-                  return;
+                  return abgelehnt(`Diese Datei konnte nicht eingespielt werden. ${geprueft.grund}`);
                 }
                 // Seit 0.9.17 über denselben Weg wie der Geräte-Sync, damit
                 // "Zusammenführen" auch hier möglich ist. Vorher rief diese
                 // Stelle direkt ersetzeGesamtstand -- eine per Datei
                 // übertragene Sicherung löschte damit den Stand des Zielgeräts.
                 const ok = handleSyncImport(dataStr, strategie, { silent: true });
-                if (!ok) {
-                  triggerToast("Fehler beim Laden des Backups.");
-                  announceToAriaAndSpeech("Fehler beim Laden des Backups.", true);
-                  return;
-                }
+                if (!ok) return abgelehnt("Fehler beim Laden des Backups.");
                 setActiveTab("options");
                 const text =
                   strategie === "merge"
@@ -3041,9 +3127,9 @@ export default function App() {
                     : "Sicherung eingespielt. Die vorhandenen Daten wurden ersetzt.";
                 triggerToast(text);
                 announceToAriaAndSpeech(text, true);
+                return { ok: true };
               } catch (e) {
-                triggerToast("Fehler beim Laden des Backups.");
-                announceToAriaAndSpeech("Fehler beim Laden des Backups.", true);
+                return abgelehnt("Fehler beim Laden des Backups.");
               }
             }}
           />

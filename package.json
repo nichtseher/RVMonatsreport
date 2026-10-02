@@ -1,7 +1,7 @@
 {
   "name": "rv-monatsreport",
   "private": true,
-  "version": "0.9.71",
+  "version": "0.9.72",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -11,7 +11,8 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "check": "tsx scripts/pruefen.ts",
-    "check:ui": "playwright test"
+    "check:ui": "playwright test",
+    "check:prod": "npm run build && playwright test --config=playwright.prod.config.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

@@ -27,6 +27,53 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
       <div className="space-y-6">
         {/*
+          Ausgeschrieben (Regel seit 0.9.40: neu wissen muss): Löschen wandert
+          jetzt zwischen gekoppelten Geräten, die Datensicherung verlangt ein
+          längeres Passwort und hat ein neues Format, eine Schaltfläche heißt
+          anders, und der Hinweis auf eine neue Fassung erscheint einmalig.
+        */}
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.72: Eingaben und Löschungen gehen nicht mehr verloren</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
+            <li>
+              <strong>Abgleich zwischen zwei Geräten:</strong> Wer eine Notiz tippte, während das andere Gerät etwas
+              sendete, verlor die ersten Zeichen – auf beiden Geräten. Das ist behoben. Außerdem geht eine Notiz
+              nicht mehr verloren, nur weil Sie auf dem anderen Gerät einen Zähler ändern.
+            </li>
+            <li>
+              <strong>Löschen wandert mit:</strong> Eine gelöschte Schicht und ein aus dem Archiv gelöschter Monat
+              verschwinden beim Abgleich auch auf dem anderen Gerät und kommen nicht zurück. Ausnahme sind eigene
+              Kategorien: Sie kehren zurück, bis Sie sie auf beiden Geräten gelöscht haben – die Rückfrage vor dem
+              Löschen sagt das.
+            </li>
+            <li>
+              <strong>Zahlen nach einem Abbruch:</strong> Wer kurz in eine andere App gewechselt, danach
+              weitergezählt hatte und dann einen Absturz oder einen leeren Akku erlebte, fand nach dem Neustart
+              die Zahlen von vor dem Wechsel vor. Behoben.
+            </li>
+            <li>
+              <strong>Archiv bei leerem Monat:</strong> Wer den letzten Zähler wieder auf leer setzte oder die einzige
+              Schicht löschte, sah im Archiv weiter die alte Zahl. Jetzt steht dort der leere Stand.
+            </li>
+            <li>
+              <strong>Datensicherung:</strong> Das Passwort braucht mindestens 8 Zeichen. Sicherungen mit Passwort sind
+              jetzt deutlich schwerer zu knacken; Sie lassen sich nur mit dieser und neueren Fassungen der App
+              öffnen. Ältere Sicherungen öffnet weiterhin jede Fassung. „Sicher Teilen / Senden" heißt jetzt „Teilen /
+              senden" – ohne Passwort ist die Datei nicht verschlüsselt, und der Begleittext sagt das jetzt auch. Wird
+              eine Datei abgelehnt, zeigt das Fenster den Grund statt „Backup eingespielt".
+            </li>
+            <li>
+              Wartung: Die App räumt ihren Zwischenspeicher auf, der mit jeder Fassung gewachsen war. Deshalb erscheint
+              einmalig der Hinweis „Eine neue Fassung ist verfügbar" – bitte aktualisieren.
+            </li>
+          </ul>
+        </div>
+
+        {/*
           Ausgeschrieben, weil Bedienelemente an neuen Stellen stehen: Wer den
           Monat bisher im Datumsfeld gewechselt hat, muss wissen, wo er jetzt ist.
         */}

@@ -1,4 +1,8 @@
-const CACHE_NAME = 'rv-report-v5';
+// v6 (0.9.72): Der Name war seit v5 fest, und der Cache wuchs mit jeder
+// veroeffentlichten Fassung -- siehe `raeumeAlteFassungen`. Ein neuer Name
+// loescht beim Aktivieren (`activate`) zugleich die bis dahin angesammelten
+// alten Dateien.
+const CACHE_NAME = 'rv-report-v6';
 
 // Nur eigene, lokale Assets vorab cachen (keine externen Dienste -> DSGVO).
 const ASSETS = [
@@ -34,6 +38,44 @@ async function cacheBuildDateien(cache) {
   const html = await antwort.text();
   const treffer = [...html.matchAll(/(?:src|href)="((?:\.\/|\/)?assets\/[^"]+)"/g)].map((m) => m[1]);
   await Promise.allSettled([...new Set(treffer)].map((url) => cache.add(url)));
+}
+
+// WARUM ALTE FASSUNGEN AUFGERAEUMT WERDEN
+//
+// Der Fetch-Handler unten legt jede Datei, die er vom Netz holt, im Cache ab --
+// auch die gehashten Build-Dateien (assets/index-<hash>.js usw.). Der Cache-Name
+// aenderte sich aber nur mit sw.js selbst, und die aendert sich fast nie. Jede
+// veroeffentlichte Fassung brachte so neue Dateien dazu, und keine ging je
+// wieder weg: gemessen 28 Eintraege nach einer einzigen Sitzung; ein
+// vollstaendiger Satz Build-Dateien sind gut 2 MB, und jede Fassung bringt
+// mindestens das Startbuendel und die geaenderten Ansichten neu dazu.
+//
+// Gerauemt wird erst, NACHDEM die neue Datei im Cache liegt -- sonst gaebe es
+// einen Moment ohne jede Fassung. Eine alte Datei wird nur bei Netzfehler
+// ueberhaupt aus dem Cache ausgeliefert; ein Netz, das antwortet (auch mit 404),
+// geht vor. Wer eine alte Fassung im offenen Fenster hat, verliert also nichts,
+// was er online haette laden koennen.
+const HASH_DATEI = /\/assets\/(.+)-[A-Za-z0-9_-]{8}\.(js|css)$/;
+
+function basisName(url) {
+  try {
+    const treffer = HASH_DATEI.exec(new URL(url).pathname);
+    return treffer ? treffer[1] + '.' + treffer[2] : null;
+  } catch (fehler) {
+    return null;
+  }
+}
+
+function raeumeAlteFassungen(cache, url) {
+  const basis = basisName(url);
+  if (!basis) return Promise.resolve();
+  return cache.keys().then((anfragen) =>
+    Promise.all(
+      anfragen
+        .filter((a) => a.url !== url && basisName(a.url) === basis)
+        .map((a) => cache.delete(a))
+    )
+  );
 }
 
 self.addEventListener('install', (e) => {
@@ -86,9 +128,11 @@ self.addEventListener('fetch', (e) => {
       .then((response) => {
         if (response && response.status === 200 && response.type === 'basic') {
           const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(e.request, responseToCache);
-          });
+          caches.open(CACHE_NAME).then((cache) =>
+            cache
+              .put(e.request, responseToCache)
+              .then(() => raeumeAlteFassungen(cache, e.request.url))
+          );
         }
         return response;
       })
@@ -98,7 +142,9 @@ self.addEventListener('fetch', (e) => {
             return cachedResponse;
           }
           if (e.request.mode === 'navigate') {
-            return caches.match('./index.html') || caches.match('./');
+            // `caches.match` liefert ein Versprechen -- das `||` davor war immer
+            // wahr, die zweite Alternative lief nie.
+            return caches.match('./index.html').then((index) => index || caches.match('./'));
           }
         });
       })

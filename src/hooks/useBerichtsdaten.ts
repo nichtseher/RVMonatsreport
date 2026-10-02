@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { get, set } from "idb-keyval";
-import { HistoryRecord, ReportData, SectionsConfig } from "../types";
+import { HistoryRecord, Loeschmarken, ReportData, SectionsConfig } from "../types";
 import { persistHistory, safeSetItem } from "../utils/speicher";
 import { stempeln, stempelNachtragen } from "../utils/zeitstempel";
-import { baueArchivEintrag } from "../utils/archivEintrag";
+import { spiegleMonat } from "../utils/archivEintrag";
 import { monthHasContent } from "../utils/monatInhalt";
-import { stableStringify } from "../utils/stableJson";
 import { darfSchreiben } from "../utils/einFenster";
 
 /**
@@ -26,6 +25,8 @@ import { darfSchreiben } from "../utils/einFenster";
 const SCHLUESSEL_BERICHT = "aussendienst_pwa_data";
 const SCHLUESSEL_ARCHIV = "aussendienst_pwa_history";
 const SCHLUESSEL_NOTFALL = "aussendienst_pwa_emergency_data";
+/** Gelöschte Archivmonate (0.9.72) -- klein, deshalb im Einstellungs-Tier. */
+const SCHLUESSEL_GELOESCHTE_MONATE = "aussendienst_pwa_archiv_geloescht_v1";
 
 /** Verzoegerung des Speicherns, damit nicht jeder Tastendruck schreibt. */
 const SPEICHER_VERZOEGERUNG_MS = 400;
@@ -87,29 +88,37 @@ export interface Berichtsdaten {
   /** Zaehler aendern und den neuen Wert sofort zurueckgeben. */
   applyValueDelta: (id: string, delta: number) => number;
   handleValueInput: (id: string, val: number | "") => void;
-  handleMetaChange: (key: keyof Omit<ReportData, "values">, val: string) => void;
+  /**
+   * Name oder Notiz ändern. Setzt den Änderungszeitpunkt des Feldes (0.9.72):
+   * Er entscheidet beim Geräteabgleich, welche Fassung gilt.
+   */
+  handleMetaChange: (key: "name" | "notes", val: string) => void;
   /** Wird bei jeder Eingabe geleert -- siehe handleValueChange. */
   setLastMonthClose: React.Dispatch<React.SetStateAction<MonatsAbschluss>>;
   lastMonthClose: MonatsAbschluss;
+  /**
+   * Gelöschte Archivmonate (Monat -> Löschzeitpunkt). Ohne sie käme ein
+   * gelöschter Monat beim nächsten Abgleich vom anderen Gerät zurück.
+   */
+  geloeschteMonate: Loeschmarken;
+  setGeloeschteMonate: (marken: Loeschmarken) => void;
 }
 
-/** Inhaltlicher Fingerabdruck eines Monats -- ohne savedAt. */
-const inhaltsFingerabdruck = (r: {
-  name?: string;
-  notes?: string;
-  values?: Record<string, number | "">;
-  valuesUpdatedAt?: Record<string, string>;
-  timeLogs?: unknown[];
-  fieldsSnapshot?: SectionsConfig;
-}): string =>
-  stableStringify({
-    name: r.name || "",
-    notes: r.notes || "",
-    values: r.values || {},
-    valuesUpdatedAt: r.valuesUpdatedAt || {},
-    timeLogs: r.timeLogs || [],
-    fieldsSnapshot: r.fieldsSnapshot || null,
-  });
+/** Aus localStorage lesen -- ein beschädigter Eintrag darf den Start nicht stören. */
+function ladeLoeschmarken(): Loeschmarken {
+  try {
+    const roh = localStorage.getItem(SCHLUESSEL_GELOESCHTE_MONATE);
+    const gelesen = roh ? JSON.parse(roh) : {};
+    if (!gelesen || typeof gelesen !== "object" || Array.isArray(gelesen)) return {};
+    const aus: Loeschmarken = {};
+    for (const [monat, zeit] of Object.entries(gelesen as Record<string, unknown>)) {
+      if (typeof zeit === "string") aus[monat] = zeit;
+    }
+    return aus;
+  } catch {
+    return {};
+  }
+}
 
 const aktuellerMonat = (): string => {
   const d = new Date();
@@ -171,6 +180,44 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
    * geschrieben -- siehe die Begruendung im catch-Zweig von `loadData`.
    */
   const [ladeFehler, setLadeFehler] = useState(false);
+
+  const [geloeschteMonate, setGeloeschteMonateIntern] = useState<Loeschmarken>(ladeLoeschmarken);
+  const setGeloeschteMonate = useCallback((marken: Loeschmarken) => {
+    setGeloeschteMonateIntern(marken);
+    safeSetItem(SCHLUESSEL_GELOESCHTE_MONATE, JSON.stringify(marken));
+  }, []);
+
+  /*
+    Die Notfallkopie gilt NUR, solange der regulaere Stand nicht bestaetigt ist.
+
+    Sie wird beim Wechsel in den Hintergrund geschrieben und wurde bis 0.9.71
+    nie verworfen. Nach "Hintergrund, zurueck, weitertippen" stand sie
+    deshalb auf dem alten Stand -- und gewann beim naechsten Start gegen den
+    neueren der IndexedDB, wenn die Seite ohne Hintergrund-Ereignis endete
+    (Absturz, leerer Akku). Nachgestellt am 2026-10-02: Von fuenf Tipps blieb
+    einer, und der Start schrieb den alten Stand zurueck.
+
+    `notfallFolge` zaehlt die geschriebenen Kopien. Jede regulaere Speicherung
+    merkt sich die Folge beim START und raeumt die Kopie nach dem Erfolg nur
+    weg, wenn sich die Folge nicht bewegt hat: Eine Kopie, die NACH dem Start
+    dieses Schreibens entstand, ist juenger als das, was jetzt bestaetigt wird.
+    Schlaegt das Schreiben fehl, bleibt die Kopie -- dann ist sie die einzige
+    Sicherung.
+  */
+  const notfallFolge = useRef(0);
+  const schreibeBericht = useCallback((daten: ReportData): Promise<void> => {
+    const start = notfallFolge.current;
+    return set(SCHLUESSEL_BERICHT, daten).then(() => {
+      if (notfallFolge.current !== start) return;
+      try {
+        if (localStorage.getItem(SCHLUESSEL_NOTFALL) !== null) {
+          localStorage.removeItem(SCHLUESSEL_NOTFALL);
+        }
+      } catch {
+        /* Eine liegengebliebene Kopie ist harmlos, ein Fehler hier nicht der Rede wert. */
+      }
+    });
+  }, []);
 
   /**
    * Zentrale Reaktion, wenn ein Archiv-Schreibvorgang fehlschlaegt -- z. B.
@@ -332,7 +379,7 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
       // Ein älteres Fenster schreibt nicht mehr (0.9.67, siehe einFenster.ts):
       // Sein Stand ist veraltet und überschriebe die Einträge des neueren.
       if (!darfSchreiben()) return;
-      set(SCHLUESSEL_BERICHT, reportData)
+      schreibeBericht(reportData)
         .then(() => {
           setSaveStatus("saved");
           setBerichtFehler(false);
@@ -357,7 +404,7 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
         });
     }, SPEICHER_VERZOEGERUNG_MS);
     return () => clearTimeout(t);
-  }, [reportData]);
+  }, [reportData, schreibeBericht]);
 
   // --- Automatisch ins Archiv spiegeln ----------------------------------
   useEffect(() => {
@@ -367,7 +414,6 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
     // Schluessel "undefined" an.
     const daten = reportData;
     if (!daten?.month) return;
-    if (!monthHasContent(daten)) return;
 
     const t = setTimeout(() => {
       setHistory((prev) => {
@@ -376,33 +422,22 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
         // Monat.
         if (!prev) return prev;
 
-        // Ohne inhaltliche Aenderung KEIN neues savedAt und kein Schreibvorgang.
-        // Vorher erzeugte jedes Zusammenfuehren neue Objekte, dadurch lief der
-        // Live-Abgleich endlos im Dreisekundentakt und schrieb dabei
-        // ununterbrochen in die IndexedDB (gemessen 2026-08-02).
-        const bestehend = prev[daten.month];
-        const inhalt = {
-          month: daten.month,
-          name: daten.name,
-          notes: daten.notes,
-          values: daten.values,
-          valuesUpdatedAt: daten.valuesUpdatedAt,
-          timeLogs: daten.timeLogs || [],
-          fieldsSnapshot: appFields,
-        };
-        if (bestehend && inhaltsFingerabdruck(bestehend) === inhaltsFingerabdruck(inhalt)) {
-          return prev;
-        }
+        /*
+          Was geschrieben wird -- und was nicht -- entscheidet `spiegleMonat`
+          (utils/archivEintrag.ts), als reine Funktion mit eigener Pruefung:
 
-        const updated = {
-          ...prev,
-          [daten.month]: baueArchivEintrag(
-            daten,
-            appFields,
-            bestehend,
-            new Date().toISOString(),
-          ),
-        };
+          - Ohne inhaltliche Aenderung KEIN neues savedAt und kein
+            Schreibvorgang. Vorher erzeugte jedes Zusammenfuehren neue Objekte,
+            dadurch lief der Live-Abgleich endlos im Dreisekundentakt und schrieb
+            dabei ununterbrochen in die IndexedDB (gemessen 2026-08-02).
+          - Der Inhaltswaechter (`monthHasContent`) verhindert nur das
+            NEUANLEGEN eines leeren Monats. Bis 0.9.71 galt er auch fuer einen
+            bestehenden Eintrag: Wer den einzigen Zaehler wieder leerte, liess
+            den alten Stand im Archiv stehen.
+        */
+        const updated = spiegleMonat(prev, daten, appFields, new Date().toISOString());
+        if (!updated) return prev;
+
         // Der Erfolgsfall entwarnt die Archiv-Ebene. Ohne ihn bliebe das Banner
         // stehen, bis die App neu geladen wird -- das Versprechen "bleibt
         // sichtbar, bis ein Speichervorgang wieder klappt" waere dann falsch.
@@ -418,6 +453,9 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
     reportData?.notes,
     reportData?.values,
     reportData?.valuesUpdatedAt,
+    reportData?.nameUpdatedAt,
+    reportData?.notesUpdatedAt,
+    reportData?.geloeschteSchichten,
     reportData?.month,
     reportData?.timeLogs,
     appFields,
@@ -434,21 +472,23 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
         // Synchron in localStorage, damit iOS beim Wegwischen der App nichts
         // abschneidet. try/catch statt safeSetItem: Hier darf kein alert()
         // den Wechsel in den Hintergrund blockieren.
+        notfallFolge.current += 1;
         try {
           localStorage.setItem(SCHLUESSEL_NOTFALL, JSON.stringify(reportData));
         } catch (err) {
           console.error("Notfallspeicherung fehlgeschlagen", err);
         }
         // Zusaetzlich der regulaere Weg. Ein Fehler ist hier nicht dramatisch
-        // -- die Notfallkopie greift --, gehoert aber in die Konsole.
-        set(SCHLUESSEL_BERICHT, reportData).catch((err) =>
+        // -- die Notfallkopie greift --, gehoert aber in die Konsole. Gelingt
+        // er, raeumt `schreibeBericht` die Kopie wieder weg.
+        schreibeBericht(reportData).catch((err) =>
           console.error("Sicherung beim Wechsel in den Hintergrund fehlgeschlagen", err),
         );
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [reportData]);
+  }, [reportData, schreibeBericht]);
 
   // --- Zaehler aendern ---------------------------------------------------
   const handleValueChange = useCallback((id: string, val: number | "") => {
@@ -501,10 +541,26 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
     [handleValueChange],
   );
 
+  /**
+   * Name oder Notiz ändern -- und den Zeitpunkt des Feldes mitschreiben (0.9.72).
+   *
+   * Ohne ihn entschied beim Geräteabgleich der Zeitstempel des ganzen Monats,
+   * und der wandert bei jedem Zähler weiter: Wer am Dienstag nur einen Zähler
+   * tippte, löschte damit die Notiz vom Montag -- auf beiden Geräten.
+   */
   const handleMetaChange = useCallback(
-    (key: keyof Omit<ReportData, "values">, val: string) => {
+    (key: "name" | "notes", val: string) => {
       setLastMonthClose(null);
-      setReportData((prev) => (prev ? { ...prev, [key]: val } : prev));
+      const zeit = new Date().toISOString();
+      setReportData((prev) =>
+        prev
+          ? {
+              ...prev,
+              [key]: val,
+              ...(key === "name" ? { nameUpdatedAt: zeit } : { notesUpdatedAt: zeit }),
+            }
+          : prev,
+      );
     },
     [],
   );
@@ -517,5 +573,6 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
     speicherFehler, fehlerZaehler, handleHistoryPersistFailure,
     handleValueChange, applyValueDelta, handleValueInput, handleMetaChange,
     lastMonthClose, setLastMonthClose,
+    geloeschteMonate, setGeloeschteMonate,
   };
 }

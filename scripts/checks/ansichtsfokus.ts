@@ -64,12 +64,21 @@ const ANSICHT_DATEI: Record<string, string> = {
   erklaerung: "components/BarrierefreiheitModal.tsx",
 };
 
-/** Die `activeTab`-Werte, wie sie in App.tsx wirklich deklariert sind. */
+/**
+ * Die `activeTab`-Werte. Seit 0.9.72 gibt es dafür genau EINE Liste, den Typ
+ * `AppTab` in `types.ts`; `App.tsx` benutzt ihn. Vorher stand dieselbe Union
+ * zweimal da (in `App.tsx` und in `types.ts`) -- und die in `types.ts` kannte
+ * "erklaerung" nicht.
+ */
 function ansichtenAusQuelltext(): string[] {
   const app = readFileSync(join(WURZEL, "App.tsx"), "utf8");
-  const zeile = app.match(/const \[activeTab, setActiveTab\] = useState<([^>]+)>/);
-  if (!zeile) return [];
-  return [...zeile[1].matchAll(/"([a-z]+)"/g)].map((t) => t[1]);
+  // Zeigt App.tsx nicht mehr auf den gemeinsamen Typ, wäre die Liste hier
+  // wieder eine zweite Wahrheit.
+  if (!/const \[activeTab, setActiveTab\] = useState<AppTab>/.test(app)) return [];
+  const typen = readFileSync(join(WURZEL, "types.ts"), "utf8");
+  const deklaration = typen.match(/export type AppTab\s*=([^;]+);/);
+  if (!deklaration) return [];
+  return [...deklaration[1].matchAll(/"([a-z]+)"/g)].map((t) => t[1]);
 }
 
 /** Alle Dateien unter `src/`, die die Markierung tragen. */

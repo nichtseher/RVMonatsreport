@@ -76,7 +76,12 @@ const ERWARTET: Record<string, number> = {
   "HelpModal.tsx": 1,
   "HistoryModal.tsx": 1,
   "QuickEntryPanel.tsx": 1,
-  "SecureBackupModal.tsx": 3,
+  // 0.9.72: von 3 auf 4. `beschaeftigt` sperrt die Tasten (aria-disabled, kein
+  // Layoutwechsel) und zeigt einen Hinweis, solange die Schlüsselableitung läuft.
+  // Der Zustand dauert Sekunden, nicht lang genug für die Matrix aus Größen und
+  // Schriften -- gemessen wird er stattdessen in tests/oberflaeche.spec.ts,
+  // "Datensicherung (0.9.72)": gesperrt, Fokus bleibt, axe ohne schwere Verstöße.
+  "SecureBackupModal.tsx": 4,
   "StatsModal.tsx": 2,
   "TimeModal.tsx": 1,
 };

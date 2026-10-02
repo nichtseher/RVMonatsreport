@@ -1,7 +1,7 @@
 import { test, expect, Page, chromium } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 // Für den QR-Weg: Chromium bekommt eine Kamera aus einer Y4M-Datei gespeist.
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 
 /**
  * Oberflächenprüfung: Geometrie und Barrierefreiheit.
@@ -4640,10 +4640,15 @@ test.describe("Grenze der abgeschalteten Stempeluhr", () => {
           q.onsuccess = () => res(q.result);
           q.onerror = () => rej(q.error);
         });
-      const daten = (await lies("aussendienst_pwa_data")) as { timeLogs?: unknown[]; values?: Record<string, number> };
-      const archiv = (await lies("aussendienst_pwa_history")) as Record<string, { timeLogs?: unknown[]; values?: Record<string, number> }>;
+      type Marken = Record<string, string>;
+      const daten = (await lies("aussendienst_pwa_data")) as { timeLogs?: unknown[]; values?: Record<string, number>; geloeschteSchichten?: Marken };
+      const archiv = (await lies("aussendienst_pwa_history")) as Record<string, { timeLogs?: unknown[]; values?: Record<string, number>; geloeschteSchichten?: Marken }>;
       return {
         laufend: daten?.timeLogs?.length ?? -1,
+        // Löschmarken (0.9.72): Ohne sie käme jede Schicht beim nächsten Abgleich
+        // vom gekoppelten Gerät zurück -- genau das, was hier gelöscht wird.
+        markenLaufend: Object.keys(daten?.geloeschteSchichten || {}).sort(),
+        markenArchiv: Object.values(archiv || {}).flatMap((e) => Object.keys(e.geloeschteSchichten || {})).sort(),
         archiv: Object.values(archiv || {}).reduce((s, e) => s + (e.timeLogs?.length || 0), 0),
         zaehlerLaufend: daten?.values?.std_buero ?? null,
         zaehlerArchiv: Object.values(archiv || {})[0]?.values?.s1_1 ?? null,
@@ -4652,6 +4657,14 @@ test.describe("Grenze der abgeschalteten Stempeluhr", () => {
     });
     expect(rest.laufend, "Schichten im laufenden Monat nicht gelöscht").toBe(0);
     expect(rest.archiv, "Schichten im Archiv nicht gelöscht").toBe(0);
+    expect(
+      rest.markenLaufend,
+      "Die gelöschte Schicht des laufenden Monats trägt keine Löschmarke -- ein gekoppeltes Gerät brächte sie zurück",
+    ).toEqual(["t1"]);
+    expect(
+      rest.markenArchiv,
+      "Die gelöschte Schicht des Archivmonats trägt keine Löschmarke",
+    ).toContain("t2");
     /*
       Der wichtigste Teil dieser Prüfung: Die Zählerstände sind der Bericht,
       der an die Vertriebsleitung geht. Das Löschen der Aufzeichnungen darf
@@ -5142,4 +5155,322 @@ test.describe("Zählerzeile bei 440 px", () => {
       ).toBe(befund.zeilen);
     });
   }
+});
+
+/* ======================================================================
+   0.9.72 -- Was nie wieder still verloren gehen darf.
+
+   Alle Fälle dieses Blocks sind am 2026-10-02 in der echten App nachgestellt
+   worden (DEVLOG 0.9.72), jeweils am alten Stand rot und mit der Änderung
+   grün. Ihnen ist gemeinsam, dass nichts davon eine Meldung erzeugte: Die
+   Zahlen, die Notiz, die gelöschte Schicht waren einfach nicht mehr so, wie
+   der Nutzer sie hinterlassen hatte.
+   ====================================================================== */
+
+const leseSpeicher = (p: Page) =>
+  p.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((res) => {
+      const r = indexedDB.open("keyval-store", 1);
+      r.onsuccess = () => res(r.result);
+    });
+    const holen = (k: string) =>
+      new Promise<any>((res) => {
+        const q = db.transaction("keyval").objectStore("keyval").get(k);
+        q.onsuccess = () => res(q.result);
+      });
+    return { bericht: await holen("aussendienst_pwa_data"), archiv: await holen("aussendienst_pwa_history") };
+  });
+
+const monatskarteText = async (p: Page) =>
+  (await p.locator("section[aria-labelledby=\"monatskarte-titel\"]").innerText()).replace(/\s+/g, " ").trim();
+
+test.describe("Eingaben überleben Hintergrund, Absturz und leeren Monat", () => {
+  test("Notfallkopie: nach Zurückholen und Weiterarbeiten gilt der neuere Stand", async ({ browser, baseURL }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Datenhaltung hängt nicht am Geräteprofil");
+    const kontext = await browser.newContext({ baseURL: baseURL as string, viewport: { width: 360, height: 780 } });
+    try {
+      await kontext.addInitScript(() => localStorage.setItem("aussendienst_pwa_onboarding_v1", "1"));
+      const a = await kontext.newPage();
+      await a.goto("/?tab=form");
+      await a.locator("#monatskarte-titel").waitFor({ timeout: 20_000 });
+      const kachel = a.getByRole("button", { name: /Tippen erhöht um/ }).first();
+      const hintergrund = (sichtbar: boolean) =>
+        a.evaluate((s) => {
+          Object.defineProperty(document, "visibilityState", { value: s ? "visible" : "hidden", configurable: true });
+          document.dispatchEvent(new Event("visibilitychange"));
+        }, sichtbar);
+
+      await kachel.click();
+      await a.waitForTimeout(1500);
+      // Die App geht in den Hintergrund (Notfallkopie des Standes "1") und kommt zurück.
+      await hintergrund(false);
+      await a.waitForTimeout(400);
+      await hintergrund(true);
+      for (let i = 0; i < 4; i++) await kachel.click();
+      await a.waitForTimeout(1500);
+      expect(await monatskarteText(a), "vor dem Abbruch").toContain("5 Aktivitäten");
+
+      // Abbruch ohne jedes Hintergrund-Ereignis (Absturz, leerer Akku): Die
+      // Behandlung wird gesperrt, damit nicht doch noch ein frischer Stand entsteht.
+      await a.evaluate(() => {
+        document.addEventListener("visibilitychange", (e) => e.stopImmediatePropagation(), true);
+        window.addEventListener("pagehide", (e) => e.stopImmediatePropagation(), true);
+      });
+      await a.close({ runBeforeUnload: false });
+
+      const b = await kontext.newPage();
+      await b.goto("/?tab=form");
+      await b.locator("#monatskarte-titel").waitFor({ timeout: 20_000 });
+      expect(
+        await monatskarteText(b),
+        "Nach dem Neustart fehlen Eingaben: Die veraltete Notfallkopie hat den neueren Stand der IndexedDB geschlagen",
+      ).toContain("5 Aktivitäten");
+    } finally {
+      await kontext.close();
+    }
+  });
+
+  test("ein wieder geleerter Monat steht auch im Archiv leer da", async ({ browser, baseURL }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Datenhaltung hängt nicht am Geräteprofil");
+    const kontext = await browser.newContext({ baseURL: baseURL as string, viewport: { width: 360, height: 780 } });
+    try {
+      await kontext.addInitScript(() => localStorage.setItem("aussendienst_pwa_onboarding_v1", "1"));
+      const a = await kontext.newPage();
+      await a.goto("/?tab=form");
+      await a.locator("#monatskarte-titel").waitFor({ timeout: 20_000 });
+      const kachel = a.getByRole("button", { name: /Tippen erhöht um/ }).first();
+      const feldName = ((await kachel.getAttribute("aria-label")) || "").split(". Aktueller Stand")[0];
+      await kachel.click();
+      await kachel.click();
+      await a.waitForTimeout(2500);
+      const vorher = await leseSpeicher(a);
+      expect(Object.values(vorher.archiv[vorher.bericht.month].values), "Ausgangslage: Das Archiv kennt die beiden Tipps").toContain(2);
+
+      await a.getByLabel(feldName, { exact: true }).first().fill("");
+      await a.waitForTimeout(2500);
+      const nachher = await leseSpeicher(a);
+      expect(
+        nachher.archiv[nachher.bericht.month].values,
+        "Der Bericht ist leer, das Archiv zeigt noch den alten Stand (der Spiegel hat den leeren Monat übergangen)",
+      ).toEqual(nachher.bericht.values);
+
+      await a.goto("/?tab=history");
+      await a.waitForTimeout(1500);
+      expect(await a.locator("main").innerText(), "Das Archiv nennt noch die gelöschte Zahl").not.toContain("Zähler: 2");
+    } finally {
+      await kontext.close();
+    }
+  });
+});
+
+test.describe("Datensicherung (0.9.72)", () => {
+  const oeffneSicherung = async (page: Page) => {
+    await page.addInitScript(() => localStorage.setItem("aussendienst_pwa_onboarding_v1", "1"));
+    await page.goto("/?tab=options");
+    await page.getByRole("button", { name: /Datensicherung/ }).first().click();
+    await page.locator("#backup-passwort").waitFor({ timeout: 20_000 });
+  };
+
+  test("eine abgelehnte Datei meldet einen Fehler und nicht „eingespielt“", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Die Prüfung hängt nicht am Geräteprofil");
+    await oeffneSicherung(page);
+    await page.setInputFiles('input[type="file"]', {
+      name: "fremd.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify({ app: "andere-app", daten: [1, 2, 3] })),
+    });
+    await expect(page.getByText(/konnte nicht eingespielt werden/).first()).toBeVisible({ timeout: 10_000 });
+    await page.waitForTimeout(800);
+    expect(
+      await page.getByText(/Backup eingespielt/).count(),
+      "Das Fenster meldet Erfolg für eine Datei, die die App gerade abgelehnt hat",
+    ).toBe(0);
+  });
+
+  test("verschlüsselte Sicherung im neuen Format: Wartezustand, Umlauf, Mindestlänge", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Die Prüfung hängt nicht am Geräteprofil");
+    test.setTimeout(90_000);
+    // Die Ableitung dauert auf einem schnellen Rechner nur Bruchteile einer
+    // Sekunde. Verzögert, damit der Wartezustand messbar wird.
+    await page.addInitScript(() => {
+      const orig = crypto.subtle.deriveKey.bind(crypto.subtle) as (...a: unknown[]) => Promise<CryptoKey>;
+      (crypto.subtle as unknown as { deriveKey: unknown }).deriveKey = async (...args: unknown[]) => {
+        await new Promise((r) => setTimeout(r, 1500));
+        return orig(...args);
+      };
+    });
+    await oeffneSicherung(page);
+    await page.getByLabel("Backup mit Passwort schützen").check();
+
+    // Zu kurz: abgelehnt, mit Handlungsanweisung.
+    await page.locator("#backup-passwort").fill("kurz");
+    await page.getByRole("button", { name: /Auf Gerät speichern/ }).click();
+    await expect(page.getByText(/mindestens 8 Zeichen/).first()).toBeVisible();
+
+    // Ausreichend: Während der Ableitung ist die Taste gesperrt, steht aber noch im Fokus.
+    await page.locator("#backup-passwort").fill("Sicheres-Passwort-1");
+    const speichern = page.getByRole("button", { name: /Auf Gerät speichern/ });
+    const [download] = await Promise.all([
+      page.waitForEvent("download", { timeout: 30_000 }),
+      (async () => {
+        await speichern.click();
+        await page.waitForTimeout(400);
+        await expect(speichern).toHaveAttribute("aria-disabled", "true");
+        await expect(page.getByText(/wird verschlüsselt/).first()).toBeVisible();
+        expect(
+          await page.evaluate(() => document.activeElement?.textContent || ""),
+          "Der Fokus ist beim Warten von der Taste verschwunden",
+        ).toContain("Auf Gerät speichern");
+        const schwer = (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze())
+          .violations.filter((v) => v.impact === "critical" || v.impact === "serious")
+          .map((v) => v.id);
+        expect(schwer, "Wartezustand: schwere axe-Verstöße").toEqual([]);
+      })(),
+    ]);
+    const datei = readFileSync((await download.path()) as string, "utf8");
+    expect(datei.startsWith("RVB2:"), "Die Datei trägt nicht die Kennung des neuen Formats").toBe(true);
+
+    // Zurückspielen mit dem Passwort -- auch ohne ".enc" im Dateinamen.
+    await page.reload();
+    await page.getByRole("button", { name: /Datensicherung/ }).first().click();
+    await page.locator("#backup-passwort").waitFor({ timeout: 20_000 });
+    await page.locator("#backup-passwort").fill("Sicheres-Passwort-1");
+    await page.setInputFiles('input[type="file"]', {
+      name: "umbenannt.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from(datei, "utf8"),
+    });
+    await expect(page.getByRole("heading", { name: /Datensicherung/ })).toBeHidden({ timeout: 20_000 });
+  });
+});
+
+/*
+  Zwei Geräte, echt gekoppelt: Tippen, Löschen, Archivmonate.
+
+  Der Abgleich baut den laufenden Bericht aus dem zusammengeführten Archiv neu.
+  Drei Dinge gingen dabei still verloren, und alle drei sind hier nachgestellt:
+
+  1. Was gerade getippt wurde. Das Archiv hinkt dem Bericht bis zu eine Sekunde
+     hinterher (Bremse des Spiegels, 0.9.59); wer eine Notiz tippte, während das
+     andere Gerät etwas sendete, verlor die ersten Zeichen -- auf BEIDEN Geräten.
+  2. Gelöschte Schichten. Der Abgleich vereinigte, und das Archiv kannte die
+     Löschung nicht: Eine Schicht kam binnen Sekunden zurück, samt Stunden.
+  3. Gelöschte Archivmonate: dasselbe, ohne dass es je eine Rückfrage gab.
+*/
+test.describe("Zwei gekoppelte Geräte: Tippen und Löschen", () => {
+  test("Notiz, Schicht und Archivmonat bleiben, wie der Nutzer sie hinterlässt", async ({ browser, baseURL }, testInfo) => {
+    test.skip(testInfo.project.name !== "handy", "Zwei Kontexte plus Zwischenablage laufen nur im Chromium-Profil");
+    test.setTimeout(300_000);
+    const optionen = {
+      baseURL: baseURL as string,
+      permissions: ["clipboard-read", "clipboard-write"] as ("clipboard-read" | "clipboard-write")[],
+    };
+    const kA = await browser.newContext(optionen);
+    const kB = await browser.newContext(optionen);
+    try {
+      const a = await kA.newPage();
+      const b = await kB.newPage();
+
+      const stempel = "2026-10-01T16:30:00.000Z";
+      const schicht = {
+        id: "l1", date: "2026-10-01", clockIn: "08:00", clockOut: "16:30", breakMinutes: 45,
+        duration: 7.75, officeRatio: 0.5, officeHours: 3.88, fieldHours: 3.87,
+      };
+      const werte = { std_buero: 3.88, std_aussendienst: 3.87, tage_arbeit: 1 };
+      const stempelWerte = { std_buero: stempel, std_aussendienst: stempel, tage_arbeit: stempel };
+      const laufend = { month: "2026-10", name: "Marc Petry", notes: "", values: werte, valuesUpdatedAt: stempelWerte, timeLogs: [schicht] };
+      const archiv = {
+        "2026-06": monat("2026-06", "s1_1", 7),
+        "2026-07": monat("2026-07", "s1_1", 4),
+        "2026-10": {
+          month: "2026-10", name: "Marc Petry", notes: "", values: werte, valuesUpdatedAt: stempelWerte,
+          fieldsSnapshot: {}, savedAt: stempel, timeLogs: [schicht],
+        },
+      };
+      await oeffneSyncMitBestand(a, archiv, laufend);
+      await oeffneSyncMitBestand(b, archiv, laufend);
+
+      // --- Kopplung über den kameralosen Weg ---
+      await a.getByRole("button", { name: /Live-Verbindung starten/ }).click();
+      const kopierenA = a.getByRole("button", { name: /Code kopieren/ });
+      await kopierenA.waitFor({ state: "visible", timeout: 30_000 });
+      await kopierenA.click();
+      await a.waitForTimeout(500);
+      const angebot = await a.evaluate(() => navigator.clipboard.readText());
+      await b.getByRole("button", { name: /Live-Verbindung beitreten/ }).click();
+      await b.locator("#paste-code-input").waitFor({ state: "visible", timeout: 30_000 });
+      await b.locator("#paste-code-input").fill(angebot);
+      await b.getByRole("button", { name: /Code übernehmen/ }).click();
+      const kopierenB = b.getByRole("button", { name: /Code kopieren/ });
+      await kopierenB.waitFor({ state: "visible", timeout: 30_000 });
+      await kopierenB.click();
+      await b.waitForTimeout(500);
+      const antwort = await b.evaluate(() => navigator.clipboard.readText());
+      await a.getByRole("button", { name: /Antwort-Code empfangen/ }).click();
+      await a.locator("#paste-code-input").waitFor({ state: "visible", timeout: 30_000 });
+      await a.locator("#paste-code-input").fill(antwort);
+      await a.getByRole("button", { name: /Code übernehmen/ }).click();
+      await a.getByRole("button", { name: /Verbindung trennen/ }).waitFor({ state: "visible", timeout: 60_000 });
+
+      // Innerhalb der App navigieren, nie per goto: Das würde die Verbindung kappen.
+      const nachReport = async (p: Page) => {
+        await p.getByRole("button", { name: /Zurück zu den Optionen/ }).click({ timeout: 20_000 });
+        await p.waitForTimeout(400);
+        await p.getByRole("button", { name: "Report", exact: true }).first().click({ timeout: 20_000 });
+        await p.locator("#monatskarte-titel").waitFor({ timeout: 20_000 });
+      };
+      await nachReport(a);
+      await nachReport(b);
+      await a.waitForTimeout(4000);
+
+      // --- 1. Tippen, während das andere Gerät sendet ---
+      await b.getByRole("button", { name: /Tippen erhöht um/ }).first().click();
+      const satz = "Kunde Meier ruft morgen zurueck, Angebot bis Freitag schicken, Schulung im November planen.";
+      const notiz = a.locator("#meta-notes-textarea");
+      await notiz.click();
+      await notiz.pressSequentially(satz, { delay: 200 });
+      await a.waitForTimeout(5000);
+      expect(
+        await notiz.inputValue(),
+        "Gerät A: Der Abgleich hat getippte Zeichen zurückgesetzt",
+      ).toBe(satz);
+      await b.waitForTimeout(3000);
+      expect(await b.locator("#meta-notes-textarea").inputValue(), "Gerät B kennt die Notiz nicht vollständig").toBe(satz);
+
+      // --- 2. Eine Schicht löschen; das andere Gerät zählt danach etwas ---
+      const schichtKnoepfe = (p: Page) => p.locator('button[aria-label^="Schicht vom"]');
+      await a.getByRole("button", { name: "Zeit", exact: true }).first().click();
+      await a.locator("#shift-logs-list").waitFor({ timeout: 20_000 });
+      expect(await schichtKnoepfe(a).count(), "Ausgangslage A").toBe(1);
+      await schichtKnoepfe(a).first().click();
+      await a.getByRole("button", { name: "Schicht löschen", exact: true }).click();
+      await a.waitForTimeout(500);
+      expect(await schichtKnoepfe(a).count()).toBe(0);
+      await b.getByRole("button", { name: /Tippen erhöht um/ }).first().click();
+      await a.waitForTimeout(10_000);
+      expect(await schichtKnoepfe(a).count(), "Gerät A: Die gelöschte Schicht ist zurückgekommen").toBe(0);
+      await b.getByRole("button", { name: "Zeit", exact: true }).first().click();
+      // Ohne Schichten gibt es die Liste nicht -- das ist hier das erwartete Bild.
+      await b.locator("#time-modal-title").waitFor({ timeout: 20_000 });
+      await b.waitForTimeout(800);
+      expect(await schichtKnoepfe(b).count(), "Gerät B: Die Löschung ist nicht angekommen").toBe(0);
+
+      // --- 3. Einen Archivmonat löschen ---
+      await a.getByRole("button", { name: "Archiv", exact: true }).first().click({ timeout: 20_000 });
+      // Die Monatszeile klappt ihre Tasten erst auf, wenn man sie öffnet.
+      await a.getByRole("button", { name: /^Juni 2026/ }).first().click({ timeout: 20_000 });
+      await a.getByRole("button", { name: "Juni 2026 aus dem Archiv löschen" }).click({ timeout: 20_000 });
+      await a.getByRole("button", { name: /Wirklich löschen/ }).click({ timeout: 20_000 });
+      await a.waitForTimeout(10_000);
+      for (const [name, seite] of [["A", a], ["B", b]] as const) {
+        expect(
+          await archivMonate(seite),
+          `Gerät ${name}: Der gelöschte Monat ist nicht weg oder wieder da`,
+        ).toEqual(["2026-07", "2026-10"]);
+      }
+    } finally {
+      await kA.close();
+      await kB.close();
+    }
+  });
 });

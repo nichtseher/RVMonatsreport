@@ -17,17 +17,24 @@ async function startServer() {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
     res.setHeader("Referrer-Policy", "no-referrer");
-    res.setHeader("Permissions-Policy", "camera=(self), microphone=(), geolocation=()");
+    // Mikrofon NUR fuer die eigene Seite (0.9.72): Das Diktat braucht es.
+    // `microphone=()` schaltete es ab -- wer die App ueber diesen Server
+    // auslieferte, hatte ein Diktat, das nie ein Mikrofon bekam.
+    res.setHeader("Permissions-Policy", "camera=(self), microphone=(self), geolocation=()");
     if (process.env.NODE_ENV === "production") {
       res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-      // Strikte CSP: ausschliesslich eigene Ressourcen, keine externen Dienste.
-      res.setHeader(
-        "Content-Security-Policy",
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
-          "img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; " +
-          "worker-src 'self'; manifest-src 'self'; media-src 'self'; " +
-          "object-src 'none'; base-uri 'self'; frame-ancestors 'self'"
-      );
+      /*
+        Nur das, was ein <meta> nicht kann: `frame-ancestors`.
+
+        Die uebrige Richtlinie steht seit 0.9.34 als <meta> in der gebauten
+        index.html, MIT dem Hash des Inline-Skripts (Update-Hinweis und
+        Service-Worker-Registrierung). Eine zweite, strengere Richtlinie als
+        HTTP-Kopfzeile gilt ZUSAETZLICH -- und ihr `script-src 'self'` ohne
+        Hash sperrte genau dieses Skript: Wer die App ueber `npm start`
+        auslieferte, bekam keinen Service Worker und damit keinen
+        Offline-Betrieb, ohne dass irgendetwas eine Fehlermeldung zeigte.
+      */
+      res.setHeader("Content-Security-Policy", "frame-ancestors 'self'");
     }
     next();
   });

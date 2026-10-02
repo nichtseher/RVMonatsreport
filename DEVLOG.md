@@ -10,6 +10,178 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-10-02 — v0.9.72: Was still verloren ging
+
+Auftrag des Projektinhabers in zwei Schritten: „schau dir nochmals alles an und
+analysiere den code" — danach, auf die Liste der Funde, „setze alles so um".
+
+### Ausgangslage (gemessen, bevor etwas geändert wurde)
+
+- `origin/main` war seit dem letzten Blick um elf Commits weiter (0.9.66–0.9.71,
+  2026-09-26); lokal per Fast-Forward nachgezogen, der Arbeitsbaum war sauber.
+- `tsc` sauber, `npm run check` 212/212. CI-Lauf für `9946f78` (0.9.71):
+  `completed success`, 30 min. Das Live-Bündel enthält 0.9.71.
+- Smoketest gegen den gebauten Produktionsstand (`vite preview`, Richtlinie
+  aktiv): alle 13 Ansichten, verschlüsselte Sicherung, Excel-Export, Service
+  Worker — **kein einziger Richtlinien-Verstoß**. Die Produktion trug.
+
+### Was die Analyse fand — alles still, alles im Speicher- und Abgleichpfad
+
+Jeder Fund ist in der echten App nachgestellt (E) oder mit der echten Funktion
+nachgerechnet (F), nicht aus dem Quelltext geschlossen.
+
+| | Befund | Messung |
+|---|---|---|
+| 1 | **E** Veraltete Notfallkopie schlägt den neueren Stand | Tipp → Hintergrund → zurück → vier weitere Tipps (IndexedDB: 5, Kopie: 1) → Abbruch ohne Hintergrund-Ereignis → Neustart zeigt **1 Aktivität** |
+| 2 | **E** Live-Abgleich kappt, was getippt wird | zwei gekoppelte Kontexte: Notiz mit 91 Zeichen, die ersten **12 fehlten auf beiden Geräten**. Gegenprobe mit `ARCHIV_SPIEGEL_VERZOEGERUNG_MS = 0`: alle 91 da → die Bremse aus 0.9.59 ist die Ursache |
+| 3 | **E** Leerer Monat bleibt im Archiv stehen | Zähler 2 → leer: Bericht 0, Archiv `{vf_schule: 2}`, Archiv-Ansicht „Zähler: 2". Gekoppelt: Schicht löschen, danach zählt B etwas anderes → Schicht und 3,88 h waren auf A **nach Sekunden zurück** |
+| 4 | **F** Merge kennt keine Löschungen; Notiz nach Datensatz-`savedAt` | gelöschte Schicht, eigene Kategorie, Archivmonat kehren zurück; Notiz auf A (Mo), B zählt einen Zähler (Di) → Notiz **auf beiden Geräten weg** |
+| 5 | **E** Datensicherung: Erfolg trotz abgelehnter Datei | fremde Datei im Produktionsbau: Toast „konnte nicht eingespielt werden" **und** dauerhaft „Backup eingespielt" |
+| 6 | Service-Worker-Cache wächst mit jeder Fassung | Name fest (`rv-report-v5`), jede Datei wird abgelegt, nichts räumt: 28 Einträge nach einer Sitzung (das Wachstum über Fassungen folgt aus dem Code, nicht gemessen) |
+| 7 | **E** `npm start`: kein Service Worker, keine Meldung | Kopfzeilen-CSP `script-src 'self'` ohne Hash sperrt das Inline-Skript („Executing inline script violates …"), `getRegistration()` leer. Dazu `microphone=()` |
+
+Nebenbefunde: `AppTab` (`types.ts`) kannte `erklaerung` nicht (zweite Typliste
+neben `App.tsx`); `theme-color`/Manifest standen noch auf dem alten
+Schiefergrau; `npm audit` meldete 6 (5 per `npm audit fix` ohne Bruch
+behebbar); `decompressString` ohne Größengrenze; in `sw.js` lief die zweite
+Alternative von `caches.match(a) || caches.match(b)` nie (ein Versprechen ist
+immer wahr).
+
+### Umgesetzt
+
+**1–3 und die Überlagerung.** `spiegleMonat` (`archivEintrag.ts`, reine
+Funktion) ist die eine Stelle, die über das Spiegeln entscheidet: Der
+Inhaltswächter gilt nur noch fürs **Neuanlegen**. Mirror-Effekt und
+Monatswechsel benutzen sie; der Monatswechsel schreibt dadurch auch kein neues
+`savedAt` mehr für einen Archivmonat, den man nur angesehen hat — mit den
+Löschmarken wäre genau das ein Fehler (ein auf dem anderen Gerät gelöschter
+Monat gälte als „danach bearbeitet"). `mergeSyncPayload` legt den laufenden
+Monat **beider** Seiten über den Archiveintrag, ohne den Feld-Aufbau zu
+vergleichen und nur bei echtem Unterschied — sonst wäre jedes Zusammenführen
+eine Änderung und der Live-Abgleich liefe endlos. Die Notfallkopie wird nach
+bestätigtem Schreiben entfernt (`schreibeBericht`, Zähler `notfallFolge`).
+
+**4.** `nameUpdatedAt`/`notesUpdatedAt`, `geloeschteSchichten` je Monat,
+`geloeschteMonate` getrennt vom Archiv. Eigene Entscheidungen dabei, mit Grund
+in ROADMAP 0.9.72: ein fehlender Zeitpunkt zählt als der älteste, nie als
+`savedAt`; bei Gleichstand schlägt ein Text einen leeren; die Monatsmarke wirkt
+je Seite **vor** dem Zusammenführen; Schichten werden nach Tag, Beginn, ID
+sortiert (vorher nur nach Tag — zwei Schichten desselben Tages standen je
+nach zusammenführendem Gerät anders, ein anderer Text für den Live-Abgleich).
+**Kategorien bekommen bewusst keine Löschmarke** (Konfiguration und
+Schnappschuss teilen eine Variable); beide Rückfragen sagen es.
+`pruefeSyncPaket` prüft die neuen Felder, `mergeLoeschmarken` ist zusätzlich
+defensiv. Eine Folge, die man kennen muss: **Zusammenführen beim Einspielen
+einer Sicherung lässt Gelöschtes gelöscht** — wer es aus der Datei zurückholen
+will, wählt „Ersetzen"; Hilfe und Hinweis am Haken sagen es.
+
+**5.** Neues Dateiformat `RVB2:` (600.000 Runden, Kopf mit Version und Runden,
+Runden vor der Ableitung auf 100.000–2.000.000 begrenzt). Das Altformat bleibt
+lesbar, belegt durch einen mit dem Code von 0.9.71 erzeugten Prüfvektor
+(`scripts/vektoren.ts`). Textcodes `RVC2` bleiben beim Altformat (Begründung in
+ROADMAP). Mindestlänge 8 nur beim Erzeugen. Erkennung beim Einspielen am Inhalt.
+Das Fenster zeigt bei Ablehnung den Grund; „Sicher Teilen / Senden" heißt
+„Teilen / senden" (mit Häkchen „Verschlüsselt teilen / senden"), der Begleittext
+der Nachricht sagt nicht mehr immer „verschlüsselt"; während der Ableitung sind
+die Tasten per `aria-disabled` gesperrt (nicht `disabled`: Die Tastatur bleibt
+auf der Taste).
+
+**6–7 und Kleinkram.** `CACHE_NAME` v6 + `raeumeAlteFassungen`; `server.ts`
+setzt nur `frame-ancestors` und `microphone=(self)`; `AppTab` ist die einzige
+Liste der Ansichten (`ansichtsfokus.ts` liest sie dort); `theme-color` und
+Manifest im Markengrün/Sand (das App-Symbol bleibt, wie es war); `npm audit
+fix` (6 → 2 Meldungen, die zwei übrigen sind das begründete `uuid` in ExcelJS);
+Größengrenze 32 MiB beim Entpacken.
+
+**Neu: `npm run check:prod`.** Baut und prüft den GEBAUTEN Stand gegen
+`vite preview` (`playwright.prod.config.ts`, `tests/produktion.spec.ts`): keine
+Richtlinien-Verstöße in 12 Ansichten, Service Worker und Cache der aktuellen
+Fassung, Sicherung im neuen und im Altformat und eine abgelehnte Datei, Excel-
+Export — 4 Fälle, rund 26 s. **Im Deploy-Tor seit diesem Push**, auf
+ausdrückliche Zustimmung des Projektinhabers („ja" auf die Frage, ob der Schritt
+ins Tor soll): ein Schritt „Gebauten Stand pruefen" zwischen „Build
+Application" und „Setup Pages", ohne zweites Bauen (`npx playwright test
+--config=playwright.prod.config.ts`); der Browser ist vom Schritt davor da.
+Schlägt er fehl, wird nichts veröffentlicht. Die YAML-Datei ist mit dem
+`yaml`-CLI gegengeprüft (gültig; eine absichtlich kaputte Probe wird
+abgelehnt) — GitHub selbst kann ich von hier nicht fragen, ob es den Schritt
+annimmt; das zeigt der Lauf.
+
+### Rot am alten Stand, grün mit der Änderung
+
+- Reine Prüfungen: 13 von 35 Fällen in `zusammenfuehren.ts` rot gegen den Code
+  von 0.9.71 (Arbeitsbaum auf `9946f78`); `service-worker.ts` 5 von 7 rot gegen
+  das alte `sw.js` (gezielt gestasht und wiederhergestellt, Byte-Vergleich).
+- UI: alle fünf neuen Fälle rot gegen den alten Dev-Server — „1 Aktivität"
+  statt 5, Archiv ≠ Bericht, „Backup eingespielt" nach Ablehnung, kein
+  „mindestens 8 Zeichen", Notiz „uft morgen zurueck …" statt „Kunde Meier ruft …".
+- Produktionsbau: `server.ts` alt → „KEIN Service Worker" + Richtlinien-Verstoß;
+  neu → „registriert", keine Verstöße, `Permissions-Policy: …microphone=(self)…`.
+- Gebauter Stand, neues Format: Export **121 ms**, Wiederherstellen **101 ms**
+  einschließlich 600.000 Runden — im kopflosen Chromium am Rechner, nicht auf
+  einem Handy.
+
+### Eigene Fehler und was die Wächter dabei selbst meldeten
+
+- Der erste Wurf von „beide Geräte landen auf demselben Text" schlug fehl: Die
+  Gegenseite wurde nicht überlagert, der Empfänger erfuhr den Tipp-Stand erst
+  mit der nächsten Nachricht. Daraus entstand die Überlagerung auch für die
+  Gegenseite.
+- `ansichtsfokus.ts` schlug an, als die Union nach `types.ts` wanderte — die
+  Prüfung hat die Verlagerung gemeldet und liest jetzt die einzige Liste.
+- `zustandsdeckung.ts` zählte den neuen Schalter `beschaeftigt`; die Zahl
+  steht mit Begründung bei 4, gemessen wird er im Fall „Wartezustand".
+- Live-Test, erster Lauf: `#shift-logs-list` gibt es ohne Schichten nicht —
+  gerade das war das erwartete Bild. Zweiter Lauf: Die Monatszeile klappt ihre
+  Tasten erst auf; **Playwright-Aktionen haben hier kein Zeitlimit**, der Fehler
+  war ein fünfminütiges Warten statt einer Meldung. Die Klicks im Archiv-Teil
+  des Tests haben jetzt ein Limit. Ein globales `actionTimeout` in
+  `playwright.config.ts` wäre die bessere Antwort und ist offen gelassen: Es
+  träfe alle 1.224 Fälle und könnte auf dem langsameren CI-Läufer neue
+  Fehlschläge erzeugen.
+
+### Prüfung
+
+`tsc` sauber, `npm run check` **267/267** (212 + 55 neue: Merge, Spiegel,
+Archiv-Eintrag, Schema, Sicherung, Service Worker, Dekompression).
+`npm run check:ui` (alle drei Profile, einschließlich WebKit): **627 bestanden,
+597 profilbedingt übersprungen, 0 fehlgeschlagen, 26,3 Minuten.** Danach noch
+Text-Änderungen an der Sicherung und der Hilfe sowie die erweiterte Prüfung
+„Schichten löschen" (Löschmarken); dafür gezielt Datensicherung, Hilfe und
+Schichten über alle drei Profile: 36 bestanden, 30 übersprungen. Ein voller Lauf
+nach diesen letzten Zeilen steht nicht aus — das macht das Deploy-Tor.
+
+### Nicht geprüft
+
+- Echte Geräte; ob iOS Safari bei `accept=".json,.enc"` die Datei auswählbar
+  anbietet (unverändert gelassen, weil nicht messbar); die Dauer der
+  Ableitung auf einem Handy.
+- Der Screenreader-Durchlauf der geänderten Zustände (Wartezustand der
+  Sicherung, erweiterte Rückfragen, neuer Changelog-Eintrag, neue Hilfetexte).
+- Uhrenabweichung zwischen Geräten (Marken und Zeitstempel folgen den Uhren,
+  wie schon die Zähler).
+- Löschmarken für „Alle Schichten löschen" mit einem gekoppelten Gerät: lokal
+  gemessen (Marken im Bericht und im Archiv), mit Gegenstelle nur der
+  Einzelfall „eine Schicht löschen".
+- Dass der Deploy diese Fassung trägt — und dass der neue Schritt im Tor auf dem
+  Linux-Läufer so läuft wie hier: Das entscheidet der Lauf nach dem Push, nicht
+  dieser Eintrag. Er steht deshalb nicht hier; maßgeblich ist der Lauf für den
+  Commit dieser Fassung.
+
+### Folge für jeden Nutzer
+
+`sw.js` hat sich geändert: einmalig „Eine neue Fassung ist verfügbar". Der
+Changelog nennt es.
+
+### Nebenbei beobachtet, nicht verändert
+
+`vite build` meldet zwei Warnungen des CSS-Optimierers (`rounded-[var(--rv-
+radius-*)]`, `shadow-[var(--rv-shadow-*)]`): Tailwind liest die Fehlermeldung
+in `scripts/checks/gestaltung.ts:78` als Klassennamen. Schon auf `9946f78` da,
+folgenlos — die ungültige Klasse entfällt.
+
+---
+
 ## 2026-09-26/27 — v0.9.71: Entwurf „Warmes Grün" vollständig -- und ein drei Wochen alter Schriftfehler
 
 Auftrag: die fünf offenen Punkte aus dem Abgleich mit dem Entwurf, „prüfe
