@@ -510,6 +510,48 @@ html {
   scroll-padding-bottom: calc(7em + env(safe-area-inset-bottom, 0px));
 }
 
+/*
+  Eigene Kategoriefarben (0.9.74), optional. Die Variablen `--kf-*` setzt die Komponente
+  inline (utils/kategorieFarbe.ts, errechnet je Schema); hier steht nur, welches Schema
+  welche nimmt. Bewusst NUR fuer "light" und "dark": In den beiden Hochkontrast-Schemata
+  greifen diese Regeln nicht, die Farbe bleibt dort unsichtbar.
+  Ausserhalb von @layer, damit sie gegen die Utility-Klassen der Komponenten gewinnen.
+*/
+[data-theme="light"] .rv-kf {
+  --kf-akzent: var(--kf-akzent-hell);
+  --kf-flaeche: var(--kf-flaeche-hell);
+  --kf-plus: var(--kf-plus-hell);
+}
+[data-theme="dark"] .rv-kf {
+  --kf-akzent: var(--kf-akzent-dunkel);
+  --kf-flaeche: var(--kf-flaeche-dunkel);
+  --kf-plus: var(--kf-plus-dunkel);
+}
+/* Zaehlerkarte: farbiger Balken links, farbiges Symbol. Der Text bleibt, wie er ist. */
+[data-theme="light"] .rv-kf-karte,
+[data-theme="dark"] .rv-kf-karte {
+  border-left: 4px solid var(--kf-akzent);
+}
+[data-theme="light"] .rv-kf .rv-kf-symbol,
+[data-theme="dark"] .rv-kf .rv-kf-symbol {
+  color: var(--kf-akzent);
+}
+/* Schnell-Kachel: getoente Flaeche, farbiger Rand, farbiger Plus-Kreis. Die Zahl bleibt in Schriftfarbe. */
+[data-theme="light"] .rv-kf-kachel,
+[data-theme="dark"] .rv-kf-kachel {
+  background: var(--kf-flaeche);
+  border-color: var(--kf-akzent);
+}
+[data-theme="light"] .rv-kf-kachel .rv-kf-plus,
+[data-theme="dark"] .rv-kf-kachel .rv-kf-plus {
+  background: var(--kf-akzent);
+  color: var(--kf-plus);
+}
+[data-theme="light"] .rv-kf-kachel .rv-kf-zahl,
+[data-theme="dark"] .rv-kf-kachel .rv-kf-zahl {
+  color: var(--text-color);
+}
+
 html, body, #root {
   min-height: 100%;
 }

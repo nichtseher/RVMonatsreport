@@ -26,14 +26,24 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       />
 
       <div className="space-y-6">
-        {/* Eine Zeile (Regel seit 0.9.40): nichts Neues zu tun oder zu wissen, nur Fehler behoben. */}
+        {/* Ausgeschrieben (Regel seit 0.9.40): eine neue, freiwillige Einstellung -- man muss wissen, dass es sie gibt. */}
         <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
             <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.74: Fehlerbehebungen</span>
+            <span>Version 0.9.74: Eigene Kategoriefarben und Fehlerbehebungen</span>
             <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
           </h3>
           <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
+            <li>
+              <strong>Neu, freiwillig – eigene Farben für Kategorien:</strong> Unter <strong>Optionen → Formular anpassen →
+              Farben der Kategorien</strong> geben Sie jeder Kategorie eine Farbe (acht Vorschläge oder eine frei gewählte).
+              Sie erscheint am Rand der Zählerkarte und an der Schnell-Taste. Die App rechnet die Farbe so um, dass der Text
+              lesbar bleibt; in den Hochkontrast-Schemata wird sie nicht angezeigt. Ohne Wahl bleibt alles wie bisher.
+            </li>
+            <li>
+              Die selbst gewählten Schnell-Tasten gelten jetzt je Vorlage; vorher blieb das Feld nach einem Wechsel der
+              Vorlage leer.
+            </li>
             <li>
               Auf schmalen Handys mit großer Schrift wurde im Zähler die dritte Ziffer abgeschnitten (aus „100“ wurde „10“).
               Außerdem wurden Hinweise in den Optionen, Notizen im Schichtprotokoll und Legenden in der Analyse mit „…“

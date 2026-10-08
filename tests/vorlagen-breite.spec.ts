@@ -156,6 +156,11 @@ const MISS = () => {
     if (unsichtbar(el) || el.clientWidth < 2) return;
     const s = getComputedStyle(el);
     const kappt = s.overflowX !== "visible" || s.textOverflow === "ellipsis";
+    // Senkrecht gekappt (z. B. line-clamp): ebenfalls verlorene Information.
+    const senkrecht = s.overflowY !== "visible" && el.scrollHeight > el.clientHeight + 2 && el.clientHeight > 0 && !/auto|scroll/.test(s.overflowY);
+    if (senkrecht && (el.textContent || "").trim()) {
+      befunde.push(`ABGESCHNITTEN (senkrecht) ${kurz(el)} ${el.clientHeight}<${el.scrollHeight}`);
+    }
     if (kappt && el.scrollWidth > el.clientWidth + 1 && (el.textContent || "").trim()) {
       befunde.push(`ABGESCHNITTEN ${kurz(el)} ${el.clientWidth}<${el.scrollWidth}`);
       if (!["SPAN", "P"].includes(el.tagName)) {

@@ -4,6 +4,12 @@ export interface FieldConfig {
   step: number;
   isCustom?: boolean;
   icon?: string;
+  /**
+   * Eigene Farbe (`#rrggbb`), optional und nur fuer sehende Kolleginnen und Kollegen.
+   * Zusatz, nie Traeger einer Information; in den Hochkontrast-Schemata unsichtbar.
+   * Siehe utils/kategorieFarbe.ts.
+   */
+  farbe?: string;
 }
 
 export interface SectionsConfig {

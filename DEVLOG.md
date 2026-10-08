@@ -109,6 +109,37 @@ Formular. Damit entfiel `ohneKategorie` (jede Zeile hat eine Kategorie).
 - Beim ersten `check:ui`-Versuch (abgebrochen, bevor es weiterging) fielen die Ersteinstiegs-
   Prüfungen: Der neue Schritt verschob ihre Nummern. Liste und Beschreibung angepasst.
 
+### Fünfter Nachtrag: Schnell-Erfassung je Vorlage, eigene Kategoriefarben (0.9.74, noch nicht veröffentlicht)
+
+Frage des Projektinhabers: Geht der Schnellbereich mit den neuen Vorlagen mit, und gibt es für
+sehende Kolleginnen und Kollegen eigene Kategoriefarben? „Ich will eigene Farben, aber nur optional.“
+
+**Schnell-Erfassung.** Der Automatikmodus folgte der Vorlage schon (er rechnet aus den
+Kategorien des Formulars). Die eigene Auswahl nicht: Sie lag unter einem gemeinsamen Schlüssel
+und zeigte nach einem Wechsel auf IDs der anderen Vorlage — **das Feld blieb leer**
+(vorher reproduziert, Test rot). Jetzt je Vorlage (`quickSchluessel`, die Vorgabe behält den
+alten Schlüssel) und mit Rückfall auf Automatik, wenn keine gewählte Kachel zum Formular passt.
+
+**Eigene Farben**, `FieldConfig.farbe` (`#rrggbb`), optional, standardmäßig keine:
+- Wahl unter Optionen → Formular anpassen → „Farben der Kategorien“ (acht benannte Vorschläge,
+  freie Wahl über das Farbfeld des Geräts, „Standard“, „Alle zurücksetzen“); alle Kategorien
+  stehen offen untereinander, jede Taste hat einen Namen und `aria-pressed`.
+- **Frei gewählt, trotzdem lesbar:** Gespeichert wird die Wahl; angezeigt wird eine errechnete
+  Fassung je Schema (`utils/kategorieFarbe.ts`): Akzent ≥ 3:1 gegen Karte und Grund (1.4.11),
+  getönte Fläche lässt die Schriftfarbe auf ≥ 4,5:1, Plus-Symbol ≥ 3:1, die Zahl bleibt in
+  Schriftfarbe. Belegt in `npm run check` für die Palette, Extremfarben und **2000 Zufallsfarben**
+  in beiden Schemata; die Grundwerte werden gegen `index.css` verglichen.
+- **Nur Zusatz.** Die Farbe steht in keinem vorgelesenen Namen; in den Hochkontrast-Schemata
+  greifen die CSS-Regeln nicht (Farbe unsichtbar, Wahl bleibt gespeichert, die Einstellung sagt es).
+  Angesagt wird der Farbname („Farbe für …: Blau“).
+- Angezeigt an: Zählerkarte (4 px Balken links, Symbol) und Schnell-Kachel (getönte Fläche, Rand,
+  Plus-Kreis). Gilt pro Gerät und pro Vorlage (`mergeFields` überschreibt vorhandene
+  Kategorien nicht — eine Farbe wandert also nicht mit dem Abgleich).
+- **Gemessen:** `check` 353; `tests/farben.spec.ts` 9/9 (Wahl, Neuladen, Zurücknehmen, freie Farbe,
+  Vorlage-Trennung, beide Hochkontrast-Schemata, **axe color-contrast mit Weiß, Schwarz und Gelb in hell
+  und dunkel**). **Gegenprobe:** Die Farbanpassung testweise ausgebaut → die axe-Prüfung schlug an
+  (unzureichender Kontrast auf der Kachel); wiederhergestellt → grün.
+
 ### Vierter Nachtrag: „messe alles, sorge für perfekte Responsivität“ (0.9.74)
 
 Auftrag des Projektinhabers nach dem Deploy von 0.9.73. Die vorhandenen Prüfungen sahen

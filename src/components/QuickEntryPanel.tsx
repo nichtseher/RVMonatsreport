@@ -2,6 +2,7 @@ import { Fragment, useState } from "react";
 import { Zap, Settings2, Sparkles, Plus } from "lucide-react";
 import { FieldConfig, SectionsConfig, HistoryRecord } from "../types";
 import { getIconForString } from "../utils/iconMap";
+import { istFarbe, kategorieFarbStil } from "../utils/kategorieFarbe";
 import { playAudioFeedback } from "../utils/audioFeedback";
 
 export interface QuickEntryConfig {
@@ -155,9 +156,16 @@ export default function QuickEntryPanel({
     eingefroreneReihenfolge = { schluessel: reihenfolgeSchluessel, ids: autoIds };
   }
 
+  /*
+    Eine eigene Auswahl zaehlt nur mit Kategorien, die es in diesem Formular gibt.
+    Ohne gueltige Kachel faellt das Feld auf die automatische Auswahl zurueck --
+    sonst bliebe es leer (gemessen am 2026-10-08, Auswahl einer anderen Vorlage).
+  */
+  const eigeneFelder =
+    config.mode === "custom" ? (config.ids.map(fieldById).filter(Boolean) as FieldConfig[]) : [];
   const quickFields: FieldConfig[] =
-    config.mode === "custom" && config.ids.length > 0
-      ? (config.ids.map(fieldById).filter(Boolean) as FieldConfig[])
+    eigeneFelder.length > 0
+      ? eigeneFelder
       : (autoIds.map(fieldById).filter(Boolean) as FieldConfig[]);
 
   const toggleCustomId = (id: string) => {
@@ -188,7 +196,7 @@ export default function QuickEntryPanel({
 
   const renderIcon = (field: FieldConfig, farbe: string) => {
     const Icon = getIconForString(field.icon);
-    if (Icon) return <Icon className={`w-6 h-6 flex-shrink-0 ${farbe}`} aria-hidden="true" />;
+    if (Icon) return <Icon className={`rv-kf-symbol w-6 h-6 flex-shrink-0 ${farbe}`} aria-hidden="true" />;
     if (field.icon) return <span className="text-2xl flex-shrink-0" aria-hidden="true">{field.icon}</span>;
     return <Zap className={`w-6 h-6 flex-shrink-0 ${farbe}`} aria-hidden="true" />;
   };
@@ -249,13 +257,15 @@ export default function QuickEntryPanel({
         {quickFields.map((field) => {
           const val = typeof values[field.id] === "number" ? (values[field.id] as number) : 0;
           const farbe = KACHEL_FARBE[bereichVon(field.id)];
+          const eigeneFarbe = istFarbe(field.farbe);
           return (
             <button
               key={field.id}
+              style={kategorieFarbStil(field.farbe)}
               type="button"
               onClick={() => handleTap(field)}
               aria-label={`${field.label}. Aktueller Stand ${val}. Tippen erhöht um ${field.step}.`}
-              className={`min-h-[112px] px-2.5 py-3 rounded-[var(--rv-radius-xl)] border border-[var(--card-border)] ${farbe.flaeche} hover:border-[var(--border-focus)] transition-all cursor-pointer flex flex-col items-start justify-between gap-2 text-left active:scale-95 focus-visible:ring-4 touch-manipulation`}
+              className={`${eigeneFarbe ? "rv-kf rv-kf-kachel " : ""}min-h-[112px] px-2.5 py-3 rounded-[var(--rv-radius-xl)] border border-[var(--card-border)] ${farbe.flaeche} hover:border-[var(--border-focus)] transition-all cursor-pointer flex flex-col items-start justify-between gap-2 text-left active:scale-95 focus-visible:ring-4 touch-manipulation`}
             >
               <div className="flex items-start justify-between w-full gap-1">
                 <span className="w-10 h-10 rounded-[var(--rv-radius-md)] bg-[var(--card-bg)] shadow-[var(--rv-shadow-sm)] flex items-center justify-center flex-shrink-0">
@@ -263,14 +273,14 @@ export default function QuickEntryPanel({
                 </span>
                 {/* Zeigt, was ein Tipp tut. Die Kachel selbst ist die Taste. */}
                 <span
-                  className={`w-8 h-8 rounded-full ${farbe.plus} text-[var(--card-bg)] flex items-center justify-center flex-shrink-0`}
+                  className={`rv-kf-plus w-8 h-8 rounded-full ${farbe.plus} text-[var(--card-bg)] flex items-center justify-center flex-shrink-0`}
                   aria-hidden="true"
                 >
                   <Plus className="w-5 h-5" strokeWidth={2.6} />
                 </span>
               </div>
               <span className="w-full" aria-hidden="true">
-                <span className={`block text-3xl font-black leading-none tabular-nums ${farbe.zahl}`}>
+                <span className={`rv-kf-zahl block text-3xl font-black leading-none tabular-nums ${farbe.zahl}`}>
                   {val}
                 </span>
                 {/* hyphens-auto: Lange deutsche Wörter passen bei 14 px und breiter

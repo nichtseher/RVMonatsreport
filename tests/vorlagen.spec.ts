@@ -177,3 +177,47 @@ test("Ersteinstieg: die Vorlage wird gewählt und gilt sofort im Formular", asyn
   await page.getByRole("button", { name: "Einrichtung überspringen" }).click();
   await page.getByRole("spinbutton", { name: apa.felder.s2[0].label, exact: true }).waitFor({ state: "visible", timeout: 15_000 });
 });
+
+/*
+  Die Schnell-Erfassung (die Kacheln oben im Formular) folgt der Vorlage.
+  Zwei Betriebsarten: "auto" (nach Nutzung) und "custom" (selbst gewählte IDs). Die
+  gewählten IDs gehören zu einer Vorlage -- nach einem Wechsel zeigten sie bis 0.9.74
+  ins Leere, und das Feld blieb LEER.
+*/
+const kachelnVon = async (page: Page): Promise<string[]> => {
+  const gruppe = page.getByRole("group", { name: "Schnell-Erfassungs-Tasten" });
+  await gruppe.waitFor({ state: "visible", timeout: 15_000 });
+  return gruppe.getByRole("button").evaluateAll((els) => els.map((e) => (e.getAttribute("aria-label") || "").split(". Aktueller")[0]));
+};
+
+for (const v of VORLAGEN) {
+  test(`Schnell-Erfassung (${v.name}): automatisch nur Kategorien dieser Vorlage`, async ({ page }) => {
+    await starte(page);
+    await waehleVorlage(page, v.name);
+    await oeffneFormular(page);
+    const kacheln = await kachelnVon(page);
+    expect(kacheln.length).toBeGreaterThan(0);
+    const eigene = new Set([...v.felder.s1, ...v.felder.s2, ...v.felder.s3].map((f) => f.label));
+    for (const k of kacheln) expect(eigene.has(k), `"${k}" gehört nicht zu ${v.name}`).toBe(true);
+  });
+}
+
+test("Schnell-Erfassung: eine eigene Auswahl einer anderen Vorlage lässt das Feld nicht leer", async ({ page }) => {
+  const team = findeVorlage(VORLAGE_TEAM_BLINDENHILFSMITTEL);
+  const vertrieb = VORLAGEN.find((v) => v.id === "vertrieb-monatsinfo")!;
+  await page.addInitScript(() => {
+    // Alter Stand: eigene Auswahl mit Team-Kategorien, noch unter dem alten, gemeinsamen Schluessel.
+    localStorage.setItem("aussendienst_pwa_quick_v1", JSON.stringify({ mode: "custom", ids: ["vf_schule", "schul_vorort"] }));
+  });
+  await starte(page);
+  await waehleVorlage(page, vertrieb.name);
+  await oeffneFormular(page);
+  const kacheln = await kachelnVon(page);
+  expect(kacheln.length, "Schnell-Erfassung ist leer").toBeGreaterThan(0);
+  const eigene = new Set([...vertrieb.felder.s1, ...vertrieb.felder.s2, ...vertrieb.felder.s3].map((f) => f.label));
+  for (const k of kacheln) expect(eigene.has(k), `"${k}" gehört nicht zur Vertriebs-Vorlage`).toBe(true);
+  // Zurueck bei Team: die Auswahl von dort ist noch da.
+  await waehleVorlage(page, team.name);
+  await oeffneFormular(page);
+  expect(await kachelnVon(page)).toEqual([team.felder.s1[0].label, team.felder.s2[0].label]);
+});

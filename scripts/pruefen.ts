@@ -20,6 +20,7 @@ import "./checks/schicht-verrechnung";
 import "./checks/excel";
 import "./checks/vorlage";
 import "./checks/felder";
+import "./checks/kategoriefarbe";
 import "./checks/sync-import";
 import "./checks/backup";
 import "./checks/kodierung";

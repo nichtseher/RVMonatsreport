@@ -4,6 +4,7 @@ import { Plus, Minus } from "lucide-react";
 import { getIconForString } from "../utils/iconMap";
 import { playAudioFeedback as playAudioFeedbackShared } from "../utils/audioFeedback";
 import { formatiereZuletzt } from "../utils/zuletztGeaendert";
+import { istFarbe, kategorieFarbStil } from "../utils/kategorieFarbe";
 
 interface CounterFieldProps {
   key?: React.Key;
@@ -192,7 +193,8 @@ export default React.memo(function CounterField({
          Rahmenfarbe der Bedienelemente ist gegen --bg-color auf 3:1 abgestimmt
          (WCAG 1.4.11). Auf dem alten slate-Hintergrund kam sie nur auf
          2,55-2,98:1 -- die Tastenumrisse waren zu schwach. */
-      className={`flex flex-col @min-[23rem]:flex-row @min-[23rem]:items-center justify-between rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] p-[6px] @min-[23rem]:p-2.5 @min-[36rem]:p-4 border border-[var(--card-border)] transition-all focus-within:ring-2 focus-within:ring-[var(--border-focus)] hover:border-[var(--border-focus)] gap-3 @min-[23rem]:gap-2`}
+      style={kategorieFarbStil(config.farbe)}
+      className={`${istFarbe(config.farbe) ? "rv-kf rv-kf-karte " : ""}flex flex-col @min-[23rem]:flex-row @min-[23rem]:items-center justify-between rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] p-[6px] @min-[23rem]:p-2.5 @min-[36rem]:p-4 border border-[var(--card-border)] transition-all focus-within:ring-2 focus-within:ring-[var(--border-focus)] hover:border-[var(--border-focus)] gap-3 @min-[23rem]:gap-2`}
     >
       <div className="flex-1 pr-2 @min-[23rem]:pr-0 min-w-0 @min-[23rem]:min-w-[7rem]">
         <label 
@@ -204,7 +206,7 @@ export default React.memo(function CounterField({
             const Icon = getIconForString(config.icon);
             {/* Theme-Farbe statt fester Palettenfarbe: Das Symbol soll dem
                 gewählten Farbschema folgen -- gerade im Hochkontrast-Modus. */}
-            if (Icon) return <Icon className="w-5 h-5 flex-shrink-0 mt-0.5 text-[var(--accent)]" aria-hidden="true" />;
+            if (Icon) return <Icon className="rv-kf-symbol w-5 h-5 flex-shrink-0 mt-0.5 text-[var(--accent)]" aria-hidden="true" />;
             if (config.icon) return <span className="text-xl flex-shrink-0 mt-0.5" aria-hidden="true">{config.icon}</span>;
             return null;
           })()}

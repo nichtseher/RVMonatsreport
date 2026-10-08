@@ -49,6 +49,7 @@ import {
   findeVorlage, ladeVorlagenWahl, VORLAGE_SCHLUESSEL, bereichsTitel,
 } from "./utils/vorlagen";
 import { anVorlage, feldSchluessel, ladeFelder, standardFelder } from "./utils/felder";
+import { farbName } from "./utils/kategorieFarbe";
 import { monthHasContent } from "./utils/monatInhalt";
 import { rueckfrageOffen } from "./utils/rueckfrage";
 import { stempeln, stempelNachtragen, stempelnGeaenderte } from "./utils/zeitstempel";
@@ -1346,6 +1347,44 @@ export default function App() {
         announceToAriaAndSpeech(`Kategorie ${label} gelöscht.`);
       },
     });
+  };
+
+  /*
+    Eigene Farbe einer Kategorie (0.9.74), optional. `null` entfernt sie. Die Farbe wird
+    in den Kategorien gespeichert -- je Vorlage, wie diese selbst. Angesagt wird der
+    NAME der Farbe: Wer sie nicht sieht, erfaehrt trotzdem, was eingestellt wurde.
+  */
+  const handleFieldColor = (fieldId: string, label: string, farbe: string | null) => {
+    triggerHaptic(10);
+    setAppFields((prev) => {
+      const neu = { ...prev } as SectionsConfig;
+      (["s1", "s2", "s3", "s4"] as const).forEach((s) => {
+        neu[s] = prev[s].map((f) => {
+          if (f.id !== fieldId) return f;
+          const { farbe: _alt, ...ohne } = f;
+          return farbe ? { ...ohne, farbe } : ohne;
+        });
+      });
+      return neu;
+    });
+    announceToAriaAndSpeech(
+      farbe ? `Farbe für ${label}: ${farbName(farbe)}.` : `Eigene Farbe für ${label} entfernt.`,
+    );
+  };
+
+  const handleResetFieldColors = () => {
+    triggerHaptic(20);
+    setAppFields((prev) => {
+      const neu = { ...prev } as SectionsConfig;
+      (["s1", "s2", "s3", "s4"] as const).forEach((s) => {
+        neu[s] = prev[s].map((f) => {
+          const { farbe: _alt, ...ohne } = f;
+          return ohne;
+        });
+      });
+      return neu;
+    });
+    announceToAriaAndSpeech("Alle eigenen Farben der Kategorien wurden zurückgesetzt.", true);
   };
 
   const handleFactoryResetFields = () => {
@@ -3074,6 +3113,9 @@ export default function App() {
             onOpenErklaerung={() => setActiveTab("erklaerung")}
             vorlageId={vorlageId}
             onVorlageChange={waehleVorlage}
+            appFields={appFields}
+            onFieldColorChange={handleFieldColor}
+            onResetFieldColors={handleResetFieldColors}
             /*
               Ueber die Kennung zaehlen, nicht addieren: Der laufende Monat
               steht zugleich im Archiv (die Selbstsicherung legt ihn dort ab),

@@ -14,6 +14,7 @@ import {
   feldSchluessel,
   istFremd,
   ladeFelder,
+  quickSchluessel,
   standardFelder,
 } from "../../src/utils/felder";
 import type { FieldConfig, SectionsConfig } from "../../src/types";
@@ -217,4 +218,12 @@ pruefe("eine Kategorie, die keine Vorlage kennt, bleibt erhalten – auch ohne M
   const mitFremder = standardFelder(apa);
   mitFremder.s2.push(team.felder.s2[0]);
   gleich(istFremd(mitFremder, apa), true);
+});
+
+pruefe("Schnell-Erfassung: die eigene Auswahl liegt je Vorlage, die Vorgabe behält den alten Schlüssel", () => {
+  gleich(quickSchluessel(STANDARD_VORLAGE_ID), "aussendienst_pwa_quick_v1");
+  const schluessel = VORLAGEN.map((v) => quickSchluessel(v.id));
+  gleich(new Set(schluessel).size, VORLAGEN.length);
+  // Auswahl und Kategorien einer Vorlage duerfen nie denselben Schluessel haben.
+  for (const v of VORLAGEN) wahr(quickSchluessel(v.id) !== feldSchluessel(v.id), `${v.id}: gleicher Schlüssel`);
 });

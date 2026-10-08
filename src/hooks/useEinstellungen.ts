@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AccessibilitySettings,
   SectionsConfig,
@@ -6,7 +6,7 @@ import {
 } from "../types";
 import { QuickEntryConfig, DEFAULT_QUICK_CONFIG } from "../components/QuickEntryPanel";
 import { safeSetItem } from "../utils/speicher";
-import { feldSchluessel } from "../utils/felder";
+import { feldSchluessel, quickSchluessel } from "../utils/felder";
 
 /**
  * Die Einstellungen und ihre Speicherung.
@@ -100,8 +100,14 @@ export function useEinstellungen(p: EinstellungenParameter): Einstellungen {
     triggerToast, announceToAriaAndSpeech,
   } = p;
 
-  const [quickConfig, setQuickConfig] = useState<QuickEntryConfig>(() =>
-    ladeMitStandard("aussendienst_pwa_quick_v1", DEFAULT_QUICK_CONFIG),
+  /*
+    Die Auswahl der Schnell-Erfassung je Vorlage. Gelesen wird beim ersten Bedarf
+    (auch nach einem Wechsel der Vorlage); danach gilt der Stand im Speicher.
+  */
+  const [quickProVorlage, setQuickProVorlage] = useState<Record<string, QuickEntryConfig>>({});
+  const quickConfig: QuickEntryConfig = useMemo(
+    () => quickProVorlage[vorlageId] ?? ladeMitStandard(quickSchluessel(vorlageId), DEFAULT_QUICK_CONFIG),
+    [quickProVorlage, vorlageId],
   );
   const [goalsConfig, setGoalsConfig] = useState<GoalsConfig>(() =>
     ladeMitStandard("aussendienst_pwa_goals_v2", STANDARD_ZIELE),
@@ -132,8 +138,8 @@ export function useEinstellungen(p: EinstellungenParameter): Einstellungen {
   );
 
   const updateQuickConfig = (neu: QuickEntryConfig) => {
-    setQuickConfig(neu);
-    safeSetItem("aussendienst_pwa_quick_v1", JSON.stringify(neu));
+    setQuickProVorlage((alt) => ({ ...alt, [vorlageId]: neu }));
+    safeSetItem(quickSchluessel(vorlageId), JSON.stringify(neu));
   };
 
   const updateGoalsConfig = (neu: GoalsConfig) => {

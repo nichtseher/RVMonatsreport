@@ -25,6 +25,17 @@ export const FELD_SCHLUESSEL_BASIS = "aussendienst_pwa_fields";
 export const feldSchluessel = (vorlageId: string): string =>
   vorlageId === STANDARD_VORLAGE_ID ? FELD_SCHLUESSEL_BASIS : `${FELD_SCHLUESSEL_BASIS}__${vorlageId}`;
 
+/**
+ * Die selbst gewaehlten Kacheln der Schnell-Erfassung gehoeren zu einer Vorlage:
+ * Sie bestehen aus Kategorie-IDs, und die kennt nur diese Vorlage. Bis 0.9.74 lag
+ * die Auswahl in EINEM Schluessel -- nach einem Wechsel zeigte sie ins Leere und
+ * das Feld blieb leer. Die Vorgabevorlage behaelt den alten Schluessel.
+ */
+export const QUICK_SCHLUESSEL_BASIS = "aussendienst_pwa_quick_v1";
+
+export const quickSchluessel = (vorlageId: string): string =>
+  vorlageId === STANDARD_VORLAGE_ID ? QUICK_SCHLUESSEL_BASIS : `${QUICK_SCHLUESSEL_BASIS}__${vorlageId}`;
+
 const BEREICHE = ["s1", "s2", "s3", "s4"] as const;
 
 const kopie = <T,>(x: T): T => JSON.parse(JSON.stringify(x)) as T;

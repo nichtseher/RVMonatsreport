@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import AnsichtsKopf from "./AnsichtsKopf";
 import VorlagenWahl from "./VorlagenWahl";
+import KategorieFarben from "./KategorieFarben";
 import { findeVorlage, bereichsTitel } from "../utils/vorlagen";
 import { APP_VERSION } from "../version";
 
@@ -72,6 +73,10 @@ interface A11yModalProps {
   /** Gewaehlte Berichtsvorlage und ihre Aenderung (meldet selbst zurueck). */
   vorlageId: string;
   onVorlageChange: (id: string) => void;
+  /** Aktuelle Kategorien und die optionalen eigenen Farben (0.9.74). */
+  appFields: SectionsConfig;
+  onFieldColorChange: (fieldId: string, label: string, farbe: string | null) => void;
+  onResetFieldColors: () => void;
 }
 
 /* ---------- Wiederverwendbare, kompakte Bausteine ---------- */
@@ -239,6 +244,9 @@ export default function A11yModal({
   onToggleMobileComfort,
   vorlageId,
   onVorlageChange,
+  appFields,
+  onFieldColorChange,
+  onResetFieldColors,
 }: A11yModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeMenu, setActiveMenu] = useState<"main" | "a11y" | "form">("main");
@@ -756,6 +764,16 @@ export default function A11yModal({
             + Kategorie hinzufügen
           </button>
         </form>
+      </SectionCard>
+
+      <SectionCard title="Farben der Kategorien">
+        <KategorieFarben
+          appFields={appFields}
+          vorlageId={vorlageId}
+          onChange={onFieldColorChange}
+          onResetAll={onResetFieldColors}
+          farbenSichtbar={settings.theme === "light" || settings.theme === "dark"}
+        />
       </SectionCard>
 
       <SectionCard>
