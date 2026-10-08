@@ -110,7 +110,7 @@ function MenuRow({
       </span>
       <span className="flex-1 min-w-0">
         <span className="block font-black text-[var(--text-color)] text-sm leading-tight [overflow-wrap:anywhere] hyphens-auto">{label}</span>
-        <span className="block text-xs text-[var(--text-muted)] truncate">{hint}</span>
+        <span className="block text-xs text-[var(--text-muted)] [overflow-wrap:anywhere]">{hint}</span>
       </span>
       <ChevronRight className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors flex-shrink-0" aria-hidden="true" />
     </button>

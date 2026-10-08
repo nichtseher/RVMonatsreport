@@ -114,7 +114,7 @@ export default function BerichtsBereich({
             Inhalt preis (`min-width: auto`) -- bei 320 px schob "3.
             Spezialprodukte (Fokus)" die Seite auf 352 px, achter Fall dieser
             Klasse in diesem Projekt. */}
-        <span className="text-lg font-black text-[var(--text-color)] min-w-0">{titel}</span>
+        <span className="text-lg font-black text-[var(--text-color)] min-w-0 [overflow-wrap:anywhere] hyphens-auto">{titel}</span>
       </h2>
       {hinweis}
       {/*

@@ -1028,7 +1028,7 @@ export default function DeviceSyncModal({
             scrollbar wurde, ohne dass ein Kind ueberstand -- Ursache ist die
             nachlaufende Sperrung der gesperrten Grossbuchstaben-Zeilen.
             Gescrollt werden soll hier nur senkrecht. */}
-        <div className="p-6 overflow-y-auto overflow-x-hidden">
+        <div className="p-6 overflow-y-auto overflow-x-hidden [overflow-wrap:anywhere]">
           {(mode === "select" || mode === "send" || mode === "receive" || mode === "confirm") &&
             renderSyncSteps()}
 

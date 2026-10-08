@@ -198,7 +198,7 @@ export default function QuickEntryPanel({
       className="p-4 sm:p-5 mb-4 rounded-[var(--rv-radius-xl)] border border-[var(--card-border)] bg-[var(--card-bg)] shadow-[var(--rv-shadow-sm)]"
       aria-labelledby="quick-entry-heading"
     >
-      <div className="flex items-center justify-between gap-2 mb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <h2
           id="quick-entry-heading"
           className="text-base font-black text-[var(--text-color)] flex items-center gap-2 flex-wrap min-w-0"

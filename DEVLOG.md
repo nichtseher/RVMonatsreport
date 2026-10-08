@@ -109,9 +109,58 @@ Formular. Damit entfiel `ohneKategorie` (jede Zeile hat eine Kategorie).
 - Beim ersten `check:ui`-Versuch (abgebrochen, bevor es weiterging) fielen die Ersteinstiegs-
   Prüfungen: Der neue Schritt verschob ihre Nummern. Liste und Beschreibung angepasst.
 
+### Vierter Nachtrag: „messe alles, sorge für perfekte Responsivität“ (0.9.74)
+
+Auftrag des Projektinhabers nach dem Deploy von 0.9.73. Die vorhandenen Prüfungen sahen
+nur die Vorgabevorlage, meist ohne Inhalt, und nur den **Seiten**-Überlauf. Neu:
+`tests/vorlagen-breite.spec.ts` — 14 Ansichten (alle Klickwege) × 3 Vorlagen × 6 Breiten
+(320/360/412/768/1024/1280) × 3 Schriftgrößen, **mit Inhalt** (lange Namen, dreistellige
+Zähler, drei Archivmonate, Schichten mit langen Notizen), mit der breiten Ersatzschrift des
+CI-Läufers; gemessen: Seiten-Überlauf, **abgeschnittener Text**, Bedienflächen < 44 px, Fokus
+verdeckt, letzte Zeile unter der Leiste. Chromium alle Breiten, WebKit die Handybreiten.
+Der Lauf ist das Werkzeug, das die folgenden Fehler gefunden hat — kein einziger davon
+war vorher aufgefallen:
+
+| Fehler | Wo | Ursache / Behebung |
+|---|---|---|
+| Dritte Ziffer im Zähler abgeschnitten („100“ → „10“) | **alle** Vorlagen, 320 px, Extra groß | Native Drehpfeile des Zahlenfelds reservierten Platz; ausgeblendet |
+| Text mit „…“ gekappt | Menühinweise (Optionen), Schicht-Notizen, Analyse-Legenden | `truncate` → `[overflow-wrap:anywhere]` |
+| Text hinter dem Rand verschwunden | Geräte-Sync, Datensicherung, 320 px | `overflow-x-hidden` ohne Umbruch → `[overflow-wrap:anywhere]` |
+| Seite 25 px zu breit | Vertriebs-Vorlage, 320 px, Extra groß | „Endkundenberatungen“ bricht nicht um; `hyphens-auto` |
+| Monatsziel-Chip breiter als die Zeile | 320 px, Extra groß | `max-w-full`, Umbruch im Chip |
+| Letzte Zeile unter der unteren Leiste | **640–1023 px** (Tablet, Handy quer) | `sm:py-6` überschrieb `pb-32` → `pt-4 sm:pt-6 pb-32` |
+| Kennzahl-Kachel ragt über den Rand | Analyse, 1024 px, Extra groß | `md:grid-cols-4` erzwang vier Spalten; entfernt |
+| **Sprung-Puffer zu klein — nur WebKit** | iPhone, jede Breite | `scroll-padding-bottom` mit `rem` auf `html` löst WebKit mit 16 px auf (112 statt 168 px, Leiste 140 px) → `em` |
+
+Zwei Lehren, die in CLAUDE.md stehen: (1) `getBoundingClientRect` sieht Text nicht, der aus
+seinem Kasten **ragt**; `scrollWidth` schon. (2) Eine Prüfung gegen den **alten** Fehler laufen
+lassen, bevor man ihr traut — die erste Fassung der Fokus-Prüfung hat den Tablet-Fehler nicht
+bemerkt (sie prüfte nur die Mitte, 2.4.11 verlangt „nicht völlig verdeckt“), und in WebKit
+meldete sie Fehlalarme, weil `focus()` dort anders scrollt.
+
+**Gemessen am Ende:** `lint` ✓, `check` 344/344, `check:breite` **756 + 378 bestanden, 0 Befunde**,
+`check:ui` **768 bestanden** (30,9 min — das Gate ist damit an der 30-Minuten-Grenze),
+`check:prod` 4/4.
+**Nicht gemessen:** echtes iPhone/Android, Screenreader, 1440 px und mehr, Archiv und Analyse
+mit Inhalt über mehrere Jahre, Querformat mit niedriger Höhe (`height: 900` überall).
+
+### Dritter Nachtrag: nach dem Deploy gefunden — Überlauf in der Vertriebs-Vorlage
+
+Auf die Frage „ist die App überall gleich responsiv?“ nachgemessen, **nachdem** `cd25100`
+live war: Das Prüfnetz misst die Ansichten nur mit der Vorgabevorlage. In der Vertriebs-
+Vorlage lief die Seite bei **320 px und „Extra groß“ um 25 px über** (scrollWidth 345):
+die Überschrift „1. Endkundenberatungen“ brach als einzelnes langes Wort nicht um
+(WCAG 1.4.10). Ursache war nicht gefunden, solange ich nur Kastenmaße las — das
+Wort ragte aus seinem Kasten heraus, `getBoundingClientRect` sah nichts, `scrollWidth`
+schon. Behoben mit `[overflow-wrap:anywhere]` an `BerichtsBereich`.
+Neu: `tests/vorlagen-breite.spec.ts` — Formular, Analyse, Archiv, Optionen × drei
+Vorlagen × 320/360/768 px × normal/extra-groß, mit erzwungener breiter Schrift wie
+auf dem CI-Läufer: 72 von 72 bestanden. Nicht abgedeckt: Analyse und Archiv **mit
+Inhalt** je Vorlage, 1024 px, echte Geräte.
+
 ### Nicht gemessen
 
-- `npm run check:ui` (26 min) lief **nicht**; die neue Karte in den Optionen und
+- (Stand vor dem zweiten Nachtrag; inzwischen gelaufen, siehe oben) `npm run check:ui` (26 min) lief **nicht**; die neue Karte in den Optionen und
   der Ersteinstieg mit mehr als einer Vorlage sind damit nicht durch das Prüfnetz
   gelaufen. Der Schritt „Vorlage“ im Ersteinstieg ist bisher nie gerendert worden,
   weil es nur eine Vorlage gibt. Beides gehört vor dem Push gemessen.

@@ -1931,7 +1931,7 @@ export default function App() {
         Abschnittsgliederung richtig.
       */}
       <main id="main-content" className={`w-full relative ${isDesktop ? 'lg:flex-1 lg:overflow-y-auto lg:h-screen lg:px-6' : ''}`}>
-        <div className={`mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 relative ${isDesktop ? 'lg:pb-12' : ''}`}>
+        <div className={`mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-32 relative ${isDesktop ? 'lg:pb-12' : ''}`}>
       {/* Off-screen live announcer region for screen readers */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {ariaAnnouncement}
@@ -2383,7 +2383,7 @@ export default function App() {
                     aktiv ? "Filter auf alle Bereiche zurückgesetzt" : `Filter gewechselt auf ${chip.bereich}`,
                   );
                 }}
-                className={`inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full border text-sm transition-all cursor-pointer active:scale-95 focus-visible:ring-4 ${
+                className={`inline-flex flex-wrap items-center justify-center gap-x-2 max-w-full min-h-[44px] px-4 py-1 rounded-full border text-sm transition-all cursor-pointer active:scale-95 focus-visible:ring-4 ${
                   aktiv
                     ? "bg-[var(--text-color)] text-[var(--card-bg)] border-[var(--text-color)]"
                     : "bg-[var(--card-bg)] text-[var(--text-color)] border-[var(--border-color)] hover:bg-[var(--hover-bg)]"

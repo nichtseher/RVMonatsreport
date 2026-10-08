@@ -18,6 +18,7 @@ npm run dev        # tsx server.ts — dev server on http://localhost:3000 (Expr
 npm run lint       # tsc --noEmit (covers src/, scripts/, tests/); no ESLint config
 npm run check      # tsx scripts/pruefen.ts — 344 checks, no test framework
 npm run check:ui   # playwright test — 1224 UI/a11y checks over three profiles (627 run, 597 skipped by profile), ~26 min (starts the dev server itself)
+npm run check:breite # the FULL responsiveness matrix (3 templates × 14 views × 6 widths × 3 font sizes, Chromium + WebKit, with content, ~37 min); the gate (check:ui) runs a slim subset of it (126 cases)
 npm run check:prod # builds, then playwright against `vite preview` of dist/ — the BUILT app, with the CSP, minified, with the service worker (4 cases, ~26 s). In the deploy workflow since 0.9.72 as the step "Gebauten Stand pruefen" between "Build Application" and "Setup Pages" (same call, without building twice).
 npm run build      # vite build + scripts/csp-pruefen.ts + esbuild bundles server.ts -> dist/server.cjs
 npm run start      # node dist/server.cjs — serve the production build
@@ -286,6 +287,12 @@ Two things worth knowing about how it got there:
   **`flex-wrap` wirkt nicht, wenn ein Geschwisterelement `flex-1` trägt.** Das kostete am 2026-09-02 einen roten Deploy: `flex-1` bedeutet Basisbreite 0, also passen rechnerisch alle Elemente in eine Zeile, es bricht nichts um — und ein Nachbar mit `flex-shrink-0` ragt trotzdem heraus. Gemessen an der Optionen-Kopfzeile bei 320 px: 324 px mit `flex-wrap`, 320 px gestapelt.
 
   Wer eine Zeile aus Icon, Text und Taste baut, prüft sie bei 320 px und „Extra groß", bevor er sie für fertig hält.
+- **Vier Fallen, die 0.9.74 (2026-10-08) alle gefunden hat — `tests/vorlagen-breite.spec.ts` misst sie jetzt:**
+  1. **`getBoundingClientRect` sieht keinen Text, der aus seinem Kasten ragt; `scrollWidth` schon.** Ein langes deutsches Wort ("Endkundenberatungen") schob die Seite 25 px nach rechts, und kein Element hatte einen Kasten über dem Rand. Ebenso: Text hinter `overflow-x-hidden` (Sync, Datensicherung) oder `truncate` ist **verlorene Information**, auch wenn die Seite nicht überläuft. `truncate` ist hier nicht mehr zulässig — `[overflow-wrap:anywhere]`.
+  2. **`sm:py-6` überschreibt `pb-32`** (Tailwind: `py` setzt beide Seiten, die Medienabfrage kommt später). Zwischen 640 und 1023 px lag die letzte Zeile unter der festen Leiste und ließ sich nicht freischieben. Beim Überschreiben einer Seite immer `pt-`/`pb-` einzeln setzen.
+  3. **`rem` auf `html` löst WebKit mit 16 px auf** (nicht mit der gesetzten Wurzelgröße). `scroll-padding-bottom` in `rem` war auf dem iPhone 112 statt 168 px. Auf dem Wurzelelement `em` verwenden.
+  4. **Native Drehpfeile von `type=number` reservieren Breite** und kappen die dritte Ziffer bei 320 px / Extra groß. Sie sind ausgeblendet; Pfeiltasten und ±-Tasten bleiben.
+  Und: **Eine neue Prüfung gegen den ALTEN Fehler laufen lassen, bevor man ihr traut.** Die erste Fassung der Fokus-Prüfung bemerkte den Tablet-Fehler nicht (sie prüfte nur die Mitte; 2.4.11 verlangt "nicht völlig verdeckt") und meldete in WebKit Fehlalarme (`focus()` scrollt dort anders — `scrollIntoView({block:"nearest"})` nimmt das Verhalten heraus).
 - **Mobile Anpassung:** Nutze CSS Safe-Area-Insets (Padding für Notches/Home-Bars auf iOS/Android). Verwende CSS-Grid/Flexbox für eine saubere Darstellung vom Smartphone bis zum Mac-Desktop.
 
 ### 4. Datenarchitektur, Offline-First & Datensicherheit

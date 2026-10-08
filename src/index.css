@@ -499,7 +499,15 @@ html {
     nicht px). 6 rem genügte in der Messung bereits, 7 rem lässt knapp eine
     Zeile Luft. Mit dem Wert: 0 von 126.
   */
-  scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+  /*
+    `em`, nicht `rem`: Auf dem Wurzelelement meint `em` dessen EIGENE Schriftgroesse
+    (bei "Extra gross" 24 px) -- und das gilt in jeder Engine gleich. `rem` loeste
+    WebKit hier mit der Ausgangsgroesse 16 px auf: gemessen am 2026-10-08 112 px
+    statt 168 px, die Leiste ist aber 140 px hoch (116 + 24 Abstand). Auf dem iPhone,
+    dem Geraet der Kolleginnen und Kollegen, blieb ein per Tastatur angesprungenes
+    Element damit bis zu 28 px unter der Leiste.
+  */
+  scroll-padding-bottom: calc(7em + env(safe-area-inset-bottom, 0px));
 }
 
 html, body, #root {

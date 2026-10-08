@@ -242,7 +242,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
           UI" -- der Linux-Laeufer waehlt eine solche -- wurde der Bereich bei
           "Extra gross" 22 px waagerecht scrollbar, weil lange Woerter nicht
           umbrachen. Gescrollt werden soll hier nur senkrecht. */}
-      <div className="p-6 md:p-8 space-y-6 overflow-y-auto overflow-x-hidden break-words">
+      <div className="p-6 md:p-8 space-y-6 overflow-y-auto overflow-x-hidden [overflow-wrap:anywhere]">
           
           <div className="bg-[var(--info-bg)] text-[var(--info-text)] p-4 rounded-[var(--rv-radius-md)] text-sm leading-relaxed border border-[var(--card-border)]">
             Sichern Sie Ihre Daten oder übertragen Sie diese auf ein neues Gerät. 

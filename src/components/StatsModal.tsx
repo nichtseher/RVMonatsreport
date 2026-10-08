@@ -208,7 +208,7 @@ export default function StatsModal({
                 sonst wird daraus eine. Das ist genau das, was WCAG 1.4.10
                 unter „Reflow" versteht.
               */}
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(7.5rem,1fr))] md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(8rem,1fr))] gap-3">
                 <div className="p-3 sm:p-4 rounded-[var(--rv-radius-lg)] border border-[var(--card-border)] bg-[var(--cat-3-soft)] text-center">
                   <span className="block text-[0.75rem] font-black hyphens-auto break-words text-[var(--cat-3-text)] mb-1">
                     Aktivitäten
@@ -349,10 +349,10 @@ export default function StatsModal({
                               <span className={`w-3 h-3 rounded-full ${category.color} mt-1`} />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-xs font-black text-[var(--text-color)] truncate">{category.title}</span>
+                                  <span className="text-xs font-black text-[var(--text-color)] [overflow-wrap:anywhere]">{category.title}</span>
                                   <span className="text-xs text-[var(--text-muted)]">{category.val} ({pct}%)</span>
                                 </div>
-                                <span className="block text-[0.75rem] text-[var(--text-muted)] truncate">{category.desc}</span>
+                                <span className="block text-[0.75rem] text-[var(--text-muted)] [overflow-wrap:anywhere]">{category.desc}</span>
                               </div>
                             </div>
                           );

@@ -1102,7 +1102,7 @@ export default React.memo(function ClockInWidget({
                           Pause {log.breakMinutes} Min. · Büro {log.officeHours.toLocaleString("de-DE", { maximumFractionDigits: 2 })} h · Außen {log.fieldHours.toLocaleString("de-DE", { maximumFractionDigits: 2 })} h
                         </p>
                         {log.notes && (
-                          <p className="text-[var(--text-muted)] italic mt-0.5 truncate" title={log.notes}>
+                          <p className="text-[var(--text-muted)] italic mt-0.5 [overflow-wrap:anywhere]">
                             „{log.notes}"
                           </p>
                         )}

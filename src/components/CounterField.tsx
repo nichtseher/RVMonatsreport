@@ -300,7 +300,7 @@ export default React.memo(function CounterField({
             }}
             onBlur={onBlur}
             placeholder="0"
-            className={`${inputSize} ${isCompact ? "" : "@min-[23rem]:h-[56px] @min-[36rem]:h-[64px]"} w-full text-center font-black border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] focus:border-[var(--border-focus)] outline-none touch-manipulation`}
+            className={`${inputSize} ${isCompact ? "" : "@min-[23rem]:h-[56px] @min-[36rem]:h-[64px]"} w-full px-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none text-center font-black border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] focus:border-[var(--border-focus)] outline-none touch-manipulation`}
           />
           {zuletzt && (
             <p id={zuletztId} className="sr-only">

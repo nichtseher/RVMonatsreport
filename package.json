@@ -1,7 +1,7 @@
 {
   "name": "rv-monatsreport",
   "private": true,
-  "version": "0.9.73",
+  "version": "0.9.74",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -12,6 +12,7 @@
     "lint": "tsc --noEmit",
     "check": "tsx scripts/pruefen.ts",
     "check:ui": "playwright test",
+    "check:breite": "tsx scripts/breite-voll.ts",
     "check:prod": "npm run build && playwright test --config=playwright.prod.config.ts"
   },
   "dependencies": {
