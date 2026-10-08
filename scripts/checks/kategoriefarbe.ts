@@ -50,23 +50,46 @@ pruefe("Akzent: gegen Karte UND Grund mindestens 3:1 – in beiden Schemata, fü
   }
 });
 
-pruefe("getönte Fläche: die Schriftfarbe des Schemas bleibt darauf mindestens 4,5:1", () => {
+pruefe("kräftige Kachel: die Schrift AUF der Vollfarbe hat mindestens 4,5:1 – für jede Farbe, beide Schemata", () => {
+  // Weiss oder Schwarz, je nachdem was mehr Kontrast bringt: nie unter 4,58:1.
   for (const modus of MODI) {
-    const { text } = SCHEMA_WERTE[modus];
     for (const f of ALLE) {
-      const { flaeche } = farbWerte(f, modus);
-      const k = kontrast(text, flaeche);
-      wahr(k >= 4.5, `${modus} ${f} -> Fläche ${flaeche}: ${k.toFixed(2)}:1 < 4,5:1`);
+      const { fuell, auf } = farbWerte(f, modus);
+      wahr(auf === "#ffffff" || auf === "#000000", `unerwartete Schriftfarbe ${auf}`);
+      const k = kontrast(auf, fuell);
+      wahr(k >= 4.5, `${modus} ${f} -> ${fuell}: Schrift ${auf} ${k.toFixed(2)}:1 < 4,5:1`);
+      // Das Plus kehrt die Farben um (Kreis in Schriftfarbe, Zeichen in Flaechenfarbe): derselbe Wert.
+      wahr(kontrast(fuell, auf) >= 4.5, "Plus-Kreis zu schwach");
+      // Die Flaeche verschwindet nicht auf der Karte ...
+      wahr(kontrast(fuell, SCHEMA_WERTE[modus].karte) >= 1.8, `${modus} ${f}: Fläche ${fuell} unsichtbar auf der Karte`);
+      // ... und das Symbol (Akzent) steht auf dem Kartenquadrat der Kachel mit mindestens 3:1.
+      wahr(kontrast(farbWerte(f, modus).akzent, SCHEMA_WERTE[modus].karte) >= 3, "Symbol zu schwach");
     }
   }
 });
 
-pruefe("Plus im Kreis: gegen den Akzent mindestens 3:1", () => {
+pruefe("kräftige Kachel in der Bereichsfarbe: Schrift (--card-bg) auf --cat-1…4 mindestens 4,5:1 – hell und dunkel", () => {
+  // Ohne eigene Farbe zeigt die Kachel die Farbe des Bereichs. Die Werte kommen aus index.css.
+  const css = readFileSync(new URL("../../src/index.css", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"), "utf8");
+  const block = (kopf: RegExp): string => {
+    const m = kopf.exec(css);
+    if (!m) throw new Error(`Block ${kopf} nicht gefunden`);
+    return css.slice(m.index, css.indexOf("\n}", m.index));
+  };
+  const wert = (b: string, name: string): string => {
+    const m = new RegExp(`${name}: *(#[0-9a-fA-F]{6})`).exec(b);
+    if (!m) throw new Error(`${name} fehlt`);
+    return m[1];
+  };
+  const bloecke: Record<string, string> = {
+    hell: block(/^:root \{\s*\n\s*\/\* Default Light/m),
+    dunkel: block(/^\[data-theme="dark"\] \{/m),
+  };
   for (const modus of MODI) {
-    for (const f of ALLE) {
-      const { akzent, plusText } = farbWerte(f, modus);
-      const k = kontrast(plusText, akzent);
-      wahr(k >= 3, `${modus} ${f}: Plus ${plusText} auf ${akzent} ${k.toFixed(2)}:1 < 3:1`);
+    const b = bloecke[modus];
+    for (const n of [1, 2, 3, 4]) {
+      const k = kontrast(wert(b, "--card-bg"), wert(b, `--cat-${n}`));
+      wahr(k >= 4.5, `${modus}: Schrift auf --cat-${n} ${k.toFixed(2)}:1 < 4,5:1`);
     }
   }
 });
@@ -103,7 +126,7 @@ pruefe("die Grundwerte der Schemata stimmen mit index.css überein", () => {
 pruefe("die Stilvariablen enthalten beide Schemata, und nur diese", () => {
   const stil = kategorieFarbStil("#3b6fd4") as Record<string, string>;
   gleich(Object.keys(stil).sort(), [
-    "--kf-akzent-dunkel", "--kf-akzent-hell", "--kf-flaeche-dunkel", "--kf-flaeche-hell", "--kf-plus-dunkel", "--kf-plus-hell",
+    "--kf-akzent-dunkel", "--kf-akzent-hell", "--kf-auf-dunkel", "--kf-auf-hell", "--kf-fuell-dunkel", "--kf-fuell-hell",
   ]);
   for (const v of Object.values(stil)) wahr(/^#[0-9a-f]{6}$/.test(v), `unerwarteter Wert ${v}`);
 });

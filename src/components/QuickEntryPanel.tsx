@@ -250,7 +250,7 @@ export default function QuickEntryPanel({
         „Vorführungen" und „Auslieferungen" mitten im Wort brachen.
       */}
       <div
-        className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-2.5"
+        className="grid grid-cols-[repeat(auto-fit,minmax(min(9rem,calc(50%-0.3125rem)),1fr))] gap-2.5"
         role="group"
         aria-label="Schnell-Erfassungs-Tasten"
       >
@@ -265,7 +265,7 @@ export default function QuickEntryPanel({
               type="button"
               onClick={() => handleTap(field)}
               aria-label={`${field.label}. Aktueller Stand ${val}. Tippen erhöht um ${field.step}.`}
-              className={`${eigeneFarbe ? "rv-kf rv-kf-kachel " : ""}min-h-[112px] px-2.5 py-3 rounded-[var(--rv-radius-xl)] border border-[var(--card-border)] ${farbe.flaeche} hover:border-[var(--border-focus)] transition-all cursor-pointer flex flex-col items-start justify-between gap-2 text-left active:scale-95 focus-visible:ring-4 touch-manipulation`}
+              className={`rv-kachel rv-kachel-n${bereichVon(field.id)} ${eigeneFarbe ? "rv-kf " : ""}min-h-[112px] px-2.5 py-3 rounded-[var(--rv-radius-xl)] border border-[var(--card-border)] ${farbe.flaeche} hover:border-[var(--border-focus)] transition-all cursor-pointer flex flex-col items-start justify-between gap-2 text-left active:scale-95 focus-visible:ring-4 touch-manipulation`}
             >
               <div className="flex items-start justify-between w-full gap-1">
                 <span className="w-10 h-10 rounded-[var(--rv-radius-md)] bg-[var(--card-bg)] shadow-[var(--rv-shadow-sm)] flex items-center justify-center flex-shrink-0">
@@ -291,7 +291,7 @@ export default function QuickEntryPanel({
                     Mit Silbentrennung wird daraus „Auslie-ferungen" statt
                     „Auslieferunge-n"; break-words bleibt nur der letzte Ausweg
                     für Browser ohne deutsches Trennwörterbuch. */}
-                <span className="block mt-1.5 hyphens-auto break-words text-sm font-bold text-[var(--text-color)] leading-tight line-clamp-3">
+                <span className="rv-kf-label block mt-1.5 hyphens-auto [overflow-wrap:anywhere] text-sm font-bold text-[var(--text-color)] leading-tight">
                   {mitUmbruchNachSchraegstrich(field.label.replace(/^Anzahl\s+/i, ""))}
                 </span>
               </span>

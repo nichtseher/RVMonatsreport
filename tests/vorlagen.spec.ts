@@ -221,3 +221,37 @@ test("Schnell-Erfassung: eine eigene Auswahl einer anderen Vorlage lässt das Fe
   await oeffneFormular(page);
   expect(await kachelnVon(page)).toEqual([team.felder.s1[0].label, team.felder.s2[0].label]);
 });
+
+/*
+  Zwei Schnell-Kacheln nebeneinander, IMMER (0.9.74). Bis dahin hing die Spaltenzahl an
+  `minmax(9rem, 1fr)` -- und rem waechst mit der Schriftgroesse: Auf einem iPhone 17 Pro
+  (402 px) stand in "Gross" und "Extra gross" nur noch eine Kachel je Reihe.
+*/
+for (const breite of [320, 360, 393, 402, 440, 768]) {
+  for (const groesse of ["normal", "large", "extra-large"]) {
+    test(`Schnell-Erfassung: mindestens zwei Kacheln je Reihe (${breite} px, ${groesse})`, async ({ page }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
+      await page.addInitScript((g) => {
+        localStorage.setItem("aussendienst_pwa_onboarding_v1", "1");
+        localStorage.setItem("aussendienst_pwa_a11y", JSON.stringify({ fontSize: g }));
+      }, groesse);
+      await oeffneFormular(page);
+      const gruppe = page.getByRole("group", { name: "Schnell-Erfassungs-Tasten" });
+      await gruppe.waitFor({ state: "visible", timeout: 15_000 });
+      const m = await gruppe.getByRole("button").evaluateAll((els, vw) => {
+        const r = els.map((e) => e.getBoundingClientRect());
+        const ersteReihe = r.filter((b) => Math.abs(b.top - r[0].top) < 2);
+        return {
+          n: els.length,
+          proReihe: ersteReihe.length,
+          innerhalb: r.every((b) => b.left >= -1 && b.right <= vw + 1),
+          ueberlappt: r.some((a, i) => r.some((b, j) => i < j && a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1)),
+        };
+      }, breite);
+      expect(m.n).toBeGreaterThanOrEqual(2);
+      expect(m.proReihe, `Kacheln in der ersten Reihe bei ${breite} px / ${groesse}`).toBeGreaterThanOrEqual(2);
+      expect(m.innerhalb, "Kachel ragt aus dem Fenster").toBe(true);
+      expect(m.ueberlappt, "Kacheln ueberlappen sich").toBe(false);
+    });
+  }
+}

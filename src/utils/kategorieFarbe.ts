@@ -12,14 +12,17 @@ import type { CSSProperties } from "react";
  *
  * FREI WAEHLBAR UND TROTZDEM LESBAR: Gespeichert wird, was die Person gewaehlt hat
  * (`#rrggbb`). Angezeigt wird eine daraus errechnete Fassung, die je Schema
- * (hell, dunkel) vier Zusagen einhaelt -- `npm run check` prueft sie fuer die
- * Palette, zwei Extremfaelle und 2000 Zufallsfarben:
- *   - Akzent (Rand, Symbol, Plus-Kreis) hat gegen Karte UND Grund mindestens 3:1
- *     (WCAG 1.4.11, Nicht-Text-Kontrast);
- *   - die getoente Flaeche laesst die normale Schriftfarbe auf mindestens 4,5:1
- *     (1.4.3);
- *   - das Plus im Kreis hat gegen den Akzent mindestens 3:1;
- *   - die Zahlenfarbe bleibt die des Schemas (nie die gewaehlte).
+ * (hell, dunkel) zwei Zusagen einhaelt -- `npm run check` prueft sie fuer die
+ * Palette, Extremfaelle und 2000 Zufallsfarben:
+ *   - Akzent (Kachelflaeche, Zaehlerbalken, Symbol) hat gegen Karte UND Grund
+ *     mindestens 3:1 (WCAG 1.4.11, Nicht-Text-Kontrast);
+ *   - die Schrift AUF der Kachelflaeche ("auf": Weiss oder Schwarz, was mehr Kontrast
+ *     bringt) hat mindestens 4,5:1 (1.4.3). Das geht fuer jede Farbe auf: Der
+ *     bessere von Weiss und Schwarz erreicht nie weniger als 4,58:1.
+ * Schnell-Kacheln sind seit 0.9.74 KRAEFTIG: Vollfarbe statt Pastelltoenung. Die
+ * Kachelflaeche ("fuell") bleibt so nah an der gewaehlten Farbe wie moeglich und wird nur
+ * abgedunkelt/aufgehellt, wenn sie sonst auf der Karte verschwaende (unter 1,8:1) --
+ * ein helles Gelb bleibt Gelb. Der strengere Akzent (3:1) gilt fuer Balken und Symbole.
  *
  * Die Grundwerte unten muessen zu `index.css` passen -- `npm run check` vergleicht.
  */
@@ -71,11 +74,6 @@ export const kontrast = (a: string, b: string): number => {
   return (hell + 0.05) / (dunkel + 0.05);
 };
 
-const mische = (a: string, b: string, anteilA: number): string => {
-  const [ra, rb] = [zuRgb(a), zuRgb(b)];
-  return zuHex([0, 1, 2].map((i) => ra[i] * anteilA + rb[i] * (1 - anteilA)) as Rgb);
-};
-
 const zuHsl = (hex: string): [number, number, number] => {
   const [r, g, b] = zuRgb(hex).map((k) => k / 255);
   const max = Math.max(r, g, b);
@@ -98,14 +96,17 @@ const vonHsl = (h: number, s: number, l: number): string => {
 };
 
 export interface FarbWerte {
+  /** Fuer Balken und Symbole: mindestens 3:1 gegen Karte und Grund. */
   akzent: string;
-  flaeche: string;
-  plusText: string;
+  /** Kachelflaeche: nah an der Wahl, mindestens 1,8:1 gegen die Karte. */
+  fuell: string;
+  /** Schriftfarbe auf der Kachelflaeche: Weiss oder Schwarz. */
+  auf: string;
 }
 
 /** Die angezeigte Fassung einer gewaehlten Farbe fuer ein Schema. */
 export const farbWerte = (gewaehlt: string, modus: FarbModus): FarbWerte => {
-  const { karte, grund, text } = SCHEMA_WERTE[modus];
+  const { karte, grund } = SCHEMA_WERTE[modus];
   const [h, s, l0] = zuHsl(gewaehlt);
 
   // Akzent: Helligkeit in kleinen Schritten dorthin schieben, wo 3:1 erreicht wird
@@ -118,17 +119,15 @@ export const farbWerte = (gewaehlt: string, modus: FarbModus): FarbWerte => {
     akzent = vonHsl(h, s, l);
   }
 
-  // Flaeche: nur ein Hauch des Akzents. Die Schriftfarbe des Schemas muss darauf lesbar
-  // bleiben; wird es knapp, wird der Anteil kleiner.
-  let anteil = modus === "hell" ? 0.14 : 0.2;
-  let flaeche = mische(akzent, karte, anteil);
-  while (kontrast(text, flaeche) < 4.5 && anteil > 0) {
-    anteil = Math.max(0, anteil - 0.02);
-    flaeche = mische(akzent, karte, anteil);
+  // Kachelflaeche: zuerst die Wahl selbst, nur bei Bedarf verschoben.
+  let lf = l0;
+  let fuell = gewaehlt.toLowerCase();
+  for (let i = 0; i < 60 && kontrast(fuell, karte) < 1.8; i++) {
+    lf = Math.max(0, Math.min(1, lf + richtung * 0.02));
+    fuell = vonHsl(h, s, lf);
   }
-
-  const plusText = kontrast("#ffffff", akzent) >= kontrast("#000000", akzent) ? "#ffffff" : "#000000";
-  return { akzent, flaeche, plusText };
+  const auf = kontrast("#ffffff", fuell) >= kontrast("#000000", fuell) ? "#ffffff" : "#000000";
+  return { akzent, fuell, auf };
 };
 
 /**
@@ -141,11 +140,11 @@ export const kategorieFarbStil = (gewaehlt: unknown): CSSProperties | undefined 
   const d = farbWerte(gewaehlt, "dunkel");
   return {
     "--kf-akzent-hell": h.akzent,
-    "--kf-flaeche-hell": h.flaeche,
-    "--kf-plus-hell": h.plusText,
+    "--kf-fuell-hell": h.fuell,
+    "--kf-auf-hell": h.auf,
     "--kf-akzent-dunkel": d.akzent,
-    "--kf-flaeche-dunkel": d.flaeche,
-    "--kf-plus-dunkel": d.plusText,
+    "--kf-fuell-dunkel": d.fuell,
+    "--kf-auf-dunkel": d.auf,
   } as CSSProperties;
 };
 

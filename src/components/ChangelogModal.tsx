@@ -1,4 +1,4 @@
-import { Sparkles, ShieldCheck, Activity, Bug } from "lucide-react";
+import { Sparkles, ShieldCheck, Activity, Bug, Zap } from "lucide-react";
 import { APP_VERSION } from "../version";
 import AnsichtsKopf from "./AnsichtsKopf";
 
@@ -26,6 +26,26 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       />
 
       <div className="space-y-6">
+        {/* Ausgeschrieben (Regel seit 0.9.40): sichtbar anders -- Tasten in Vollfarbe, immer zu zweit. */}
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <Zap className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.75: Kräftigere Schnell-Tasten, immer zu zweit</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
+            <li>
+              <strong>Schnell-Erfassung:</strong> Die Tasten sind jetzt in kräftiger Vollfarbe statt in blassem Pastell, mit
+              weißer oder schwarzer Schrift darauf, je nachdem, was besser lesbar ist. Eigene Kategoriefarben erscheinen
+              ebenfalls als Vollfarbe. In den Hochkontrast-Farbschemata bleibt alles wie bisher.
+            </li>
+            <li>
+              Es stehen immer mindestens zwei Tasten nebeneinander – auch bei „Groß“ und „Extra groß“ auf schmalen Handys. Vorher
+              stand dort teils nur eine Taste je Reihe. Lange Namen sind nicht mehr gekürzt.
+            </li>
+          </ul>
+        </div>
+
         {/* Ausgeschrieben (Regel seit 0.9.40): eine neue, freiwillige Einstellung -- man muss wissen, dass es sie gibt. */}
         <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
           <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">

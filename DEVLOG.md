@@ -109,7 +109,26 @@ Formular. Damit entfiel `ohneKategorie` (jede Zeile hat eine Kategorie).
 - Beim ersten `check:ui`-Versuch (abgebrochen, bevor es weiterging) fielen die Ersteinstiegs-
   Prüfungen: Der neue Schritt verschob ihre Nummern. Liste und Beschreibung angepasst.
 
-### Fünfter Nachtrag: Schnell-Erfassung je Vorlage, eigene Kategoriefarben (0.9.74, noch nicht veröffentlicht)
+### Sechster Nachtrag: kräftige Schnell-Kacheln, immer zu zweit (0.9.75)
+
+Rückmeldung des Projektinhabers vom iPhone 17 Pro: Die Farben sollen **kräftiger** sein, und es sollen
+**immer zwei Schnell-Tasten nebeneinander** stehen.
+
+- **Zweispaltig, immer.** Gemessen (402 px): „Normal“ 2 Spalten, „Groß“ und „Extra groß“ **1** — das feste
+  `minmax(9rem, 1fr)` wächst mit der Schriftgröße. Jetzt `minmax(min(9rem, calc(50% − gap/2)), 1fr)`:
+  mindestens zwei, auf Breitem weiter mehr. Das Label bricht (`[overflow-wrap:anywhere]`) und ist nicht mehr
+  auf drei Zeilen gekappt (`line-clamp-3` entfernt: verlorene Information). Test: 18 Fälle (320–768 px × 3
+  Schriftgrößen): ≥ 2 je Reihe, nichts außerhalb des Fensters, keine Überlappung.
+- **Vollfarbe statt Pastell.** Die Kachel ist die Farbe des Bereichs (`--cat-1…4`) bzw. die eigene Farbe, die
+  Schrift darauf weiß oder schwarz; das Plus kehrt die Farben um, das Symbol steht auf dem Kartenquadrat.
+  Neu in `farbWerte`: `fuell` (nah an der Wahl, nur bei < 1,8:1 gegen die Karte verschoben) und `auf`.
+  Erste Fassung nutzte den 3:1-Akzent als Fläche: ein helles Gelb wurde zu Senf — Vollfläche mit Text darauf
+  braucht den Text-Kontrast, nicht 3:1 gegen die Karte; Akzent bleibt für Balken und Symbole.
+- **Belegt:** `check` 353 (Schrift auf `fuell` ≥ 4,5:1 für Palette, Extremfarben und 2000 Zufallsfarben in
+  beiden Schemata; Bereichsfarben `--cat-1…4` gegen `--card-bg` aus `index.css`), `farben.spec` mit axe
+  color-contrast bei Weiß/Schwarz/Gelb in hell und dunkel, Bildschirmfotos der Extremfälle gesichtet.
+
+### Fünfter Nachtrag: Schnell-Erfassung je Vorlage, eigene Kategoriefarben (0.9.74)
 
 Frage des Projektinhabers: Geht der Schnellbereich mit den neuen Vorlagen mit, und gibt es für
 sehende Kolleginnen und Kollegen eigene Kategoriefarben? „Ich will eigene Farben, aber nur optional.“

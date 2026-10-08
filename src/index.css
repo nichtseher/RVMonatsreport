@@ -511,45 +511,64 @@ html {
 }
 
 /*
-  Eigene Kategoriefarben (0.9.74), optional. Die Variablen `--kf-*` setzt die Komponente
-  inline (utils/kategorieFarbe.ts, errechnet je Schema); hier steht nur, welches Schema
-  welche nimmt. Bewusst NUR fuer "light" und "dark": In den beiden Hochkontrast-Schemata
-  greifen diese Regeln nicht, die Farbe bleibt dort unsichtbar.
+  Kategoriefarben (0.9.74). Die Schnell-Kacheln sind KRAEFTIG: Vollfarbe, Schrift in
+  Weiss oder Schwarz. Zwei Quellen fuer `--kf-fuell` (Flaeche), `--kf-akzent` (Symbol, Balken) und `--kf-auf` (Schrift):
+    1. die Farbe des Bereichs (`--cat-1..4`, vom Schema abgestimmt; Schrift in `--card-bg`),
+    2. eine eigene Farbe der Kategorie (Variablen `--kf-*-hell/-dunkel`, die die Komponente
+       inline setzt, errechnet in utils/kategorieFarbe.ts).
+  Die eigene Farbe steht NACH der Bereichsfarbe und gewinnt bei gleicher Gewichtung.
+  Bewusst NUR fuer "light" und "dark": In den beiden Hochkontrast-Schemata greifen diese
+  Regeln nicht, dort bleibt es bei Schwarz/Weiss bzw. Schwarz/Gelb.
   Ausserhalb von @layer, damit sie gegen die Utility-Klassen der Komponenten gewinnen.
 */
+[data-theme="light"] .rv-kachel-n1, [data-theme="dark"] .rv-kachel-n1 { --kf-fuell: var(--cat-1); --kf-akzent: var(--cat-1); --kf-auf: var(--card-bg); }
+[data-theme="light"] .rv-kachel-n2, [data-theme="dark"] .rv-kachel-n2 { --kf-fuell: var(--cat-2); --kf-akzent: var(--cat-2); --kf-auf: var(--card-bg); }
+[data-theme="light"] .rv-kachel-n3, [data-theme="dark"] .rv-kachel-n3 { --kf-fuell: var(--cat-3); --kf-akzent: var(--cat-3); --kf-auf: var(--card-bg); }
+[data-theme="light"] .rv-kachel-n4, [data-theme="dark"] .rv-kachel-n4 { --kf-fuell: var(--cat-4); --kf-akzent: var(--cat-4); --kf-auf: var(--card-bg); }
 [data-theme="light"] .rv-kf {
+  --kf-fuell: var(--kf-fuell-hell);
   --kf-akzent: var(--kf-akzent-hell);
-  --kf-flaeche: var(--kf-flaeche-hell);
-  --kf-plus: var(--kf-plus-hell);
+  --kf-auf: var(--kf-auf-hell);
 }
 [data-theme="dark"] .rv-kf {
+  --kf-fuell: var(--kf-fuell-dunkel);
   --kf-akzent: var(--kf-akzent-dunkel);
-  --kf-flaeche: var(--kf-flaeche-dunkel);
-  --kf-plus: var(--kf-plus-dunkel);
+  --kf-auf: var(--kf-auf-dunkel);
 }
 /* Zaehlerkarte: farbiger Balken links, farbiges Symbol. Der Text bleibt, wie er ist. */
 [data-theme="light"] .rv-kf-karte,
 [data-theme="dark"] .rv-kf-karte {
   border-left: 4px solid var(--kf-akzent);
 }
-[data-theme="light"] .rv-kf .rv-kf-symbol,
-[data-theme="dark"] .rv-kf .rv-kf-symbol {
+[data-theme="light"] .rv-kf-karte .rv-kf-symbol,
+[data-theme="dark"] .rv-kf-karte .rv-kf-symbol {
   color: var(--kf-akzent);
 }
-/* Schnell-Kachel: getoente Flaeche, farbiger Rand, farbiger Plus-Kreis. Die Zahl bleibt in Schriftfarbe. */
-[data-theme="light"] .rv-kf-kachel,
-[data-theme="dark"] .rv-kf-kachel {
-  background: var(--kf-flaeche);
-  border-color: var(--kf-akzent);
+/* Schnell-Kachel: Vollfarbe. Das Symbol steht auf einem hellen/dunklen Quadrat, das Plus kehrt die Farben um. */
+[data-theme="light"] .rv-kachel,
+[data-theme="dark"] .rv-kachel {
+  background: var(--kf-fuell);
+  border-color: var(--kf-fuell);
+  color: var(--kf-auf);
 }
-[data-theme="light"] .rv-kf-kachel .rv-kf-plus,
-[data-theme="dark"] .rv-kf-kachel .rv-kf-plus {
-  background: var(--kf-akzent);
-  color: var(--kf-plus);
+[data-theme="light"] .rv-kachel:hover,
+[data-theme="dark"] .rv-kachel:hover {
+  filter: brightness(1.07);
 }
-[data-theme="light"] .rv-kf-kachel .rv-kf-zahl,
-[data-theme="dark"] .rv-kf-kachel .rv-kf-zahl {
-  color: var(--text-color);
+[data-theme="light"] .rv-kachel .rv-kf-symbol,
+[data-theme="dark"] .rv-kachel .rv-kf-symbol {
+  color: var(--kf-akzent);
+}
+[data-theme="light"] .rv-kachel .rv-kf-plus,
+[data-theme="dark"] .rv-kachel .rv-kf-plus {
+  background: var(--kf-auf);
+  color: var(--kf-fuell);
+}
+[data-theme="light"] .rv-kachel .rv-kf-zahl,
+[data-theme="dark"] .rv-kachel .rv-kf-zahl,
+[data-theme="light"] .rv-kachel .rv-kf-label,
+[data-theme="dark"] .rv-kachel .rv-kf-label {
+  color: var(--kf-auf);
 }
 
 html, body, #root {
