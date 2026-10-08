@@ -25,6 +25,8 @@
 
 import { get } from "idb-keyval";
 import { PAKET_APP, PAKET_FORMAT } from "./syncSchema";
+import { feldSchluessel } from "./felder";
+import { ladeVorlagenWahl } from "./vorlagen";
 
 /** Was der Browser über den Speicherzustand hergibt. */
 export interface SpeicherLage {
@@ -244,7 +246,7 @@ export async function baueRettungsPaket(): Promise<string> {
     {
       app: PAKET_APP,
       fmt: PAKET_FORMAT,
-      appFields: ausLocal("aussendienst_pwa_fields"),
+      appFields: ausLocal(feldSchluessel(ladeVorlagenWahl())),
       carryover: ausLocal("aussendienst_pwa_carryover_v2"),
       history: await ausIdb("aussendienst_pwa_history"),
       reportData: await ausIdb("aussendienst_pwa_data"),

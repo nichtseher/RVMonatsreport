@@ -1,21 +1,19 @@
 import { ReportData, HistoryRecord, SectionsConfig, FieldConfig } from "../types";
-import { VORLAGE_MONATSINFO_BASE64, VORLAGE_BLATTNAME } from "./vorlageMonatsinfo";
-import { VORLAGE_STAND } from "./vorlageStand";
+import { findeVorlage, bereichsTitel, type VorlageMeta } from "./vorlagen";
+import { fuellePaket } from "./vorlagePaket";
 // Nur der Typ -- ExcelJS selbst wird erst beim Export nachgeladen (271 KB).
 import type { Workbook as ExcelWorkbook } from "exceljs";
 import { formatMonthGerman } from "./dateUtils";
-import { FELD_ZU_ZELLE } from "./vorlageZellen";
-export { FELD_ZU_ZELLE };
 
 /**
  * Export in der Firmenvorlage der Vertriebsleitung.
  *
- * Blatt 1 IST die Vorlage -- nicht ein Nachbau davon. Die Originaldatei wird
- * geladen und nur an den vorgesehenen Stellen befuellt; Beschriftungen,
- * gelbe Eingabefelder, Rahmen, verbundene Bereiche, Spaltenbreiten und die
- * Summenformel in D10 bleiben unangetastet.
+ * Blatt 1 IST die Vorlage -- nicht ein Nachbau davon. Seit 0.9.73 wird das
+ * Original-PAKET geoeffnet und nur an den vorgesehenen Zellen befuellt
+ * (`vorlagePaket.ts`); alles andere bleibt Byte fuer Byte. Der Umweg ueber
+ * ExcelJS blieb nur fuer "alle Blaetter", wo Blaetter angehaengt werden muessen.
  *
- * WARUM EXCELJS: Gemessen am 2026-08-19 -- das frueher hier genutzte
+ * WARUM EXCELJS (fuer die angehaengten Blaetter): Gemessen am 2026-08-19 -- das frueher hier genutzte
  * SheetJS schreibt in der Community-Fassung keine Zellformatierung. Nach einem
  * Lesen-und-Schreiben-Umlauf kam die Farbe FFFF99 in der Datei NIRGENDS mehr
  * vor, die styles.xml enthielt eine Schrift, keinen Fettdruck und zwei Rahmen.
@@ -26,11 +24,6 @@ export { FELD_ZU_ZELLE };
  * die Vertriebsleitung ihr gewohntes Blatt behaelt und die uebrigen Zahlen
  * trotzdem einzeln herauskopieren kann.
  */
-
-/** Zellen ausserhalb der Zaehlerfelder. */
-export const ZELLE_MONAT = "D3";
-export const ZELLE_NAME = "D4";
-export const ZELLE_KOMMENTAR = "B28";
 
 export const BLATT_ZUSATZ = "RV Mobil - Zusatzangaben";
 export const BLATT_ZEITEN = "RV Mobil - Arbeitszeiten";
@@ -163,6 +156,7 @@ const baueZusatzBlatt = (
   felder: SectionsConfig,
   belegteFelder: Set<string>,
   wert: (id: string) => number,
+  vorlage: VorlageMeta,
 ) => {
   const uebrig = alleFelder(felder).filter((f) => !belegteFelder.has(f.id));
 
@@ -172,10 +166,10 @@ const baueZusatzBlatt = (
   zusatz.addRow(["Zusatzangaben aus RV Mobil", ""]);
   zusatz.getRow(1).font = { bold: true, size: 13 };
   zusatz.addRow([
-    "Diese Werte haben in der Vorlage der Vertriebsleitung keine Zeile.",
+    "Diese Werte haben in der gewählten Vorlage keine Zeile.",
     "",
   ]);
-  zusatz.addRow([`Formularfassung der Vorlage: ${VORLAGE_STAND}`, ""]);
+  zusatz.addRow([`Vorlage: ${vorlage.name} (Fassung ${vorlage.stand})`, ""]);
   zusatz.addRow([`Monat: ${monatFuerVorlage(data.month)}`, ""]);
   zusatz.addRow([`Name: ${data.name || ""}`, ""]);
   zusatz.addRow([]);
@@ -212,9 +206,9 @@ const baueZusatzBlatt = (
   const summenKopf = zusatz.addRow(["Summen je Bereich", "Wert"]);
   summenKopf.font = { bold: true };
   const bereichsNamen: Record<"s1" | "s2" | "s3", string> = {
-    s1: "1. Vorführungen & Auslieferungen",
-    s2: "2. Schulung, Support & Akquise",
-    s3: "3. Spezialprodukte",
+    s1: bereichsTitel(vorlage, "s1"),
+    s2: bereichsTitel(vorlage, "s2"),
+    s3: bereichsTitel(vorlage, "s3"),
   };
   (["s1", "s2", "s3"] as const).forEach((s) => {
     const summe = (felder[s] || []).reduce((a, f) => a + wert(f.id), 0);
@@ -228,13 +222,19 @@ export const erzeugeVorlagenDatei = async (
   appFields: SectionsConfig,
   umfang: BlattUmfang,
   /**
+   * Kennung der Vorlage (siehe `vorlagen.ts`). Bewusst OHNE Vorgabewert, aus
+   * demselben Grund wie `umfang`: Welches Formular rausgeht, soll jeder
+   * Aufrufer entscheiden muessen, nicht ein stiller Standard.
+   */
+  vorlageId: string,
+  /**
    * Blatt 3 weglassen, obwohl `umfang` "alle" ist. Genau ein Fall: Die
    * Stempeluhr ist abgeschaltet -- dann ist ein Schichtenblatt (leer oder
    * mit Altbestand) keine Angabe, sondern ein Missverstaendnis.
    */
   mitZeitenblatt: boolean = true,
 ): Promise<Uint8Array> => {
-  const ExcelJS = (await import("exceljs")).default;
+  const vorlage = findeVorlage(vorlageId);
 
   // Archivierte Monate bringen ihren eigenen Feldaufbau mit.
   const felder =
@@ -245,62 +245,74 @@ export const erzeugeVorlagenDatei = async (
     return typeof v === "number" ? v : 0;
   };
 
-  const wb = new ExcelJS.Workbook();
-  await wb.xlsx.load(base64ZuBytes(VORLAGE_MONATSINFO_BASE64).buffer as ArrayBuffer);
-
   /*
-    Die Fassung des Formulars gehoert in JEDE erzeugte Datei, auch in die
-    mit nur Blatt 1 -- sonst traegt gerade der Weg, den die
-    Vertriebsleitung regelmaessig bekommt, keine Angabe darueber, welches
-    Formular sie da vor sich hat. Die Dokumenteigenschaften sind dafuer der
-    einzige Ort, der unabhaengig vom Blattumfang existiert; Blatt 1 selbst
-    bleibt unangetastet, das ist die Zusage.
+    Blatt 1 ist das ORIGINAL der Vorlage mit eingesetzten Werten -- nicht eine
+    Neufassung (siehe vorlagePaket.ts). Eingesetzt wird nur, was die App auch
+    wirklich kennt: Monat, Name, Kommentar und die Zaehler, die in
+    `feldZuZelle` stehen; jede Zeile des Formulars hat eine Kategorie (geprueft).
+
+    Die Fassung des Formulars gehoert in JEDE erzeugte Datei, auch in die mit
+    nur Blatt 1 -- sonst traegt gerade der Weg, den die Vertriebsleitung
+    regelmaessig bekommt, keine Angabe darueber, welches Formular sie da vor
+    sich hat. Die Dokumenteigenschaften sind dafuer der einzige Ort, der
+    unabhaengig vom Blattumfang existiert.
   */
-  // „RV Mobil" und nicht „RV Monatsreport": Die App heisst seit 0.9.44
-  // ueberall gleich -- Fenstertitel, Startbildschirm, Systemmeldung und hier.
-  wb.title = `RV Mobil ${data.month || ""}`.trim();
-  wb.subject = `Formularfassung ${VORLAGE_STAND}`;
-  wb.company = "Reinecker Vision GmbH";
-  wb.description =
-    `Erzeugt mit RV Mobil. Blatt 1 ist die Firmenvorlage in der Fassung ${VORLAGE_STAND}.`;
-
-  const ws = wb.getWorksheet(VORLAGE_BLATTNAME);
-  if (!ws) {
-    // Kann nur passieren, wenn die eingebettete Vorlage ausgetauscht wurde und
-    // dabei der Blattname abgewichen ist. Lieber laut scheitern als still ein
-    // leeres Blatt ausliefern.
-    throw new Error(`Vorlage beschädigt: Blatt "${VORLAGE_BLATTNAME}" fehlt.`);
-  }
-
-  // --- Blatt 1: die Vorlage befuellen -----------------------------------
-  ws.getCell(ZELLE_MONAT).value = monatFuerVorlage(data.month);
-  ws.getCell(ZELLE_NAME).value = data.name || "";
-
+  const werte: Record<string, string | number> = {
+    [vorlage.zellen.monat]: monatFuerVorlage(data.month),
+    [vorlage.zellen.name]: data.name || "",
+    // Der Kommentarbereich ist verbunden (Team: B28:D28) -- der Wert gehoert in
+    // die linke obere Zelle, sonst zeigt Excel ihn nicht an.
+    [vorlage.zellen.kommentar]: data.notes || "",
+  };
   const belegteFelder = new Set<string>();
-  for (const [id, zelle] of Object.entries(FELD_ZU_ZELLE)) {
-    ws.getCell(zelle).value = wert(id);
+  for (const [id, zelle] of Object.entries(vorlage.feldZuZelle)) {
+    werte[zelle] = wert(id);
     belegteFelder.add(id);
   }
 
-  // Der Kommentarbereich ist B28:D28 verbunden -- der Wert gehoert in die
-  // linke obere Zelle, sonst zeigt Excel ihn nicht an.
-  ws.getCell(ZELLE_KOMMENTAR).value = data.notes || "";
+  const paket = await fuellePaket(
+    base64ZuBytes(await vorlage.ladeDatei()),
+    werte,
+    {
+      // „RV Mobil" und nicht „RV Monatsreport": Die App heisst seit 0.9.44
+      // ueberall gleich -- Fenstertitel, Startbildschirm, Systemmeldung und hier.
+      title: `RV Mobil ${data.month || ""}`.trim(),
+      subject: `${vorlage.name}, Formularfassung ${vorlage.stand}`,
+      description: `Erzeugt mit RV Mobil. Blatt 1 ist die Vorlage „${vorlage.name}“ in der Fassung ${vorlage.stand}.`,
+      company: "Reinecker Vision GmbH",
+      zuletztGeaendertVon: "RV Mobil",
+    },
+    vorlage.blattName,
+  );
 
-  if (umfang === "alle") {
-    baueZusatzBlatt(wb, data, felder, belegteFelder, wert);
-    if (mitZeitenblatt) {
-      baueZeitenBlatt(wb, data, {
-        blattName: BLATT_ZEITEN,
-        kopfZeilen: [
-          ["Arbeitszeiten aus RV Mobil"],
-          [`Monat: ${monatFuerVorlage(data.month)}`],
-          [`Name: ${data.name || ""}`],
-          [],
-        ],
-        kommentarSpalte: "Kommentar / Ort",
-        breiten: [12, 10, 10, 16, 16, 14, 20, 42],
-      });
-    }
+  // "Nur Vorlage": das Paket ist fertig, Byte fuer Byte das Original plus Werte.
+  if (umfang === "vorlage") return paket;
+
+  /*
+    "Alle Blaetter": zwei weitere Blaetter muessen angehaengt werden, und das
+    kann nur eine Tabellenbibliothek. Blatt 1 behaelt dabei seine Zellen,
+    Rahmen, Farben und Zusammenfuehrungen; gemessen ist aber, dass ExcelJS die
+    Standardschrift und Standardspaltenbreite NEBEN dem Formular veraendert und
+    die Druckereinstellungen fallen laesst. Wer das Formular exakt braucht,
+    schickt "nur Vorlage" -- und das ist die vorgeschlagene Antwort.
+  */
+  const ExcelJS = (await import("exceljs")).default;
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(paket.buffer.slice(paket.byteOffset, paket.byteOffset + paket.byteLength) as ArrayBuffer);
+
+  baueZusatzBlatt(wb, data, felder, belegteFelder, wert, vorlage);
+  if (mitZeitenblatt) {
+    baueZeitenBlatt(wb, data, {
+      blattName: BLATT_ZEITEN,
+      kopfZeilen: [
+        ["Arbeitszeiten aus RV Mobil"],
+        [`Monat: ${monatFuerVorlage(data.month)}`],
+        [`Name: ${data.name || ""}`],
+        [],
+      ],
+      kommentarSpalte: "Kommentar / Ort",
+      breiten: [12, 10, 10, 16, 16, 14, 20, 42],
+    });
   }
 
   const puffer = await wb.xlsx.writeBuffer();

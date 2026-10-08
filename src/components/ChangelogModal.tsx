@@ -27,6 +27,42 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
       <div className="space-y-6">
         {/*
+          Ausgeschrieben (Regel seit 0.9.40): Es gibt eine neue Wahl in den
+          Optionen. Die Vorlage heißt jetzt „Team Blindenhilfsmittel
+          Monatsinfo“, und weitere folgen.
+        */}
+        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
+          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+            <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
+            <span>Version 0.9.73: Berichtsvorlage wählbar</span>
+            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+          </h3>
+          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
+            <li>
+              <strong>Eigene Vorlage:</strong> Das bisherige Formular heißt jetzt „Team Blindenhilfsmittel
+              Monatsinfo“. Unter <strong>Optionen → Berichtsvorlage</strong> sehen Sie, welche Vorlage und welche
+              Fassung Ihr Bericht verwendet. Es gibt jetzt drei: Team Blindenhilfsmittel Monatsinfo, APA Monatsinfo
+              Außendienst und Vertrieb Monatsinfo. Auch die Einrichtung beim ersten Start fragt danach.
+            </li>
+            <li>
+              <strong>Das Formular kommt unverändert beim Empfänger an:</strong> Bei „Nur Vorlage senden“ wird die
+              Originaldatei geöffnet und nur Ihre Zahlen werden eingesetzt – Schrift, Breiten, Rahmen und Druckeinstellungen
+              bleiben, wie die Firma sie vorgibt.
+            </li>
+            <li>
+              <strong>Das Formular der App passt sich an:</strong> Jedes Team erfasst andere Zahlen. Nach der Wahl zeigt die
+              App genau die Kategorien Ihres Formulars, mit den Überschriften der Bereiche, und jede Zahl landet in der
+              passenden Zeile der Excel-Datei. Beim Wechsel geht nichts verloren: Erfasste Zahlen bleiben gespeichert, und
+              beim Zurückwechseln sind auch Ihre Kategorien wieder da.
+            </li>
+            <li>
+              Die Wahl gilt für diesen Browser und wird nicht mit anderen Geräten abgeglichen. Bis Sie etwas anderes
+              wählen, ändert sich an Ihren Berichten nichts.
+            </li>
+          </ul>
+        </div>
+
+        {/*
           Ausgeschrieben (Regel seit 0.9.40: neu wissen muss): Löschen wandert
           jetzt zwischen gekoppelten Geräten, die Datensicherung verlangt ein
           längeres Passwort und hat ein neues Format, eine Schaltfläche heißt

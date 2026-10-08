@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { AccessibilitySettings, ReportData, SectionsConfig } from "../types";
 import { baueZusammenfassung } from "../utils/zusammenfassung";
+import { findeVorlage } from "../utils/vorlagen";
 
 /**
  * Alles Hoerbare: ARIA-Ansagen, Sprachausgabe, Diktat, Vorlesefunktion.
@@ -22,6 +23,8 @@ export interface SprachausgabeParameter {
   >;
   reportData: ReportData | null;
   appFields: SectionsConfig;
+  /** Gewaehlte Vorlage: Ihre Bereichsnamen werden mitgelesen. */
+  vorlageId: string;
   triggerToast: (nachricht: string) => void;
   triggerHaptic: (dauer?: number) => void;
   /** Diktiertext ans Notizfeld anhaengen. */
@@ -59,7 +62,7 @@ export interface Sprachausgabe {
 }
 
 export function useSprachausgabe(p: SprachausgabeParameter): Sprachausgabe {
-  const { accessibility, reportData, appFields, triggerToast, triggerHaptic, onDiktatText } = p;
+  const { accessibility, reportData, appFields, vorlageId, triggerToast, triggerHaptic, onDiktatText } = p;
 
   const [ariaAnnouncement, setAriaAnnouncement] = useState("");
   const [isDictating, setIsDictating] = useState(false);
@@ -203,7 +206,7 @@ export function useSprachausgabe(p: SprachausgabeParameter): Sprachausgabe {
       return;
     }
 
-    const textToSpeak = baueZusammenfassung(reportData, appFields);
+    const textToSpeak = baueZusammenfassung(reportData, appFields, findeVorlage(vorlageId));
 
     try {
       window.speechSynthesis.cancel();
@@ -236,7 +239,7 @@ export function useSprachausgabe(p: SprachausgabeParameter): Sprachausgabe {
       triggerToast("Sprachausgabe konnte nicht gestartet werden.");
     }
   }, [
-    isReadingSummary, reportData, appFields, accessibility.speechRate,
+    isReadingSummary, reportData, appFields, vorlageId, accessibility.speechRate,
     triggerHaptic, triggerToast, announceToAriaAndSpeech,
   ]);
 

@@ -1,5 +1,6 @@
 import { FieldConfig, ReportData, SectionsConfig } from "../types";
 import { formatMonthGerman } from "./dateUtils";
+import { bereichsAnsage, type VorlageMeta } from "./vorlagen";
 
 /**
  * Der Text, den die Vorlesefunktion spricht.
@@ -14,17 +15,12 @@ import { formatMonthGerman } from "./dateUtils";
  * ungeprueft. Als reine Funktion herausgeloest, Wortlaut unveraendert.
  */
 
-/** Die Bereichsueberschriften, wie sie vorgelesen werden. */
-export const BEREICHS_TITEL: Record<keyof SectionsConfig, string> = {
-  s1: "Vorführungen und Auslieferungen",
-  s2: "Schulung, Support und Akquise",
-  s3: "Spezialprodukte",
-  s4: "Arbeitszeit und Büro",
-};
 
 export function baueZusammenfassung(
   daten: ReportData | null,
   felder: SectionsConfig,
+  /** Ohne Vorgabewert: Die Bereichsnamen gehoeren zur Vorlage des Teams. */
+  vorlage: VorlageMeta,
 ): string {
   const teile: string[] = [];
   teile.push(`Zusammenfassung für ${formatMonthGerman(daten?.month || "")}.`);
@@ -47,7 +43,7 @@ export function baueZusammenfassung(
   };
 
   (["s1", "s2", "s3", "s4"] as (keyof SectionsConfig)[]).forEach((bereich) => {
-    const text = bereichsText(BEREICHS_TITEL[bereich], felder[bereich]);
+    const text = bereichsText(bereichsAnsage(vorlage, bereich), felder[bereich]);
     if (text) teile.push(text);
   });
 

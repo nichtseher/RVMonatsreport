@@ -45,7 +45,10 @@ import { useAnsichtsFokus } from "./hooks/useAnsichtsFokus";
 import BerichtsBereich from "./components/BerichtsBereich";
 import NotizBereich from "./components/NotizBereich";
 import { loescheAllesLokal } from "./utils/allesLoeschen";
-import { FELD_ZU_ZELLE } from "./utils/vorlageZellen";
+import {
+  findeVorlage, ladeVorlagenWahl, VORLAGE_SCHLUESSEL, bereichsTitel,
+} from "./utils/vorlagen";
+import { anVorlage, feldSchluessel, ladeFelder, standardFelder } from "./utils/felder";
 import { monthHasContent } from "./utils/monatInhalt";
 import { rueckfrageOffen } from "./utils/rueckfrage";
 import { stempeln, stempelNachtragen, stempelnGeaenderte } from "./utils/zeitstempel";
@@ -151,143 +154,6 @@ function leseMonatsfelder(): Record<string, SectionsConfig> {
     return {};
   }
 }
-
-/**
- * Die Felder, mit denen die App ausgeliefert wird.
- *
- * Hier stand bis 0.9.22 die Beschreibung von `monthHasContent` -- einer
- * Funktion, die seit 0.9.15 in `utils/monatInhalt.ts` liegt und ihren Text
- * dort nochmals fuehrt. Ein Doc-Block ueber der falschen Deklaration ist
- * schlimmer als keiner: Er beschreibt beim Ueberfliegen etwas, das gar nicht
- * darunter steht.
- */
-const DEFAULT_FIELDS_CONFIG: SectionsConfig = {
-  s1: [
-    {
-      id: "vf_schule",
-      label: "Anzahl Vorführungen Schule/Bildung",
-      step: 1,
-      icon: "🏫",
-    },
-    {
-      id: "vf_arbeit",
-      label: "Anzahl Vorführungen Arbeitsplatz",
-      step: 1,
-      icon: "💼",
-    },
-    {
-      id: "aus_schule",
-      label: "Anzahl Auslieferungen Schule/Bildung",
-      step: 1,
-      icon: "🎒",
-    },
-    {
-      id: "aus_arbeit",
-      label: "Anzahl Auslieferungen Arbeitsplatz",
-      step: 1,
-      icon: "🏢",
-    },
-  ],
-  s2: [
-    {
-      id: "schul_vorort",
-      label: "Anzahl Schulungen/Support (ohne Auslieferung)",
-      step: 1,
-      icon: "👨‍🏫",
-    },
-    {
-      id: "schul_tel",
-      label: "Anzahl Schulung/Support Telefon",
-      step: 1,
-      icon: "📞",
-    },
-    {
-      id: "akquise",
-      label: "Anzahl Akquisetermine / Beratungsstellen / Multiplikator/innen",
-      step: 1,
-      icon: "🤝",
-    },
-    {
-      id: "messen",
-      label: "Anzahl Teilnahme Veranstaltungen/Messen/Ausstellungen",
-      step: 1,
-      icon: "🎪",
-    },
-  ],
-  s3: [
-    {
-      id: "tac_vf",
-      label: "Anzahl Vorführungen Tactonom",
-      step: 1,
-      icon: "🎯",
-    },
-    {
-      // Steht in der Firmenvorlage als Zeile D22 ("Vorführungen Envision"),
-      // fehlte aber in der App -- das Feld war schlicht nie angelegt. Die
-      // Reihenfolge folgt der Vorlage: Tactonom, Envision, Feelspace, WeWalk.
-      id: "envision_vf",
-      label: "Anzahl Vorführungen Envision",
-      step: 1,
-      icon: "👓",
-    },
-    {
-      id: "feel_vf",
-      label: "Anzahl Vorführungen Feelspace",
-      step: 1,
-      icon: "🌍",
-    },
-    {
-      id: "wewalk_vf",
-      label: "Anzahl Vorführungen WeWalk",
-      step: 1,
-      icon: "🦯",
-    },
-    {
-      id: "wewalk_tel",
-      label: "Anzahl telefonische Einweisungen WeWalk",
-      step: 1,
-      icon: "☎️",
-    },
-  ],
-  s4: [
-    {
-      id: "tage_arbeit",
-      label: "Arbeitstage (ohne Urlaub/Krankheit)",
-      step: 1,
-      icon: "🗓️",
-    },
-    {
-      id: "std_buero",
-      label: "Stunden Büro/Innendienst",
-      step: 0.5,
-      icon: "⌨️",
-    },
-    {
-      id: "std_aussendienst",
-      label: "Stunden Außendienst/Reisezeit",
-      step: 0.5,
-      icon: "🚗",
-    },
-    {
-      id: "tage_urlaub",
-      label: "Genommene Urlaubstage",
-      step: 0.5,
-      icon: "🌴",
-    },
-    {
-      id: "tage_krank",
-      label: "Krankheitstage (bezahlt)",
-      step: 0.5,
-      icon: "🤒",
-    },
-    {
-      id: "tage_feiertag",
-      label: "Feiertage (arbeitsfrei)",
-      step: 1,
-      icon: "🎉",
-    },
-  ],
-};
 
 export default function App() {
   // --- ROUTING / NAVIGATION STATE ---
@@ -398,128 +264,33 @@ export default function App() {
   }, []);
 
   // --- STATE ---
-  const [appFields, setAppFields] = useState<SectionsConfig>(() => {
-    const saved = localStorage.getItem("aussendienst_pwa_fields");
-    let fields = DEFAULT_FIELDS_CONFIG;
-    if (saved) {
-      try {
-        fields = JSON.parse(saved);
-      } catch (e) {
-        console.error("Failed to parse fields config", e);
-      }
-    }
+  /*
+    Gewaehlte Berichtsvorlage (0.9.73). Sie bestimmt die Kategorien, die
+    Bereichsnamen und die Excel-Datei. Der Zustand steht VOR den Kategorien,
+    weil deren Einlesen und deren Absicherung gegen fremde Kategoriesaetze
+    (Archivmonat, Geraeteabgleich, Sicherung) die Vorlage brauchen.
+  */
+  const [vorlageId, setVorlageIdIntern] = useState<string>(ladeVorlagenWahl);
+  const vorlage = findeVorlage(vorlageId);
+  const vorlageRef = useRef(vorlage);
+  vorlageRef.current = vorlage;
 
-    // Ensure wewalk_tel is restored if it was missing
-    if (fields && fields.s3) {
-      const hasTel = fields.s3.some((f: FieldConfig) => f.id === "wewalk_tel");
-      if (!hasTel) {
-        fields.s3.push({
-          id: "wewalk_tel",
-          label: "Anzahl telefonische Einweisungen WeWalk",
-          step: 1,
-          icon: "☎️",
-        });
-      }
-
-      // Envision nachruesten: Die Firmenvorlage hat dafuer eine eigene Zeile
-      // (D22), die App hatte das Feld nie. Ohne diese Nachruestung bekaemen es
-      // nur Neuinstallationen -- bestehende Geraete haben ihre Feldliste in
-      // localStorage und wuerden die Zeile leer lassen.
-      // Einsortiert direkt hinter Tactonom, wie in der Vorlage.
-      if (!fields.s3.some((f: FieldConfig) => f.id === "envision_vf")) {
-        const envision = {
-          id: "envision_vf",
-          label: "Anzahl Vorführungen Envision",
-          step: 1,
-          icon: "👓",
-        };
-        const nachTactonom = fields.s3.findIndex(
-          (f: FieldConfig) => f.id === "tac_vf"
-        );
-        if (nachTactonom === -1) fields.s3.push(envision);
-        else fields.s3.splice(nachTactonom + 1, 0, envision);
-      }
-    }
-
-    // Migration for s4 fields to add vacation, sickness, travel, holidays
-    if (fields && fields.s4) {
-      const requiredS4 = [
-        {
-          id: "std_aussendienst",
-          label: "Stunden Außendienst/Reisezeit",
-          step: 0.5,
-          icon: "🚗",
-        },
-        {
-          id: "tage_urlaub",
-          label: "Genommene Urlaubstage",
-          step: 0.5,
-          icon: "🌴",
-        },
-        {
-          id: "tage_krank",
-          label: "Krankheitstage (bezahlt)",
-          step: 0.5,
-          icon: "🤒",
-        },
-        {
-          id: "tage_feiertag",
-          label: "Feiertage (arbeitsfrei)",
-          step: 1,
-          icon: "🎉",
-        },
-      ];
-      requiredS4.forEach((field) => {
-        const exists = fields.s4.some((f: FieldConfig) => f.id === field.id);
-        if (!exists) {
-          fields.s4.push(field);
-        }
-      });
-      // Update label to be descriptive
-      fields.s4 = fields.s4.map((f: FieldConfig) => {
-        if (f.id === "std_buero") {
-          return { ...f, label: "Stunden Büro/Innendienst" };
-        }
-        return f;
-      });
-    }
-
-    const iconMap: Record<string, string> = {
-      vf_schule: "🏫",
-      vf_arbeit: "💼",
-      aus_schule: "🎒",
-      aus_arbeit: "🏢",
-      schul_vorort: "👨‍🏫",
-      schul_tel: "📞",
-      akquise: "🤝",
-      messen: "🎪",
-      tac_vf: "🎯",
-      feel_vf: "🌍",
-      wewalk_vf: "🦯",
-      wewalk_tel: "☎️",
-      tage_arbeit: "🗓️",
-      std_buero: "⌨️",
-      std_aussendienst: "🚗",
-      tage_urlaub: "🌴",
-      tage_krank: "🤒",
-      tage_feiertag: "🎉",
-    };
-
-    // Make sure every field in every section has an icon
-    Object.keys(fields).forEach((sectionKey) => {
-      const sec = sectionKey as keyof SectionsConfig;
-      if (Array.isArray(fields[sec])) {
-        fields[sec] = fields[sec].map((f: FieldConfig) => {
-          if (!f.icon) {
-            return { ...f, icon: iconMap[f.id] || "⭐" };
-          }
-          return f;
-        });
-      }
-    });
-
-    return fields;
-  });
+  const [appFields, setAppFieldsRoh] = useState<SectionsConfig>(() =>
+    ladeFelder(vorlage, localStorage.getItem(feldSchluessel(vorlage.id))),
+  );
+  /*
+    JEDER Schreibzugriff auf die Kategorien laeuft durch `anVorlage`: Ein
+    Archivmonat der anderen Vorlage, ein gekoppeltes Geraet oder eine
+    Sicherung liefern Kategoriesaetze, die nicht zur gewaehlten Vorlage passen,
+    und die Einstellung wird bei jeder Aenderung gespeichert -- ohne diese
+    Sperre waere die Einstellung nach einem Blick ins Archiv verdraengt.
+  */
+  const setAppFields = useCallback(
+    (neu: SectionsConfig | ((prev: SectionsConfig) => SectionsConfig)) => {
+      setAppFieldsRoh((prev) => anVorlage(typeof neu === "function" ? neu(prev) : neu, vorlageRef.current));
+    },
+    [],
+  );
 
   const [accessibility, setAccessibility] = useState<AccessibilitySettings>(
     () => {
@@ -569,10 +340,10 @@ export default function App() {
   */
   const bereichsNamen: Record<(typeof tabs)[number], string> = {
     all: "Alle Bereiche",
-    s1: "Bereich 1: Vorführungen",
-    s2: "Bereich 2: Schulungen & Support",
-    s3: "Bereich 3: Spezialprodukte",
-    s4: "Bereich 4: Arbeitszeit",
+    s1: `Bereich 1: ${vorlage.bereiche.s1.bereich}`,
+    s2: `Bereich 2: ${vorlage.bereiche.s2.bereich}`,
+    s3: `Bereich 3: ${vorlage.bereiche.s3.bereich}`,
+    s4: `Bereich 4: ${vorlage.bereiche.s4.bereich}`,
   };
 
   const wechsleBereich = (ziel: (typeof tabs)[number]) => {
@@ -731,6 +502,7 @@ export default function App() {
     accessibility,
     reportData,
     appFields,
+    vorlageId,
     triggerToast,
     triggerHaptic,
     onDiktatText: (text) => diktatRef.current(text),
@@ -788,6 +560,39 @@ export default function App() {
       true,
     );
   }, [announceToAriaAndSpeech]);
+
+  /*
+    Vorlage wechseln. Kein Rueckfragedialog: Es wird nichts geloescht. Erfasste
+    Zahlen haengen an der Kategorie-ID im Bericht und bleiben gespeichert;
+    Kategorien, die die neue Vorlage nicht kennt, sind nur nicht sichtbar.
+    Die Kategorien jeder Vorlage liegen unter eigenem Schluessel, beim
+    Zurueckwechseln ist also auch Ihre Einstellung wieder da.
+    Beide Zustaende werden im selben Zug gesetzt, damit die Speicherung nie
+    die Kategorien der alten Vorlage unter der Kennung der neuen ablegt.
+  */
+  const waehleVorlage = useCallback(
+    (id: string) => {
+      const neu = findeVorlage(id);
+      if (neu.id === vorlageRef.current.id) return;
+      let gespeichert: string | null = null;
+      try {
+        gespeichert = localStorage.getItem(feldSchluessel(neu.id));
+      } catch {
+        gespeichert = null;
+      }
+      setAppFieldsRoh((prev) =>
+        gespeichert ? ladeFelder(neu, gespeichert) : anVorlage(prev, neu, true),
+      );
+      setVorlageIdIntern(neu.id);
+      safeSetItem(VORLAGE_SCHLUESSEL, neu.id);
+      setActiveSectionTab("all");
+      announceToAriaAndSpeech(
+        `Vorlage ${neu.name} gewählt, Fassung ${neu.stand}. Die Kategorien im Formular entsprechen jetzt diesem Formular. Bereits erfasste Zahlen bleiben gespeichert.`,
+        true,
+      );
+    },
+    [announceToAriaAndSpeech],
+  );
 
   const focusAndAnnounce = useCallback((target: "month" | "name" | "notes") => {
     if (target === "month") {
@@ -898,6 +703,7 @@ export default function App() {
     bestand,
     setBestand,
   } = useEinstellungen({
+    vorlageId,
     appFields,
     accessibility,
     isCompactView,
@@ -1301,6 +1107,7 @@ export default function App() {
     triggerHaptic,
     setConfirmRequest,
     onPersistFailure: handleHistoryPersistFailure,
+    vorlageId,
   });
 
   /**
@@ -1401,13 +1208,13 @@ export default function App() {
 
   const getFieldSectionInfo = (fieldId: string) => {
     if (appFields.s1.some((f) => f.id === fieldId))
-      return { num: 1, name: "Vorführungen" };
+      return { num: 1, name: vorlage.bereiche.s1.bereich };
     if (appFields.s2.some((f) => f.id === fieldId))
-      return { num: 2, name: "Schulung & Support" };
+      return { num: 2, name: vorlage.bereiche.s2.bereich };
     if (appFields.s3.some((f) => f.id === fieldId))
-      return { num: 3, name: "Spezialprodukte" };
+      return { num: 3, name: vorlage.bereiche.s3.bereich };
     if (appFields.s4.some((f) => f.id === fieldId))
-      return { num: 4, name: "Arbeitszeit" };
+      return { num: 4, name: vorlage.bereiche.s4.bereich };
     return { num: 1, name: "Kategorie" };
   };
 
@@ -1499,14 +1306,14 @@ export default function App() {
       bleibt. Und eine leere Zeile sieht aus wie eine Null. Genau dieser
       Fehler ist 0.9.11 schon einmal aufgetreten.
     */
-    const zelle = FELD_ZU_ZELLE[fieldId];
+    const zelle = vorlage.feldZuZelle[fieldId];
     setConfirmRequest({
       title: "Kategorie löschen?",
       message: `„${label}“ wird endgültig aus dem Formular entfernt. Der bisher erfasste Wert für diesen Monat geht dabei verloren.`,
       details: [
         ...(zelle
           ? [
-              `Diese Kategorie füllt Zeile ${zelle} im Firmenformular. Nach dem Löschen bleibt diese Zeile in jedem Bericht leer.`,
+              `Diese Kategorie füllt Zeile ${zelle} im Formular „${vorlage.name}“. Nach dem Löschen bleibt diese Zeile in jedem Bericht leer.`,
             ]
           : []),
         // Kategorien gleichen sich beim Geräteabgleich als Vereinigung ab. Eine
@@ -1553,7 +1360,7 @@ export default function App() {
       confirmLabel: "Zurücksetzen",
       tone: "danger",
       onConfirm: () => {
-        setAppFields(DEFAULT_FIELDS_CONFIG);
+        setAppFields(standardFelder(vorlage));
         setReportData((prev) =>
           prev
             ? {
@@ -1942,7 +1749,7 @@ export default function App() {
     {
       nr: 1,
       schluessel: "s1" as const,
-      titel: "1. Vorführungen & Auslieferungen",
+      titel: bereichsTitel(vorlage, "s1"),
       icon: <Eye className="w-5 h-5" />,
       felder: appFields.s1,
       hinweis: null as React.ReactNode,
@@ -1959,7 +1766,7 @@ export default function App() {
     {
       nr: 2,
       schluessel: "s2" as const,
-      titel: "2. Schulung, Support & Akquise",
+      titel: bereichsTitel(vorlage, "s2"),
       icon: <GraduationCap className="w-5 h-5" />,
       felder: appFields.s2,
       hinweis: null as React.ReactNode,
@@ -1968,7 +1775,7 @@ export default function App() {
     {
       nr: 3,
       schluessel: "s3" as const,
-      titel: "3. Spezialprodukte (Fokus)",
+      titel: bereichsTitel(vorlage, "s3"),
       icon: <Sparkles className="w-5 h-5" />,
       felder: appFields.s3,
       hinweis: null as React.ReactNode,
@@ -1977,7 +1784,7 @@ export default function App() {
     {
       nr: 4,
       schluessel: "s4" as const,
-      titel: "4. Arbeitszeit & Büro",
+      titel: bereichsTitel(vorlage, "s4"),
       icon: <Clock className="w-5 h-5" />,
       felder: appFields.s4,
       hinweis: (accessibility.enableTimeTracking !== false ? (
@@ -2558,10 +2365,10 @@ export default function App() {
           role="region"
         >
           {[
-            { id: "s1" as const, name: "Vorführungen", bereich: "Bereich 1: Vorführungen", wert: s1Total, ziel: goalsConfig.s1, einheit: "", farbe: "var(--cat-1)" },
-            { id: "s2" as const, name: "Schulungen", bereich: "Bereich 2: Schulungen & Support", wert: s2Total, ziel: goalsConfig.s2, einheit: "", farbe: "var(--cat-2)" },
-            { id: "s3" as const, name: "Spezial", bereich: "Bereich 3: Spezialprodukte", wert: s3Total, ziel: goalsConfig.s3, einheit: "", farbe: "var(--cat-3)" },
-            { id: "s4" as const, name: "Büro", bereich: "Bereich 4: Arbeitszeit", wert: s4Hours, ziel: goalsConfig.s4, einheit: " h", farbe: "var(--cat-4)" },
+            { id: "s1" as const, name: vorlage.bereiche.s1.kurz, bereich: `Bereich 1: ${vorlage.bereiche.s1.bereich}`, wert: s1Total, ziel: goalsConfig.s1, einheit: "", farbe: "var(--cat-1)" },
+            { id: "s2" as const, name: vorlage.bereiche.s2.kurz, bereich: `Bereich 2: ${vorlage.bereiche.s2.bereich}`, wert: s2Total, ziel: goalsConfig.s2, einheit: "", farbe: "var(--cat-2)" },
+            { id: "s3" as const, name: vorlage.bereiche.s3.kurz, bereich: `Bereich 3: ${vorlage.bereiche.s3.bereich}`, wert: s3Total, ziel: goalsConfig.s3, einheit: "", farbe: "var(--cat-3)" },
+            { id: "s4" as const, name: vorlage.bereiche.s4.kurz, bereich: `Bereich 4: ${vorlage.bereiche.s4.bereich}`, wert: s4Hours, ziel: goalsConfig.s4, einheit: " h", farbe: "var(--cat-4)" },
           ].map((chip) => {
             const aktiv = activeSectionTab === chip.id;
             return (
@@ -2791,7 +2598,7 @@ export default function App() {
               */}
               <div>
                 <label htmlFor="goal-s1-input" className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
-                  Vorführungen
+                  {vorlage.bereiche.s1.kurz}
                 </label>
                 <input
                   id="goal-s1-input"
@@ -2809,7 +2616,7 @@ export default function App() {
               </div>
               <div>
                 <label htmlFor="goal-s2-input" className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
-                  Schulungen
+                  {vorlage.bereiche.s2.kurz}
                 </label>
                 <input
                   id="goal-s2-input"
@@ -2827,7 +2634,7 @@ export default function App() {
               </div>
               <div>
                 <label htmlFor="goal-s3-input" className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
-                  Spezialprodukte
+                  {vorlage.bereiche.s3.bereich}
                 </label>
                 <input
                   id="goal-s3-input"
@@ -3048,6 +2855,8 @@ export default function App() {
           onSettingsChange={setAccessibility}
           onFinish={finishOnboarding}
           announce={announceToAriaAndSpeech}
+          vorlageId={vorlageId}
+          onVorlageChange={waehleVorlage}
         />
       )}
 
@@ -3077,6 +2886,7 @@ export default function App() {
               isOpen={true}
               onClose={() => zurueckZuOptionen("menu-help")}
               appFields={appFields}
+              vorlageId={vorlageId}
             />
           </React.Suspense>
         </div>
@@ -3185,6 +2995,7 @@ export default function App() {
               appFields={appFields}
               onDeleteField={handleDeleteField}
               onFactoryReset={handleFactoryResetFields}
+              vorlageId={vorlageId}
             />
           </React.Suspense>
         </div>
@@ -3205,6 +3016,7 @@ export default function App() {
               onVersandGemeldet={(monat) => setzeVersandStatus(monat, true)}
               setConfirmRequest={setConfirmRequest}
               stempeluhrAktiv={accessibility.enableTimeTracking !== false}
+              vorlageId={vorlageId}
             />
           </React.Suspense>
         </div>
@@ -3220,6 +3032,7 @@ export default function App() {
               history={history}
               announceToAriaAndSpeech={announceToAriaAndSpeech}
               onClose={() => zurueckZuOptionen("menu-stats")}
+              vorlageId={vorlageId}
             />
           </React.Suspense>
         </div>
@@ -3259,6 +3072,8 @@ export default function App() {
             }}
             onOpenBestand={() => setActiveTab("bestand")}
             onOpenErklaerung={() => setActiveTab("erklaerung")}
+            vorlageId={vorlageId}
+            onVorlageChange={waehleVorlage}
             /*
               Ueber die Kennung zaehlen, nicht addieren: Der laufende Monat
               steht zugleich im Archiv (die Selbstsicherung legt ihn dort ab),

@@ -2302,9 +2302,10 @@ test.describe("Zustände des Archivs", () => {
  * **erste Bildschirm, den ein neuer Nutzer sieht**, als einziger nie gemessen
  * wurde.
  *
- * Er hat fünf Schritte, und jeder ist ein eigener Zustand mit eigenem Inhalt:
- * Begrüßung, Namensfeld, Seh- und Höreinstellungen (die längste Seite, mit
- * Schriftgrößen und Farbschemata), Erfassungshinweise, Datenschutz.
+ * Er hat sechs Schritte (fünf, solange es nur eine Vorlage gab), und jeder ist
+ * ein eigener Zustand mit eigenem Inhalt: Begrüßung, Namensfeld, Wahl des
+ * Formulars, Seh- und Höreinstellungen (die längste Seite, mit Schriftgrößen
+ * und Farbschemata), Erfassungshinweise, Datenschutz.
  *
  * Gemessen wird über das Fenster selbst, nicht über eine Ansicht dahinter —
  * `role="dialog"` mit `aria-modal="true"`, verankert an der Überschrift des
@@ -2313,6 +2314,7 @@ test.describe("Zustände des Archivs", () => {
 const EINSTIEG_SCHRITTE = [
   "Willkommen bei RV Mobil",
   "Wie heißen Sie?",
+  "Welches Formular nutzen Sie?",
   "Sehen und Hören",
   "So erfassen Sie am schnellsten",
   "Ihre Daten bleiben bei Ihnen",

@@ -17,12 +17,14 @@ const quelle = (p: string) =>
   readFileSync(new URL("../../src/" + p, import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"), "utf8");
 
 const app = quelle("App.tsx");
+// Die Standardkategorien stehen seit 0.9.73 im Katalog der Vorlagen: feld(id, label, symbol, ...).
+const vorlagen = quelle("utils/vorlagen.ts");
 const optionen = quelle("components/A11yModal.tsx");
 
 gruppe("Symbole der Kategorien");
 
 pruefe("jedes Standard-Symbol hat ein Icon", () => {
-  const symbole = [...app.matchAll(/icon:\s*"([^"]+)"/g)]
+  const symbole = [...vorlagen.matchAll(/feld\("[^"]+",\s*"[^"]+",\s*"([^"]+)"/g)]
     .map((m) => m[1])
     .filter((s) => !s.includes("/") && !s.includes(".png"));
   wahr(symbole.length > 10, `nur ${symbole.length} Standard-Symbole gefunden — Suchmuster falsch?`);

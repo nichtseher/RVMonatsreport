@@ -24,6 +24,13 @@ import {
   Globe,
   Car,
   Glasses,
+  Stethoscope,
+  DoorOpen,
+  HeartPulse,
+  ClipboardList,
+  Landmark,
+  Camera,
+  Telescope,
 } from "lucide-react";
 
 /**
@@ -68,6 +75,15 @@ export const ICON_KARTE: Record<string, any> = {
   "🌴": Umbrella,
   "🤒": Thermometer,
   "🎉": PartyPopper,
+  // Kategorien der Vorlagen APA und Vertrieb (0.9.73)
+  "🧑‍🔧": Wrench,
+  "🩺": Stethoscope,
+  "🚪": DoorOpen,
+  "⚕️": HeartPulse,
+  "📋": ClipboardList,
+  "🏛️": Landmark,
+  "📷": Camera,
+  "🔭": Telescope,
   // Weitere Auswahlmöglichkeiten für eigene Kategorien
   "👥": Users,
   "📦": Package,

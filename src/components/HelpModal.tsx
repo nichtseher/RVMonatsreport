@@ -6,16 +6,19 @@ import {
 , Package } from "lucide-react";
 import { SectionsConfig } from "../types";
 import AnsichtsKopf from "./AnsichtsKopf";
-import { VORLAGE_STAND } from "../utils/vorlageStand";
+import { findeVorlage } from "../utils/vorlagen";
 import { rueckfrageOffen } from "../utils/rueckfrage";
 
 interface HelpModalProps {
   isOpen: boolean;
   onClose: () => void;
   appFields: SectionsConfig;
+  /** Gewaehlte Berichtsvorlage (Kennung, siehe utils/vorlagen.ts). */
+  vorlageId: string;
 }
 
-export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
+export default function HelpModal({ isOpen, onClose, vorlageId }: HelpModalProps) {
+  const vorlage = findeVorlage(vorlageId);
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<"general" | "report" | "time" | "backup">("general");
 
@@ -319,8 +322,8 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
                   <p>Vor dem Senden prüft die App Ihren Bericht kurz auf Auffälligkeiten (z. B. fehlender Name oder Stunden, die nicht zur Stempeluhr passen) und fragt gegebenenfalls nach. Danach fragt sie in jedem Fall, welche Tabellenblätter mitgehen sollen – siehe unten.</p>
                   <p>Zusätzlich können Sie im <strong>Archiv</strong> jederzeit rückwirkend Excel-Dateien für jeden vergangenen Monat herunterladen oder teilen.</p>
                   <p className="mt-2">Im Archiv trägt jeder Monat ein Abzeichen: <strong>„Gesendet"</strong> mit Datum oder <strong>„Noch offen"</strong>. Es wird automatisch gesetzt, sobald Sie den Monat exportiert und die Datei wirklich verschickt haben – brechen Sie den Teilen-Dialog ab, bleibt der Monat offen. Mit der Schaltfläche <strong>Als gesendet markieren</strong> können Sie es jederzeit von Hand korrigieren.</p>
-                  <p className="mt-2 text-[var(--info-text)] font-normal">Vor jedem Senden fragt die App, <strong>was mitgehen soll</strong>. <strong>Nur Vorlage senden</strong> schickt allein das Blatt <strong>Monatsinfo</strong> – exakt das gewohnte Formular der Vertriebsleitung, gleiche Zeilen, gleiche gelbe Felder, gleiche Summenformel. Das ist die vorgeschlagene Antwort, und sie reicht der Vertriebsleitung.</p>
-                  <p className="mt-2"><strong>Welche Formularfassung steckt drin?</strong> Die App bringt das Formular der Vertriebsleitung in der Fassung <strong>{VORLAGE_STAND}</strong> mit. Diese Angabe steht auch in jeder erzeugten Datei – in den Dateieigenschaften und, sofern mitgesendet, auf dem Blatt <strong>Zusatzangaben</strong>. Gibt die Vertriebsleitung ein neues Formular heraus, melden Sie sich bitte: Die App erkennt das nicht von selbst.</p>
+                  <p className="mt-2 text-[var(--info-text)] font-normal">Vor jedem Senden fragt die App, <strong>was mitgehen soll</strong>. <strong>Nur Vorlage senden</strong> schickt allein das Blatt <strong>{vorlage.blattName}</strong> – exakt das Formular Ihrer gewählten Vorlage, gleiche Zeilen, gleiche gelbe Felder, gleiche Summenformel. Das ist die vorgeschlagene Antwort.</p>
+                  <p className="mt-2"><strong>Welche Vorlage und welche Fassung steckt drin?</strong> Gewählt ist <strong>{vorlage.name}</strong> in der Fassung <strong>{vorlage.stand}</strong>. Die Vorlage wechseln Sie unter <strong>Optionen → Berichtsvorlage</strong>. Mit ihr ändern sich die Kategorien im Formular: Sie sehen genau die Zeilen Ihres Formulars. Bereits erfasste Zahlen bleiben gespeichert – wechseln Sie zurück, sind auch die Kategorien der anderen Vorlage mit ihren Zahlen wieder da. Gesendet wird immer in der gewählten Vorlage, auch für Monate aus dem Archiv. Die Fassung steht auch in jeder erzeugten Datei – in den Dateieigenschaften und, sofern mitgesendet, auf dem Blatt <strong>Zusatzangaben</strong>. Gibt die Firma ein neues Formular heraus, melden Sie sich bitte: Die App erkennt das nicht von selbst.</p>
                   <p className="mt-2">Wählen Sie stattdessen <strong>Alle drei Blätter</strong>, kommen zwei weitere dazu: Auf <strong>RV Mobil - Zusatzangaben</strong> stehen alle Werte, für die es im Formular keine Zeile gibt (etwa Urlaubs- und Krankheitstage, Reisezeit und Ihre eigenen Kategorien) samt der Summen je Bereich. Auf <strong>RV Mobil - Arbeitszeiten</strong> stehen Ihre einzelnen Schichten aus der Stempeluhr – mit Kommen, Gehen, Pause und Kommentar. Ist die Stempeluhr abgeschaltet, entfällt dieses Blatt, und die Antwort heißt <strong>Beide Blätter</strong>.</p>
                 </FAQItem>
               </div>

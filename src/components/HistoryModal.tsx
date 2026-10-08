@@ -20,7 +20,7 @@ import { triggerFileDownload } from "../utils/excelUtils";
 import { formatMonthGerman } from "../utils/dateUtils";
 import { ConfirmRequest } from "./ConfirmDialog";
 import type { BlattUmfang } from "../utils/vorlageExport";
-import { VORLAGE_STAND } from "../utils/vorlageStand";
+import { findeVorlage, umfangRueckfrage } from "../utils/vorlagen";
 import { pruefeMonatsabschluss } from "../utils/abschlussCheck";
 
 interface HistoryModalProps {
@@ -43,6 +43,8 @@ interface HistoryModalProps {
   setConfirmRequest: (anfrage: ConfirmRequest) => void;
   /** Steuert, ob "alle Blaetter" ueberhaupt ein Schichtenblatt bedeutet. */
   stempeluhrAktiv: boolean;
+  /** Gewaehlte Berichtsvorlage (Kennung, siehe utils/vorlagen.ts). */
+  vorlageId: string;
 }
 
 /** ISO-Zeit -> "03.09.2026". Leere/unbrauchbare Eingabe ergibt "". */
@@ -72,7 +74,8 @@ export default function HistoryModal({
   onToggleVersand,
   onVersandGemeldet,
   setConfirmRequest,
-  stempeluhrAktiv
+  stempeluhrAktiv,
+  vorlageId,
 }: HistoryModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
@@ -139,9 +142,7 @@ export default function HistoryModal({
   const frageNachUmfang = (record: HistoryRecord): true => {
     setConfirmRequest({
       title: "Was soll gesendet werden?",
-      message: stempeluhrAktiv
-        ? `Blatt 1 ist das gewohnte Formular der Vertriebsleitung (Fassung ${VORLAGE_STAND}). Auf Wunsch kommen zwei weitere Blätter dazu: Ihre Zusatzangaben und Ihre einzelnen Schichten. Beides braucht die Vertriebsleitung nicht.`
-        : `Blatt 1 ist das gewohnte Formular der Vertriebsleitung (Fassung ${VORLAGE_STAND}). Auf Wunsch kommt ein Blatt mit Ihren Zusatzangaben dazu, für die es im Formular keine Zeile gibt.`,
+      message: umfangRueckfrage(findeVorlage(vorlageId), stempeluhrAktiv),
       confirmLabel: "Nur Vorlage senden",
       cancelLabel: "Abbrechen",
       alternative: {
@@ -184,7 +185,7 @@ export default function HistoryModal({
     try {
       // Erst beim Export laden -- siehe App.tsx: ExcelJS plus eingebettete Vorlage.
       const { erzeugeVorlagenDatei } = await import("../utils/vorlageExport");
-      const wbout = await erzeugeVorlagenDatei(record, appFields, umfang, stempeluhrAktiv);
+      const wbout = await erzeugeVorlagenDatei(record, appFields, umfang, vorlageId, stempeluhrAktiv);
       const monthVal = record.month || "Monat";
       const nameVal = record.name || "Mitarbeitende_r";
       const cleanName = nameVal.replace(/\s+/g, "_") || "Mitarbeiter";

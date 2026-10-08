@@ -3,6 +3,7 @@ import { Trash2, Settings, RotateCcw } from "lucide-react";
 import AnsichtsKopf from "./AnsichtsKopf";
 import { SectionsConfig } from "../types";
 import { rueckfrageOffen } from "../utils/rueckfrage";
+import { findeVorlage, bereichsTitel } from "../utils/vorlagen";
 
 interface ManageModalProps {
   isOpen: boolean;
@@ -10,6 +11,8 @@ interface ManageModalProps {
   appFields: SectionsConfig;
   onDeleteField: (sectionKey: keyof SectionsConfig, fieldId: string, label: string) => void;
   onFactoryReset: () => void;
+  /** Gewaehlte Vorlage: Sie bestimmt die Namen der Bereiche. */
+  vorlageId: string;
 }
 
 export default function ManageModal({
@@ -18,6 +21,7 @@ export default function ManageModal({
   appFields,
   onDeleteField,
   onFactoryReset,
+  vorlageId,
 }: ManageModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -91,11 +95,12 @@ export default function ManageModal({
      ein Überbleibsel aus der Zeit, als diese Ansicht ein Overlay war. Es war
      zugleich der beste Beleg dafür, dass sie keines mehr ist. */
 
+  const vorlage = findeVorlage(vorlageId);
   const sectionLabels: Record<keyof SectionsConfig, string> = {
-    s1: "1. Vorführungen & Auslieferungen",
-    s2: "2. Schulung, Support & Akquise",
-    s3: "3. Spezialprodukte (Fokus)",
-    s4: "4. Arbeitszeit & Büro",
+    s1: bereichsTitel(vorlage, "s1"),
+    s2: bereichsTitel(vorlage, "s2"),
+    s3: bereichsTitel(vorlage, "s3"),
+    s4: bereichsTitel(vorlage, "s4"),
   };
 
   // Check if there are any fields to show

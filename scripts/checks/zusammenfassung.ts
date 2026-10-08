@@ -1,5 +1,6 @@
 import { gruppe, pruefe, gleich, wahr } from "../helfer";
-import { baueZusammenfassung } from "../../src/utils/zusammenfassung";
+import { baueZusammenfassung as baueMit } from "../../src/utils/zusammenfassung";
+import { findeVorlage } from "../../src/utils/vorlagen";
 import type { ReportData, SectionsConfig } from "../../src/types";
 
 /*
@@ -29,6 +30,10 @@ const basis: ReportData = {
   values: {},
   timeLogs: [],
 };
+
+// Die Pruefdaten sind die des Team-Formulars (Vorgabevorlage).
+const baueZusammenfassung = (daten: ReportData | null, felder: SectionsConfig) =>
+  baueMit(daten, felder, findeVorlage(null));
 
 gruppe("Vorgelesene Zusammenfassung");
 

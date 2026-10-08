@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import AnsichtsKopf from "./AnsichtsKopf";
 import { ReportData, SectionsConfig, HistoryRecord } from "../types";
+import { findeVorlage, bereichsTitel } from "../utils/vorlagen";
 
 interface StatsModalProps {
   reportData: ReportData;
@@ -17,6 +18,8 @@ interface StatsModalProps {
   announceToAriaAndSpeech: (message: string, immediate?: boolean) => void;
   /** Rückweg zu den Optionen -- seit 0.9.45 der einzige Weg hierher. */
   onClose?: () => void;
+  /** Gewaehlte Vorlage: Sie bestimmt die Namen der Bereiche. */
+  vorlageId: string;
 }
 
 export default function StatsModal({
@@ -25,7 +28,9 @@ export default function StatsModal({
   history,
   announceToAriaAndSpeech,
   onClose,
+  vorlageId,
 }: StatsModalProps) {
+  const vorlage = findeVorlage(vorlageId);
   const [activeTab, setActiveTab] = useState<"current" | "trends">("current");
   const [viewType, setViewType] = useState<"visual" | "table">("visual");
 
@@ -290,9 +295,9 @@ export default function StatsModal({
                                  bunt -- die Zuordnung Legende↔Ring war zerrissen (WCAG 1.4.1),
                                  und #6366f1 auf Schwarz liegt mit rund 2,3:1 unter den 3:1 für
                                  grafische Elemente (1.4.11). */
-                              { val: currentS1, color: "var(--cat-1)", name: "Vorführungen" },
-                              { val: currentS2, color: "var(--cat-2)", name: "Schulung" },
-                              { val: currentS3, color: "var(--cat-3)", name: "Spezialprodukte" }
+                              { val: currentS1, color: "var(--cat-1)", name: vorlage.bereiche.s1.kurz },
+                              { val: currentS2, color: "var(--cat-2)", name: vorlage.bereiche.s2.kurz },
+                              { val: currentS3, color: "var(--cat-3)", name: vorlage.bereiche.s3.bereich }
                             ].map((item, idx) => {
                               if (item.val === 0) return null;
                               const pct = (item.val / totalActions) * 100;
@@ -334,9 +339,9 @@ export default function StatsModal({
                       {/* Customized Legends with details */}
                       <div className="space-y-3 w-full max-w-xs">
                         {[
-                          { val: currentS1, color: "bg-[var(--cat-1)]", border: "border-[var(--cat-1)]", title: "1. Vorführungen & Auslieferungen", desc: "Besuche an Schulen & Arbeitsplätzen" },
-                          { val: currentS2, color: "bg-[var(--cat-2)]", border: "border-[var(--cat-2)]", title: "2. Schulung & Akquise", desc: "Einweisungen, Telefonate & Messen" },
-                          { val: currentS3, color: "bg-[var(--cat-3)]", border: "border-[var(--cat-3)]", title: "3. Spezialprodukte", desc: "Tactonom, Feelspace, WeWalk" }
+                          { val: currentS1, color: "bg-[var(--cat-1)]", border: "border-[var(--cat-1)]", title: bereichsTitel(vorlage, "s1"), desc: vorlage.bereiche.s1.beschreibung },
+                          { val: currentS2, color: "bg-[var(--cat-2)]", border: "border-[var(--cat-2)]", title: bereichsTitel(vorlage, "s2"), desc: vorlage.bereiche.s2.beschreibung },
+                          { val: currentS3, color: "bg-[var(--cat-3)]", border: "border-[var(--cat-3)]", title: bereichsTitel(vorlage, "s3"), desc: vorlage.bereiche.s3.beschreibung }
                         ].map((category, idx) => {
                           const pct = totalActions > 0 ? ((category.val / totalActions) * 100).toFixed(0) : "0";
                           return (
@@ -371,17 +376,17 @@ export default function StatsModal({
                     </thead>
                     <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-muted)] font-bold">
                       <tr>
-                        <td className="p-4 font-bold text-[var(--text-color)]">1. Vorführungen & Auslieferungen</td>
+                        <td className="p-4 font-bold text-[var(--text-color)]">{bereichsTitel(vorlage, "s1")}</td>
                         <td className="p-4 text-right font-black text-[var(--cat-1-text)]">{currentS1}</td>
                         <td className="p-4 text-right">{totalActions > 0 ? ((currentS1 / totalActions) * 100).toFixed(1) : "0"}%</td>
                       </tr>
                       <tr>
-                        <td className="p-4 font-bold text-[var(--text-color)]">2. Schulung & Akquise</td>
+                        <td className="p-4 font-bold text-[var(--text-color)]">{bereichsTitel(vorlage, "s2")}</td>
                         <td className="p-4 text-right font-black text-[var(--cat-2-text)]">{currentS2}</td>
                         <td className="p-4 text-right">{totalActions > 0 ? ((currentS2 / totalActions) * 100).toFixed(1) : "0"}%</td>
                       </tr>
                       <tr>
-                        <td className="p-4 font-bold text-[var(--text-color)]">3. Spezialprodukte</td>
+                        <td className="p-4 font-bold text-[var(--text-color)]">{bereichsTitel(vorlage, "s3")}</td>
                         <td className="p-4 text-right font-black text-[var(--cat-3-text)]">{currentS3}</td>
                         <td className="p-4 text-right">{totalActions > 0 ? ((currentS3 / totalActions) * 100).toFixed(1) : "0"}%</td>
                       </tr>
@@ -547,9 +552,9 @@ export default function StatsModal({
                       */}
                       <div className="flex flex-wrap gap-x-5 gap-y-2 justify-center pt-2 border-t border-[var(--card-border)]">
                         {[
-                          { farbe: "var(--cat-1)", muster: undefined, text: "1. Vorführungen" },
-                          { farbe: "var(--cat-2)", muster: "9 5", text: "2. Schulungen" },
-                          { farbe: "var(--cat-3)", muster: "1 5", text: "3. Spezialprodukte" },
+                          { farbe: "var(--cat-1)", muster: undefined, text: `1. ${vorlage.bereiche.s1.kurz}` },
+                          { farbe: "var(--cat-2)", muster: "9 5", text: `2. ${vorlage.bereiche.s2.kurz}` },
+                          { farbe: "var(--cat-3)", muster: "1 5", text: `3. ${vorlage.bereiche.s3.bereich}` },
                           { farbe: "var(--cat-4)", muster: "7 4 1 4", text: "Bürostunden ca." },
                         ].map((eintrag) => (
                           <div key={eintrag.text} className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-color)]">

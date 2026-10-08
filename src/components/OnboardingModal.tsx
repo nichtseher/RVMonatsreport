@@ -11,6 +11,8 @@ import {
   Type,
 } from "lucide-react";
 import { AccessibilitySettings, AccessibilityTheme } from "../types";
+import { VORLAGEN } from "../utils/vorlagen";
+import VorlagenWahl from "./VorlagenWahl";
 
 interface OnboardingModalProps {
   name: string;
@@ -19,6 +21,8 @@ interface OnboardingModalProps {
   onSettingsChange: (settings: AccessibilitySettings) => void;
   onFinish: () => void;
   announce: (message: string, immediate?: boolean) => void;
+  vorlageId: string;
+  onVorlageChange: (id: string) => void;
 }
 
 /**
@@ -34,7 +38,30 @@ interface OnboardingModalProps {
  * und der Einstieg laesst sich jederzeit ueberspringen.
  */
 
-const STEP_COUNT = 5;
+/*
+  Die Schritte stehen als Liste mit Schluesseln, nicht als Zahlen: Der Schritt
+  "Vorlage" gibt es nur, wenn es etwas zu waehlen gibt. Mit einer einzigen
+  Vorlage waere er eine Frage mit genau einer Antwort -- fuer Screenreader-
+  Nutzer ein Schritt mehr ohne Gehalt.
+*/
+const SCHRITTE = [
+  "willkommen",
+  "name",
+  ...(VORLAGEN.length > 1 ? ["vorlage"] : []),
+  "anzeige",
+  "erfassen",
+  "daten",
+] as const;
+type Schritt = (typeof SCHRITTE)[number];
+const STEP_COUNT = SCHRITTE.length;
+const TITEL: Record<Schritt, string> = {
+  willkommen: "Willkommen bei RV Mobil",
+  name: "Wie heißen Sie?",
+  vorlage: "Welches Formular nutzen Sie?",
+  anzeige: "Sehen und Hören",
+  erfassen: "So erfassen Sie am schnellsten",
+  daten: "Ihre Daten bleiben bei Ihnen",
+};
 
 export default function OnboardingModal({
   name,
@@ -43,6 +70,8 @@ export default function OnboardingModal({
   onSettingsChange,
   onFinish,
   announce,
+  vorlageId,
+  onVorlageChange,
 }: OnboardingModalProps) {
   const [step, setStep] = useState(0);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -97,13 +126,7 @@ export default function OnboardingModal({
   const update = (patch: Partial<AccessibilitySettings>) =>
     onSettingsChange({ ...settings, ...patch });
 
-  const titles = [
-    "Willkommen bei RV Mobil",
-    "Wie heißen Sie?",
-    "Sehen und Hören",
-    "So erfassen Sie am schnellsten",
-    "Ihre Daten bleiben bei Ihnen",
-  ];
+  const aktuell = SCHRITTE[step];
 
   const OptionButton = ({
     active,
@@ -170,10 +193,10 @@ export default function OnboardingModal({
             tabIndex={-1}
             className="text-xl font-black text-[var(--text-color)] mb-3 outline-none"
           >
-            {titles[step]}
+            {TITEL[aktuell]}
           </h2>
 
-          {step === 0 && (
+          {aktuell === "willkommen" && (
             <div className="space-y-3 text-sm text-[var(--text-color)] leading-relaxed">
               <div className="flex justify-center py-2">
                 <div className="w-16 h-16 rounded-[var(--rv-radius-lg)] bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)]">
@@ -196,7 +219,7 @@ export default function OnboardingModal({
             </div>
           )}
 
-          {step === 1 && (
+          {aktuell === "name" && (
             <div className="space-y-3">
               <div className="flex justify-center py-1">
                 <div className="w-14 h-14 rounded-[var(--rv-radius-lg)] bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)]">
@@ -229,7 +252,27 @@ export default function OnboardingModal({
             </div>
           )}
 
-          {step === 2 && (
+          {aktuell === "vorlage" && (
+            <div className="space-y-3">
+              <p className="text-sm text-[var(--text-color)] leading-relaxed">
+                In diesem Excel-Formular wird Ihr Bericht ausgegeben. Wählen Sie das
+                Formular Ihres Teams – die App zeigt dann genau die Zahlen, die es
+                verlangt.
+              </p>
+              <VorlagenWahl
+                vorlageId={vorlageId}
+                onChange={(id) => {
+                  onVorlageChange(id);
+                }}
+              />
+              <p className="text-[0.75rem] text-[var(--text-muted)]">
+                Sie können das später jederzeit unter{" "}
+                <strong>Optionen → Berichtsvorlage</strong> ändern.
+              </p>
+            </div>
+          )}
+
+          {aktuell === "anzeige" && (
             <div className="space-y-4">
               <p className="text-sm text-[var(--text-color)] leading-relaxed">
                 Stellen Sie die App so ein, wie Sie am besten damit arbeiten.
@@ -317,7 +360,7 @@ export default function OnboardingModal({
             </div>
           )}
 
-          {step === 3 && (
+          {aktuell === "erfassen" && (
             <div className="space-y-3 text-sm text-[var(--text-color)] leading-relaxed">
               <div className="flex justify-center py-1">
                 <div className="w-14 h-14 rounded-[var(--rv-radius-lg)] bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)]">
@@ -344,7 +387,7 @@ export default function OnboardingModal({
             </div>
           )}
 
-          {step === 4 && (
+          {aktuell === "daten" && (
             <div className="space-y-3 text-sm text-[var(--text-color)] leading-relaxed">
               <div className="flex justify-center py-1">
                 <div className="w-14 h-14 rounded-[var(--rv-radius-lg)] bg-[var(--cat-1-soft)] flex items-center justify-center text-[var(--cat-1-text)]">

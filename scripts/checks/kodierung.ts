@@ -94,10 +94,9 @@ pruefe("keine Datei beginnt mit einem BOM", () => {
 
 pruefe("die Standardfelder haben ihre Beschriftungen und Symbole", () => {
   // Genau das, was der Encoding-Schaden zerstört hat.
-  const app = readFileSync(join(PROJEKT, "src", "App.tsx"), "utf8");
-  const block = app.slice(app.indexOf("DEFAULT_FIELDS_CONFIG"), app.indexOf("export default function App"));
+  const block = readFileSync(join(PROJEKT, "src", "utils", "vorlagen.ts"), "utf8");
   const umlaute = (block.match(/[äöüßÄÖÜ]/g) || []).length;
-  const symbole = (block.match(/icon:\s*"[^"]+"/g) || []).length;
+  const symbole = (block.match(/feld\("[^"]+",\s*"[^"]+",\s*"[^"]+"/g) || []).length;
   wahr(umlaute > 5, `nur ${umlaute} Umlaute in den Standardfeldern gefunden`);
   wahr(symbole >= 18, `nur ${symbole} Symbole in den Standardfeldern gefunden`);
 });

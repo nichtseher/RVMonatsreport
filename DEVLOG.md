@@ -10,6 +10,114 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-10-08 — v0.9.73: Berichtsvorlage wählbar
+
+Auftrag des Projektinhabers: Die eingebettete Vorlage heißt intern „Team
+Blindenhilfsmittel Monatsinfo“; zwei weitere folgen; die Mitarbeitenden wählen
+selbst, in den Optionen und beim Neueinstieg.
+
+### Was gebaut wurde
+
+- `src/utils/vorlagen.ts` — Katalog. Eine Vorlage = Kennung, Name, Fassung,
+  Blattname, die drei festen Zellen, `feldZuZelle`, `ladeDatei()`. Ersetzt
+  `vorlageStand.ts` und `vorlageZellen.ts` (gelöscht); `vorlageMonatsinfo.ts`
+  liegt jetzt als `vorlagen/teamBlindenhilfsmittel.ts` (nur noch das base64).
+- Gewählt wird pro Gerät (`aussendienst_pwa_vorlage_v1`), nicht synchronisiert
+  und nicht in der Sicherung. Vorgabe = die bisherige Vorlage, ein bestehender
+  Nutzer merkt nichts.
+- `erzeugeVorlagenDatei` bekommt `vorlageId` **ohne Vorgabewert**.
+- `VorlagenWahl.tsx` in den Optionen („Berichtsvorlage“). Der Ersteinstieg
+  bekommt den Schritt erst bei mehr als einer Vorlage — mit einer wäre es eine
+  Frage mit einer Antwort. Die Schritte stehen dafür als Liste mit Schlüsseln.
+- Rückfrage „Was soll gesendet werden?“ (Formular und Archiv) steht jetzt einmal
+  (`umfangRueckfrage`); Hilfe, Lösch-Rückfrage einer Kategorie und Dateieigenschaften
+  nennen die gewählte Vorlage.
+
+### Gemessen
+
+- `tsc` sauber; `npm run check` 274/274 (vorher 267). Die Export-Prüfungen
+  laufen einmal je Katalogeintrag, dazu Katalog-Prüfungen und eine Gegenprobe
+  gegen das unberührte Original (Füllung der Eingabezellen, Zahl der
+  verbundenen Bereiche, keine Formelzelle in der Zuordnung).
+- Build: die Vorlage steht in einem eigenen Chunk, im Startbündel kein `UEsDB`.
+- Browser (Wegwerf-Spec, gelöscht): Optionen zeigen „Berichtsvorlage“, der
+  Schalter ist `aria-pressed`, Wahl landet im `localStorage`, kein Überlauf bei
+  360 px, Export im Dev-Server erzeugt eine Datei; Ersteinstieg weiter 5 Schritte.
+
+### Nachtrag am selben Tag: drei Vorlagen, Originaltreue
+
+Auftrag: Die beiden Dateien aus Downloads (`apa_monatsinfo.xls`,
+`Vertrieb monatsinfo .xlsx`) einbetten; **alle Vorlagen müssen originalgetreu
+wieder aus der App herauskommen** — der Chef soll nichts zu beanstanden haben.
+
+- **Beide Dateien waren ausgefüllte Berichte** (Name, Zahlen, ein Kommentar einer
+  fremden Person). Eingebettet sind sie geleert; `scripts/vorlage-einbetten.ts`
+  leert nur die genannten Zellen, räumt die Texte auch aus `sharedStrings` und
+  entfernt den Rechnerpfad (`x15ac:absPath`). Der Pfad stand auch in der
+  bisherigen Team-Vorlage — jetzt nicht mehr.
+- **Gemessen mit Excel selbst** (COM, Zelle für Zelle: Schrift, Füllung, Rahmen,
+  Ausrichtung, Verbund, Spalten, Zeilen, Seitenlayout): der bisherige Weg über
+  ExcelJS verändert die **Standardschrift** (Arial 10 → Calibri 11) und die
+  **Standardspaltenbreite** (10,71 → 8,43) neben dem Formular und lässt die
+  Druckereinstellungen fallen. Nicht „genau so“.
+- **Neu: `utils/vorlagePaket.ts`** öffnet das zip-Paket und ersetzt nur die Werte
+  der Zellen, die Summen-Ergebnisse (zwischengespeichert, sonst zeigen Vorschauen
+  leere Zellen) und Titel/Betreff/Beschreibung/Firma. Gemessen danach, wieder mit
+  Excel: **null Unterschiede** außer den eingesetzten Werten, bei allen drei
+  Vorlagen; Summenzellen rechnen (11 = 3+5+2+1). Dazu eine Paket-Prüfung in
+  `npm run check`: alle Teile außer vier sind Byte-gleich, im Blatt unterscheiden
+  sich nur die Eingabezellen.
+- **Nur für „Nur Vorlage“.** „Alle Blätter“ hängt zwei Blätter an und läuft weiter
+  über ExcelJS; dort bleibt die Abweichung neben dem Formular bestehen. Die
+  vorgeschlagene Antwort ist „Nur Vorlage senden“.
+- **Zeilen ohne Kategorie (überholt durch den zweiten Nachtrag unten: jede Zeile hat jetzt eine Kategorie).** Die Standardkategorien der App passen auf 12 Zeilen
+  der APA-Vorlage (3 offen) und auf **5 von 18** der Vertriebs-Vorlage. Offene
+  Zeilen bleiben **leer, nicht 0**, und werden in der Auswahl und in der Rückfrage
+  vor dem Senden genannt (`ohneKategorie`). Eine Zählprüfung vergleicht die
+  Eingabezellen jeder Vorlage mit Zuordnung + `ohneKategorie`.
+- **Entschieden (Projektinhaber, 2026-10-08):** Die Vorlagen verlangen `.xls` (bzw.
+  `.xls`/`.ods`); die App liefert `.xlsx`, und das ist in Ordnung. Als `.xls` ginge
+  Formatierung bzw. Formel verloren (gemessen 2026-08-19). Die Namen „APA Monatsinfo Außendienst“ und „Vertrieb
+  Monatsinfo“ sind von mir gewählt.
+
+### Zweiter Nachtrag: die Oberfläche folgt der Vorlage
+
+Auftrag: „Wir sind 3 Teams und in jedem Team sind andere Zahlen erforderlich.“ Die
+gewählte Vorlage bestimmt jetzt auch die Kategorien und die Bereichsnamen im
+Formular. Damit entfiel `ohneKategorie` (jede Zeile hat eine Kategorie).
+
+- `VorlageMeta.felder` / `bereiche`; `utils/felder.ts` (Laden, Nachrüstungen aus
+  0.9.x nur wo die Vorlage die Kategorie kennt, Schutz gegen fremde Sätze); Speicher
+  je Vorlage (`aussendienst_pwa_fields__<id>`, die Vorgabe behält den alten Schlüssel).
+- Bereichsnamen kommen aus der Vorlage in: Formular, Monatsziele, Analyse (3 Stellen),
+  Kategorien verwalten, neue Kategorie, vorgelesene Zusammenfassung, Blatt 2 der Datei.
+- Neue Symbole in `iconMap.ts` (8). `DEFAULT_FIELDS_CONFIG` ist aus `App.tsx` verschwunden
+  (und damit auch die Stelle, an der die Migration die Konstante selbst verändert hat).
+- **Gemessen:** `npm run check` 343/343 (neu: `checks/felder.ts`, Deckung Zeile↔Kategorie
+  je Vorlage, Beschriftung = Zeilentext, Wechsel/Fremdsatz). `tests/vorlagen.spec.ts` geht
+  durch die echte Oberfläche: je Vorlage nur die eigenen Kategorien sichtbar, 12–18
+  verschiedene Zahlen eingeben, senden, heruntergeladene Datei lesen — **jede Zahl steht in
+  der Zelle ihrer Kategorie**; Wechsel Team → APA → Team behält die Zahlen; Ersteinstieg wählt
+  die Vorlage.
+- **Gefunden vom Prüfnetz, nicht von mir:** Der erste vollständige `check:ui`-Lauf
+  (641 bestanden) hatte genau einen Fehler: „eine eigene Kategorie überlebt das Öffnen
+  eines Archivmonats“. Die Absicherung gegen fremde Kategoriesätze hielt jede Kategorie
+  für fremd, die die Vorlage nicht kennt und die nicht `isCustom` trägt — und verwarf
+  sie. Jetzt ist nur fremd, was eine ANDERE Vorlage kennt; Unbekanntes bleibt (neue
+  Prüfung in `checks/felder.ts`). Zweiter vollständiger Lauf: **642 bestanden, 0 rot**
+  (621 durch Profil übersprungen, 27,4 min), `check` 344/344, `check:prod` 4/4.
+- Beim ersten `check:ui`-Versuch (abgebrochen, bevor es weiterging) fielen die Ersteinstiegs-
+  Prüfungen: Der neue Schritt verschob ihre Nummern. Liste und Beschreibung angepasst.
+
+### Nicht gemessen
+
+- `npm run check:ui` (26 min) lief **nicht**; die neue Karte in den Optionen und
+  der Ersteinstieg mit mehr als einer Vorlage sind damit nicht durch das Prüfnetz
+  gelaufen. Der Schritt „Vorlage“ im Ersteinstieg ist bisher nie gerendert worden,
+  weil es nur eine Vorlage gibt. Beides gehört vor dem Push gemessen.
+- Kein Screenreader-Durchlauf.
+- Die Zellzuordnung der beiden kommenden Vorlagen steht noch aus.
+
 ## 2026-10-02 — v0.9.72: Was still verloren ging
 
 Auftrag des Projektinhabers in zwei Schritten: „schau dir nochmals alles an und

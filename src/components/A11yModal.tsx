@@ -6,6 +6,8 @@ import {
   BarChart3, Accessibility, ShieldCheck,
 } from "lucide-react";
 import AnsichtsKopf from "./AnsichtsKopf";
+import VorlagenWahl from "./VorlagenWahl";
+import { findeVorlage, bereichsTitel } from "../utils/vorlagen";
 import { APP_VERSION } from "../version";
 
 interface A11yModalProps {
@@ -67,6 +69,9 @@ interface A11yModalProps {
    */
   mobileComfortMode: boolean;
   onToggleMobileComfort: () => void;
+  /** Gewaehlte Berichtsvorlage und ihre Aenderung (meldet selbst zurueck). */
+  vorlageId: string;
+  onVorlageChange: (id: string) => void;
 }
 
 /* ---------- Wiederverwendbare, kompakte Bausteine ---------- */
@@ -232,6 +237,8 @@ export default function A11yModal({
   benutzerName,
   mobileComfortMode,
   onToggleMobileComfort,
+  vorlageId,
+  onVorlageChange,
 }: A11yModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeMenu, setActiveMenu] = useState<"main" | "a11y" | "form">("main");
@@ -345,6 +352,15 @@ export default function A11yModal({
           hint="Eigene Zähler-Felder hinzufügen oder löschen"
           onClick={() => setActiveMenu("form")}
         />
+      </SectionCard>
+
+      <SectionCard title="Berichtsvorlage">
+        <div className="p-4 space-y-3">
+          <p className="text-xs text-[var(--text-muted)] leading-snug">
+            In diesem Excel-Formular wird Ihr Bericht ausgegeben, und das Formular der App zeigt genau dessen Kategorien. Bereits erfasste Zahlen bleiben beim Wechsel gespeichert.
+          </p>
+          <VorlagenWahl vorlageId={vorlageId} onChange={onVorlageChange} />
+        </div>
       </SectionCard>
 
       <SectionCard title="Meine Sachen">
@@ -677,10 +693,10 @@ export default function A11yModal({
                 onChange={(e) => setNewFieldSection(e.target.value as keyof SectionsConfig)}
                 className="w-full p-3.5 border-2 border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded-[var(--rv-radius-md)] font-bold focus:border-[var(--border-focus)] outline-none text-sm cursor-pointer"
               >
-                <option value="s1">1. Vorführungen & Auslieferungen</option>
-                <option value="s2">2. Schulung & Akquise</option>
-                <option value="s3">3. Spezialprodukte (Fokus)</option>
-                <option value="s4">4. Arbeitszeit & Büro</option>
+                <option value="s1">{bereichsTitel(findeVorlage(vorlageId), "s1")}</option>
+                <option value="s2">{bereichsTitel(findeVorlage(vorlageId), "s2")}</option>
+                <option value="s3">{bereichsTitel(findeVorlage(vorlageId), "s3")}</option>
+                <option value="s4">{bereichsTitel(findeVorlage(vorlageId), "s4")}</option>
               </select>
             </div>
 

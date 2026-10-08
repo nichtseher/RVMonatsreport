@@ -11,7 +11,7 @@ import { pruefeMonatsabschluss } from "../utils/abschlussCheck";
 import { persistHistory, OnPersistFailure } from "../utils/speicher";
 import { ConfirmRequest } from "../components/ConfirmDialog";
 import type { BlattUmfang } from "../utils/vorlageExport";
-import { VORLAGE_STAND } from "../utils/vorlageStand";
+import { findeVorlage, umfangRueckfrage } from "../utils/vorlagen";
 
 /**
  * Alles, was den Betrieb verlaesst: die beiden Excel-Ausgaben, der
@@ -53,6 +53,8 @@ export interface ExportParameter {
   triggerHaptic: (dauer: number) => void;
   setConfirmRequest: (anfrage: ConfirmRequest) => void;
   onPersistFailure: OnPersistFailure;
+  /** Gewaehlte Berichtsvorlage (Kennung, siehe utils/vorlagen.ts). */
+  vorlageId: string;
 }
 
 export interface ExportFunktionen {
@@ -75,7 +77,7 @@ export function useExport(p: ExportParameter): ExportFunktionen {
     reportData, appFields, accessibility, setHistory,
     history,
     announceToAriaAndSpeech, triggerToast, triggerHaptic,
-    setConfirmRequest, onPersistFailure,
+    setConfirmRequest, onPersistFailure, vorlageId,
   } = p;
 
   /**
@@ -152,6 +154,7 @@ export function useExport(p: ExportParameter): ExportFunktionen {
         daten,
         appFields,
         umfang,
+        vorlageId,
         // Ist die Stempeluhr abgeschaltet, waere ein Schichtenblatt (leer oder
         // mit Altbestand) keine Angabe, sondern ein Missverstaendnis.
         accessibility.enableTimeTracking !== false,
@@ -254,7 +257,7 @@ export function useExport(p: ExportParameter): ExportFunktionen {
     }
   }, [
     reportData, triggerHaptic, meldeNochNichtGeladen,
-    triggerToast, announceToAriaAndSpeech,
+    triggerToast, announceToAriaAndSpeech, vorlageId,
   ]);
 
   const handleSendToVL = useCallback(async () => {
@@ -266,7 +269,7 @@ export function useExport(p: ExportParameter): ExportFunktionen {
     const senden = async (umfang: BlattUmfang) => {
       announceToAriaAndSpeech(
         umfang === "vorlage"
-          ? "Teilen-Dialog wird geöffnet. Gesendet wird nur das Blatt Monatsinfo."
+          ? `Teilen-Dialog wird geöffnet. Gesendet wird nur das Blatt ${findeVorlage(vorlageId).blattName}.`
           : "Teilen-Dialog wird geöffnet. Gesendet werden alle Blätter.",
       );
       await handleExportExcel(umfang);
@@ -292,9 +295,7 @@ export function useExport(p: ExportParameter): ExportFunktionen {
     const frageNachUmfang = (): true => {
       setConfirmRequest({
         title: "Was soll gesendet werden?",
-        message: mitZeiten
-          ? `Blatt 1 ist das gewohnte Formular der Vertriebsleitung (Fassung ${VORLAGE_STAND}). Auf Wunsch kommen zwei weitere Blätter dazu: Ihre Zusatzangaben und Ihre einzelnen Schichten. Beides braucht die Vertriebsleitung nicht.`
-          : `Blatt 1 ist das gewohnte Formular der Vertriebsleitung (Fassung ${VORLAGE_STAND}). Auf Wunsch kommt ein Blatt mit Ihren Zusatzangaben dazu, für die es im Formular keine Zeile gibt.`,
+        message: umfangRueckfrage(findeVorlage(vorlageId), mitZeiten),
         confirmLabel: "Nur Vorlage senden",
         cancelLabel: "Abbrechen",
         alternative: {
@@ -328,7 +329,7 @@ export function useExport(p: ExportParameter): ExportFunktionen {
     frageNachUmfang();
   }, [
     reportData, triggerHaptic, announceToAriaAndSpeech,
-    handleExportExcel, getReportWarnings, setConfirmRequest, accessibility,
+    handleExportExcel, getReportWarnings, setConfirmRequest, accessibility, vorlageId,
   ]);
 
   return {

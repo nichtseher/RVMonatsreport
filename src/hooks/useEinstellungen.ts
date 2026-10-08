@@ -6,6 +6,7 @@ import {
 } from "../types";
 import { QuickEntryConfig, DEFAULT_QUICK_CONFIG } from "../components/QuickEntryPanel";
 import { safeSetItem } from "../utils/speicher";
+import { feldSchluessel } from "../utils/felder";
 
 /**
  * Die Einstellungen und ihre Speicherung.
@@ -35,6 +36,8 @@ export interface GoalsConfig {
 }
 
 export interface EinstellungenParameter {
+  /** Die gewaehlte Vorlage: Jede hat ihren eigenen Speicherplatz fuer die Kategorien. */
+  vorlageId: string;
   /** Wird gespeichert, aber nicht hier gehalten -- siehe Kopfkommentar. */
   appFields: SectionsConfig;
   accessibility: AccessibilitySettings;
@@ -93,7 +96,7 @@ function ladeMitStandard<T extends object>(schluessel: string, standard: T): T {
 
 export function useEinstellungen(p: EinstellungenParameter): Einstellungen {
   const {
-    appFields, accessibility, isCompactView, mobileComfortMode,
+    vorlageId, appFields, accessibility, isCompactView, mobileComfortMode,
     triggerToast, announceToAriaAndSpeech,
   } = p;
 
@@ -149,8 +152,8 @@ export function useEinstellungen(p: EinstellungenParameter): Einstellungen {
 
   // --- Speicherung dessen, was in App.tsx gehalten wird ------------------
   useEffect(() => {
-    safeSetItem("aussendienst_pwa_fields", JSON.stringify(appFields));
-  }, [appFields]);
+    safeSetItem(feldSchluessel(vorlageId), JSON.stringify(appFields));
+  }, [appFields, vorlageId]);
 
   useEffect(() => {
     safeSetItem("aussendienst_pwa_a11y", JSON.stringify(accessibility));
