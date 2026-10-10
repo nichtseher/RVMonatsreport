@@ -22,7 +22,6 @@ import {
 import AnsichtsKopf from "./AnsichtsKopf";
 import { QRCodeSVG } from "qrcode.react";
 import { Html5Qrcode } from "html5-qrcode";
-import { motion } from "framer-motion";
 import {
   buildChunks,
   buildTextCode,
@@ -1006,11 +1005,9 @@ export default function DeviceSyncModal({
       aria-modal="true"
       aria-labelledby="sync-modal-title"
     >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
+      <div
         ref={modalRef}
-        className="bg-[var(--card-bg)] w-full max-w-md rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] overflow-hidden border border-[var(--card-border)] flex flex-col max-h-[90vh]"
+        className="bg-[var(--card-bg)] w-full max-w-md rounded-[var(--rv-radius-xl)] shadow-[var(--rv-shadow-lg)] overflow-hidden border border-[var(--card-border)] flex flex-col max-h-[90vh] animate-slide-up"
       >
         <div className="px-6 pt-5">
           <AnsichtsKopf
@@ -1284,7 +1281,7 @@ export default function DeviceSyncModal({
                     <p className="text-sm text-center text-[var(--text-muted)]">Antwort-Code wird erstellt...</p>
                   ))}
         </div>
-      </motion.div>
+      </div>
 
       {/* Rückfrage vor dem Ersetzen -- derselbe barrierefreie Dialog wie beim
           Monatsabschluss (Fokusfalle, Escape, Startfokus auf Abbrechen). */}

@@ -34,6 +34,7 @@ import "./checks/zuletzt-geaendert";
 import "./checks/typografie";
 import "./checks/gestaltung";
 import "./checks/erklaerung";
+import "./checks/changelog";
 import "./checks/inhaltsrichtlinie";
 import "./checks/service-worker";
 import { alleLaufen } from "./helfer";

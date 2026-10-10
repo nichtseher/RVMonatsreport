@@ -1,9 +1,45 @@
-import { Sparkles, ShieldCheck, Activity, Bug, Zap } from "lucide-react";
+import type { ReactNode } from "react";
+import { Sparkles, ShieldCheck, Bug, Zap, type LucideIcon } from "lucide-react";
 import { APP_VERSION } from "../version";
 import AnsichtsKopf from "./AnsichtsKopf";
 
 interface ChangelogModalProps {
   onClose: () => void;
+}
+
+/*
+  Ein Eintrag der Liste (0.9.76). Vorher stand dieser Kopf -- Kasten, Überschrift,
+  Symbol, „Beta“-Plakette -- bei jeder der 85 Versionen einzeln ausgeschrieben.
+
+  HÖCHSTENS ZEHN EINTRÄGE. Kommt ein neuer dazu, fällt der älteste heraus; der
+  Verlauf davor steht in Git. `scripts/checks/changelog.ts` zählt nach. Zehn
+  Versionen sind bei dem Tempo, in dem hier veröffentlicht wird, ungefähr der
+  Zeitraum, nach dem sich die App ohnehin selbst aktualisiert -- und eine Liste
+  mit 85 Überschriften ist für einen Screenreader vor allem Umweg.
+
+  Die Beta-Plakette kommt nicht als Eigenschaft herein: Jede Version ist eine Beta.
+*/
+function Eintrag({
+  nr,
+  titel,
+  symbol: Icon,
+  children,
+}: {
+  nr: string;
+  titel: string;
+  symbol: LucideIcon;
+  children: ReactNode;
+}) {
+  return (
+    <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
+      <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
+        <Icon className="w-5 h-5 text-[var(--text-muted)]" />
+        <span>{`Version ${nr}: ${titel}`}</span>
+        <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
+      </h3>
+      <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">{children}</ul>
+    </div>
+  );
 }
 
 export function ChangelogModal({ onClose }: ChangelogModalProps) {
@@ -26,88 +62,75 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       />
 
       <div className="space-y-6">
+        {/* Eine Zeile: Wartung, nichts Neues zu tun oder zu wissen (Regel seit 0.9.40). */}
+        <Eintrag nr="0.9.76" titel="Wartung" symbol={ShieldCheck}>
+          <li>
+            Die App lädt für Geräte-Sync, Datensicherung und diese Liste weniger Daten nach. Die Einblendungen in
+            Geräte-Sync und Datensicherung folgen jetzt der Systemeinstellung zum Reduzieren von Bewegung.
+          </li>
+        </Eintrag>
+
         {/* Ausgeschrieben (Regel seit 0.9.40): sichtbar anders -- Tasten in Vollfarbe, immer zu zweit. */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Zap className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.75: Kräftigere Schnell-Tasten, immer zu zweit</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              <strong>Schnell-Erfassung:</strong> Die Tasten sind jetzt in kräftiger Vollfarbe statt in blassem Pastell, mit
-              weißer oder schwarzer Schrift darauf, je nachdem, was besser lesbar ist. Eigene Kategoriefarben erscheinen
-              ebenfalls als Vollfarbe. In den Hochkontrast-Farbschemata bleibt alles wie bisher.
-            </li>
-            <li>
-              Es stehen immer mindestens zwei Tasten nebeneinander – auch bei „Groß“ und „Extra groß“ auf schmalen Handys. Vorher
-              stand dort teils nur eine Taste je Reihe. Lange Namen sind nicht mehr gekürzt.
-            </li>
-          </ul>
-        </div>
+        <Eintrag nr="0.9.75" titel="Kräftigere Schnell-Tasten, immer zu zweit" symbol={Zap}>
+          <li>
+            <strong>Schnell-Erfassung:</strong> Die Tasten sind jetzt in kräftiger Vollfarbe statt in blassem Pastell, mit
+            weißer oder schwarzer Schrift darauf, je nachdem, was besser lesbar ist. Eigene Kategoriefarben erscheinen
+            ebenfalls als Vollfarbe. In den Hochkontrast-Farbschemata bleibt alles wie bisher.
+          </li>
+          <li>
+            Es stehen immer mindestens zwei Tasten nebeneinander – auch bei „Groß“ und „Extra groß“ auf schmalen Handys. Vorher
+            stand dort teils nur eine Taste je Reihe. Lange Namen sind nicht mehr gekürzt.
+          </li>
+        </Eintrag>
 
         {/* Ausgeschrieben (Regel seit 0.9.40): eine neue, freiwillige Einstellung -- man muss wissen, dass es sie gibt. */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.74: Eigene Kategoriefarben und Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              <strong>Neu, freiwillig – eigene Farben für Kategorien:</strong> Unter <strong>Optionen → Formular anpassen →
-              Farben der Kategorien</strong> geben Sie jeder Kategorie eine Farbe (acht Vorschläge oder eine frei gewählte).
-              Sie erscheint am Rand der Zählerkarte und an der Schnell-Taste. Die App rechnet die Farbe so um, dass der Text
-              lesbar bleibt; in den Hochkontrast-Schemata wird sie nicht angezeigt. Ohne Wahl bleibt alles wie bisher.
-            </li>
-            <li>
-              Die selbst gewählten Schnell-Tasten gelten jetzt je Vorlage; vorher blieb das Feld nach einem Wechsel der
-              Vorlage leer.
-            </li>
-            <li>
-              Auf schmalen Handys mit großer Schrift wurde im Zähler die dritte Ziffer abgeschnitten (aus „100“ wurde „10“).
-              Außerdem wurden Hinweise in den Optionen, Notizen im Schichtprotokoll und Legenden in der Analyse mit „…“
-              gekürzt, Texte in Geräte-Sync und Datensicherung verschwanden am Rand, und auf Tablets konnte die untere
-              Leiste die letzte Zeile verdecken. Alles behoben: Texte brechen um, nichts wird mehr abgeschnitten.
-            </li>
-          </ul>
-        </div>
+        <Eintrag nr="0.9.74" titel="Eigene Kategoriefarben und Fehlerbehebungen" symbol={Bug}>
+          <li>
+            <strong>Neu, freiwillig – eigene Farben für Kategorien:</strong> Unter <strong>Optionen → Formular anpassen →
+            Farben der Kategorien</strong> geben Sie jeder Kategorie eine Farbe (acht Vorschläge oder eine frei gewählte).
+            Sie erscheint am Rand der Zählerkarte und an der Schnell-Taste. Die App rechnet die Farbe so um, dass der Text
+            lesbar bleibt; in den Hochkontrast-Schemata wird sie nicht angezeigt. Ohne Wahl bleibt alles wie bisher.
+          </li>
+          <li>
+            Die selbst gewählten Schnell-Tasten gelten jetzt je Vorlage; vorher blieb das Feld nach einem Wechsel der
+            Vorlage leer.
+          </li>
+          <li>
+            Auf schmalen Handys mit großer Schrift wurde im Zähler die dritte Ziffer abgeschnitten (aus „100“ wurde „10“).
+            Außerdem wurden Hinweise in den Optionen, Notizen im Schichtprotokoll und Legenden in der Analyse mit „…“
+            gekürzt, Texte in Geräte-Sync und Datensicherung verschwanden am Rand, und auf Tablets konnte die untere
+            Leiste die letzte Zeile verdecken. Alles behoben: Texte brechen um, nichts wird mehr abgeschnitten.
+          </li>
+        </Eintrag>
 
         {/*
           Ausgeschrieben (Regel seit 0.9.40): Es gibt eine neue Wahl in den
           Optionen. Die Vorlage heißt jetzt „Team Blindenhilfsmittel
           Monatsinfo“, und weitere folgen.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.73: Berichtsvorlage wählbar</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              <strong>Eigene Vorlage:</strong> Das bisherige Formular heißt jetzt „Team Blindenhilfsmittel
-              Monatsinfo“. Unter <strong>Optionen → Berichtsvorlage</strong> sehen Sie, welche Vorlage und welche
-              Fassung Ihr Bericht verwendet. Es gibt jetzt drei: Team Blindenhilfsmittel Monatsinfo, APA Monatsinfo
-              Außendienst und Vertrieb Monatsinfo. Auch die Einrichtung beim ersten Start fragt danach.
-            </li>
-            <li>
-              <strong>Das Formular kommt unverändert beim Empfänger an:</strong> Bei „Nur Vorlage senden“ wird die
-              Originaldatei geöffnet und nur Ihre Zahlen werden eingesetzt – Schrift, Breiten, Rahmen und Druckeinstellungen
-              bleiben, wie die Firma sie vorgibt.
-            </li>
-            <li>
-              <strong>Das Formular der App passt sich an:</strong> Jedes Team erfasst andere Zahlen. Nach der Wahl zeigt die
-              App genau die Kategorien Ihres Formulars, mit den Überschriften der Bereiche, und jede Zahl landet in der
-              passenden Zeile der Excel-Datei. Beim Wechsel geht nichts verloren: Erfasste Zahlen bleiben gespeichert, und
-              beim Zurückwechseln sind auch Ihre Kategorien wieder da.
-            </li>
-            <li>
-              Die Wahl gilt für diesen Browser und wird nicht mit anderen Geräten abgeglichen. Bis Sie etwas anderes
-              wählen, ändert sich an Ihren Berichten nichts.
-            </li>
-          </ul>
-        </div>
+        <Eintrag nr="0.9.73" titel="Berichtsvorlage wählbar" symbol={ShieldCheck}>
+          <li>
+            <strong>Eigene Vorlage:</strong> Das bisherige Formular heißt jetzt „Team Blindenhilfsmittel
+            Monatsinfo“. Unter <strong>Optionen → Berichtsvorlage</strong> sehen Sie, welche Vorlage und welche
+            Fassung Ihr Bericht verwendet. Es gibt jetzt drei: Team Blindenhilfsmittel Monatsinfo, APA Monatsinfo
+            Außendienst und Vertrieb Monatsinfo. Auch die Einrichtung beim ersten Start fragt danach.
+          </li>
+          <li>
+            <strong>Das Formular kommt unverändert beim Empfänger an:</strong> Bei „Nur Vorlage senden“ wird die
+            Originaldatei geöffnet und nur Ihre Zahlen werden eingesetzt – Schrift, Breiten, Rahmen und Druckeinstellungen
+            bleiben, wie die Firma sie vorgibt.
+          </li>
+          <li>
+            <strong>Das Formular der App passt sich an:</strong> Jedes Team erfasst andere Zahlen. Nach der Wahl zeigt die
+            App genau die Kategorien Ihres Formulars, mit den Überschriften der Bereiche, und jede Zahl landet in der
+            passenden Zeile der Excel-Datei. Beim Wechsel geht nichts verloren: Erfasste Zahlen bleiben gespeichert, und
+            beim Zurückwechseln sind auch Ihre Kategorien wieder da.
+          </li>
+          <li>
+            Die Wahl gilt für diesen Browser und wird nicht mit anderen Geräten abgeglichen. Bis Sie etwas anderes
+            wählen, ändert sich an Ihren Berichten nichts.
+          </li>
+        </Eintrag>
 
         {/*
           Ausgeschrieben (Regel seit 0.9.40: neu wissen muss): Löschen wandert
@@ -115,1304 +138,133 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           längeres Passwort und hat ein neues Format, eine Schaltfläche heißt
           anders, und der Hinweis auf eine neue Fassung erscheint einmalig.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.72: Eingaben und Löschungen gehen nicht mehr verloren</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              <strong>Abgleich zwischen zwei Geräten:</strong> Wer eine Notiz tippte, während das andere Gerät etwas
-              sendete, verlor die ersten Zeichen – auf beiden Geräten. Das ist behoben. Außerdem geht eine Notiz
-              nicht mehr verloren, nur weil Sie auf dem anderen Gerät einen Zähler ändern.
-            </li>
-            <li>
-              <strong>Löschen wandert mit:</strong> Eine gelöschte Schicht und ein aus dem Archiv gelöschter Monat
-              verschwinden beim Abgleich auch auf dem anderen Gerät und kommen nicht zurück. Ausnahme sind eigene
-              Kategorien: Sie kehren zurück, bis Sie sie auf beiden Geräten gelöscht haben – die Rückfrage vor dem
-              Löschen sagt das.
-            </li>
-            <li>
-              <strong>Zahlen nach einem Abbruch:</strong> Wer kurz in eine andere App gewechselt, danach
-              weitergezählt hatte und dann einen Absturz oder einen leeren Akku erlebte, fand nach dem Neustart
-              die Zahlen von vor dem Wechsel vor. Behoben.
-            </li>
-            <li>
-              <strong>Archiv bei leerem Monat:</strong> Wer den letzten Zähler wieder auf leer setzte oder die einzige
-              Schicht löschte, sah im Archiv weiter die alte Zahl. Jetzt steht dort der leere Stand.
-            </li>
-            <li>
-              <strong>Datensicherung:</strong> Das Passwort braucht mindestens 8 Zeichen. Sicherungen mit Passwort sind
-              jetzt deutlich schwerer zu knacken; Sie lassen sich nur mit dieser und neueren Fassungen der App
-              öffnen. Ältere Sicherungen öffnet weiterhin jede Fassung. „Sicher Teilen / Senden" heißt jetzt „Teilen /
-              senden" – ohne Passwort ist die Datei nicht verschlüsselt, und der Begleittext sagt das jetzt auch. Wird
-              eine Datei abgelehnt, zeigt das Fenster den Grund statt „Backup eingespielt".
-            </li>
-            <li>
-              Wartung: Die App räumt ihren Zwischenspeicher auf, der mit jeder Fassung gewachsen war. Deshalb erscheint
-              einmalig der Hinweis „Eine neue Fassung ist verfügbar" – bitte aktualisieren.
-            </li>
-          </ul>
-        </div>
+        <Eintrag nr="0.9.72" titel="Eingaben und Löschungen gehen nicht mehr verloren" symbol={ShieldCheck}>
+          <li>
+            <strong>Abgleich zwischen zwei Geräten:</strong> Wer eine Notiz tippte, während das andere Gerät etwas
+            sendete, verlor die ersten Zeichen – auf beiden Geräten. Das ist behoben. Außerdem geht eine Notiz
+            nicht mehr verloren, nur weil Sie auf dem anderen Gerät einen Zähler ändern.
+          </li>
+          <li>
+            <strong>Löschen wandert mit:</strong> Eine gelöschte Schicht und ein aus dem Archiv gelöschter Monat
+            verschwinden beim Abgleich auch auf dem anderen Gerät und kommen nicht zurück. Ausnahme sind eigene
+            Kategorien: Sie kehren zurück, bis Sie sie auf beiden Geräten gelöscht haben – die Rückfrage vor dem
+            Löschen sagt das.
+          </li>
+          <li>
+            <strong>Zahlen nach einem Abbruch:</strong> Wer kurz in eine andere App gewechselt, danach
+            weitergezählt hatte und dann einen Absturz oder einen leeren Akku erlebte, fand nach dem Neustart
+            die Zahlen von vor dem Wechsel vor. Behoben.
+          </li>
+          <li>
+            <strong>Archiv bei leerem Monat:</strong> Wer den letzten Zähler wieder auf leer setzte oder die einzige
+            Schicht löschte, sah im Archiv weiter die alte Zahl. Jetzt steht dort der leere Stand.
+          </li>
+          <li>
+            <strong>Datensicherung:</strong> Das Passwort braucht mindestens 8 Zeichen. Sicherungen mit Passwort sind
+            jetzt deutlich schwerer zu knacken; Sie lassen sich nur mit dieser und neueren Fassungen der App
+            öffnen. Ältere Sicherungen öffnet weiterhin jede Fassung. „Sicher Teilen / Senden" heißt jetzt „Teilen /
+            senden" – ohne Passwort ist die Datei nicht verschlüsselt, und der Begleittext sagt das jetzt auch. Wird
+            eine Datei abgelehnt, zeigt das Fenster den Grund statt „Backup eingespielt".
+          </li>
+          <li>
+            Wartung: Die App räumt ihren Zwischenspeicher auf, der mit jeder Fassung gewachsen war. Deshalb erscheint
+            einmalig der Hinweis „Eine neue Fassung ist verfügbar" – bitte aktualisieren.
+          </li>
+        </Eintrag>
 
         {/*
           Ausgeschrieben, weil Bedienelemente an neuen Stellen stehen: Wer den
           Monat bisher im Datumsfeld gewechselt hat, muss wissen, wo er jetzt ist.
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.71: Das neue Erscheinungsbild ist vollständig</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              <strong>Report:</strong> Der Monat steht groß oben und wird über eine Auswahl gewechselt
-              („Monat", zwei Jahre zurück bis drei Monate voraus). Darunter Ihr Name. Die Filter der Bereiche sind
-              schmale Knöpfe („Vorführungen 18"). Sind Monatsziele eingeschaltet, zeigt die Monatskarte das Ziel mit
-              Fortschrittsbalken.
-            </li>
-            <li>
-              <strong>Zeit:</strong> Die Stempeluhr ist eine große Karte mit der laufenden Arbeitszeit und der Taste
-              zum Ein- oder Ausstempeln. Darunter „Diese Woche" mit den verbuchten Stunden je Tag – der
-              Screenreader liest sie als Liste, Tag für Tag.
-            </li>
-            <li>
-              <strong>Mehr:</strong> Oben eine Karte mit Ihrem Namen, der Version und der Datenschutz-Zusage;
-              „Was gibt's Neues?" ist eine eigene Zeile.
-            </li>
-            <li>
-              Fehlerbehebungen: Tasten und Eingabefelder zeigten ihre vorgesehene Schriftgröße nicht (alle erschienen
-              gleich groß). Eingabefelder haben jetzt mindestens 16 Pixel Schrift, damit das iPhone beim Antippen
-              nicht hineinzoomt. Die Felder der Monatsziele und die Diktat-Taste haben wieder die volle
-              Tippfläche.
-            </li>
-          </ul>
-        </div>
+        <Eintrag nr="0.9.71" titel="Das neue Erscheinungsbild ist vollständig" symbol={Sparkles}>
+          <li>
+            <strong>Report:</strong> Der Monat steht groß oben und wird über eine Auswahl gewechselt
+            („Monat", zwei Jahre zurück bis drei Monate voraus). Darunter Ihr Name. Die Filter der Bereiche sind
+            schmale Knöpfe („Vorführungen 18"). Sind Monatsziele eingeschaltet, zeigt die Karte oben im Report das Ziel mit
+            Fortschrittsbalken.
+          </li>
+          <li>
+            <strong>Zeit:</strong> Die Stempeluhr ist eine große Karte mit der laufenden Arbeitszeit und der Taste
+            zum Ein- oder Ausstempeln. Darunter „Diese Woche" mit den verbuchten Stunden je Tag – der
+            Screenreader liest sie als Liste, Tag für Tag.
+          </li>
+          <li>
+            <strong>Mehr:</strong> Oben eine Karte mit Ihrem Namen, der Version und der Datenschutz-Zusage;
+            „Was gibt's Neues?" ist eine eigene Zeile.
+          </li>
+          <li>
+            Fehlerbehebungen: Tasten und Eingabefelder zeigten ihre vorgesehene Schriftgröße nicht (alle erschienen
+            gleich groß). Eingabefelder haben jetzt mindestens 16 Pixel Schrift, damit das iPhone beim Antippen
+            nicht hineinzoomt. Die Felder der Monatsziele und die Diktat-Taste haben wieder die volle
+            Tippfläche.
+          </li>
+        </Eintrag>
 
         {/* Eine Zeile: Anordnung und Ruhe, nichts Neues zu tun oder zu wissen. */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.70: Verbesserungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              Ruhigerer Report-Anfang: Die Erinnerung an die Abgabe steht jetzt in der Monatskarte statt in einem
-              eigenen Kasten, der Tipp zum Zahlenfeld als schlichte Zeile. Hinweise in normaler statt fetter Schrift.
-              Im Querformat ist die untere Leiste flacher.
-            </li>
-          </ul>
-        </div>
+        <Eintrag nr="0.9.70" titel="Verbesserungen" symbol={Sparkles}>
+          <li>
+            Ruhigerer Report-Anfang: Die Erinnerung an die Abgabe steht jetzt in der Karte oben im Report statt in einem
+            eigenen Kasten, der Tipp zum Zahlenfeld als schlichte Zeile. Hinweise in normaler statt fetter Schrift.
+            Im Querformat ist die untere Leiste flacher.
+          </li>
+        </Eintrag>
 
         {/* Eine Zeile: Anordnung, nichts Neues zu tun oder zu wissen (Regel seit 0.9.40). */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.69: Verbesserungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              Auf großen Handys (etwa iPhone Pro Max) stehen Minus, Zahl und Plus jetzt neben der Beschriftung statt
-              darunter. Tablet und Rechner nutzen die volle Bildschirmbreite; die Kacheln der Schnell-Erfassung brechen
-              keine Wörter mehr mitten durch.
-            </li>
-          </ul>
-        </div>
+        <Eintrag nr="0.9.69" titel="Verbesserungen" symbol={Sparkles}>
+          <li>
+            Auf großen Handys (etwa iPhone Pro Max) stehen Minus, Zahl und Plus jetzt neben der Beschriftung statt
+            darunter. Tablet und Rechner nutzen die volle Bildschirmbreite; die Kacheln der Schnell-Erfassung brechen
+            keine Wörter mehr mitten durch.
+          </li>
+        </Eintrag>
 
         {/*
           Ausgeschrieben, weil sich sichtbare Namen geändert haben: Wer
           „RV Archiv" oder „Hilfe & Handbuch" sucht, findet es sonst nicht
           (Regel seit 0.9.40: neu wissen muss).
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.68: Alle Ansichten sehen gleich aus</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              <strong>Jede Ansicht hat jetzt denselben Kopf:</strong> oben die Zurück-Taste und ein Symbol, darunter die
-              Überschrift. Die Überschrift heißt so wie der Eintrag, über den Sie hingekommen sind.
-            </li>
-            <li>
-              <strong>Neue Namen:</strong> „RV Archiv“ heißt jetzt „Archiv“, „RV Analyse“ heißt „Analyse“, die Hilfe heißt
-              „Hilfe &amp; Anleitung“, der Geräte-Abgleich „Geräte-Sync“, das Jahreskonto „Jahreskonto“ und das Löschen
-              eigener Felder „Eigene Felder löschen“.
-            </li>
-            <li>
-              <strong>Die Analyse hat eine Zurück-Taste</strong> zu den Optionen, wie alle anderen Ansichten unter „Mehr“.
-              Die Taste „Hilfe schließen“ unten in der Hilfe ist entfallen – die Zurück-Taste oben tut dasselbe.
-            </li>
-            <li>
-              Verbesserungen: Alle Ansichten nutzen dieselbe Breite, auf dem Rechner also den ganzen Platz. Bei großer
-              Schrift ordnen sich Schriftgrößen-Tasten, Farbschemata und die Schritte des Geräte-Syncs untereinander an,
-              statt Wörter zu zerbrechen.
-            </li>
-          </ul>
-        </div>
+        <Eintrag nr="0.9.68" titel="Alle Ansichten sehen gleich aus" symbol={Sparkles}>
+          <li>
+            <strong>Jede Ansicht hat jetzt denselben Kopf:</strong> oben die Zurück-Taste und ein Symbol, darunter die
+            Überschrift. Die Überschrift heißt so wie der Eintrag, über den Sie hingekommen sind.
+          </li>
+          <li>
+            <strong>Neue Namen:</strong> „RV Archiv“ heißt jetzt „Archiv“, „RV Analyse“ heißt „Analyse“, die Hilfe heißt
+            „Hilfe &amp; Anleitung“, der Geräte-Abgleich „Geräte-Sync“, das Jahreskonto „Jahreskonto“ und das Löschen
+            eigener Felder „Eigene Felder löschen“.
+          </li>
+          <li>
+            <strong>Die Analyse hat eine Zurück-Taste</strong> zu den Optionen, wie alle anderen Ansichten unter „Mehr“.
+            Die Taste „Hilfe schließen“ unten in der Hilfe ist entfallen – die Zurück-Taste oben tut dasselbe.
+          </li>
+          <li>
+            Verbesserungen: Alle Ansichten nutzen dieselbe Breite, auf dem Rechner also den ganzen Platz. Bei großer
+            Schrift ordnen sich Schriftgrößen-Tasten, Farbschemata und die Schritte des Geräte-Syncs untereinander an,
+            statt Wörter zu zerbrechen.
+          </li>
+        </Eintrag>
 
         {/*
           Ausgeschrieben, weil man den neuen Hinweis kennen muss, um nicht an
           einen Fehler zu glauben, wenn ein älteres Fenster plötzlich nicht mehr
           speichert (Regel seit 0.9.40: neu wissen muss).
         */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.67: Nur noch ein Fenster speichert</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              <strong>Ist RV Mobil in zwei Fenstern oder Tabs gleichzeitig geöffnet, speichert nur noch das zuletzt
-              geöffnete.</strong> Das ältere zeigt den Hinweis „RV Mobil ist in einem anderen Fenster geöffnet“ und die
-              Taste „Hier weiterarbeiten“. Vorher konnten sich zwei Fenster gegenseitig Einträge überschreiben, ohne
-              jede Warnung.
-            </li>
-            <li>
-              Verbesserungen: Zeit, Archiv, Analyse, Optionen und die übrigen Ansichten tragen jetzt das neue
-              Erscheinungsbild. Hinweiskästen sind ruhiger und in größerer Schrift gesetzt.
-            </li>
-          </ul>
-        </div>
-
-        {/*
-          Ausgeschrieben, weil die Monatskarte etwas Neues ist, das man
-          wissen muss, um es zu nutzen. Farben und Rahmen allein wären nur
-          eine Zeile „Verbesserungen" (Regel seit 0.9.40).
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.66: Neues Erscheinungsbild und ein Überblick über den Monat</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              <strong>Neu oben im Report: eine Monatskarte.</strong> Sie zeigt, wie viele Aktivitäten Sie in
-              diesem Monat erfasst haben und welche Kategorie Sie zuletzt geändert haben, mit Uhrzeit. So sehen Sie
-              nach einem Termin sofort, ob der Eintrag drin ist.
-            </li>
-            <li>
-              Wärmere Farben im hellen und im dunklen Design, ruhigere Rahmen und eine grüne Plus-Taste. In den
-              Kontrast-Designs „Weiß auf Schwarz“ und „Gelb auf Schwarz“ bleiben die Farben, wie sie sind; die neue
-              Anordnung gilt auch dort, und die gewählte Station der unteren Leiste ist jetzt eine ausgefüllte Fläche.
-            </li>
-            <li>
-              Die Kacheln der Schnell-Erfassung zeigen die Farbe ihres Bereichs. Lange Namen brechen am Schrägstrich
-              um statt mitten im Wort.
-            </li>
-            <li>
-              Fehlerbehebungen: Die Kacheln der Schnell-Erfassung bleiben beim Tippen an ihrem Platz – vorher rückte
-              eine getippte Kachel im Modus „Automatisch“ nach vorn, und der nächste Tipp traf ein anderes Feld. Die
-              Kacheln „Monats-Fortschritt“ sagen dem Screenreader, ob ihr Filter aktiv ist. Das Kalendersymbol im
-              Monatsfeld ist im dunklen und in den Kontrast-Designs jetzt sichtbar.
-            </li>
-          </ul>
-        </div>
-
-        {/*
-          Kategorie + Zeile: Betrifft nur die Reihenfolge dieser Liste
-          selbst, keine Funktion der App.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.65: Aufgeräumter, und der Ein-Hand-Modus ist umgezogen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              <strong>Die Schnell-Tasten „Sprachansagen“ und „Ein-Hand“ sind aus dem Formularkopf umgezogen</strong> nach
-              Optionen → Anzeige & Bedienung. Sprachansagen stand dort schon; der Ein-Hand-Modus ist neu dazugekommen
-              und weiterhin auch über das Tastenkürzel Alt+Umschalt+L erreichbar. Der Formularkopf zeigt jetzt mehr
-              von der Schnell-Erfassung, ohne zu scrollen.
-            </li>
-            <li>
-              Die Berichtsbereiche 1–4 haben jetzt je ein farbiges Symbol, alle Überschriften eine einheitliche
-              Größe, und Fließtext ist nicht mehr durchgehend fett.
-            </li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.64: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Zwei Einträge in dieser Liste standen nicht an der richtigen Stelle (0.9.54 ganz oben statt weiter
-            unten, 0.9.63 unter statt über 0.9.62). Der Inhalt der Einträge war davon nicht betroffen. Behoben.</li>
-          </ul>
-        </div>
-
-        {/*
-          Kategorie + Zeile: Nur eine Pruefung robuster gemacht (tests/
-          oberflaeche.spec.ts), keine App-Datei geaendert.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.63: Wartung</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
-          </ul>
-        </div>
-
-        {/*
-          Kategorie + Zeile: Der zugaengliche Name aendert sich, nichts, das
-          man BEDIENEN muesste -- wer per Sprachsteuerung "Zurück" sagte,
-          traf ohnehin schon nichts, das ist jetzt behoben, nicht neu.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.62: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Die Werkzeugleiste, die beim Bearbeiten eines Zählerfelds erscheint, hatte bei „Zurück", „Weiter"
-            und „Fertig" einen zugänglichen Namen, der nicht das sichtbare Wort enthielt – Sprachsteuerung traf
-            die Tasten dadurch nicht. Behoben.</li>
-          </ul>
-        </div>
-
-        {/*
-          Kategorie + Zeile: Nur Testdaten korrigiert (tests/oberflaeche.
-          spec.ts), keine App-Datei geaendert.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.61: Wartung</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
-          </ul>
-        </div>
-
-        {/*
-          Kategorie + Zeile: Nur das Pruefnetz betroffen (ansichtsfokus.ts),
-          keine App-Datei geaendert.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.60: Wartung</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
-          </ul>
-        </div>
-
-        {/*
-          Kategorie + Zeile: Rein intern, nichts zu wissen oder zu tun.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.59: Wartung</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
-          </ul>
-        </div>
-
-        {/*
-          Kurz ausgeschrieben statt Kategorie+Zeile: Wer den Direkt-Export aus
-          dem Archiv kennt, sieht ab jetzt gelegentlich eine zusaetzliche
-          Rueckfrage, die vorher nicht da war -- das soll nicht wie ein
-          Fehler wirken, sondern erklaert sein.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.58: Der Monatsabschluss-Check gilt jetzt auch im Archiv</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              Der Prüfschritt vor dem Senden (fehlender Name, leerer Report, Abweichung zur Stempeluhr) lief
-              bisher nur, wenn Sie direkt aus dem Formular sendeten. Beim „Export RV Report" aus dem RV Archiv
-              fehlte er.
-            </li>
-            <li>Jetzt prüft die App auch dort zuerst – sehen Sie beim Archiv-Export künftig eine Rückfrage,
-            die vorher nicht erschien, ist das dieser Check, kein Fehler.</li>
-          </ul>
-        </div>
-
-        {/*
-          Kategorie + Zeile: Rein im Hintergrund, nichts zu wissen oder zu
-          tun -- die App ist nach einem Update im Funkloch jetzt vollstaendig
-          nutzbar statt neun von elf Ansichten.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.57: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Nach einem Update im Funkloch fehlten „Datensicherung" und „Geräte-Sync" – die zwei Wege, die
-            gerade dort am wichtigsten sind. Beide werden jetzt wie die anderen neun Ansichten im Hintergrund
-            vorgeladen.</li>
-          </ul>
-        </div>
-
-        {/*
-          Ausfuehrlich: Wer Anfang des Monats einen tief negativen,
-          rot dargestellten Gesamtsaldo gesehen hat, soll erfahren, dass
-          das eine Rechenungenauigkeit war und keine echte Abweichung.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.56: Das Jahreskonto rechnete den laufenden Monat als bereits beendet</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              <strong>Im Jahreskonto (RV Zeit → „Jahreskonto") zeigte der aktuelle, noch laufende Monat ein
-              Soll für den kompletten Monat</strong> – Anfang des Monats stand der „Gesamt-Saldo" dadurch stark
-              im Minus, obwohl noch gar nicht viele Arbeitstage vergangen waren.
-            </li>
-            <li>Behoben: Der laufende Monat zählt jetzt nur bis zum heutigen Tag. Vergangene, bereits
-            abgeschlossene Monate waren nie betroffen und rechnen unverändert mit dem vollen Monat.</li>
-          </ul>
-        </div>
-
-        {/*
-          Ebenfalls ausfuehrlich, und aus demselben Grund: Wer bisher einen
-          Download fuer "erledigt" hielt, muss jetzt wissen, dass er selbst
-          noch einen Schritt hat -- sonst bleibt ein Monat unbemerkt offen.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.55: Ein Download war nicht dasselbe wie ein Versand</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              <strong>Bisher markierte die App einen Monat schon dann als „Gesendet", wenn die Excel-Datei nur
-              heruntergeladen wurde</strong> – auch ohne Teilen-Menü, z. B. am PC. Der Monat galt damit als
-              erledigt, obwohl die Datei möglicherweise nie an die Vertriebsleitung ging.
-            </li>
-            <li>
-              <strong>Jetzt markiert nur noch ein tatsächlich abgeschlossenes Teilen automatisch.</strong> Bei
-              einem reinen Download bleibt der Monat als „Noch offen" stehen, und die App bittet Sie, ihn im RV
-              Archiv über „Als gesendet markieren" selbst zu bestätigen, sobald die Datei wirklich raus ist.
-            </li>
-          </ul>
-        </div>
-
-        {/*
-          Ausfuehrlich: Wer schon einmal "Trotzdem senden" gedrueckt und
-          nichts passieren sah, hat vermutlich angenommen, die Funktion sei
-          kaputt oder ihr Geraet blockiere das Teilen. Das gehoert richtig-
-          gestellt, nicht stillschweigend uebersprungen.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.54: „Trotzdem senden" konnte wirkungslos bleiben</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              <strong>Wenn beim Senden eine Anmerkung erschien (z. B. fehlender Name) und Sie „Trotzdem senden"
-              wählten, öffnete sich die nächste Frage – welche Blätter gesendet werden sollen – bei manchen
-              Monaten gar nicht.</strong> Die Taste wirkte dann, als würde nichts passieren.
-            </li>
-            <li>Behoben. Wenn Sie das schon einmal erlebt haben: Bitte versuchen Sie „Bericht an VL senden" jetzt
-            erneut – es sollte jetzt bis zur Blattwahl und zum eigentlichen Versand durchlaufen.</li>
-          </ul>
-        </div>
-
-        {/*
-          Kategorie + Zeile: Es gibt nichts nachzutragen und nichts anders zu
-          bedienen -- nur eine falsche Zahl, die jetzt fehlt statt falsch zu
-          sein. Die Zeile bleibt trotzdem etwas ausfuehrlicher als ein reiner
-          Ein-Satz-Fix, weil das Verschwinden einer Zahl aus einer Exportdatei
-          sonst wie ein Datenverlust aussehen koennte.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.53: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Auf dem Zusatzblatt der Excel-Datei zeigte „Summen je Bereich" für Bereich 4 eine Zahl ohne Bedeutung (Arbeitstage und Stunden wurden addiert). Diese eine Summenzeile ist entfallen – alle Einzelwerte stehen wie gewohnt auf Blatt 1 bzw. in der Liste „Zusatzangaben".</li>
-          </ul>
-        </div>
-
-        {/*
-          Ausfuehrlich, nicht Kategorie+Zeile: Wer der alten Hilfe glaubte,
-          muss jetzt etwas WISSEN, um sein Jahreskonto zu korrigieren --
-          reines Verschweigen waere hier keine Barmherzigkeit.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.52: Die Hilfe zur Stempeluhr nannte nur zwei von drei Feldern</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              <strong>Die Hilfe sagte: „Urlaubs- und Krankheitstage von Hand eintragen". Das Jahreskonto
-              braucht aber auch die Feiertage.</strong> Wer diese Zeile leer ließ, sah im Jahreskonto ein zu
-              hohes Soll, weil die App gesetzliche Feiertage sonst als Arbeitstage mitzählt.
-            </li>
-            <li>
-              <strong>Bitte prüfen Sie das für vergangene Monate nach:</strong> Stellen Sie im RV Report
-              oben den betreffenden Monat ein (Feld „Monat"), tragen Sie unter Bereich 4 „Arbeitszeit &amp;
-              Büro" bei „Feiertage (arbeitsfrei)" die Anzahl nach und wechseln Sie zurück zum aktuellen
-              Monat – das Jahreskonto rechnet danach automatisch neu.
-            </li>
-          </ul>
-        </div>
-
-        {/*
-          Kategorie + Zeile -- betrifft nur, WIE die App eine bestehende
-          Einstellung bestaetigt, nicht was der Nutzer damit tun kann.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.51: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Der Schalter für die Sprachausgabe (Taste und Tastenkürzel „S") bestätigte sich selbst falsch herum: Beim Einschalten blieb er stumm, beim Ausschalten sprach er noch einmal. Behoben.</li>
-          </ul>
-        </div>
-
-        {/*
-          Ebenfalls Kategorie + Zeile: Niemand muss etwas anders BEDIENEN,
-          um es zu nutzen -- der Ziele-Editor tut, was er vorher tat, nur
-          liest ein Screenreader die Felder jetzt mit Namen statt stumm vor.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.50: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Im Ziele-Editor (RV Report → „Ziele") hatten die vier Eingabefelder und der Ein/Aus-Schalter für einen Screenreader keinen Namen. Behoben.</li>
-          </ul>
-        </div>
-
-        {/*
-          Kategorie + eine Zeile, nicht ausgeschrieben -- CLAUDE.md nennt
-          "contrast" ausdruecklich als Beispiel fuer "aendert nichts
-          Sichtbares [im Sinne von: nichts, das der Nutzer anders BEDIENEN
-          muesste]". Niemand muss etwas anders tun; eine Taste, die vorher
-          beim Ueberfahren unlesbar wurde, ist es jetzt nicht mehr.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.49: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>In den beiden Hochkontrast-Designs wurde die Beschriftung mancher Tasten beim Überfahren mit der Maus unlesbar (weiß auf weiß bzw. gelb auf gelb). Behoben.</li>
-          </ul>
-        </div>
-
-        {/*
-          Ausfuehrlich, und zwar nach der zweiten Haelfte der Regel aus 0.9.40:
-          Es gibt nichts Neues zu KOENNEN, aber etwas zu WISSEN, um zu handeln.
-          Wer seit dem 14.09. eine passwortgeschuetzte Sicherung angelegt hat,
-          besitzt eine Datei, die sich nicht einspielen liess -- und hat
-          moeglicherweise geglaubt, sein Passwort sei falsch. Dass die Datei in
-          Ordnung ist und es sich jetzt lohnt, sie einmal auszuprobieren, kann
-          er nur aus einer ausgeschriebenen Zeile erfahren. Unter
-          "Fehlerbehebungen" waere es genau die Auskunft, die er braucht, die
-          fehlt.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.48: Verschlüsselte Sicherungen lassen sich wieder einspielen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              <strong>Wenn Sie seit dem 14. September eine Sicherung mit Passwort angelegt haben, ließ sie sich
-              nicht zurückspielen.</strong> Die App meldete „Falsches Passwort oder beschädigte Datei“, obwohl das
-              Passwort stimmte. Das ist behoben. <strong>Ihre vorhandenen Dateien sind in Ordnung</strong> – bitte
-              probieren Sie einmal aus, ob sich Ihre Sicherung jetzt einspielen lässt.
-            </li>
-            <li>
-              Betroffen war auch der <strong>verschlüsselte Text-Code</strong> beim Geräte-Sync, also der mit
-              Passwort. Auch er lässt sich wieder einlesen. Sicherungen <em>ohne</em> Passwort und der normale
-              Text-Code waren nie betroffen.
-            </li>
-            <li>
-              Warum das nicht früher auffiel: Die Ursache war eine Sicherheitsvorgabe, die ausschließlich in der
-              veröffentlichten Fassung gilt – auf dem Entwicklungsrechner und in allen automatischen Prüfungen trat
-              der Fehler nie auf. Es gibt jetzt eine Prüfung, die genau diesen Fall abfängt.
-            </li>
-          </ul>
-        </div>
-
-        {/*
-          Ausfuehrlich, obwohl es keine neue Funktion ist -- dieselbe Abwaegung
-          wie bei 0.9.38: Wer mit Tastatur oder Screenreader arbeitet, merkt
-          die Aenderung sofort, weil sich sein eigener Ablauf aendert. Das
-          stillschweigend unter "Verbesserungen" zu fuehren hiesse, jemandem
-          die Erklaerung fuer etwas vorzuenthalten, das er an seinem Geraet
-          bemerkt.
-        */}
-        {/*
-          Ausfuehrlich, und zwar nach beiden Haelften der Regel aus 0.9.40: Der
-          Hauptbereich laesst sich neu ANSTEUERN (etwas, das man koennen muss,
-          um es zu nutzen), und das Schriftbild aendert sich SICHTBAR. Wer die
-          Grossbuchstaben verschwinden sieht und keine Zeile dazu findet, haelt
-          es fuer einen Fehler.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.47: Direkt zum Hauptbereich, und ein ruhigeres Schriftbild</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>
-              <strong>Mit dem Screenreader direkt in den Hauptbereich:</strong> Der Inhaltsbereich ist jetzt als solcher
-              ausgezeichnet. In NVDA kommen Sie mit <strong>D</strong> dorthin, in VoiceOver über den Rotor unter
-              „Orientierungshilfen“. Der Sprunglink „Zum Hauptinhalt springen“ bleibt zusätzlich bestehen.
-            </li>
-            <li>
-              <strong>Neu unter Optionen: „Erklärung zur Barrierefreiheit“.</strong> Sie sagt, was die App für
-              Hilfsmittel leistet, was sie nicht leistet und wohin Sie eine Barriere melden können – und sie
-              benennt offen, was noch nicht geprüft ist.
-            </li>
-            <li>
-              <strong>Beschriftungen stehen nicht mehr in Großbuchstaben</strong> („Vorführungen“ statt „VORFÜHRUNGEN“) und
-              sind nicht mehr gesperrt. Großbuchstaben nehmen einem Wort seine Umrissform – genau die, an der man es beim
-              Lesen erkennt. Die kleinste Schrift der App ist dabei etwas größer geworden.
-            </li>
-          </ul>
-        </div>
-
-        {/*
-          Knapp: Es ist dieselbe Auskunft an derselben Stelle, nur frueher im
-          Vorlesen. Wer sie sehen kann, merkt nichts.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Activity className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.46: Verbesserungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Am Zähler wird „zuletzt geändert …" jetzt <strong>zuerst</strong> vorgelesen, vor der Bedienanleitung.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.45: Die Leiste unten ist jetzt lesbar – und jeder Zähler sagt, wann Sie zuletzt gezählt haben</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Neu an jedem Zähler: „zuletzt: heute, 11:40“.</strong> Wenn Sie nach einem Termin unterbrochen werden und sich fragen, ob Sie schon gezählt haben, steht die Antwort jetzt direkt unter der Kategorie. Die App wusste den Zeitpunkt längst – sie hat ihn nur nie gezeigt.</li>
-            <li><strong>Unten stehen jetzt vier statt fünf Schaltflächen: Report, Zeit, Archiv, Mehr.</strong> Grund: Bei der Schriftgröße „Extra groß“ war vorher <em>jede</em> der fünf Beschriftungen abgeschnitten – bei 320 Pixeln blieben 44 Pixel für ein Wort, das 88 braucht. Mit vier kurzen Wörtern passt alles.</li>
-            <li><strong>RV Analyse finden Sie jetzt unter „Mehr“.</strong> Die Auswertung über mehrere Monate öffnet man bewusst und nicht zwischen zwei Terminen; die Stempeluhr bleibt dafür unten stehen, weil Sie sie zweimal am Tag brauchen.</li>
-            <li><strong>Beim Löschen einer Kategorie sagt die Rückfrage jetzt, was das für den Bericht bedeutet</strong> – etwa: „Diese Kategorie füllt Zeile D22 im Firmenformular. Nach dem Löschen bleibt diese Zeile in jedem Bericht leer.“</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.44: Die App heißt überall „RV Mobil“</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Das Symbol auf Ihrem Startbildschirm heißt jetzt „RV Mobil“.</strong> Vorher stand dort „RV Report“, im Browser-Tab „RV Monatsreport“ und in der Fußzeile „RV Mobil“ – dieselbe App unter drei Namen. Wenn Sie die App schon auf dem Startbildschirm haben, ändert sich die Beschriftung erst, wenn Sie sie dort neu ablegen.</li>
-            <li><strong>„RV Report“ ist der Name der ersten Seite</strong>, auf der Sie Ihre Zählerstände eintragen – so wie RV Zeit, RV Analyse und RV Archiv. Die App selbst heißt RV Mobil.</li>
-            <li>Auch die Erinnerung zum Monatsende und die Eigenschaften der Excel-Datei nennen jetzt „RV Mobil“.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.43: Alle Daten löschen – für die Rückgabe des Geräts</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Neu: „Alle Daten von diesem Gerät löschen“.</strong> Ganz unten in den Optionen. Damit ist die App wieder wie neu – Zählerstände, Archiv, Schichten, eigene Kategorien und alle Einstellungen sind weg. Die Rückfrage zeigt vorher, was betroffen ist, und bietet „Zuerst Daten sichern“ an. Bisher ging das nur über den Fehlerbildschirm, den man nicht absichtlich aufrufen kann.</li>
-            <li><strong>„Zurück“ bringt Sie dorthin zurück, wo Sie waren.</strong> Verlassen Sie eine Ansicht über „Zurück“, steht die Tastatur wieder auf der Menüzeile, mit der Sie die Ansicht geöffnet haben – nicht mehr am Anfang des Menüs.</li>
-            <li><strong>Die Startseite heißt jetzt „RV Report“</strong> statt „RV Mobil“, wie die Schaltfläche in der Navigation. Der Name der App steht weiterhin im Einstieg, in der Fußzeile und am Rechner in der Seitenleiste.</li>
-            <li><strong>Die App startet schneller</strong>, weil sie nur noch lädt, was Sie gerade brauchen. Die übrigen Bereiche holt sie im Hintergrund nach, damit sie auch ohne Netz bereitstehen.</li>
-          </ul>
-        </div>
-
-        {/*
-          Knapp, und das ist hier die richtige Einordnung: 0.9.42 fasst
-          dreifach vorhandenes JSX zusammen. Gemessen ist, dass die App danach
-          dasselbe erzeugt wie vorher -- es gibt also buchstäblich nichts, was
-          ein Nutzer wissen müsste, um zu handeln.
-        */}
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.42: Wartung</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Interne Aufräumarbeiten ohne sichtbare Änderung.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.41: Nach dem Wechsel stehen Sie in der neuen Ansicht</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Der Fokus wandert mit.</strong> Wenn Sie eine andere Ansicht öffnen – etwa „RV Archiv" oder die Hilfe –, springt die Tastatur jetzt auf deren Überschrift. Der Screenreader liest sie vor, und die Tabulatortaste führt von dort weiter in den Inhalt. Bisher blieb der Fokus auf der Taste, die Sie gedrückt haben, oder ging ganz an den Seitenanfang verloren; um zum Inhalt zu kommen, mussten Sie rückwärts tabben.</li>
-            <li><strong>Die Navigationsleiste meldet sich jetzt als das, was sie ist.</strong> Sie nannte sich dem Screenreader gegenüber „Registerkarten" und versprach damit eine Bedienung mit den Pfeiltasten, die es hier nie gab. Jetzt sagt sie „aktuelle Seite" für die Ansicht, in der Sie gerade sind – auf dem Handy und am Rechner gleich.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.40: Wartung</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.39: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <ShieldCheck className="w-5 h-5 text-[var(--accent)]" />
-            <span>Version 0.9.38: Das Diktat fragt jetzt, bevor es einen fremden Dienst nutzt</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Wichtig, und wir hätten es früher sagen müssen:</strong> Das <strong>Diktat</strong> im Notizfeld läuft <strong>nicht</strong> auf Ihrem Gerät. Die Spracherkennung gehört zu Ihrem Browser, und Ihre Aufnahme wird dorthin übertragen – bei Chrome an Google, bei Safari an Apple. Die App hatte bisher an mehreren Stellen behauptet, sie nutze keine externen Dienste. Das stimmte für diesen einen Fall nicht.</li>
-            <li><strong>Jetzt fragt die App einmal ausdrücklich nach</strong>, bevor das zum ersten Mal passiert – mit klarem Hinweis, was übertragen wird. Wenn Sie ablehnen, tippen Sie einfach; das Notizfeld kann alles, was das Diktat kann. Alles andere in der App bleibt weiterhin auf Ihrem Gerät.</li>
-            <li><strong>Die Hilfe ist an vier weiteren Stellen richtiggestellt:</strong> wo Sie das Jahreskonto finden (auch wenn die Stempeluhr abgeschaltet ist), dass sich die Stempeluhr überhaupt abschalten lässt und wie Sie erfasste Schichten löschen, was das Tastenkürzel Alt+Umschalt+T bei abgeschalteter Uhr macht, und dass <strong>Meine Demogeräte</strong> beim Zusammenführen zweier Geräte nicht vermischt wird.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.37: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
-            <span>Version 0.9.36: Meine Demogeräte – Ihre eigene Geräteliste</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Neu unter Optionen → Meine Demogeräte:</strong> eine Liste der Vorführgeräte, die Sie gerade dabeihaben. Damit Sie nachsehen können, wenn jemand fragt – etwa weil ein Gerät weitergeschickt werden soll.</li>
-            <li><strong>Ein freies Textfeld, keine Vorgaben.</strong> „Tactonom Pro mit Netzteil" ist genauso richtig wie „großer Koffer, grauer Griff". Dazu auf Wunsch eine Notiz. Die Liste ist <strong>freiwillig</strong> – sie soll Ihnen helfen, nicht Sie kontrollieren.</li>
-            <li><strong>Die ganze Liste lässt sich vorlesen.</strong> Ein Knopf, und Sie hören, was drinsteht – der eigentliche Unterschied zu einem Zettel.</li>
-            <li>Die Liste bleibt <strong>auf Ihrem Gerät</strong> und geht nicht in den Monatsreport. Sie wandert in die Datensicherung mit, damit sie einen Gerätewechsel übersteht.</li>
-          </ul>
-        </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Activity className="w-5 h-5 text-[var(--accent)]" />
-            <span>Version 0.9.35: Jede Datei sagt jetzt, welches Formular drinsteckt</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Die App bringt das Formular der Vertriebsleitung in einer bestimmten Fassung mit – und sagt Ihnen jetzt, in welcher.</strong> Sie steht vor dem Senden in der Rückfrage, in der Hilfe, und in jeder erzeugten Datei: in den Dateieigenschaften und, wenn Sie alle Blätter mitschicken, sichtbar auf dem Blatt <strong>Zusatzangaben</strong>.</li>
-            <li><strong>Warum das wichtig ist:</strong> Gibt die Vertriebsleitung ein <em>neues</em> Formular heraus, erkennt die App das nicht von selbst – sie würde weiter das alte ausfüllen, und die Datei sähe aus wie immer. Jetzt steht die Fassung schwarz auf weiß da, und es fällt auf. <strong>Bitte melden Sie sich, wenn Sie ein neues Formular bekommen.</strong></li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.34: Wartung</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
-            <span>Version 0.9.33: Sie entscheiden jetzt, was die Vertriebsleitung bekommt</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Vor jedem Senden fragt die App, welche Tabellenblätter mitgehen sollen.</strong> <strong>Nur Vorlage senden</strong> schickt allein das gewohnte Formular der Vertriebsleitung – das ist die vorgeschlagene Antwort und reicht dort völlig. Mit <strong>Alle drei Blätter</strong> gehen zusätzlich Ihre Zusatzangaben und Ihre einzelnen Schichten mit. Bisher gingen immer alle drei Blätter mit, ohne dass jemand gefragt wurde. Die Frage kommt auf beiden Wegen – im Formular und beim Direkt-Export aus dem RV Archiv.</li>
-            <li><strong>Warum das wichtig ist:</strong> Auf dem dritten Blatt stehen Ihre einzelnen Schichten mit Kommen, Gehen, Pause und Kommentar. Das Formular der Vertriebsleitung fragt dagegen nur nach <em>Arbeitstagen</em> und <em>Bürostunden</em> – also nach Summen. Was darüber hinausgeht, verlässt Ihr Gerät ab jetzt nur, wenn Sie es ausdrücklich möchten.</li>
-            <li><strong>Das Jahreskonto war nicht mehr erreichbar, wenn Sie die Stempeluhr abgeschaltet hatten.</strong> Resturlaub und Überstunden lagen dann zwar noch auf dem Gerät, aber es führte kein Weg mehr hin – der einzige Zugang lag in der Ansicht „RV Zeit", und die wird mit der Stempeluhr ausgeblendet. Das Jahreskonto steht jetzt zusätzlich unter <strong>Optionen</strong> und hat mit der Stempeluhr nichts mehr zu tun.</li>
-            <li><strong>„Stempeluhr aus" heißt jetzt wirklich aus.</strong> Bisher führte die Verknüpfung „Stempeluhr" auf dem Startbildschirm und das Tastenkürzel weiterhin in die abgeschaltete Ansicht. Beides landet jetzt im Bericht, mit Ansage.</li>
-            <li><strong>Und Sie können erfasste Schichten löschen.</strong> Neu unter <strong>Optionen → Anzeige &amp; Bedienung</strong>, sobald die Stempeluhr ausgeschaltet ist: Alle Schicht-Aufzeichnungen werden vom Gerät entfernt – aus dem laufenden Monat und aus dem RV Archiv. <strong>Ihre Zählerstände im Bericht bleiben dabei unverändert</strong>, denn das sind die Zahlen, die Sie bereits gemeldet haben.</li>
-            <li><strong>Unter der Haube:</strong> Die App trug zwei verschiedene Excel-Bibliotheken für dieselbe Aufgabe mit sich herum. Eine davon ist entfallen – rund 500 KB weniger, und die Zeiterfassungs-Datei sieht Zeile für Zeile unverändert aus (nachgemessen).</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.32: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.31: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.30: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Activity className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.29: Verbesserungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Bedienung verbessert.</li>
-          </ul>
-        </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.28: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.27: Wartung</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
-          </ul>
-        </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
-            <span>Version 0.9.26: Die Schnell-Erfassung und der Ein-Hand-Modus</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Die Kategorienliste unter „Anpassen" war kaum zu treffen.</strong> Jede Zeile war nur 34 Pixel hoch – bei einer Liste, in der Sie mit dem Finger genau die richtige Kategorie erwischen müssen. Jetzt sind alle Zeilen mindestens 44 Pixel hoch, ebenso die Schaltfläche „Automatisch (meistgenutzt)".</li>
-            <li><strong>Bei „Extra groß" ließ sich diese Liste seitlich verschieben.</strong> Unbeabsichtigt und ohne sichtbaren Balken – lange Kategorienamen schoben den Inhalt zur Seite, statt umzubrechen. Jetzt brechen sie um.</li>
-            <li><strong>Die vier Tasten des Ein-Hand-Modus waren zu klein.</strong> „Monat", „Name", „Notizen" und „Zeit" waren 38 Pixel hoch, „Zeit" dazu nur 53 breit. Ausgerechnet die Leiste, die das Bedienen mit einer Hand erleichtern soll. Jetzt alle in voller Größe.</li>
-            <li><strong>Warum das erst jetzt auffiel:</strong> Beide Bereiche erscheinen nur nach einem Klick beziehungsweise nur, wenn der Ein-Hand-Modus eingeschaltet ist – und die automatische Prüfung hat sie deshalb nie zu Gesicht bekommen. Sie sind jetzt fest im Prüflauf.</li>
-          </ul>
-        </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Activity className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.25: Verbesserungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Bedienung verbessert.</li>
-          </ul>
-        </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Activity className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.24: Verbesserungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Bedienung verbessert.</li>
-          </ul>
-        </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.23: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Activity className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.22: Verbesserungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Bedienung verbessert.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.21: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Activity className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.20: Verbesserungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Bedienung verbessert.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          {/* [&>span]:min-w-0 — an allen 31 Versionsueberschriften gleich.
-              Ein Flex-Element gibt seine Breite standardmaessig nicht unter
-              den Inhalt preis (`min-width: auto`), die Ueberschrift konnte
-              deshalb nicht umbrechen. Auf diesem Rechner fiel das nie auf:
-              Mit einer breiteren Schrift -- wie sie der Linux-Laeufer statt
-              "Segoe UI" waehlt -- schob sie die Seite bei "Extra gross" auf
-              412 px in einem 360-px-Fenster. Nachgestellt mit erzwungener
-              Verdana: 408 px. WCAG 1.4.10 Reflow. */}
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.19: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.18: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
-            <span>Version 0.9.17: Der Geräte-Abgleich ohne Kamera</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Das Feld zum Einfügen des Codes steht jetzt ganz oben.</strong> Bisher war es der vierte Abschnitt – unter Kamerabild, Fortschrittsbalken und Hinweistext. Wer sich die Seite vorlesen lässt, hatte dort längst aufgegeben, obwohl der Weg ohne Kamera vollständig vorhanden war.</li>
-            <li><strong>Einfügen genügt.</strong> Ein gültiger Code wird sofort übernommen – Sie müssen danach keine Schaltfläche mehr suchen.</li>
-            <li><strong>Die Schaltflächen heißen jetzt nach dem Ziel:</strong> „Daten an anderes Gerät senden" statt „Dieses Gerät zeigt QR-Codes an". Und der Abschnitt heißt „Einmal übertragen – auch ohne Kamera".</li>
-            <li><strong>Die Ein-Minuten-Frist ist weg.</strong> Nachgemessen: Der Antwort-Code funktionierte noch nach drei Minuten. Die Frist war eine Vermutung und mit Screenreader nicht einzuhalten. Falls es doch einmal nicht klappt, erzeugen Sie einfach einen neuen Antwort-Code.</li>
-            <li><strong>Eine Sicherung kann jetzt zusammengeführt werden.</strong> Bisher hat das Einspielen einer Backup-Datei alles auf dem Zielgerät überschrieben. Jetzt werden beide Stände standardmäßig vereinigt – Ersetzen bleibt möglich, ist aber eine bewusste Entscheidung mit Haken.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <ShieldCheck className="w-5 h-5 text-[var(--danger)]" />
-            <span>Version 0.9.16: Schutz vor Datenverlust</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Die App bittet den Browser jetzt darum, Ihre Daten dauerhaft zu behalten.</strong> Das hat sie vorher nie getan. Auf dem iPhone bedeutet das konkret: Wenn Sie RV Mobil nur über ein Lesezeichen benutzen, löscht Safari nach sieben Tagen ohne Nutzung alles – Bericht und Archiv. Die App sagt Ihnen das jetzt und bittet Sie, sie zum Home-Bildschirm hinzuzufügen. Danach bleiben die Daten erhalten.</li>
-            <li><strong>Eine Erinnerung an die Datensicherung.</strong> Bisher gab es nur die Erinnerung, den Bericht an die VL zu schicken – nichts erinnerte daran, die Daten selbst zu sichern. Nach zwei Wochen ohne Sicherung werden Sie jetzt darauf hingewiesen.</li>
-            <li><strong>Der Fehlerbildschirm löscht nicht mehr als Erstes.</strong> Wenn die App einmal abstürzt, stand dort bisher nur „alles zurücksetzen" – und das löscht sämtliche Daten. Jetzt steht darüber „Daten als Datei sichern". Die Datei lässt sich später ganz normal über Optionen → Backup wieder einspielen.</li>
-            <li><strong>Nebenbei behoben:</strong> Bei der Schriftgröße „Extra groß" ragte der Hinweis auf eine abgerissene Live-Verbindung 34 Pixel über den Bildschirmrand hinaus. Die Knöpfe stehen dort jetzt untereinander.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.15: Wartung</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.14: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.13: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
-            <span>Version 0.9.12: Sie sehen jetzt, welcher Monat noch offen ist</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Jeder Monat im RV Archiv trägt jetzt ein Abzeichen:</strong> „Gesendet" mit Datum oder „Noch offen". Es steht direkt in der Zeile – Sie müssen keinen Monat aufklappen, um zu sehen, was noch aussteht.</li>
-            <li><strong>Das Abzeichen setzt sich von selbst</strong>, sobald Sie einen Monat exportiert und die Datei wirklich verschickt haben. Brechen Sie den Teilen-Dialog ab, bleibt der Monat offen – es wird nichts markiert, was Ihr Gerät nie verlassen hat.</li>
-            <li><strong>Sie können es jederzeit von Hand korrigieren</strong>, in beide Richtungen. Beim Abgleich mit einem zweiten Gerät gewinnt immer die neuere Entscheidung – auch eine Rücknahme.</li>
-            <li><strong>Die Löschen-Schaltfläche im RV Archiv war zu klein</strong> und bei großer Schrift nur noch 34 Pixel breit. Jetzt ist sie überall mindestens 44 Pixel groß; die Sicherheitsabfrage nimmt die ganze Zeile ein.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
-            <span>Version 0.9.11: Der Export ist jetzt das Formular der Vertriebsleitung</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Das erste Tabellenblatt IST die Vorlage Ihrer Vertriebsleitung</strong> – nicht mehr eine eigene Darstellung davon. Gleiche Zeilen, gleiche Reihenfolge, gleiche gelbe Eingabefelder, gleiche Summenformel. Ihr Chef bekommt genau das Blatt, das er kennt.</li>
-            <li><strong>Alles, wofür die Vorlage keine Zeile hat, steht auf einem zweiten Blatt</strong> – Urlaubs- und Krankheitstage, Reisezeit, Ihre eigenen Kategorien und die Summen je Bereich. So geht nichts verloren und lässt sich einzeln herauskopieren.</li>
-            <li><strong>Ihre Schichten aus der Stempeluhr kommen als drittes Blatt mit</strong> in dieselbe Datei. Der getrennte Stundenzettel-Export bleibt zusätzlich bestehen.</li>
-            <li><strong>Neues Feld „Anzahl Vorführungen Envision".</strong> Die Vorlage hat dafür eine eigene Zeile, in der App fehlte das Feld bisher. Es erscheint in Bereich 3 direkt hinter Tactonom – auch auf Geräten, auf denen Sie die Kategorien schon angepasst haben.</li>
-            <li><strong>Der Monat steht jetzt als 08/2026 statt „August 2026"</strong>, weil die Vorlage dieses Format vorgibt.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.10: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.9: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Activity className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.8: Verbesserungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Darstellung verbessert.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.7: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Activity className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.6: Verbesserungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Darstellung verbessert.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.5: Wartung</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.4: Wartung</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.3: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.2: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.9.1: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <ShieldCheck className="w-5 h-5 text-[var(--info-border)]" />
-            <span>Version 0.9.0: Zähler bleiben erreichbar & Monatsabschluss mit Rückfrage</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Wichtiger Fehler behoben – Minus-Taste war nicht erreichbar:</strong> Mit „Große Schrift“ liefen die Zähler-Tasten auf schmalen Handys seitlich aus dem Bildschirm heraus; die Minus-Taste war dort gar nicht mehr zu sehen. Betroffen war ausgerechnet die Einstellung, die bei eingeschränktem Sehen gebraucht wird. Die Tastenreihe passt sich jetzt an und rückt bei Bedarf um.</li>
-            <li><strong>Monat abschließen fragt jetzt nach:</strong> Vorher genügte ein Fehlgriff, und Sie waren im nächsten Monat. Jetzt zeigt eine Rückfrage, was gesichert wird (Zählungen, Schichten) – und danach lässt sich der Abschluss mit einem Tipp auf <strong>Rückgängig</strong> zurücknehmen.</li>
-            <li><strong>Keine leeren Monate mehr im Archiv:</strong> Ein neuer Monat wurde bisher schon allein wegen des eingetragenen Namens archiviert. Ins Archiv kommt jetzt nur noch, wo wirklich etwas erfasst wurde.</li>
-            <li><strong>Alle Bedienelemente mindestens 44 × 44 Pixel:</strong> 50 Schaltflächen waren kleiner als die empfohlene Fingergröße – vor allem die kleinen Umschalter und die ±5-Tasten.</li>
-            <li><strong>Excel-Export vereinheitlicht:</strong> Derselbe Monat sah unterschiedlich aus, je nachdem ob Sie ihn aus dem Formular oder aus dem Archiv exportiert haben (andere Summen-Beschriftungen, fehlender Kommentarblock). Beide Wege erzeugen jetzt dieselbe Datei. Brechen Sie das Teilen ab, wird nichts mehr heimlich heruntergeladen und keine Fehlermeldung mehr angezeigt.</li>
-            <li><strong>Erster Start mit Screenreader:</strong> Aus dem Einrichtungs-Assistenten konnte man mit der Tastatur versehentlich in den Hintergrund geraten. Der Fokus bleibt jetzt im Assistenten.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.8.1: Fehlerbehebungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Fehler behoben.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
-            <span>Version 0.8.0: Mehr Platz auf dem Handy & geführter Einstieg</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Deutlich mehr Platz auf dem Handy:</strong> Der Kopfbereich ist nur noch halb so hoch. Dadurch sind jetzt <strong>alle Schnell-Erfassungs-Tasten sofort sichtbar</strong>, ohne zu scrollen – vorher musste man dafür erst nach unten wischen.</li>
-            <li><strong>Fehler auf schmalen Android-Geräten behoben:</strong> Die Seite ließ sich seitlich verschieben, weil einzelne Elemente über den Rand hinausragten.</li>
-            <li><strong>Geführter Einstieg:</strong> Beim ersten Öffnen richtet Sie die App in fünf Schritten ein – Name, Schriftgröße, Farben und Sprachansagen lassen sich sofort einstellen, statt sie in den Optionen zu suchen. Jederzeit überspringbar.</li>
-            <li><strong>Größere Eingabefelder:</strong> Monat und Name sind jetzt bequemer mit dem Daumen zu treffen.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Activity className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.7.0: Verbesserungen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Darstellung verbessert.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
-            <span>Version 0.6.0: Verlässlicheres Zählen & Sync im Hintergrund</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Wichtiger Fehler behoben:</strong> Bei schnellem mehrfachem Tippen auf die Plus- oder Minus-Tasten gingen Zählungen verloren (fünf Tipps zählten teilweise nur eins). Jetzt wird jeder einzelne Tipp zuverlässig erfasst – in der Schnell-Erfassung wie im Formular.</li>
-            <li><strong>Live-Verbindung bleibt bestehen:</strong> Die Verbindung wird nicht mehr getrennt, wenn Sie das Sync-Fenster verlassen. Sie koppeln einmal und tragen danach ganz normal Zahlen ein – beide Geräte gleichen sich im Hintergrund ab. Ein Hinweis „Live verbunden“ oben zeigt den Status und führt zurück zur Verwaltung.</li>
-            <li><strong>Hilfe korrigiert:</strong> Mehrere veraltete Beschreibungen (Namen von Knöpfen, Dateiendung des Backups, automatische Übernahme von Urlaubs- und Krankheitstagen) entsprachen nicht mehr der App und wurden richtiggestellt.</li>
-            <li>Die angezeigte Versionsnummer stammt jetzt direkt aus der App und kann nicht mehr veralten.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
-            <span>Version 0.5.0: Sync ohne Kamera & Abschluss-Check</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Sync ohne Kamera:</strong> Jeder Kopplungs- und Datencode lässt sich jetzt auch kopieren und am anderen Gerät einfügen – ideal für PCs ohne Webcam (z. B. über die geteilte Zwischenablage der Windows-Handy-Kopplung).</li>
-            <li><strong>Entspannte Kopplung:</strong> Der Verbindungscode hat keinen Zeitdruck; läuft der Antwort-Code ab, genügt ein Tipp auf „Neuen Antwort-Code erzeugen".</li>
-            <li><strong>Monatsabschluss-Check:</strong> Vor „Bericht an VL senden" prüft die App auf typische Fehler (fehlender Name, leerer Report, Stunden passen nicht zur Stempeluhr) und fragt nach.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
-            <span>Version 0.4.0: Schnell-Erfassung</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Schnell-Erfassung:</strong> Ihre meistgenutzten Kategorien als große Tasten ganz oben im Report – ein Tipp direkt nach dem Termin genügt (+1 mit Ton und Vibration). Kein Suchen, kein Scrollen.</li>
-            <li><strong>Selbst konfigurierbar:</strong> Unter „Anpassen" wählen Sie automatisch (meistgenutzt) oder bis zu 8 eigene Kategorien in Wunsch-Reihenfolge.</li>
-            <li><strong>App-Shortcuts:</strong> App-Symbol gedrückt halten → direkt „Zahlen erfassen" oder „Stempeluhr" öffnen.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
-            <span>Version 0.3.0: Live-Sync & Zusammenführen</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Live-Verbindung:</strong> PC und Handy koppeln sich per QR-Code und gleichen sich dann automatisch ab – Sie können an beiden Geräten gleichzeitig arbeiten (gleiches WLAN, direkt von Gerät zu Gerät, ohne Server).</li>
-            <li><strong>Intelligentes Zusammenführen:</strong> Der Sync überschreibt nicht mehr alles – Archiv, Schichten und eigene Kategorien beider Geräte werden vereinigt. Beim QR-Empfang können Sie zwischen Zusammenführen (empfohlen) und Ersetzen wählen.</li>
-            <li><strong>Fehlerbehebungen:</strong> Importierte Daten bleiben jetzt auch nach dem Neuladen erhalten; Stempeluhr bucht Nachtschichten auf das richtige Datum; Sicherheitsupdate der Excel-Bibliothek.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Sparkles className="w-5 h-5 text-[var(--accent)]" />
-            <span>Version 0.2.0: Geräte-Synchronisation</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li><strong>Sichere Datenübertragung:</strong> Neue direkte Geräte-Synchronisation zwischen Smartphone und PC über QR-Code.</li>
-            <li><strong>Ende-zu-Ende-Verschlüsselung:</strong> Alle transferierten Daten werden verschlüsselt und sicher von Gerät zu Gerät (P2P-Relay) übertragen. Ohne Server-Speicherung!</li>
-            <li>Keine Accounts oder Logindaten erforderlich.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <ShieldCheck className="w-5 h-5 text-[var(--text-muted)]" />
-            <span>Version 0.1.0: Wartung</span>
-            <span className="text-[0.75rem] font-black px-2 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--warning-text)] border border-[var(--warning-border)]">Beta</span>
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Interne Verbesserungen ohne sichtbare Änderung.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Activity className="w-5 h-5 text-[var(--warning-border)]" />
-            Neue Funktionen
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Vollständig barrierefreie Bedienung (Screenreader-optimiert).</li>
-            <li>Neuer Changelog-Bereich (Was gibt's Neues).</li>
-            <li>Lokale Erinnerung an die Abgabe am 8. des Monats (komplett ohne Push-Server).</li>
-            <li>Geräte-Synchronisierung per QR-Code.</li>
-          </ul>
-        </div>
-
-        <div className="p-5 rounded-[var(--rv-radius-lg)] bg-[var(--bg-color)] border border-[var(--card-border)]">
-          <h3 className="text-lg font-black flex flex-wrap items-center gap-2 mb-3 [&>span]:min-w-0 [&>span]:break-words">
-            <Bug className="w-5 h-5 text-[var(--danger)]" />
-            Fehlerbehebungen
-          </h3>
-          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--text-muted)]">
-            <li>Stabilitätsverbesserungen in der Zeiterfassung.</li>
-            <li>Verbesserter Kontrast für Sehbehinderte.</li>
-          </ul>
-        </div>
+        <Eintrag nr="0.9.67" titel="Nur noch ein Fenster speichert" symbol={ShieldCheck}>
+          <li>
+            <strong>Ist RV Mobil in zwei Fenstern oder Tabs gleichzeitig geöffnet, speichert nur noch das zuletzt
+            geöffnete.</strong> Das ältere zeigt den Hinweis „RV Mobil ist in einem anderen Fenster geöffnet“ und die
+            Taste „Hier weiterarbeiten“. Vorher konnten sich zwei Fenster gegenseitig Einträge überschreiben, ohne
+            jede Warnung.
+          </li>
+          <li>
+            Verbesserungen: Zeit, Archiv, Analyse, Optionen und die übrigen Ansichten tragen jetzt das neue
+            Erscheinungsbild. Hinweiskästen sind ruhiger und in größerer Schrift gesetzt.
+          </li>
+        </Eintrag>
+
+        <p className="text-sm text-[var(--text-muted)]">
+          Ältere Versionen sind hier nicht mehr aufgeführt.
+        </p>
       </div>
     </div>
   );

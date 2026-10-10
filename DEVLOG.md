@@ -10,6 +10,111 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-10-10 — v0.9.76: Verschlankung — eine Bibliothek weniger, ein Changelog mit Obergrenze
+
+Auftrag des Projektinhabers: nachsehen, ob der Code zu überladen ist, und was sich
+verschlanken lässt. Auf meine Empfehlung hin beschlossen: das Sichere gebündelt in
+einer Fassung (diese), die Zeitrechnung in `ClockInWidget` allein in der nächsten
+(0.9.77); der Changelog wird auf die letzten zehn Versionen gekürzt („ja“).
+
+### Was vorher gemessen wurde (Stand 0.9.75; dabei nichts im Repository geändert)
+
+- Startpaket 417,36 KB (122,6 KB gzip). Per Sourcemap auf Quellen verteilt: React-DOM
+  44,1 %, eigener Code ≈ 44 % (davon `App.tsx` 15,0 %), lucide-react 8,3 %. Das
+  Laufzeitgewicht ist nicht das Problem.
+- Tote Exporte: von 208 keiner. Lange `className`-Strings (≥ 90 Zeichen), die dreimal
+  oder öfter identisch vorkommen: 12 von 1.608; zwei davon sind die Changelog-Köpfe
+  (87 Überschriften, 85 Beta-Plaketten), die übrigen kommen 3–5× vor.
+- Nachladepakete: `proxy-*.js` 127,3 KB (41,8 KB gzip) = framer-motion für zwei
+  Einblendungen; `html5-qrcode` 334,7 KB = 87 % des Sync-Pakets (386 KB; letzte
+  Veröffentlichung der Bibliothek 2023-04-15); `ChangelogModal` 101,7 KB reiner Text.
+- Struktur: `App()` ist eine einzige Funktion von Zeile 159 bis 3366 (≈ 1.740 Zeilen
+  Logik, 1.466 Zeilen JSX, die Formular-Ansicht allein ≈ 890). In `ClockInWidget`
+  sind die Formulare „Verbuchen“ (L431–677) und „Nachtragen“ (L785–1024) zu 76–78 %
+  zeilengleich (Einrückung ignoriert), dazu steht Rechnen und Speichern zweimal da.
+  Dass das kein Schönheitsfehler ist, steht schon im Code: Die Rundung aus 0.9.22
+  (7,76 statt 7,75 Stunden) saß in beiden Kopien.
+
+### Was gebaut wurde
+
+1. **framer-motion entfernt.** Es wurde nur an zwei Stellen benutzt (Karte des
+   Sync-Fensters, Statusbox der Datensicherung) und tat dort, was `animate-slide-up`
+   schon konnte. Beide nehmen jetzt diese Klasse. Es muss genau diese sein: Das
+   Prüfnetz (`warteAufEinblendAnimation`) wartet nur auf Animationen namens
+   `fade-in` und `slide-up`; ein neuer Name wäre wieder ein axe-Lauf mitten im
+   Übergang geworden (Befund von 0.9.65). `npm uninstall` nahm `motion-dom`,
+   `motion-utils` und `tslib` mit.
+2. **Changelog.** Hilfskomponente `Eintrag` (Kasten, Überschrift, Symbol und
+   Beta-Plakette stehen jetzt einmal), höchstens zehn Einträge, Fußnote „Ältere
+   Versionen sind hier nicht mehr aufgeführt.“, neuer Eintrag 0.9.76.
+   `scripts/checks/changelog.ts` zählt nach (Obergrenze, oberster Eintrag = Version
+   aus `package.json`, absteigende Reihenfolge, kein Kopf an der Komponente vorbei) —
+   die Projektregel „zu jeder Liste eine zählende Prüfung“. Gegen den ALTEN Stand
+   laufen lassen, bevor ich ihr traute: 0 Einträge gefunden, 85 von Hand
+   ausgeschriebene Köpfe — sie schlüge dort an.
+3. **`vite` nur noch in `dependencies`.** Es stand in beiden Blöcken. `server.ts`
+   importiert vite auf oberster Ebene und wird mit `--packages=external` gebündelt;
+   `node dist/server.cjs` braucht es also zur Laufzeit. Die Nennung in
+   `devDependencies` war die überflüssige.
+
+### Gemessen
+
+- `tsc --noEmit` Exit 0. `npm run check` 358/358 (vorher 353; die fünf neuen sind
+  die Gruppe „Changelog“). `npm ci --dry-run` Exit 0, das Lockfile stimmt mit der
+  `package.json` überein. Build und CSP-Prüfung in Ordnung. `npm run check:prod` 4/4.
+- Pakete (minifiziert, Stand 0.9.75 → 0.9.76): `proxy` 127,32 KB (gzip 41,80) fällt
+  weg; darin steckten 2,5 KB eigener Code (`crypto`), der jetzt ein eigenes Paket
+  ist, 2,47 KB (gzip 1,08). `ChangelogModal` 101,73 → **11,70 KB** (gzip 16,77 →
+  4,60). Summe der Nachladepakete −214,9 KB (gzip −52,9). Startpaket 417,36 →
+  417,32 KB und Sync-Paket 386,66 → 386,55 KB: praktisch unverändert. Im gebauten
+  Stand kein Treffer auf `framer-motion`, `motion-dom`, `MotionConfig`.
+- DOM-Vergleich vorher/nachher (Wegwerf-Spec im Playwright-Läufer, gelöscht;
+  Chromium, 1280 und 360 px): Sync-Karte und Statusbox unterscheiden sich in je
+  einem Element — das `style="opacity: 1; transform: none;"` von framer-motion ist
+  weg, die Klasse `animate-slide-up` ist dazu. Changelog: die neun übernommenen
+  Einträge sind DOM-identisch (9 von 9), der Kopf unterscheidet sich nur in
+  „Installierte Version“. (Danach wurden noch zwei Sätze in 0.9.70/0.9.71
+  umformuliert, siehe unten.)
+- Bewegung reduzieren: Mit `reducedMotion: "reduce"` haben Sync-Karte und Statusbox
+  `animation-duration: 0s`, ohne 0,14 s. Vorher gab es im Code weder `MotionConfig`
+  noch `useReducedMotion` (0 Treffer); ob die Bibliothek die Einstellung trotzdem
+  beachtete, habe ich nicht nachgemessen — laut ihrer Dokumentation tut sie es nur
+  auf Wunsch.
+- `npm run check:ui` (volle Fassung, lokal, frischer Dev-Server von Playwright):
+  **799 bestanden, 809 je Profil übersprungen, 0 fehlgeschlagen**, 33,6 Minuten
+  (21:02–21:35). Das ist länger als die 26,3 Minuten vom 2026-10-02, weil die
+  Prüfungen seither mehr geworden sind (1.608 aufgeführte Fälle statt 1.224;
+  CLAUDE.md nennt jetzt die gemessenen Zahlen). Ein grünes lokales Tor ist kein
+  grünes Deploy-Tor — die CI-Läufer haben andere Schriften (CLAUDE.md, 2026-09-07).
+
+### Beim Kürzen gefunden
+
+- **Stand eine Pflichtangabe nur in einem gelöschten Eintrag?** Nach Schlüsselwörtern
+  gesucht (Datenschutz, Mikrofon, Audio, übermittelt, gesendet, Vertriebsleitung,
+  „Wichtig“ …) und die Treffer gelesen. Die Offenlegung zum Diktat (0.9.38) steht
+  dauerhaft auch in der Hilfe, in der Barrierefreiheitserklärung und in der Rückfrage
+  vor dem ersten Diktat (`App.tsx`); was beim Senden mitgeht (0.9.33/0.9.35), steht
+  in der Rückfrage vor jedem Senden. **Nicht** geprüft: alle gut 70 gelöschten
+  Einträge einzeln auf Aussagen, die nur dort standen.
+- **Verwaiste Wörter.** „Monatskarte“ wurde nur im gelöschten Eintrag 0.9.66
+  erklärt, und in der Oberfläche heißt die Karte nicht so (ihre Überschrift
+  „Überblick …“ ist nur für Screenreader da). Die Einträge 0.9.70 und 0.9.71 sagen
+  deshalb jetzt „die Karte oben im Report“ — derselbe Handgriff wie 0.9.37 für 0.9.36.
+
+### Nicht geprüft
+
+- WebKit und iPhone: Der DOM-Vergleich lief nur in Chromium. Auf einem echten Gerät
+  nicht gesehen: die kürzere Einblendung des Sync-Fensters (140 ms Gleiten statt der
+  Federung mit Verkleinerung).
+- NVDA und VoiceOver: nicht gelaufen.
+
+### Bewusst nicht in dieser Fassung
+
+Der Austausch von `html5-qrcode` gegen jsQR (gemessen 131 KB, 46,5 KB gzip — rund
+−200 KB einmal je Gerät, aber auf dem Kamera-Weg, den nur echte iPhones prüfen), der
+Umbau von `App()` im Ganzen und jede Kürzung der Sync-Wege. Begründung und
+Reihenfolge stehen in der ROADMAP unter 0.9.76.
+
 ## 2026-10-08 — v0.9.73: Berichtsvorlage wählbar
 
 Auftrag des Projektinhabers: Die eingebettete Vorlage heißt intern „Team

@@ -1059,6 +1059,62 @@ reinen Prüfungen zu `verrechneSchicht` abgedeckt, über die Oberfläche **nicht
 
 ---
 
+## 0.9.76 — Verschlankung: was gemessen wurde und was daraus wird (2026-10-10)
+
+Auslöser war die Frage des Projektinhabers, ob der Code zu überladen sei. Die
+Antwort kam aus Messungen (Quelltext und ein Sourcemap-Build von 0.9.75; solange
+nichts abgestimmt war, wurde im Repository nichts geändert). Ergebnis: **Das
+Laufzeitgewicht ist es nicht** — das Startpaket hat 417 KB, davon sind 44 %
+React-DOM; von 208 Exporten ist keiner tot; nur 12 lange `className`-Strings sind
+dreimal oder öfter kopiert. Überladen ist die **Struktur an wenigen Stellen**, und
+einige Pakete, die für kleine Aufgaben geladen werden.
+
+**Erledigt in 0.9.76** (Messungen im DEVLOG vom 2026-10-10): framer-motion entfernt
+(zwei Einblendungen; Paket 127 KB), Changelog auf höchstens zehn Einträge mit
+Hilfskomponente (1.419 → 271 Zeilen, Paket 101,7 → 11,7 KB, zählende Prüfung
+`scripts/checks/changelog.ts`), `vite` nur noch einmal in der `package.json`.
+
+**Vorgemerkt, in dieser Reihenfolge**
+
+1. **`ClockInWidget` zusammenführen (0.9.77, eigene Fassung).** Die Formulare
+   „Verbuchen“ (L431–677) und „Nachtragen“ (L785–1024) sind zu 76–78 % zeilengleich;
+   `getCalculatedActiveShiftValues`/`…ManualShiftValues` und
+   `handleSaveShift`/`handleSaveManualShift` sind Kopien, `aufZwei` steht zweimal da.
+   Die Doppelung hat nachweislich schon geschadet (0.9.22: Rundung in beiden Kopien;
+   ein Überlauf-Fix musste zweimal gemacht werden). Vorschlag: ein Hook für Pause,
+   Aufteilung, Stunden und Notiz plus eine Komponente für die Felder; beide Formulare
+   benutzen sie. Datei von 1.147 auf rund 800 Zeilen. **Allein in einer Fassung**,
+   weil es an der Zeitrechnung hängt; Nachweis wie bei 0.9.42: DOM-Vergleich in
+   vier Zuständen (Ausstempeln, Nachtragen, Uhr aus, „Extra groß“), dazu `check`
+   (`zeit`, `schicht-verrechnung`) und `check:ui`.
+2. **`CLAUDE.md` straffen** (82 KB, grob 20.000 Token in jeder Sitzung). Nur als
+   Diff zur Durchsicht: Es steht hart erkämpftes Wissen darin. Keine Prüfung liest
+   den Inhalt, nur Kommentare verweisen darauf.
+3. **`App()` in Scheiben zerlegen — nicht als Projekt, sondern wenn dort ohnehin
+   etwas geändert wird.** Eine Funktion von Zeile 159 bis 3366; allein die
+   Formular-Ansicht (L1979–2870) steht als ≈ 890 Zeilen inline, darin die
+   Hinweisleisten (≈ 170) und das Zielformular (≈ 140). Jede andere Ansicht hat eine
+   eigene Datei. Der Zustand bleibt in `App.tsx` (so ist es festgelegt), nur das JSX
+   zieht aus; je Scheibe ein DOM-Vergleich wie bei 0.9.42.
+
+**Bewusst NICHT jetzt, mit Grund**
+
+- **`html5-qrcode` gegen jsQR tauschen.** Die Bibliothek ist 334,7 KB groß (87 % des
+  Sync-Pakets), ihre letzte Veröffentlichung ist von 2023-04-15; jsQR misst 131 KB
+  (46,5 KB gzip) und wird gepflegt (1.4.0, 2025-11). Das wären rund −200 KB, aber nur
+  einmal je Gerät und in einem Nachladepaket — und das Risiko sitzt auf dem
+  Kamera-Scan, den nur echte iPhones prüfen. Erst bei einem Anlass (Scanprobleme,
+  eine Meldung im Audit-Tor) und dann mit Gerätetest.
+- **Die drei Sync-Wege (QR, Text, Live) kürzen.** Der Geräte-Sync ist mit gut 2.700
+  Zeilen (Fenster, Hook, `liveSync`, Codes, Schema, Zusammenführen) der größte
+  Einzelposten im Funktionsumfang. Ob die Kollegen alle drei brauchen, lässt sich
+  nicht messen — die App zählt nichts, aus gutem Grund. Eine Produktentscheidung.
+- **Die Prüfläufe kürzen.** Die 5.478 Zeilen von `tests/oberflaeche.spec.ts` und
+  rund 26 Minuten Gate sind lang, aber sie haben die Fehler gefangen, die sonst live
+  gegangen wären. Allenfalls in Dateien aufteilen, nie Abdeckung streichen.
+
+---
+
 ## 0.9.72 — Was still verloren ging — ERLEDIGT (2026-10-02)
 
 Auftrag: „schau dir nochmals alles an und analysiere den code", dann „setze

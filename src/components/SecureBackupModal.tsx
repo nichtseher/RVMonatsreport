@@ -3,7 +3,6 @@ import AnsichtsKopf from "./AnsichtsKopf";
 import { Download, Upload, Share2, Lock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { encryptBackup, decryptData } from "../utils/crypto";
 import { merkeSicherung } from "../utils/speicherSchutz";
-import { motion } from "framer-motion";
 
 /** Mindestlänge beim ERZEUGEN. Beim Einspielen wird keine Länge geprüft: Alte Sicherungen mit kurzem Passwort müssen gehen. */
 const MIN_PASSWORT = 8;
@@ -309,10 +308,8 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
           </div>
 
           {status && (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`p-4 rounded-[var(--rv-radius-md)] flex items-start gap-3 ${
+            <div
+              className={`p-4 rounded-[var(--rv-radius-md)] flex items-start gap-3 animate-slide-up ${
                 status.type === "success" ? "bg-[var(--success-bg)] text-[var(--success-text)] border border-[var(--success-border)]" :
                 status.type === "error" ? "bg-[var(--danger-bg)] text-[var(--danger-text)] border border-[var(--danger-border)]" :
                 "bg-[var(--info-bg)] text-[var(--info-text)] border border-[var(--card-border)]"
@@ -322,7 +319,7 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
             >
               {status.type === "success" ? <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" /> : <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />}
               <p className="text-sm font-normal">{status.msg}</p>
-            </motion.div>
+            </div>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
