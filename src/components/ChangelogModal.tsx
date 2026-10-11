@@ -63,6 +63,15 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
       <div className="space-y-6">
         {/* Eine Zeile je Kategorie (Regel seit 0.9.40): nichts, was man neu tun oder wissen muss. */}
+        <Eintrag nr="0.9.78" titel="Fehlerbehebungen" symbol={Bug}>
+          <li>
+            Eine Schicht wird nur noch in den Monat gebucht, zu dem ihr Datum gehört; zeigt der Bericht einen anderen
+            Monat, sagt die App das, und Ihre Eingaben bleiben erhalten. Die Live-Verbindung übersteht kurze Funklöcher
+            und gleicht danach weiter ab. Fehlt beim Löschen aller Daten ein Teil, meldet die App das ehrlich. Zwei
+            Tasten haben bessere Namen für Screenreader und Sprachsteuerung.
+          </li>
+        </Eintrag>
+
         <Eintrag nr="0.9.77" titel="Fehlerbehebungen" symbol={Bug}>
           <li>
             Beim Abgleich zweier Geräte zählen die Stunden und Arbeitstage jetzt beide Schichten. Eine gerettete
@@ -226,39 +235,6 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             keine Wörter mehr mitten durch.
           </li>
         </Eintrag>
-
-        {/*
-          Ausgeschrieben, weil sich sichtbare Namen geändert haben: Wer
-          „RV Archiv" oder „Hilfe & Handbuch" sucht, findet es sonst nicht
-          (Regel seit 0.9.40: neu wissen muss).
-        */}
-        <Eintrag nr="0.9.68" titel="Alle Ansichten sehen gleich aus" symbol={Sparkles}>
-          <li>
-            <strong>Jede Ansicht hat jetzt denselben Kopf:</strong> oben die Zurück-Taste und ein Symbol, darunter die
-            Überschrift. Die Überschrift heißt so wie der Eintrag, über den Sie hingekommen sind.
-          </li>
-          <li>
-            <strong>Neue Namen:</strong> „RV Archiv“ heißt jetzt „Archiv“, „RV Analyse“ heißt „Analyse“, die Hilfe heißt
-            „Hilfe &amp; Anleitung“, der Geräte-Abgleich „Geräte-Sync“, das Jahreskonto „Jahreskonto“ und das Löschen
-            eigener Felder „Eigene Felder löschen“.
-          </li>
-          <li>
-            <strong>Die Analyse hat eine Zurück-Taste</strong> zu den Optionen, wie alle anderen Ansichten unter „Mehr“.
-            Die Taste „Hilfe schließen“ unten in der Hilfe ist entfallen – die Zurück-Taste oben tut dasselbe.
-          </li>
-          <li>
-            Verbesserungen: Alle Ansichten nutzen dieselbe Breite, auf dem Rechner also den ganzen Platz. Bei großer
-            Schrift ordnen sich Schriftgrößen-Tasten, Farbschemata und die Schritte des Geräte-Syncs untereinander an,
-            statt Wörter zu zerbrechen.
-          </li>
-        </Eintrag>
-
-        {/*
-          Ausgeschrieben, weil man den neuen Hinweis kennen muss, um nicht an
-          einen Fehler zu glauben, wenn ein älteres Fenster plötzlich nicht mehr
-          speichert (Regel seit 0.9.40: neu wissen muss).
-        */}
-
 
         <p className="text-sm text-[var(--text-muted)]">
           Ältere Versionen sind hier nicht mehr aufgeführt.

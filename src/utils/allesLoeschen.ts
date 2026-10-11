@@ -17,6 +17,19 @@ import { clear as clearIndexedDb } from "idb-keyval";
  * müsste gepflegt werden, und in diesem Projekt sind handgepflegte Listen
  * mehrfach vergessen worden. Die Adresse gehört allein dieser App.
  */
+/**
+ * Die Berichtsdaten (IndexedDB) sind gelöscht, die Einstellungen
+ * (localStorage) ließen sich aber nicht entfernen. Eine eigene Fehlerart, weil
+ * die Meldung „es wurde nichts entfernt" hier falsch wäre -- das Archiv ist
+ * bereits weg.
+ */
+export class NurTeilweiseGeloescht extends Error {
+  constructor() {
+    super("Einstellungen konnten nicht entfernt werden");
+    this.name = "NurTeilweiseGeloescht";
+  }
+}
+
 export async function loescheAllesLokal(): Promise<void> {
   /*
     Reihenfolge: erst IndexedDB, dann localStorage -- und das ist kein Zufall.
@@ -34,5 +47,10 @@ export async function loescheAllesLokal(): Promise<void> {
     console.error("IndexedDB-Löschung fehlgeschlagen", err);
     throw err;
   }
-  localStorage.clear();
+  try {
+    localStorage.clear();
+  } catch (err) {
+    console.error("localStorage-Löschung fehlgeschlagen", err);
+    throw new NurTeilweiseGeloescht();
+  }
 }

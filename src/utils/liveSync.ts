@@ -15,6 +15,14 @@ import { kanalTeilGueltig } from "./syncSchema";
 
 const CHANNEL_PART_SIZE = 60000; // Zeichen pro DataChannel-Nachricht
 const LIVE_SEND_INTERVAL_MS = 3000; // Abgleich-Intervall
+/**
+ * WebRTC meldet `disconnected` oft nur kurz (Funkloch, Wechsel zwischen WLAN
+ * und Mobilfunk) und kehrt von selbst zu `connected` zurück. Bis 0.9.76 galt
+ * die Verbindung dabei sofort als verloren, der Abgleich stoppte, und auch nach
+ * der Erholung kam er nicht wieder. `failed` und das Schliessen des Kanals
+ * bleiben endgültig.
+ */
+const WIEDERVERBINDEN_MS = 8000;
 
 export interface LiveSyncState {
   connected: boolean;
@@ -187,6 +195,7 @@ function closePeerOnly() {
   }
   lastSent = null;
   incoming = null;
+  stopVerlustTimer();
 }
 
 /**
@@ -194,7 +203,16 @@ function closePeerOnly() {
  * Bildschirmsperre). Bewusstes Trennen läuft hier nicht durch, weil
  * closePeerOnly() die Handler vorher abhängt.
  */
+let verlustTimer: ReturnType<typeof setTimeout> | null = null;
+function stopVerlustTimer() {
+  if (verlustTimer !== null) {
+    clearTimeout(verlustTimer);
+    verlustTimer = null;
+  }
+}
+
 function verbindungVerloren() {
+  stopVerlustTimer();
   state.connected = false;
   state.pairing = false;
   state.failed = true;
@@ -212,8 +230,19 @@ export function adoptPeer(newPc: RTCPeerConnection) {
   pc = newPc;
   pc.onconnectionstatechange = () => {
     if (!pc) return;
-    if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
+    const zustand = pc.connectionState;
+    if (zustand === "failed") {
       verbindungVerloren();
+    } else if (zustand === "disconnected") {
+      // Erst abwarten: erholt sich die Verbindung, läuft der Abgleich weiter.
+      if (verlustTimer === null) {
+        verlustTimer = setTimeout(() => {
+          verlustTimer = null;
+          if (pc && pc.connectionState !== "connected") verbindungVerloren();
+        }, WIEDERVERBINDEN_MS);
+      }
+    } else if (zustand === "connected") {
+      stopVerlustTimer();
     }
   };
   notify();

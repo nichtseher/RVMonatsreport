@@ -44,7 +44,7 @@ import { useBerichtsdaten } from "./hooks/useBerichtsdaten";
 import { useAnsichtsFokus } from "./hooks/useAnsichtsFokus";
 import BerichtsBereich from "./components/BerichtsBereich";
 import NotizBereich from "./components/NotizBereich";
-import { loescheAllesLokal } from "./utils/allesLoeschen";
+import { loescheAllesLokal, NurTeilweiseGeloescht } from "./utils/allesLoeschen";
 import {
   findeVorlage, ladeVorlagenWahl, VORLAGE_SCHLUESSEL, bereichsTitel,
 } from "./utils/vorlagen";
@@ -683,6 +683,7 @@ export default function App() {
     handleManualLogAdd,
   } = useStempeluhr({
     setReportData,
+    berichtsmonat: reportData?.month,
     announceToAriaAndSpeech,
     triggerToast,
     triggerHaptic,
@@ -1036,7 +1037,18 @@ export default function App() {
         void (async () => {
           try {
             await loescheAllesLokal();
-          } catch {
+          } catch (fehler) {
+            if (fehler instanceof NurTeilweiseGeloescht) {
+              // Das Archiv ist weg, nur die Einstellungen blieben: ehrlich sagen
+              // und neu starten, damit die App nicht mit halbem Stand weiterläuft.
+              triggerToast("Berichtsdaten gelöscht, Einstellungen nicht.");
+              announceToAriaAndSpeech(
+                "Die Berichtsdaten wurden gelöscht. Die Einstellungen konnten nicht entfernt werden. Die App startet jetzt neu.",
+                true,
+              );
+              window.setTimeout(() => window.location.reload(), 1600);
+              return;
+            }
             /*
               Ehrlich bleiben duerfen wir nur wegen der Reihenfolge in
               loescheAllesLokal: IndexedDB zuerst. Schlaegt sie fehl, ist
@@ -2472,7 +2484,6 @@ export default function App() {
             <button
               type="button"
               aria-pressed={isCompactView}
-              aria-label={`Kompakt-Layout ${isCompactView ? "deaktivieren" : "aktivieren"}`}
               onClick={() => {
                 triggerHaptic(15);
                 setIsCompactView((prev) => !prev);
@@ -2559,7 +2570,7 @@ export default function App() {
                 setIsGoalsEditorOpen((prev) => !prev);
               }}
               aria-expanded={isGoalsEditorOpen}
-              aria-label={`Monatsziele einrichten. Ziele sind zurzeit ${goalsConfig.enabled ? "eingeschaltet" : "ausgeschaltet"}.`}
+              aria-label={`Ziele. Monatsziele einrichten, zurzeit ${goalsConfig.enabled ? "eingeschaltet" : "ausgeschaltet"}.`}
               className={`px-2.5 min-h-[44px] rounded-[var(--rv-radius-sm)] text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
                 isGoalsEditorOpen
                   ? "bg-[var(--accent)] text-[var(--accent-text)] border-[var(--accent)] shadow-[var(--rv-shadow-sm)]"

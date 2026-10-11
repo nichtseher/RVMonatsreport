@@ -15,7 +15,7 @@ import { TimeLog, YearlyCarryover, ReportData, HistoryRecord } from "../types";
 interface TimeModalProps {
   clockInTime: string | null;
   onClockIn: () => void;
-  onClockOut: (log: TimeLog) => void;
+  onClockOut: (log: TimeLog) => boolean | void;
   timeLogs: TimeLog[];
   onDeleteLog: (log: TimeLog) => void;
   announceToAriaAndSpeech: (message: string, immediate?: boolean) => void;
@@ -23,7 +23,7 @@ interface TimeModalProps {
   onOpenCarryover: () => void;
   onExportExcel?: () => void;
   selectedMonth?: string;
-  onAddManualLog?: (newLog: TimeLog) => void;
+  onAddManualLog?: (newLog: TimeLog) => boolean | void;
   history: Record<string, HistoryRecord>;
   reportData: ReportData;
 }

@@ -15,13 +15,13 @@ import ConfirmDialog, { ConfirmRequest } from "./ConfirmDialog";
 interface ClockInWidgetProps {
   clockInTime: string | null;
   onClockIn: () => void;
-  onClockOut: (log: TimeLog) => void;
+  onClockOut: (log: TimeLog) => boolean | void;
   timeLogs: TimeLog[];
   onDeleteLog: (log: TimeLog) => void;
   announceToAriaAndSpeech: (message: string, immediate?: boolean) => void;
   onExportExcel?: () => void;
   selectedMonth?: string;
-  onAddManualLog?: (newLog: TimeLog) => void;
+  onAddManualLog?: (newLog: TimeLog) => boolean | void;
   /** Steht direkt unter der Stempeluhr-Karte (0.9.71: die Wochenübersicht). */
   nachDerUhr?: React.ReactNode;
 }
@@ -239,7 +239,8 @@ export default React.memo(function ClockInWidget({
       notes: notes.trim() || undefined,
     };
 
-    onClockOut(newLog);
+    // `false`: nicht gebucht (falscher Monat) -- Formular und Eingaben bleiben.
+    if (onClockOut(newLog) === false) return;
     setIsFormOpen(false);
     setTypedOfficeHours("");
     setTypedFieldHours("");
@@ -316,11 +317,8 @@ export default React.memo(function ClockInWidget({
       notes: manualNotes.trim() || undefined,
     };
 
-    if (onAddManualLog) {
-      onAddManualLog(newLog);
-    } else {
-      onClockOut(newLog);
-    }
+    const gebucht = onAddManualLog ? onAddManualLog(newLog) : onClockOut(newLog);
+    if (gebucht === false) return;
 
     setIsManualOpen(false);
     setTypedManualOfficeHours("");

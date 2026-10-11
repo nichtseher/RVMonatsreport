@@ -1,5 +1,5 @@
 import { gruppe, pruefe, gleich, wahr } from "../helfer";
-import { verrechneSchicht } from "../../src/utils/schichtVerrechnung";
+import { verrechneSchicht, schichtGehoertInMonat, schichtMonate } from "../../src/utils/schichtVerrechnung";
 import type { TimeLog } from "../../src/types";
 
 /*
@@ -137,4 +137,41 @@ pruefe("eine Schicht ohne Stunden zählt trotzdem als Arbeitstag", () => {
     "hinzufuegen",
   );
   gleich(raus.tage_arbeit, 3);
+});
+
+gruppe("Gehört die Schicht in den angezeigten Monat? (0.9.77)");
+
+const tag = (date: string, clockIn = "08:00", clockOut = "16:00") => ({ date, clockIn, clockOut });
+
+pruefe("Schicht im angezeigten Monat: ja", () => {
+  wahr(schichtGehoertInMonat(tag("2026-10-12"), "2026-10"));
+});
+
+pruefe("Schicht eines anderen Monats: nein", () => {
+  gleich(schichtGehoertInMonat(tag("2026-10-12"), "2026-09"), false);
+  gleich(schichtGehoertInMonat(tag("2026-09-30"), "2026-10"), false);
+});
+
+pruefe("Nachtschicht über das Monatsende gehört in BEIDE Monate", () => {
+  const nacht = tag("2026-10-31", "22:00", "02:00");
+  gleich(schichtMonate(nacht), ["2026-10", "2026-11"]);
+  wahr(schichtGehoertInMonat(nacht, "2026-10"));
+  wahr(schichtGehoertInMonat(nacht, "2026-11"));
+  gleich(schichtGehoertInMonat(nacht, "2026-09"), false);
+});
+
+pruefe("Nachtschicht über den Jahreswechsel", () => {
+  gleich(schichtMonate(tag("2026-12-31", "23:00", "03:00")), ["2026-12", "2027-01"]);
+});
+
+pruefe("Tagschicht am Monatsletzten gehört nur in ihren Monat", () => {
+  gleich(schichtMonate(tag("2026-10-31", "08:00", "16:00")), ["2026-10"]);
+  gleich(schichtGehoertInMonat(tag("2026-10-31"), "2026-11"), false);
+});
+
+pruefe("ohne Monat oder mit unlesbarem Datum wird nicht gesperrt", () => {
+  wahr(schichtGehoertInMonat(tag("2026-10-12"), undefined));
+  wahr(schichtGehoertInMonat(tag(""), "2026-10"));
+  wahr(schichtGehoertInMonat(tag("kaputt"), "2026-10"));
+  wahr(schichtGehoertInMonat(tag("2026-13-45"), "2026-10"));
 });

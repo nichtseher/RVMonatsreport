@@ -10,6 +10,47 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-10-11 — v0.9.78: Die offenen Punkte aus 0.9.77, soweit sie sich entscheiden ließen
+
+Auftrag des Projektinhabers: „entscheide alles so, dass es perfekt funktioniert“. Entschieden
+und umgesetzt wurde, was sich im Code belegen und mit einer Prüfung absichern ließ.
+
+- **Schicht im falschen Monat (`useStempeluhr.ts`, `schichtVerrechnung.ts`).** `verbuche` bucht
+  in den angezeigten Monat. Entscheidung: **nicht still falsch buchen, nicht in den Datumsmonat
+  umleiten** (das hieße, ein Archivmonat würde ohne Ansage verändert). Stattdessen meldet die App
+  den Fehler (Toast + Ansage), bucht nicht, lässt das Formular offen und die Stempeluhr laufen.
+  Eine Nachtschicht über das Monatsende gehört in **beide** Monate (`schichtMonate`), sonst wäre
+  das Ausstempeln um Mitternacht gesperrt. Unlesbare oder ungültige Daten sperren nicht
+  (`Date` rollt `2026-13-45` still weiter — der erste Lauf der Prüfung fand das). Sechs neue
+  Prüffälle. Die Hilfe nennt das Verhalten.
+- **Live-Verbindung (`liveSync.ts`).** `disconnected` galt sofort als verloren; WebRTC meldet das
+  oft nur kurz und erholt sich. Jetzt acht Sekunden Schonfrist; `failed` und das Schließen des
+  Kanals bleiben sofort endgültig. **Kein Prüffall** (WebRTC, nur im Browser) und kein
+  Zwei-Fenster-Lauf damit gemacht — ungemessen.
+- **„Alles löschen“ (`allesLoeschen.ts`).** Scheitert nur `localStorage.clear()` nach gelungenem
+  Löschen der IndexedDB, hieß es „nichts entfernt“, obwohl das Archiv weg war. Eigene Fehlerart
+  `NurTeilweiseGeloescht`, ehrliche Meldung, Neustart. Kein Prüffall (Browser-Speicher).
+- **Screenreader-Namen:** „Kompakt“ trägt nur noch seinen sichtbaren Namen plus `aria-pressed`
+  (vorher doppelt codiert); „Ziele“ beginnt seinen Namen mit dem sichtbaren Wort (WCAG 2.5.3).
+- **`scripts/checks/pruefdateien.ts`:** zählt, ob jede Datei in `scripts/checks/` von
+  `pruefen.ts` eingebunden ist (gegen den Fehler geprüft: eine angelegte Waise schlug an).
+- **Aufräumen:** `CLAUDE.md`-Zahlen berichtigt (378 Prüfungen, `RUECKFRAGEN` 14, `App.tsx`
+  ≈ 3400 Zeilen); der in 0.9.77 stehengebliebene Kommentar über dem entfernten Changelog-Eintrag
+  ist weg.
+
+### Bewusst nicht geändert, mit Grund
+
+- **Begriffe im Sync („Verbindungscode“, „Antwort-Code“):** reine Wortwahl, in Tasten und Tests
+  namentlich verankert; Umbenennen ohne Anlass wäre Risiko ohne Gewinn.
+- **Breite Zwangsschrift in weiteren Tests:** Der Test-Agent hatte behauptet, sie decke nur einen
+  Block ab. Nachgesehen: `erzwingeBreiteSchrift` steckt an acht Stellen, auch in der
+  Geometrie-Matrix über alle Ansichten. axe und Kontrast hängen nicht von der Schriftbreite ab.
+- **Zeitlimit der Kopplung, `prev === null` beim Ausstempeln:** erste ist ein Abbruch per Knopf
+  möglich, zweite im Betrieb nicht erreichbar (der Bericht ist erst nach dem Laden bedienbar).
+- **Dateien im Wurzelverzeichnis (`KONZEPT-*.md` u. a.):** Löschen ist Sache des Inhabers.
+
+---
+
 ## 2026-10-11 — v0.9.77: Befunde der Mehrfach-Prüfung — was sich im Code bestätigt hat
 
 Auftrag des Projektinhabers: den ganzen Stand mit zwölf Fach-Agenten prüfen lassen (Code-Review,

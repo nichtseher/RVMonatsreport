@@ -62,3 +62,45 @@ export function verrechneSchicht(
     tage_arbeit: Math.max(0, tage - 1),
   };
 }
+
+/**
+ * Zu welchen Berichtsmonaten gehört eine Schicht? Der Monat ihres Datums --
+ * und bei einer Schicht über Mitternacht (Ende vor Beginn) auch der des
+ * Folgetags. Ohne den zweiten Monat bliebe das Ausstempeln in der Nacht auf
+ * den Monatsersten gesperrt.
+ */
+export function schichtMonate(schicht: Pick<TimeLog, "date" | "clockIn" | "clockOut">): string[] {
+  const treffer = /^(\d{4})-(\d{2})-(\d{2})$/.exec(schicht.date || "");
+  if (!treffer) return [];
+  const [, j, m, t] = treffer;
+  const monat = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const start = new Date(Number(j), Number(m) - 1, Number(t), 12);
+  // `Date` rollt ein Datum wie 2026-13-45 still weiter -- nur Echtes zählt.
+  if (
+    start.getFullYear() !== Number(j) ||
+    start.getMonth() !== Number(m) - 1 ||
+    start.getDate() !== Number(t)
+  ) {
+    return [];
+  }
+  const ueberMitternacht =
+    !!schicht.clockIn && !!schicht.clockOut && schicht.clockOut < schicht.clockIn;
+  const ende = new Date(start);
+  if (ueberMitternacht) ende.setDate(ende.getDate() + 1);
+  return Array.from(new Set([monat(start), monat(ende)]));
+}
+
+/**
+ * Darf die Schicht in den angezeigten Monat gebucht werden? Ohne Monatsangabe
+ * oder mit unlesbarem Datum: ja -- dann fehlt der Anhaltspunkt, und eine
+ * Sperre ohne Grund wäre schlimmer als die bisherige Buchung.
+ */
+export function schichtGehoertInMonat(
+  schicht: Pick<TimeLog, "date" | "clockIn" | "clockOut">,
+  berichtsmonat: string | undefined,
+): boolean {
+  if (!berichtsmonat) return true;
+  const monate = schichtMonate(schicht);
+  return monate.length === 0 || monate.includes(berichtsmonat);
+}

@@ -37,6 +37,7 @@ import "./checks/erklaerung";
 import "./checks/changelog";
 import "./checks/inhaltsrichtlinie";
 import "./checks/service-worker";
+import "./checks/pruefdateien";
 import { alleLaufen } from "./helfer";
 
 alleLaufen()
