@@ -16,7 +16,7 @@ The UI is German and addresses the user formally ("Sie"). Spoken announcements a
 npm install
 npm run dev        # tsx server.ts — dev server on http://localhost:3000 (Express + Vite middleware, HMR)
 npm run lint       # tsc --noEmit (covers src/, scripts/, tests/); no ESLint config
-npm run check      # tsx scripts/pruefen.ts — 378 checks, no test framework
+npm run check      # tsx scripts/pruefen.ts — 387 checks, no test framework
 npm run check:ui   # playwright test — 1608 UI/a11y checks over three profiles (799 run, 809 skipped by profile), ~34 min (measured 2026-10-10) (starts the dev server itself)
 npm run check:breite # the FULL responsiveness matrix (3 templates × 14 views × 6 widths × 3 font sizes, Chromium + WebKit, with content, ~37 min); the gate (check:ui) runs a slim subset of it (126 cases)
 npm run check:prod # builds, then playwright against `vite preview` of dist/ — the BUILT app, with the CSP, minified, with the service worker (4 cases, ~26 s). In the deploy workflow since 0.9.72 as the step "Gebauten Stand pruefen" between "Build Application" and "Setup Pages" (same call, without building twice).

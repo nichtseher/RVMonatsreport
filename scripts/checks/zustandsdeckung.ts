@@ -52,7 +52,14 @@ const WURZEL = new URL("../../src", import.meta.url).pathname.replace(/^\/([A-Za
  * nichts und können deshalb auch nichts verstecken.
  */
 const GEZAEHLT = (pfad: string) =>
-  pfad.endsWith("App.tsx") || pfad.includes(`${"components"}${"/"}`) || pfad.includes("components\\");
+  pfad.endsWith("App.tsx") ||
+  pfad.includes(`${"components"}${"/"}`) ||
+  pfad.includes("components\\") ||
+  // 0.9.78: Die Felder beider Schicht-Formulare der Stempeluhr liegen in diesem
+  // Hook (vorher in ClockInWidget). Er zeichnet nichts selbst, trägt aber die
+  // Schalter, an denen die Formulare hängen -- die einzige Ausnahme von der
+  // Regel „Hooks zählen nicht".
+  pfad.endsWith("useSchichtFormular.ts");
 
 const MUSTER = /useState(?:<[^>]*>)?\(\s*(?:false|true|"[^"]*"|'[^']*')\s*\)/g;
 
@@ -71,7 +78,12 @@ const ERWARTET: Record<string, number> = {
   // Schicht-Protokoll lag hinter einer Einklappung, die die Projektregel
   // ausdruecklich verbietet, und versteckte neben der Liste auch die
   // Excel-Ausgabe. Diese Prüfung hat den Wegfall selbst gemeldet.
-  "ClockInWidget.tsx": 13,
+  // 0.9.78: von 13 auf 6. Die Felder beider Schicht-Formulare (Pause, Aufteilung,
+  // eigene Prozent, getippte Stunden, Kommentar) wanderten in den Hook
+  // `useSchichtFormular` -- siehe die Zeile dort. Gemessen: der DOM der Stempeluhr
+  // in 14 Zuständen (7 × Handy und Schreibtisch) ist vorher und nachher
+  // zeichenidentisch; die Zustände stehen weiter in ZEIT_FORMULARE.
+  "ClockInWidget.tsx": 6,
   "DeviceSyncModal.tsx": 6,
   "HelpModal.tsx": 1,
   "HistoryModal.tsx": 1,
@@ -84,13 +96,17 @@ const ERWARTET: Record<string, number> = {
   "SecureBackupModal.tsx": 4,
   "StatsModal.tsx": 2,
   "TimeModal.tsx": 1,
+  // 0.9.78: Aufteilung ("half") plus die drei Eingabepuffer (Kommentar, getippte
+  // Büro- und Außendienststunden). Pause und eigene Prozent sind Zahlen und
+  // zählen nicht mit.
+  "useSchichtFormular.ts": 4,
 };
 
 function dateienSammeln(verzeichnis: string, treffer: string[] = []): string[] {
   for (const eintrag of readdirSync(verzeichnis)) {
     const pfad = join(verzeichnis, eintrag);
     if (statSync(pfad).isDirectory()) dateienSammeln(pfad, treffer);
-    else if (pfad.endsWith(".tsx") && GEZAEHLT(pfad)) treffer.push(pfad);
+    else if ((pfad.endsWith(".tsx") || pfad.endsWith("useSchichtFormular.ts")) && GEZAEHLT(pfad)) treffer.push(pfad);
   }
   return treffer;
 }

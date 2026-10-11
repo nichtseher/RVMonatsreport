@@ -9,8 +9,11 @@ import {
   Plus,
 } from "lucide-react";
 import { TimeLog } from "../types";
-import { berechneNettoStunden, teileArbeitszeit } from "../utils/timeUtils";
+import { berechneNettoStunden } from "../utils/timeUtils";
+import { aufZwei, berechneSchichtzahlen } from "../utils/schichtStunden";
+import { useSchichtFormular } from "../hooks/useSchichtFormular";
 import ConfirmDialog, { ConfirmRequest } from "./ConfirmDialog";
+import SchichtFelder from "./SchichtFelder";
 
 interface ClockInWidgetProps {
   clockInTime: string | null;
@@ -45,35 +48,15 @@ export default React.memo(function ClockInWidget({
   const [elapsed, setElapsed] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
 
-  // Form states for clocking out
-  const [breakMinutes, setBreakMinutes] = useState(30);
-  const [notes, setNotes] = useState("");
-  const [officeRatio, setOfficeRatio] = useState<number>(0.5); // 0 = 100% Außendienst, 1 = 100% Büro, 0.5 = 50/50
-  const [preset, setPreset] = useState<"office" | "field" | "half" | "custom">(
-    "half",
-  );
-  const [customRatio, setCustomRatio] = useState(50); // percentage for custom option
+  // Die Felder beider Schicht-Formulare (0.9.78: ein Hook statt 18 useState)
+  const aktiv = useSchichtFormular();
+  const manuell = useSchichtFormular();
 
   // Manual entry states
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [manualDate, setManualDate] = useState("");
   const [manualClockIn, setManualClockIn] = useState("08:00");
   const [manualClockOut, setManualClockOut] = useState("16:30");
-  const [manualBreakMinutes, setManualBreakMinutes] = useState(30);
-  const [manualNotes, setManualNotes] = useState("");
-  const [manualOfficeRatio, setManualOfficeRatio] = useState<number>(0.5);
-  const [manualPreset, setManualPreset] = useState<
-    "office" | "field" | "half" | "custom"
-  >("half");
-  const [manualCustomRatio, setManualCustomRatio] = useState(50);
-
-  // States for typed custom hours
-  const [typedOfficeHours, setTypedOfficeHours] = useState<string>("");
-  const [typedFieldHours, setTypedFieldHours] = useState<string>("");
-  const [typedManualOfficeHours, setTypedManualOfficeHours] =
-    useState<string>("");
-  const [typedManualFieldHours, setTypedManualFieldHours] =
-    useState<string>("");
 
   // Month calculation for manual date boundaries
   const currentYearMonth = new Date().toLocaleDateString("sv-SE").substring(0, 7); // lokale Zeit statt UTC (Fix: falscher Monat nachts)
@@ -159,10 +142,7 @@ export default React.memo(function ClockInWidget({
 
     // Set default suggested break
     const suggestedBreak = autoSuggestBreak(diffHours);
-    setBreakMinutes(suggestedBreak);
-    setNotes("");
-    setPreset("half");
-    setOfficeRatio(0.5);
+    aktiv.oeffnen(suggestedBreak);
     setIsFormOpen(true);
 
     announceToAriaAndSpeech(
@@ -171,33 +151,18 @@ export default React.memo(function ClockInWidget({
     );
   };
 
-  const getCalculatedActiveShiftValues = () => {
-    if (!clockInTime) return { netHours: 0, officeHrs: 0, fieldHrs: 0 };
-    const startDate = new Date(clockInTime);
-    const endDate = new Date();
-    const rawDiffMs = endDate.getTime() - startDate.getTime();
-    const rawHours = rawDiffMs / (1000 * 3600);
-    const breakHours = breakMinutes / 60;
-    const netHours = Math.max(0, rawHours - breakHours);
-    const roundedNet = Math.round(netHours * 100) / 100;
-
-    let ratio = officeRatio;
-    if (preset === "office") ratio = 1.0;
-    if (preset === "field") ratio = 0.0;
-    if (preset === "half") ratio = 0.5;
-    if (preset === "custom") ratio = customRatio / 100;
-
-    // Aufteilung ueber die reine Funktion: Eine Haelfte wird gerundet, die
-    // andere ergibt sich als Rest. Zwei unabhaengige Rundungen machten die
-    // Schicht laenger, als sie war (gemessen 7,76 statt 7,75 Stunden).
-    const { buero: officeHrs, aussendienst: fieldHrs } = teileArbeitszeit(roundedNet, ratio);
-
-    return { netHours: roundedNet, officeHrs, fieldHrs };
-  };
-
-  const activeVals = getCalculatedActiveShiftValues();
-  const calculatedOfficeHrs = activeVals.officeHrs;
-  const calculatedFieldHrs = activeVals.fieldHrs;
+  // Nettozeit der laufenden Schicht: Grundlage für Vorschlag und Buchung.
+  const aktivNetto = clockInTime
+    ? aufZwei(
+        Math.max(
+          0,
+          (Date.now() - new Date(clockInTime).getTime()) / (1000 * 3600) - aktiv.pause / 60,
+        ),
+      )
+    : 0;
+  const aktivVorschlag = berechneSchichtzahlen(
+    aktivNetto, aktiv.aufteilung, aktiv.eigenProzent, "", "",
+  ).vorschlag;
 
   const handleSaveShift = (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,45 +170,28 @@ export default React.memo(function ClockInWidget({
 
     const startDate = new Date(clockInTime);
     const endDate = new Date();
-
-    // Getippte Stunden auf zwei Nachkommastellen runden -- so wie die
-    // berechneten. Ohne das landete eine Eingabe wie "3,875" ungerundet in der
-    // Schicht, und das Verrechnen im Bericht waere nicht mehr umkehrbar:
-    // 7,25 + 3,875 ergibt gerundet 11,13, davon 3,875 abgezogen 7,26. Wer eine
-    // Schicht anlegt und wieder loescht, haette danach eine Hundertstelstunde
-    // mehr im Bericht als vorher (gemessen 2026-08-22).
-    const aufZwei = (n: number) => Math.round(n * 100) / 100;
-    const finalOfficeHrs =
-      typedOfficeHours !== ""
-        ? aufZwei(parseFloat(typedOfficeHours) || 0)
-        : calculatedOfficeHrs;
-    const finalFieldHrs =
-      typedFieldHours !== ""
-        ? aufZwei(parseFloat(typedFieldHours) || 0)
-        : calculatedFieldHrs;
-    const finalDuration = aufZwei(finalOfficeHrs + finalFieldHrs);
+    // Rundung und Aufteilung stehen in utils/schichtStunden.ts (einmal, geprüft).
+    const z = berechneSchichtzahlen(
+      aktivNetto, aktiv.aufteilung, aktiv.eigenProzent, aktiv.getipptBuero, aktiv.getipptAussendienst,
+    );
 
     const newLog: TimeLog = {
       id: `log_${Date.now()}`,
       date: formatDateYMD(startDate),
       clockIn: formatTimeHM(startDate),
       clockOut: formatTimeHM(endDate),
-      breakMinutes: breakMinutes,
-      duration: finalDuration,
-      officeRatio:
-        finalDuration > 0
-          ? Math.round((finalOfficeHrs / finalDuration) * 100) / 100
-          : 0.5,
-      officeHours: finalOfficeHrs,
-      fieldHours: finalFieldHrs,
-      notes: notes.trim() || undefined,
+      breakMinutes: aktiv.pause,
+      duration: z.gesamt,
+      officeRatio: z.bueroAnteil,
+      officeHours: z.buero,
+      fieldHours: z.aussendienst,
+      notes: aktiv.notiz.trim() || undefined,
     };
 
     // `false`: nicht gebucht (falscher Monat) -- Formular und Eingaben bleiben.
     if (onClockOut(newLog) === false) return;
     setIsFormOpen(false);
-    setTypedOfficeHours("");
-    setTypedFieldHours("");
+    aktiv.tippenLeeren();
   };
 
   /* Hier stand bis 0.9.24 `handleGetLocation` -- ein Abruf von
@@ -257,72 +205,43 @@ export default React.memo(function ClockInWidget({
      sie per `Permissions-Policy: geolocation=()`, und Standortdaten von
      Beschaeftigten sind eine andere Kategorie als Arbeitszeiten. */
 
-  const getCalculatedManualShiftValues = () => {
-    // Rechnung liegt in utils/timeUtils.ts, damit sie prüfbar ist
-    // `manualDate` mitgeben: Ohne das Datum kann die Rechnung die
-    // Zeitumstellung nicht kennen, und eine nachgetragene Nachtschicht in die
-    // Umstellungsnacht wäre um eine Stunde falsch.
-    const netHours = berechneNettoStunden(
-      manualClockIn,
-      manualClockOut,
-      manualBreakMinutes,
-      manualDate,
-    );
-
-    let ratio = manualOfficeRatio;
-    if (manualPreset === "office") ratio = 1.0;
-    if (manualPreset === "field") ratio = 0.0;
-    if (manualPreset === "half") ratio = 0.5;
-    if (manualPreset === "custom") ratio = manualCustomRatio / 100;
-
-    // Siehe Ausstempeln: Rest statt zweiter Rundung.
-    const { buero: officeHrs, aussendienst: fieldHrs } = teileArbeitszeit(netHours, ratio);
-
-    return { netHours, officeHrs, fieldHrs };
-  };
-
-  const manualVals = getCalculatedManualShiftValues();
-  const calculatedManualOfficeHrs = manualVals.officeHrs;
-  const calculatedManualFieldHrs = manualVals.fieldHrs;
+  // `manualDate` mitgeben: Ohne das Datum kann die Rechnung die Zeitumstellung
+  // nicht kennen, und eine nachgetragene Nachtschicht in die Umstellungsnacht
+  // wäre um eine Stunde falsch.
+  const manuellNetto = berechneNettoStunden(
+    manualClockIn, manualClockOut, manuell.pause, manualDate,
+  );
+  const manuellVorschlag = berechneSchichtzahlen(
+    manuellNetto, manuell.aufteilung, manuell.eigenProzent, "", "",
+  ).vorschlag;
 
   const handleSaveManualShift = (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualDate || !manualClockIn || !manualClockOut) return;
 
-    // Runden wie beim Ausstempeln -- siehe Kommentar dort.
-    const aufZwei = (n: number) => Math.round(n * 100) / 100;
-    const finalOfficeHrs =
-      typedManualOfficeHours !== ""
-        ? aufZwei(parseFloat(typedManualOfficeHours) || 0)
-        : calculatedManualOfficeHrs;
-    const finalFieldHrs =
-      typedManualFieldHours !== ""
-        ? aufZwei(parseFloat(typedManualFieldHours) || 0)
-        : calculatedManualFieldHrs;
-    const finalDuration = aufZwei(finalOfficeHrs + finalFieldHrs);
+    const z = berechneSchichtzahlen(
+      manuellNetto, manuell.aufteilung, manuell.eigenProzent,
+      manuell.getipptBuero, manuell.getipptAussendienst,
+    );
 
     const newLog: TimeLog = {
       id: `log_${Date.now()}`,
       date: manualDate,
       clockIn: manualClockIn,
       clockOut: manualClockOut,
-      breakMinutes: manualBreakMinutes,
-      duration: finalDuration,
-      officeRatio:
-        finalDuration > 0
-          ? Math.round((finalOfficeHrs / finalDuration) * 100) / 100
-          : 0.5,
-      officeHours: finalOfficeHrs,
-      fieldHours: finalFieldHrs,
-      notes: manualNotes.trim() || undefined,
+      breakMinutes: manuell.pause,
+      duration: z.gesamt,
+      officeRatio: z.bueroAnteil,
+      officeHours: z.buero,
+      fieldHours: z.aussendienst,
+      notes: manuell.notiz.trim() || undefined,
     };
 
     const gebucht = onAddManualLog ? onAddManualLog(newLog) : onClockOut(newLog);
     if (gebucht === false) return;
 
     setIsManualOpen(false);
-    setTypedManualOfficeHours("");
-    setTypedManualFieldHours("");
+    manuell.tippenLeeren();
   };
 
   // „03:47:12" -> „3:47" für die Stempeluhr-Karte.
@@ -425,231 +344,19 @@ export default React.memo(function ClockInWidget({
             Arbeitszeit verbuchen
           </h4>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Break input */}
-            <div className="space-y-1">
-              <label
-                htmlFor="break-input"
-                className="text-xs font-bold text-[var(--text-muted)] block"
-              >
-                Pause abziehen (Minuten):
-              </label>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setBreakMinutes((prev) => Math.max(0, prev - 15))
-                  }
-                  className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] active:scale-90"
-                  aria-label="-15: Pause um 15 Minuten verringern"
-                >
-                  -15
-                </button>
-                <input
-                  id="break-input"
-                  type="number"
-                  min="0"
-                  max="240"
-                  step="5"
-                  value={breakMinutes}
-                  onChange={(e) =>
-                    setBreakMinutes(
-                      Math.max(0, parseInt(e.target.value) || 0),
-                    )
-                  }
-                  className="flex-1 min-w-[64px] min-h-[44px] p-1.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded text-center outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setBreakMinutes((prev) => Math.min(240, prev + 15))
-                  }
-                  className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] active:scale-90"
-                  aria-label="+15: Pause um 15 Minuten erhöhen"
-                >
-                  +15
-                </button>
-              </div>
-              <span className="text-[0.75rem] text-[var(--text-muted)] block font-normal">
-                (Vorgeschrieben: 30 Min ab 6h, 45 Min ab 9h)
-              </span>
-            </div>
-
-            {/* Split ratio selector (ACCESSIBLE Presets) */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-[var(--text-muted)] block">
-                Aufteilung der Stunden:
-              </label>
-              <div
-                className="grid grid-cols-2 gap-1"
-                role="radiogroup"
-                aria-label="Arbeitszeit Aufteilung"
-              >
-                {[
-                  { id: "half", label: "50% / 50%" },
-                  { id: "office", label: "100% Büro" },
-                  { id: "field", label: "100% Außen" },
-                  { id: "custom", label: "Eigene %" },
-                ].map((p) => {
-                  const isActive = preset === p.id;
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={isActive}
-                      onClick={() => {
-                        setPreset(p.id as any);
-                        if (p.id === "office") setOfficeRatio(1.0);
-                        if (p.id === "field") setOfficeRatio(0.0);
-                        if (p.id === "half") setOfficeRatio(0.5);
-                      }}
-                      className={`p-1.5 min-h-[44px] inline-flex items-center justify-center rounded border text-[0.75rem] font-black cursor-pointer transition-all ${
-                        isActive
-                          ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-text)]"
-                          : "bg-[var(--card-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Custom ratio slider if selected */}
-          {preset === "custom" && (
-            <div className="p-3 rounded-[var(--rv-radius-sm)] border border-[var(--card-border)] bg-[var(--card-bg)] space-y-2 animate-slide-up">
-              <label
-                htmlFor="custom-ratio-slider"
-                className="text-[0.75rem] font-black text-[var(--text-muted)] flex justify-between"
-              >
-                <span>
-                  Aufteilung: {customRatio}% Büro / {100 - customRatio}%
-                  Außendienst
-                </span>
-              </label>
-              <input
-                id="custom-ratio-slider"
-                type="range"
-                min="0"
-                max="100"
-                step="5"
-                value={customRatio}
-                aria-valuetext={`${customRatio} Prozent Büro, ${100 - customRatio} Prozent Außendienst`}
-                onChange={(e) => setCustomRatio(parseInt(e.target.value))}
-                /* `rv-slider` statt `h-1.5 appearance-none`: Nachgemessen am
-               2026-09-01 hatte dieser Regler eine Trefferfläche von
-               168 × 6 px -- weit unter den 24 px aus WCAG 2.5.8 -- und
-               `appearance: none` ohne eigenen Griff, womit Chrome gar
-               keinen zeichnet. Genau diese Kombination beschreibt der
-               Kommentar zu `.rv-slider` in index.css als behoben; die
-               Klasse war aber nur im A11y-Fenster gesetzt, nicht hier. */
-            className="rv-slider w-full accent-[var(--accent)]"
-              />
-            </div>
-          )}
-
-          {/* Direct manual hours entry */}
-          <div className="p-3 rounded-[var(--rv-radius-md)] border border-[var(--card-border)] bg-[var(--card-bg)] space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[0.75rem] font-black text-[var(--text-color)] flex items-center gap-1">
-                Büro vs. Außendienst h
-              </span>
-              {(typedOfficeHours !== "" || typedFieldHours !== "") && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTypedOfficeHours("");
-                    setTypedFieldHours("");
-                  }}
-                  className="text-[0.75rem] text-[var(--danger)] hover:underline font-black cursor-pointer"
-                >
-                  Zurücksetzen auf Automatik
-                </button>
-              )}
-            </div>
-            <p className="text-[0.75rem] text-[var(--text-muted)] font-normal leading-relaxed">
-              Tragen Sie die Stunden bei Bedarf direkt manuell ein (mit 2
-              Nachkommastellen):
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label
-                  htmlFor="typed-office-hours"
-                  className="text-[0.75rem] font-bold text-[var(--text-muted)] block"
-                >
-                  Stunden Büro (h):
-                </label>
-                <input
-                  id="typed-office-hours"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder={calculatedOfficeHrs.toFixed(2)}
-                  value={typedOfficeHours}
-                  onChange={(e) => setTypedOfficeHours(e.target.value)}
-                  className="w-full min-w-0 min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
-                />
-              </div>
-              <div className="space-y-1">
-                <label
-                  htmlFor="typed-field-hours"
-                  className="text-[0.75rem] font-bold text-[var(--text-muted)] block"
-                >
-                  Stunden Außendienst (h):
-                </label>
-                <input
-                  id="typed-field-hours"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder={calculatedFieldHrs.toFixed(2)}
-                  value={typedFieldHours}
-                  onChange={(e) => setTypedFieldHours(e.target.value)}
-                  className="w-full min-w-0 min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
-                />
-              </div>
-            </div>
-            {/* min-w-0 + flex-wrap: Die Beschriftung ist ein langes
-                deutsches Wortband und gibt ihre Breite sonst nicht unter
-                ihren Inhalt preis. Auf dem CI-Laeufer, der weder "Segoe
-                UI" noch dessen Mono-Pendant hat, sprengte diese Zeile bei
-                "Extra gross" das 360-px-Fenster (368 px gemessen) -- hier
-                unsichtbar, weil die Schriften vorhanden sind. */}
-            <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex flex-wrap justify-between gap-x-2 bg-[var(--bg-color)] p-2 rounded-[var(--rv-radius-sm)]">
-              <span className="min-w-0 [overflow-wrap:anywhere]">Gesamtstunden dieser Schicht:</span>
-              <span className="font-mono text-[var(--total-text)] flex-shrink-0">
-                {(typedOfficeHours !== "" || typedFieldHours !== ""
-                  ? (parseFloat(typedOfficeHours) || 0) +
-                    (parseFloat(typedFieldHours) || 0)
-                  : calculatedOfficeHrs + calculatedFieldHrs
-                ).toFixed(2)}
-                h
-              </span>
-            </div>
-          </div>
-
-          {/* Quick shift commentary/notes */}
-          <div className="space-y-1">
-            <label
-              htmlFor="shift-notes"
-              className="text-xs font-bold text-[var(--text-muted)] block"
-            >
-              Kurzkommentar / besuchte Schule / Ort (optional):
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <input
-                id="shift-notes"
-                type="text"
-                placeholder="z.B. Schulung an blindenschule Hannover, wewalk vorführung..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="flex-1 min-w-[64px] min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
-              />
-            </div>
-          </div>
+          <SchichtFelder
+            f={aktiv}
+            ids={{
+              pause: "break-input",
+              regler: "custom-ratio-slider",
+              buero: "typed-office-hours",
+              aussendienst: "typed-field-hours",
+              notiz: "shift-notes",
+            }}
+            gruppenName="Arbeitszeit Aufteilung"
+            vorschlag={aktivVorschlag}
+            pauseHinweis
+          />
 
           {/* Form buttons */}
           <div className="pt-2 flex gap-2">
@@ -684,10 +391,7 @@ export default React.memo(function ClockInWidget({
               setManualDate(fallbackDate);
               setManualClockIn("08:00");
               setManualClockOut("16:30");
-              setManualBreakMinutes(30);
-              setManualNotes("");
-              setManualPreset("half");
-              setManualOfficeRatio(0.5);
+              manuell.oeffnen(30);
               announceToAriaAndSpeech(
                 "Formular für manuelles Nachtragen geöffnet.",
               );
@@ -779,226 +483,18 @@ export default React.memo(function ClockInWidget({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Break */}
-            <div className="space-y-1">
-              <label
-                htmlFor="manual-break-input"
-                className="text-xs font-bold text-[var(--text-muted)] block"
-              >
-                Pause abziehen (Minuten):
-              </label>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setManualBreakMinutes((prev) => Math.max(0, prev - 15))
-                  }
-                  className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] active:scale-90"
-                  aria-label="-15: Pause um 15 Minuten verringern"
-                >
-                  -15
-                </button>
-                <input
-                  id="manual-break-input"
-                  type="number"
-                  min="0"
-                  max="240"
-                  step="5"
-                  value={manualBreakMinutes}
-                  onChange={(e) =>
-                    setManualBreakMinutes(
-                      Math.max(0, parseInt(e.target.value) || 0),
-                    )
-                  }
-                  className="flex-1 min-w-[64px] min-h-[44px] p-1.5 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-xs font-bold rounded text-center outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setManualBreakMinutes((prev) => Math.min(240, prev + 15))
-                  }
-                  className="px-2.5 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded bg-[var(--card-bg)] border border-[var(--border-color)] text-xs font-bold cursor-pointer hover:bg-[var(--hover-bg)] hover:text-[var(--hover-text)] active:scale-90"
-                  aria-label="+15: Pause um 15 Minuten erhöhen"
-                >
-                  +15
-                </button>
-              </div>
-            </div>
-
-            {/* Split */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-[var(--text-muted)] block">
-                Aufteilung der Stunden:
-              </label>
-              <div
-                className="grid grid-cols-2 gap-1"
-                role="radiogroup"
-                aria-label="Manuelle Arbeitszeit Aufteilung"
-              >
-                {[
-                  { id: "half", label: "50% / 50%" },
-                  { id: "office", label: "100% Büro" },
-                  { id: "field", label: "100% Außen" },
-                  { id: "custom", label: "Eigene %" },
-                ].map((p) => {
-                  const isActive = manualPreset === p.id;
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={isActive}
-                      onClick={() => {
-                        setManualPreset(p.id as any);
-                        if (p.id === "office") setManualOfficeRatio(1.0);
-                        if (p.id === "field") setManualOfficeRatio(0.0);
-                        if (p.id === "half") setManualOfficeRatio(0.5);
-                      }}
-                      className={`p-1.5 min-h-[44px] inline-flex items-center justify-center rounded border text-[0.75rem] font-black cursor-pointer transition-all ${
-                        isActive
-                          ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-text)]"
-                          : "bg-[var(--card-bg)] border-[var(--border-color)] text-[var(--text-color)] hover:border-[var(--border-focus)]"
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Custom slider */}
-          {manualPreset === "custom" && (
-            <div className="p-3 rounded-[var(--rv-radius-sm)] border border-[var(--card-border)] bg-[var(--card-bg)] space-y-2 animate-slide-up">
-              <label
-                htmlFor="manual-custom-ratio-slider"
-                className="text-[0.75rem] font-black text-[var(--text-muted)] flex justify-between"
-              >
-                <span>
-                  Aufteilung: {manualCustomRatio}% Büro /{" "}
-                  {100 - manualCustomRatio}% Außendienst
-                </span>
-              </label>
-              <input
-                id="manual-custom-ratio-slider"
-                type="range"
-                min="0"
-                max="100"
-                step="5"
-                value={manualCustomRatio}
-                aria-valuetext={`${manualCustomRatio} Prozent Büro, ${100 - manualCustomRatio} Prozent Außendienst`}
-                onChange={(e) => setManualCustomRatio(parseInt(e.target.value))}
-                /* `rv-slider` statt `h-1.5 appearance-none`: Nachgemessen am
-                   2026-09-01 hatte dieser Regler eine Trefferfläche von
-                   168 × 6 px -- weit unter den 24 px aus WCAG 2.5.8 -- und
-                   `appearance: none` ohne eigenen Griff, womit Chrome gar
-                   keinen zeichnet. Genau diese Kombination beschreibt der
-                   Kommentar zu `.rv-slider` in index.css als behoben; die
-                   Klasse war aber nur im A11y-Fenster gesetzt, nicht hier. */
-                className="rv-slider w-full accent-[var(--accent)]"
-              />
-            </div>
-          )}
-
-          {/* Direct manual hours entry */}
-          <div className="p-3 rounded-[var(--rv-radius-md)] border border-[var(--card-border)] bg-[var(--card-bg)] space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[0.75rem] font-black text-[var(--text-color)] flex items-center gap-1">
-                Büro vs. Außendienst h
-              </span>
-              {(typedManualOfficeHours !== "" ||
-                typedManualFieldHours !== "") && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTypedManualOfficeHours("");
-                    setTypedManualFieldHours("");
-                  }}
-                  className="text-[0.75rem] text-[var(--danger)] hover:underline font-black cursor-pointer"
-                >
-                  Zurücksetzen auf Automatik
-                </button>
-              )}
-            </div>
-            <p className="text-[0.75rem] text-[var(--text-muted)] font-normal leading-relaxed">
-              Tragen Sie die Stunden bei Bedarf direkt manuell ein (mit 2
-              Nachkommastellen):
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label
-                  htmlFor="typed-manual-office-hours"
-                  className="text-[0.75rem] font-bold text-[var(--text-muted)] block"
-                >
-                  Stunden Büro (h):
-                </label>
-                <input
-                  id="typed-manual-office-hours"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder={calculatedManualOfficeHrs.toFixed(2)}
-                  value={typedManualOfficeHours}
-                  onChange={(e) => setTypedManualOfficeHours(e.target.value)}
-                  className="w-full min-w-0 min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
-                />
-              </div>
-              <div className="space-y-1">
-                <label
-                  htmlFor="typed-manual-field-hours"
-                  className="text-[0.75rem] font-bold text-[var(--text-muted)] block"
-                >
-                  Stunden Außendienst (h):
-                </label>
-                <input
-                  id="typed-manual-field-hours"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder={calculatedManualFieldHrs.toFixed(2)}
-                  value={typedManualFieldHours}
-                  onChange={(e) => setTypedManualFieldHours(e.target.value)}
-                  className="w-full min-w-0 min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
-                />
-              </div>
-            </div>
-            {/* Gleiche Behandlung wie im Verbuchen-Formular oben: ohne
-                min-w-0 und flex-wrap sprengt diese Zeile auf dem CI-Laeufer
-                bei "Extra gross" das Fenster (369 px gemessen). */}
-            <div className="text-[0.75rem] font-black text-[var(--text-muted)] flex flex-wrap justify-between gap-x-2 bg-[var(--bg-color)] p-2 rounded-[var(--rv-radius-sm)]">
-              <span className="min-w-0 [overflow-wrap:anywhere]">Gesamtstunden dieser Schicht:</span>
-              <span className="font-mono text-[var(--total-text)] flex-shrink-0">
-                {(typedManualOfficeHours !== "" || typedManualFieldHours !== ""
-                  ? (parseFloat(typedManualOfficeHours) || 0) +
-                    (parseFloat(typedManualFieldHours) || 0)
-                  : calculatedManualOfficeHrs + calculatedManualFieldHrs
-                ).toFixed(2)}
-                h
-              </span>
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-1">
-            <label
-              htmlFor="manual-shift-notes"
-              className="text-xs font-bold text-[var(--text-muted)] block"
-            >
-              Kurzkommentar / besuchte Schule / Ort (optional):
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <input
-                id="manual-shift-notes"
-                type="text"
-                placeholder="z.B. Schulung an blindenschule Hannover, wewalk vorführung..."
-                value={manualNotes}
-                onChange={(e) => setManualNotes(e.target.value)}
-                className="flex-1 min-w-[64px] min-h-[44px] p-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] rounded text-xs font-bold outline-none focus:border-[var(--border-focus)]"
-              />
-            </div>
-          </div>
+          <SchichtFelder
+            f={manuell}
+            ids={{
+              pause: "manual-break-input",
+              regler: "manual-custom-ratio-slider",
+              buero: "typed-manual-office-hours",
+              aussendienst: "typed-manual-field-hours",
+              notiz: "manual-shift-notes",
+            }}
+            gruppenName="Manuelle Arbeitszeit Aufteilung"
+            vorschlag={manuellVorschlag}
+          />
 
           {/* Form buttons */}
           <div className="pt-2 flex gap-2">

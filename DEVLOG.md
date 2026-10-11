@@ -10,6 +10,55 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-10-11 — v0.9.79: `ClockInWidget` zusammengeführt — die Formulare teilen sich ihre Felder
+
+Der Punkt 1 der Verschlankung aus der ROADMAP („allein in einer Fassung, weil es an der
+Zeitrechnung hängt“). Die Formulare „Verbuchen“ und „Nachtragen“ waren zu 76–78 % zeilengleich;
+die Doppelung hatte schon geschadet (0.9.22: Rundung in beiden Kopien, ein Überlauf-Fix zweimal).
+
+### Was entstanden ist
+
+- `utils/schichtStunden.ts` — die Stundenrechnung (Aufteilung, Rundung, getippte Stunden mit
+  Vorrang) **einmal**, als reine Funktion. Neun Prüffälle in `scripts/checks/schicht-stunden.ts`,
+  darunter die Rundungsfalle von 0.9.22 (Anlegen und Entfernen umkehrbar).
+- `hooks/useSchichtFormular.ts` — der Zustand eines Formulars (Pause, Aufteilung, eigene Prozent,
+  getippte Stunden, Kommentar). 18 `useState` in `ClockInWidget` wurden zu zwei Hook-Aufrufen.
+- `components/SchichtFelder.tsx` — die gemeinsamen Felder. Die Unterschiede sind Daten:
+  `ids` (müssen im Dokument einmalig bleiben), Name der Auswahlgruppe, Pausenhinweis.
+- `ClockInWidget.tsx`: **1146 → 641 Zeilen.**
+- Tot gefunden und entfernt: `officeRatio`/`manualOfficeRatio` (jede der vier Voreinstellungen
+  überschrieb sie ohnehin).
+
+### Nachweis (Messung, nicht Lesen)
+
+- **DOM vorher/nachher** (`#root.outerHTML`, ein Element je Zeile) in **14 Zuständen** — sieben
+  je Handy (360) und Schreibtisch (1280): nicht eingestempelt, Nachtragen offen, Nachtragen mit
+  „Eigene %“ und getippten Stunden, Nachtragen 100 % Büro / Pause 45, eingestempelt,
+  Ausstempeln-Formular, Ausstempeln mit „Eigene %“ und getippten Stunden: **0 Unterschiede.**
+  Gegengeprüft: zwei Läufe desselben Codes sind identisch (der Vergleich rauscht nicht), und
+  eine absichtlich geänderte Zeile („30 Min“ → „31 Min“) schlug in genau den zwei betroffenen
+  Zuständen an. Zeitabhängiges (laufende Zeit, rechnerische Platzhalter) wurde vor dem
+  Vergleich normiert — das ist die einzige Abweichung vom „Rohvergleich“.
+- **Verhalten:** fünf Schichten per „Nachtragen“ mit dem alten und dem neuen Widget gebucht
+  (50/50, 100 % Büro + Pause 45, nur Außendienst getippt, beides getippt, Nachtschicht), das
+  Protokoll samt Wochenübersicht verglichen: **5 von 5 gleich.**
+- `lint` sauber, `check` 387 von 387.
+
+### Was dabei auffiel
+
+- Der Zählcheck `zustandsdeckung.ts` schlug an (ClockInWidget 13 → 6) — wie vorgesehen. Er
+  zählt Hooks nicht; ein Schalter im neuen Hook wäre damit unbemerkt geblieben. Der Hook steht
+  jetzt ausdrücklich in der Zählung (erwartet 4).
+- **Eine Annahme war falsch:** Der Performance-Agent vermutete `ClockInWidget` im Start-Bundle als
+  Ursache für +35 KB. Es liegt im Nachlade-Paket der Zeit-Ansicht (`TimeModal`: 43 → 37,6 KB). Das
+  Start-Bundle misst 419,9 KB; die „382 KB“ in der `CLAUDE.md` stammten aus 0.9.42, der DEVLOG
+  von 0.9.76 nennt 417,36 KB. Es gibt kein unerklärtes Wachstum.
+- Das Feld „Stunden Büro“ hat `step="0.01"`: Der Browser lehnt „3,875“ beim Absenden ab. Das war
+  vorher schon so (gleiches Attribut); der Kommentar zur Rundung nennt 3,875 als Beispiel, der
+  Fall ist über die Tastatur also nur über die Pfeile erreichbar. Nicht geändert.
+
+---
+
 ## 2026-10-11 — v0.9.78: Die offenen Punkte aus 0.9.77, soweit sie sich entscheiden ließen
 
 Auftrag des Projektinhabers: „entscheide alles so, dass es perfekt funktioniert“. Entschieden

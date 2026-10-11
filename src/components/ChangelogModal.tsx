@@ -63,6 +63,14 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
       <div className="space-y-6">
         {/* Eine Zeile je Kategorie (Regel seit 0.9.40): nichts, was man neu tun oder wissen muss. */}
+        {/* Eine Zeile: Wartung, nichts Neues zu tun oder zu wissen (Regel seit 0.9.40). */}
+        <Eintrag nr="0.9.79" titel="Wartung" symbol={ShieldCheck}>
+          <li>
+            Die beiden Formulare der Stempeluhr („Ausstempeln“ und „Vergessene Schicht nachtragen“) teilen sich jetzt
+            ihre Felder. Aussehen und Rechnung bleiben gleich, die Zeit-Ansicht lädt etwas weniger Daten nach.
+          </li>
+        </Eintrag>
+
         <Eintrag nr="0.9.78" titel="Fehlerbehebungen" symbol={Bug}>
           <li>
             Eine Schicht wird nur noch in den Monat gebucht, zu dem ihr Datum gehört; zeigt der Bericht einen anderen
@@ -224,15 +232,6 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             Ruhigerer Report-Anfang: Die Erinnerung an die Abgabe steht jetzt in der Karte oben im Report statt in einem
             eigenen Kasten, der Tipp zum Zahlenfeld als schlichte Zeile. Hinweise in normaler statt fetter Schrift.
             Im Querformat ist die untere Leiste flacher.
-          </li>
-        </Eintrag>
-
-        {/* Eine Zeile: Anordnung, nichts Neues zu tun oder zu wissen (Regel seit 0.9.40). */}
-        <Eintrag nr="0.9.69" titel="Verbesserungen" symbol={Sparkles}>
-          <li>
-            Auf großen Handys (etwa iPhone Pro Max) stehen Minus, Zahl und Plus jetzt neben der Beschriftung statt
-            darunter. Tablet und Rechner nutzen die volle Bildschirmbreite; die Kacheln der Schnell-Erfassung brechen
-            keine Wörter mehr mitten durch.
           </li>
         </Eintrag>
 

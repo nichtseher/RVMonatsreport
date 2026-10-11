@@ -17,6 +17,7 @@ import "./checks/abschluss-check";
 import "./checks/zusammenfassung";
 import "./checks/zeitstempel";
 import "./checks/schicht-verrechnung";
+import "./checks/schicht-stunden";
 import "./checks/excel";
 import "./checks/vorlage";
 import "./checks/felder";
