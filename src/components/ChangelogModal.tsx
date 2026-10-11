@@ -64,6 +64,13 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="space-y-6">
         {/* Eine Zeile je Kategorie (Regel seit 0.9.40): nichts, was man neu tun oder wissen muss. */}
         {/* Eine Zeile: Wartung, nichts Neues zu tun oder zu wissen (Regel seit 0.9.40). */}
+        <Eintrag nr="0.9.80" titel="Wartung" symbol={ShieldCheck}>
+          <li>
+            Das Formular für die Monatsziele ist technisch aufgeräumt. Aussehen und Bedienung bleiben gleich.
+          </li>
+        </Eintrag>
+
+        {/* Eine Zeile: Wartung, nichts Neues zu tun oder zu wissen (Regel seit 0.9.40). */}
         <Eintrag nr="0.9.79" titel="Wartung" symbol={ShieldCheck}>
           <li>
             Die beiden Formulare der Stempeluhr („Ausstempeln“ und „Vergessene Schicht nachtragen“) teilen sich jetzt
@@ -223,15 +230,6 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             gleich groß). Eingabefelder haben jetzt mindestens 16 Pixel Schrift, damit das iPhone beim Antippen
             nicht hineinzoomt. Die Felder der Monatsziele und die Diktat-Taste haben wieder die volle
             Tippfläche.
-          </li>
-        </Eintrag>
-
-        {/* Eine Zeile: Anordnung und Ruhe, nichts Neues zu tun oder zu wissen. */}
-        <Eintrag nr="0.9.70" titel="Verbesserungen" symbol={Sparkles}>
-          <li>
-            Ruhigerer Report-Anfang: Die Erinnerung an die Abgabe steht jetzt in der Karte oben im Report statt in einem
-            eigenen Kasten, der Tipp zum Zahlenfeld als schlichte Zeile. Hinweise in normaler statt fetter Schrift.
-            Im Querformat ist die untere Leiste flacher.
           </li>
         </Eintrag>
 

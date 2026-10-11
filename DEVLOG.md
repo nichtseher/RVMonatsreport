@@ -10,6 +10,29 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-10-11 — v0.9.80: Das Zielformular aus `App.tsx` herausgelöst
+
+Ein Schnitt aus Punkt 3 der Verschlankung („`App()` in Scheiben zerlegen“). Gewählt wurde
+der Block, den sich der DOM-Vergleich vollständig aufschließen lässt; **die Hinweisleisten
+darüber (Speicher-Schutz, Sicherungs-Erinnerung, Schreibfehler, Live-Abbruch, Frist) wurden
+bewusst nicht angefasst:** Ihre Zustände hängen an `navigator.storage`, einer abgerissenen
+WebRTC-Verbindung und einem Schreibfehler — ohne aufwendige Nachbildung nicht herstellbar, und ein
+Umbau ohne Nachweis ist das Risiko, das diese Methode vermeiden soll.
+
+- `components/ZielFormular.tsx`: die gut 130 Zeilen aus `App.tsx` (vier fast gleiche
+  Eingabefelder → eine Schleife über Daten). `App.tsx`: **3378 → 3252 Zeilen.** Die Beschriftungen
+  kommen weiter aus der Vorlage (`bereiche`), Schnittstelle: fünf Props.
+- **DOM vorher/nachher: 24 Zustände** (drei Vorlagen × vier Zustände × Handy und Schreibtisch:
+  Formular mit zugeklappten Zielen, Zielformular offen mit Zielen aus, Ziele an, Ziele an mit
+  getippten Werten) — **0 Unterschiede.** Zwei Läufe desselben Codes waren vorher identisch
+  (Vergleich rauscht nicht).
+- **Verhalten:** Werte 12 / 0 / 7 / 80 getippt → `{"enabled":true,"s1":12,"s2":1,"s3":7,"s4":80}`
+  in `aussendienst_pwa_goals_v2` (die 0 wird wie vorher auf 1 begrenzt); Feldnamen
+  „Vorführungen“, „Schulungen“, „Spezialprodukte“, „Bürozeit (h)“.
+- Der Fokusring am Umschalter (0.9.77) ist mitgewandert und im DOM-Vergleich enthalten.
+
+---
+
 ## 2026-10-11 — v0.9.79: `ClockInWidget` zusammengeführt — die Formulare teilen sich ihre Felder
 
 Der Punkt 1 der Verschlankung aus der ROADMAP („allein in einer Fassung, weil es an der

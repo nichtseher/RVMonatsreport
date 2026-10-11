@@ -73,6 +73,7 @@ import FensterHinweis from "./components/FensterHinweis";
 import { abonniereFenster, istFensterAktiv } from "./utils/einFenster";
 import ConfirmDialog, { ConfirmRequest } from "./components/ConfirmDialog";
 import OnboardingModal from "./components/OnboardingModal";
+import ZielFormular from "./components/ZielFormular";
 
 /*
   Geräte-Sync und Datensicherung werden erst geladen, wenn man sie öffnet.
@@ -2587,140 +2588,13 @@ export default function App() {
 
         {/* Inline goals configuration form */}
         {isGoalsEditorOpen && (
-          <div
-            className="pt-2.5 mt-2.5 border-t border-[var(--card-border)] space-y-2.5 animate-slide-up"
-            role="group"
-            aria-label="Ziele-Konfiguration"
-          >
-            {/*
-              War zwei Elemente: eine sichtbare Ueberschrift ausserhalb des
-              Labels und ein <label>, dessen Text nur "Aktiviert"/"Deaktiviert"
-              enthielt. Der zugaengliche Name der Checkbox war dadurch
-              woertlich "Deaktiviert" -- gemessen 2026-09-19 mit Playwright
-              gegen die gebaute Fassung. Jetzt umschliesst EIN <label> die
-              ganze Zeile (WCAG 2.5.3: der zugaengliche Name enthaelt jetzt
-              jeden sichtbaren Text der klickbaren Flaeche), und min-h-[44px]
-              haelt die Trefferflaeche ein -- vorher 101 x 18 px, weit unter
-              der Schwelle, weil dieser Zustand (isGoalsEditorOpen) in keinem
-              Testzustand geoeffnet wird und dem Pruefnetz nie begegnet ist. */}
-            <label className="flex items-center justify-between min-h-[44px] cursor-pointer select-none">
-              <span className="text-xs font-bold text-[var(--text-color)]">
-                Monatsziele festlegen
-              </span>
-              <span className="relative inline-flex items-center">
-                <input
-                  type="checkbox"
-                  checked={goalsConfig.enabled}
-                  onChange={(e) => {
-                    triggerHaptic(15);
-                    updateGoalsConfig({
-                      ...goalsConfig,
-                      enabled: e.target.checked,
-                    });
-                    announceToAriaAndSpeech(
-                      e.target.checked
-                        ? "Monatsziele in den Kacheln aktiviert"
-                        : "Monatsziele in den Kacheln ausgeblendet",
-                    );
-                  }}
-                  className="sr-only peer"
-                />
-                <span className="w-8 h-4 bg-[var(--border-color)] peer-focus-visible:[outline:3px_solid_var(--border-focus)] peer-focus-visible:[outline-offset:2px] peer-focus-visible:[box-shadow:0_0_0_7px_var(--focus-glow)] rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--card-bg)] after:border-[var(--border-color)] after:border after:rounded-full after:h-3 after:w-3.5 after:transition-all peer-checked:bg-[var(--accent)]"></span>
-                <span className="ml-1.5 text-[0.75rem] font-bold text-[var(--text-muted)]">
-                  {goalsConfig.enabled ? "Aktiviert" : "Deaktiviert"}
-                </span>
-              </span>
-            </label>
-
-            <p className="text-[0.75rem] text-[var(--text-muted)] leading-relaxed">
-              Tragen Sie hier Ihre persönlichen Monatsziele ein. Wenn die Ziele
-              aktiviert sind, zeigt Ihnen das Dashboard in den Kacheln Ihren
-              aktuellen Fortschritt mit farbigen Balken an.
-            </p>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {/*
-                Vier <label> ohne htmlFor neben vier <input> ohne id/aria-label
-                -- keins programmatisch verbunden. Gemessen 2026-09-19: der
-                zugaengliche Name aller vier Felder war leer, NVDA/VoiceOver
-                lasen nur "Bearbeiten, Zahl". Derselbe blinde Fleck wie beim
-                Umschalter oben: isGoalsEditorOpen liegt in keinem
-                Testzustand des Pruefnetzes.
-              */}
-              <div>
-                <label htmlFor="goal-s1-input" className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
-                  {vorlage.bereiche.s1.kurz}
-                </label>
-                <input
-                  id="goal-s1-input"
-                  type="number"
-                  min="1"
-                  max="999"
-                  value={goalsConfig.s1 || ""}
-                  onChange={(e) => {
-                    const val = Math.max(1, parseInt(e.target.value) || 0);
-                    updateGoalsConfig({ ...goalsConfig, s1: val });
-                  }}
-                  className="w-full min-h-[44px] px-3 py-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-base font-bold rounded-[var(--rv-radius-md)] outline-none focus:border-[var(--border-focus)]"
-                  disabled={!goalsConfig.enabled}
-                />
-              </div>
-              <div>
-                <label htmlFor="goal-s2-input" className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
-                  {vorlage.bereiche.s2.kurz}
-                </label>
-                <input
-                  id="goal-s2-input"
-                  type="number"
-                  min="1"
-                  max="999"
-                  value={goalsConfig.s2 || ""}
-                  onChange={(e) => {
-                    const val = Math.max(1, parseInt(e.target.value) || 0);
-                    updateGoalsConfig({ ...goalsConfig, s2: val });
-                  }}
-                  className="w-full min-h-[44px] px-3 py-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-base font-bold rounded-[var(--rv-radius-md)] outline-none focus:border-[var(--border-focus)]"
-                  disabled={!goalsConfig.enabled}
-                />
-              </div>
-              <div>
-                <label htmlFor="goal-s3-input" className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
-                  {vorlage.bereiche.s3.bereich}
-                </label>
-                <input
-                  id="goal-s3-input"
-                  type="number"
-                  min="1"
-                  max="999"
-                  value={goalsConfig.s3 || ""}
-                  onChange={(e) => {
-                    const val = Math.max(1, parseInt(e.target.value) || 0);
-                    updateGoalsConfig({ ...goalsConfig, s3: val });
-                  }}
-                  className="w-full min-h-[44px] px-3 py-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-base font-bold rounded-[var(--rv-radius-md)] outline-none focus:border-[var(--border-focus)]"
-                  disabled={!goalsConfig.enabled}
-                />
-              </div>
-              <div>
-                <label htmlFor="goal-s4-input" className="block text-[0.75rem] font-bold text-[var(--text-muted)] mb-1">
-                  Bürozeit (h)
-                </label>
-                <input
-                  id="goal-s4-input"
-                  type="number"
-                  min="1"
-                  max="999"
-                  value={goalsConfig.s4 || ""}
-                  onChange={(e) => {
-                    const val = Math.max(1, parseInt(e.target.value) || 0);
-                    updateGoalsConfig({ ...goalsConfig, s4: val });
-                  }}
-                  className="w-full min-h-[44px] px-3 py-2 border border-[var(--border-color)] bg-[var(--input-bg)] text-[var(--text-color)] text-base font-bold rounded-[var(--rv-radius-md)] outline-none focus:border-[var(--border-focus)]"
-                  disabled={!goalsConfig.enabled}
-                />
-              </div>
-            </div>
-          </div>
+          <ZielFormular
+            goalsConfig={goalsConfig}
+            updateGoalsConfig={updateGoalsConfig}
+            bereiche={vorlage.bereiche}
+            triggerHaptic={triggerHaptic}
+            announceToAriaAndSpeech={announceToAriaAndSpeech}
+          />
         )}
 
         {/* Live Search bar (Incredibly efficient for finding products on-the-go) */}
