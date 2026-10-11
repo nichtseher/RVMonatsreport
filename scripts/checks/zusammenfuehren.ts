@@ -472,3 +472,91 @@ pruefe("kaputte Marken aus einem Fremdpaket bringen den Abgleich nicht zum Abstu
   );
   gleich(Object.keys(e.history), ["2026-08"]);
 });
+
+// ---------------------------------------------------------------------------
+// Summenfelder der Stempeluhr (0.9.77). Zwei Geräte verbuchen je eine Schicht:
+// beide Schichten stehen in der Liste, die Summe zeigte nur die Stunden EINER
+// Seite (reproduziert: 6 statt 14).
+// ---------------------------------------------------------------------------
+gruppe("Zusammenführen: Summenfelder der Stempeluhr");
+
+const stundenSchicht = (id: string, buero: number, feld = 0): TimeLog => ({
+  id, date: "2026-08-03", clockIn: "08:00", clockOut: "16:00", breakMinutes: 0,
+  duration: buero + feld, officeRatio: 1, officeHours: buero, fieldHours: feld,
+});
+const mitSchichten = (
+  savedAt: string,
+  werte: Record<string, number>,
+  logs: TimeLog[],
+  geloescht?: Record<string, string>,
+): HistoryRecord => ({
+  month: "2026-08", name: "M", notes: "", savedAt,
+  values: werte,
+  valuesUpdatedAt: { std_buero: savedAt, std_aussendienst: savedAt, tage_arbeit: savedAt },
+  timeLogs: logs,
+  ...(geloescht ? { geloeschteSchichten: geloescht } : {}),
+});
+
+const sA = stundenSchicht("a", 8);
+const sB = stundenSchicht("b", 6, 2);
+const nurA = mitSchichten(TA, { std_buero: 8, std_aussendienst: 0, tage_arbeit: 1 }, [sA]);
+const nurB = mitSchichten(TB, { std_buero: 6, std_aussendienst: 2, tage_arbeit: 1 }, [sB]);
+
+pruefe("zwei Geräte, je eine Schicht: die Summen enthalten beide", () => {
+  const e = mergeHistories({ "2026-08": nurA }, { "2026-08": nurB })["2026-08"];
+  gleich(e.timeLogs?.length, 2);
+  gleich(e.values.std_buero, 14);
+  gleich(e.values.std_aussendienst, 2);
+  gleich(e.values.tage_arbeit, 2);
+});
+
+pruefe("Summen: Reihenfolge der Geräte ist egal", () => {
+  const x = mergeHistories({ "2026-08": nurA }, { "2026-08": nurB })["2026-08"];
+  const y = mergeHistories({ "2026-08": nurB }, { "2026-08": nurA })["2026-08"];
+  gleich(stableStringify(x), stableStringify(y));
+});
+
+pruefe("Summen: gleicher Zeitstempel auf beiden Seiten, beide Geräte bilden dasselbe", () => {
+  const a2 = mitSchichten(TA, { std_buero: 8, std_aussendienst: 0, tage_arbeit: 1 }, [sA]);
+  const b2 = mitSchichten(TA, { std_buero: 6, std_aussendienst: 2, tage_arbeit: 1 }, [sB]);
+  const x = mergeHistories({ "2026-08": a2 }, { "2026-08": b2 })["2026-08"];
+  const y = mergeHistories({ "2026-08": b2 }, { "2026-08": a2 })["2026-08"];
+  gleich(x.values.std_buero, 14);
+  gleich(stableStringify(x.values), stableStringify(y.values));
+});
+
+pruefe("Summen: erneutes Zusammenführen ändert nichts (idempotent)", () => {
+  const ersterGang = mergeHistories({ "2026-08": nurA }, { "2026-08": nurB });
+  const zweiterGang = mergeHistories(ersterGang, { "2026-08": nurB });
+  const dritterGang = mergeHistories(zweiterGang, { "2026-08": nurA });
+  gleich(stableStringify(zweiterGang), stableStringify(ersterGang));
+  gleich(stableStringify(dritterGang), stableStringify(ersterGang));
+});
+
+pruefe("Summen: gleiche Schicht auf beiden Seiten wird nicht doppelt gezählt", () => {
+  const e = mergeHistories({ "2026-08": nurA }, { "2026-08": { ...nurA, savedAt: TB } })["2026-08"];
+  gleich(e.values.std_buero, 8);
+  gleich(e.values.tage_arbeit, 1);
+});
+
+pruefe("Summen: eine gelöschte Schicht wird abgezogen, auch wenn der Gewinner sie noch zählt", () => {
+  // B (jünger) zählt Schicht a noch mit; A hat sie gelöscht (Marke).
+  const geloescht = mitSchichten(TA, { std_buero: 0, std_aussendienst: 0, tage_arbeit: 0 }, [], { a: TA });
+  const jung = mitSchichten(TB, { std_buero: 8, std_aussendienst: 0, tage_arbeit: 1 }, [sA]);
+  const e = mergeHistories({ "2026-08": geloescht }, { "2026-08": jung })["2026-08"];
+  gleich(e.timeLogs?.length, 0);
+  gleich(e.values.std_buero, 0);
+  gleich(e.values.tage_arbeit, 0);
+});
+
+pruefe("Summen: von Hand korrigierte Stunden gehen nicht verloren", () => {
+  // B hat 10 h von Hand eingetragen (dazu Schicht b); A bringt Schicht a (8 h).
+  const handB = mitSchichten(TB, { std_buero: 10, std_aussendienst: 0, tage_arbeit: 1 }, [stundenSchicht("b", 6)]);
+  const e = mergeHistories({ "2026-08": nurA }, { "2026-08": handB })["2026-08"];
+  gleich(e.values.std_buero, 18); // 10 (inkl. Handkorrektur) + 8 aus Schicht a
+});
+
+pruefe("Summen: ohne Schichten bleibt alles wie vorher", () => {
+  const e = mergeHistories({ "2026-08": a }, { "2026-08": b })["2026-08"];
+  gleich(e.values, { vf_schule: 4, vf_arbeit: 1, aus_schule: 1 });
+});

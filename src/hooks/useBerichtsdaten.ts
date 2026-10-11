@@ -282,12 +282,24 @@ export function useBerichtsdaten(p: BerichtsdatenParameter): Berichtsdaten {
               regulaere Stand ohnehin keinen hat. Ein leerer Notstand ueber
               echten Daten wird verworfen.
             */
-            if (monthHasContent(kopie) || !monthHasContent(savedData)) {
+            const uebernommen = monthHasContent(kopie) || !monthHasContent(savedData);
+            if (uebernommen) {
               initialData = kopie;
             } else {
               console.warn("Notfallkopie ohne Inhalt verworfen -- regulaerer Stand ist reicher");
             }
-            localStorage.removeItem(SCHLUESSEL_NOTFALL);
+            /*
+              Die Kopie verschwindet erst, wenn ihr Inhalt regulaer geschrieben
+              ist (`schreibeBericht`, 0.9.72) -- NICHT hier. Bis 0.9.76 wurde
+              sie sofort nach dem Einlesen gelöscht: Brach die Seite in den
+              400 ms bis zum ersten Schreibvorgang ab, oder scheiterte dieser,
+              war der gerettete Stand weg. Gelöscht wird hier nur, was nie
+              mehr geschrieben wird: eine verworfene Kopie, und eine Kopie in
+              einem Fenster, das nicht schreiben darf (ein neueres ist offen --
+              sie bliebe sonst liegen und überstimmte beim nächsten Start dessen
+              Stand).
+            */
+            if (!uebernommen || !darfSchreiben()) localStorage.removeItem(SCHLUESSEL_NOTFALL);
           } catch {
             /* unbrauchbare Notfallkopie -- der regulaere Stand gilt */
           }

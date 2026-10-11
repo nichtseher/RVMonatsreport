@@ -1,6 +1,6 @@
 import "../browserShim";
 import { gruppe, pruefe, gleich, wahr } from "../helfer";
-import { pruefeSyncPaket, monateImPaket, PAKET_APP } from "../../src/utils/syncSchema";
+import { pruefeSyncPaket, monateImPaket, PAKET_APP, kanalTeilGueltig, MAX_KANAL_TEILE } from "../../src/utils/syncSchema";
 import type { FieldConfig, TimeLog } from "../../src/types";
 
 const {
@@ -296,4 +296,45 @@ pruefe("vollstaendige Schichten passieren weiterhin", () => {
     },
   };
   gleich(pruefeSyncPaket(paket).ok, true, "gueltige Schicht wurde faelschlich abgelehnt");
+});
+
+// ---------------------------------------------------------------------------
+// 0.9.77: Name/Notiz müssen Text sein, Rahmen der Live-Nachrichten
+// ---------------------------------------------------------------------------
+gruppe("Name, Notiz und Kanal-Rahmen (0.9.77)");
+
+pruefe("eine Zahl als Name im Archiv-Eintrag wird abgelehnt (sonst stürzte das Zusammenführen ab)", () => {
+  const p = {
+    ...gueltigesPaket,
+    history: { "2026-08": { values: { vf_schule: 1 }, name: 5 } },
+  };
+  gleich(pruefeSyncPaket(p).ok, false);
+});
+
+pruefe("ein Objekt als Notiz im laufenden Monat wird abgelehnt", () => {
+  const p = { ...gueltigesPaket, reportData: { month: "2026-09", values: {}, notes: { a: 1 } } };
+  gleich(pruefeSyncPaket(p).ok, false);
+});
+
+pruefe("Name und Notiz als Text, null oder fehlend bleiben gültig (ältere Fassungen)", () => {
+  for (const name of ["Marc", null, undefined]) {
+    const p = { ...gueltigesPaket, reportData: { month: "2026-09", values: {}, name, notes: "" } };
+    gleich(pruefeSyncPaket(p).ok, true);
+  }
+});
+
+pruefe("Kanal-Rahmen: gültige Teile", () => {
+  wahr(kanalTeilGueltig({ total: 1, seq: 1 }));
+  wahr(kanalTeilGueltig({ total: 5, seq: 5 }));
+  wahr(kanalTeilGueltig({ total: MAX_KANAL_TEILE, seq: 1 }));
+});
+
+pruefe("Kanal-Rahmen: NaN, Bruchzahlen, Text, negative und zu große Werte werden abgelehnt", () => {
+  for (const msg of [
+    { total: NaN, seq: 1 }, { total: 2.5, seq: 1 }, { total: "3", seq: 1 },
+    { total: 0, seq: 1 }, { total: -1, seq: 1 }, { total: MAX_KANAL_TEILE + 1, seq: 1 },
+    { total: 3, seq: 0 }, { total: 3, seq: 4 }, { total: 3, seq: NaN }, { total: 3 }, null, "x",
+  ]) {
+    gleich(kanalTeilGueltig(msg), false);
+  }
 });

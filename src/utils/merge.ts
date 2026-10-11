@@ -10,6 +10,7 @@ import {
 import { monthHasContent } from "./monatInhalt";
 import { baueArchivEintrag, spiegleMonat } from "./archivEintrag";
 import { stableStringify } from "./stableJson";
+import { SCHICHT_FELDER } from "./schichtVerrechnung";
 
 /**
  * Zusammenführen zweier Datenstände (statt Überschreiben).
@@ -123,15 +124,23 @@ export function mergeTimeLogs(a?: TimeLog[], b?: TimeLog[], geloescht?: Loeschma
  * gilt der Zeitstempel des Monats (`savedAt`) -- damit verhält sich alter
  * Bestand exakt wie bisher.
  */
-export function mergeValues(
-  a: Pick<HistoryRecord, "values" | "valuesUpdatedAt" | "savedAt">,
-  b: Pick<HistoryRecord, "values" | "valuesUpdatedAt" | "savedAt">,
-): { values: Record<string, number | "">; valuesUpdatedAt: ValueTimestamps } {
-  const zeitVon = (
-    r: Pick<HistoryRecord, "valuesUpdatedAt" | "savedAt">,
-    id: string,
-  ) => r.valuesUpdatedAt?.[id] || r.savedAt || "";
+type Zaehlerstand = Pick<HistoryRecord, "values" | "valuesUpdatedAt" | "savedAt">;
 
+const zeitVon = (r: Pick<HistoryRecord, "valuesUpdatedAt" | "savedAt">, id: string) =>
+  r.valuesUpdatedAt?.[id] || r.savedAt || "";
+
+/** Welche Seite ein Zählerfeld gewinnt -- eine Regel für den Wert und die Schichtkorrektur. */
+function gewinnerVon<T extends Zaehlerstand>(a: T, b: T, id: string): T {
+  const inA = Object.prototype.hasOwnProperty.call(a.values || {}, id);
+  const inB = Object.prototype.hasOwnProperty.call(b.values || {}, id);
+  // Nur eine Seite kennt das Feld -> diese gewinnt.
+  return !inB ? a : !inA ? b : zeitVon(a, id) >= zeitVon(b, id) ? a : b;
+}
+
+export function mergeValues(
+  a: Zaehlerstand,
+  b: Zaehlerstand,
+): { values: Record<string, number | ""> ; valuesUpdatedAt: ValueTimestamps } {
   const values: Record<string, number | ""> = {};
   const valuesUpdatedAt: ValueTimestamps = {};
   const ids = new Set([
@@ -140,10 +149,7 @@ export function mergeValues(
   ]);
 
   ids.forEach((id) => {
-    const inA = Object.prototype.hasOwnProperty.call(a.values || {}, id);
-    const inB = Object.prototype.hasOwnProperty.call(b.values || {}, id);
-    // Nur eine Seite kennt das Feld -> diese gewinnt.
-    const gewinner = !inB ? a : !inA ? b : zeitVon(a, id) >= zeitVon(b, id) ? a : b;
+    const gewinner = gewinnerVon(a, b, id);
     values[id] = gewinner.values[id];
     // Immer einen Stempel setzen -- nach dem Zusammenführen ist die Liste
     // damit vollständig und kann nicht mehr auf den wandernden
@@ -153,6 +159,43 @@ export function mergeValues(
   });
 
   return { values, valuesUpdatedAt };
+}
+
+/**
+ * Die drei Summenfelder der Stempeluhr nach dem Vereinigen der Schichten
+ * nachziehen (0.9.77).
+ *
+ * Sie sind gewöhnliche Zähler: Pro Feld gewinnt EINE Seite, und deren Wert
+ * kennt nur die Schichten dieser Seite. Verbuchten zwei Geräte je eine Schicht
+ * (8 h und 6 h), standen danach beide Schichten in der Liste, die Summe aber
+ * zeigte 6 h -- reproduziert. Neu gerechnet wird NICHT aus den Schichten: Eine
+ * von Hand korrigierte Stundenzahl ginge verloren. Stattdessen wird der Wert
+ * des Gewinners um genau die Schichten verschoben, die ihm fehlen (dazu) oder
+ * die er noch zählt, obwohl sie gelöscht sind (weg). Idempotent: Kennt der
+ * Gewinner schon alle Schichten, ist die Verschiebung null.
+ */
+function gleicheSchichtSummenAn(
+  values: Record<string, number | "">,
+  a: HistoryRecord,
+  b: HistoryRecord,
+  schichten: TimeLog[],
+): Record<string, number | ""> {
+  const beitrag = (id: string, s: TimeLog): number =>
+    id === "std_buero" ? s.officeHours || 0 : id === "std_aussendienst" ? s.fieldHours || 0 : 1;
+  const imErgebnis = new Set(schichten.map((s) => s.id));
+  const aus = { ...values };
+  for (const id of SCHICHT_FELDER) {
+    const gewinner = gewinnerVon(a, b, id);
+    const seine = Array.isArray(gewinner.timeLogs) ? gewinner.timeLogs : [];
+    const seineIds = new Set(seine.map((s) => s.id));
+    let verschiebung = 0;
+    for (const s of schichten) if (!seineIds.has(s.id)) verschiebung += beitrag(id, s);
+    for (const s of seine) if (!imErgebnis.has(s.id)) verschiebung -= beitrag(id, s);
+    if (verschiebung === 0) continue;
+    const jetzt = typeof aus[id] === "number" ? (aus[id] as number) : 0;
+    aus[id] = Math.max(0, Math.round((jetzt + verschiebung) * 100) / 100);
+  }
+  return aus;
 }
 
 /** Ein Textfeld (Name oder Notiz) mit seinem Änderungszeitpunkt. */
@@ -249,7 +292,7 @@ function mergeRecord(a?: HistoryRecord, b?: HistoryRecord): HistoryRecord | unde
   // Für alles ausser Zählern, Name, Notiz und Schichten (Feld-Aufbau) bleibt es
   // beim jüngeren Datensatz -- dort ist ein Feld-Zeitstempel nicht sinnvoll.
   const { newer, other } = juengerer(a, b);
-  const { values, valuesUpdatedAt } = mergeValues(a, b);
+  const { values: werte, valuesUpdatedAt } = mergeValues(a, b);
   const versand = mergeVersand(a, b);
   const name = mergeText(
     { text: a.name || "", zeit: a.nameUpdatedAt, savedAt: a.savedAt || "" },
@@ -260,6 +303,8 @@ function mergeRecord(a?: HistoryRecord, b?: HistoryRecord): HistoryRecord | unde
     { text: b.notes || "", zeit: b.notesUpdatedAt, savedAt: b.savedAt || "" },
   );
   const marken = mergeLoeschmarken(a.geloeschteSchichten, b.geloeschteSchichten);
+  const schichten = mergeTimeLogs(other.timeLogs, newer.timeLogs, marken);
+  const values = gleicheSchichtSummenAn(werte, a, b, schichten);
   // Alles, was gleich neu gesetzt wird, erst aus dem Gewinner entfernen --
   // sonst zöge `...newer` einen veralteten Wert wieder herein.
   const {
@@ -279,7 +324,7 @@ function mergeRecord(a?: HistoryRecord, b?: HistoryRecord): HistoryRecord | unde
     ...(notiz.zeit ? { notesUpdatedAt: notiz.zeit } : {}),
     values,
     valuesUpdatedAt,
-    timeLogs: mergeTimeLogs(other.timeLogs, newer.timeLogs, marken),
+    timeLogs: schichten,
     ...(Object.keys(marken).length > 0 ? { geloeschteSchichten: marken } : {}),
   };
 }

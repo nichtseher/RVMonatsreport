@@ -219,6 +219,10 @@ export default function SecureBackupModal({ isOpen, onClose, onExport, onImport 
         setBeschaeftigt(false);
       }
     };
+    reader.onerror = () => {
+      setStatus({ type: "error", msg: "Die Datei konnte nicht gelesen werden. Bitte versuchen Sie es erneut." });
+      setBeschaeftigt(false);
+    };
     reader.readAsText(file);
     // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = "";

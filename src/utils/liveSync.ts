@@ -11,6 +11,8 @@
  * Verbindung läuft direkt zwischen den Geräten im selben (W)LAN.
  */
 
+import { kanalTeilGueltig } from "./syncSchema";
+
 const CHANNEL_PART_SIZE = 60000; // Zeichen pro DataChannel-Nachricht
 const LIVE_SEND_INTERVAL_MS = 3000; // Abgleich-Intervall
 
@@ -31,7 +33,7 @@ let lastSent: string | null = null;
 let incoming: { id: string; total: number; parts: Map<number, string> } | null = null;
 
 let exportFn: (() => string) | null = null;
-let mergeFn: ((data: string) => void) | null = null;
+let mergeFn: ((data: string) => boolean | void) | null = null;
 
 const state: LiveSyncState = {
   connected: false,
@@ -66,7 +68,7 @@ export function getLiveSyncSnapshot(): LiveSyncState {
  */
 export function registerLiveSyncHandlers(
   exp: () => string,
-  merge: (data: string) => void,
+  merge: (data: string) => boolean | void,
 ) {
   exportFn = exp;
   mergeFn = merge;
@@ -126,6 +128,8 @@ function handleMessage(raw: string) {
     return;
   }
   if (!msg || msg.type !== "full" || typeof msg.data !== "string") return;
+  // Rahmen vom anderen Gerät: nie ungeprüft zum Zusammenbau verwenden.
+  if (!kanalTeilGueltig(msg)) return;
 
   if (!incoming || incoming.id !== msg.id) {
     incoming = { id: msg.id, total: msg.total, parts: new Map() };
@@ -142,7 +146,9 @@ function handleMessage(raw: string) {
   // Zusammenführen; der eigene neue Stand wird vom Intervall zurückgesendet.
   // Identische Stände werden nicht erneut übertragen -> konvergiert.
   try {
-    mergeFn?.(fullData);
+    // `false` heisst: Das Paket wurde abgelehnt. Dann gibt es keine Erfolgszeit --
+    // sonst glaubt der Nutzer, beide Geräte seien gleichauf.
+    if (mergeFn?.(fullData) === false) return;
   } catch (err) {
     console.error("Live-Sync: Zusammenführen fehlgeschlagen", err);
     return;

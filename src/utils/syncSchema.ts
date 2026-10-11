@@ -121,6 +121,14 @@ function markenPruefen(marken: unknown, wo: string, nurMonate = false): string |
 
 /** Die Zeitpunkte für Name und Notiz und die Schicht-Löschmarken eines Monats. */
 function monatsZusaetzePruefen(datensatz: Record<string, unknown>, wo: string): string | null {
+  // Name und Notiz: Text (oder fehlend/null, wie ältere Fassungen es schrieben).
+  // Eine Zahl oder ein Objekt liesse beim Zusammenführen `text.trim()` abstürzen.
+  for (const feld of ["name", "notes"]) {
+    const wert = datensatz[feld];
+    if (wert !== undefined && wert !== null && typeof wert !== "string") {
+      return `„${feld}“ ${wo} ist kein Text.`;
+    }
+  }
   for (const feld of ["nameUpdatedAt", "notesUpdatedAt"]) {
     if (datensatz[feld] !== undefined && typeof datensatz[feld] !== "string") {
       return `Der Änderungszeitpunkt „${feld}“ ${wo} ist kein Text.`;
@@ -140,6 +148,28 @@ function werteObjektPruefen(werte: unknown, wo: string): string | null {
     }
   }
   return null;
+}
+
+/** Obergrenze für die Teile einer Live-Nachricht (32 MiB Nutzlast bei 60.000 Zeichen je Teil). */
+export const MAX_KANAL_TEILE = 1000;
+
+/**
+ * Rahmen einer Live-Nachricht prüfen: `total` und `seq` kommen vom anderen
+ * Gerät. Ein `NaN`-, negatives oder riesiges `total` liesse den Zusammenbau
+ * ins Leere laufen oder unbegrenzt Speicher anfordern; ein `seq` ausserhalb
+ * von 1..total wurde zwar abgelegt, aber nie gelesen.
+ */
+export function kanalTeilGueltig(msg: unknown): boolean {
+  if (!istObjekt(msg)) return false;
+  const { total, seq } = msg;
+  return (
+    Number.isInteger(total) &&
+    Number.isInteger(seq) &&
+    (total as number) >= 1 &&
+    (total as number) <= MAX_KANAL_TEILE &&
+    (seq as number) >= 1 &&
+    (seq as number) <= (total as number)
+  );
 }
 
 export function pruefeSyncPaket(unbekannt: unknown): PruefErgebnis {

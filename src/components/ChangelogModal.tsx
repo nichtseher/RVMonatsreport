@@ -62,6 +62,15 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       />
 
       <div className="space-y-6">
+        {/* Eine Zeile je Kategorie (Regel seit 0.9.40): nichts, was man neu tun oder wissen muss. */}
+        <Eintrag nr="0.9.77" titel="Fehlerbehebungen" symbol={Bug}>
+          <li>
+            Beim Abgleich zweier Geräte zählen die Stunden und Arbeitstage jetzt beide Schichten. Eine gerettete
+            Eingabe nach einem Absturz bleibt erhalten, bis sie sicher gespeichert ist. Die Rückfrage „Vorlage laden?“
+            warnt deutlicher, und der Schalter für die Monatsziele zeigt beim Tastaturbedienen den Fokus.
+          </li>
+        </Eintrag>
+
         {/* Eine Zeile: Wartung, nichts Neues zu tun oder zu wissen (Regel seit 0.9.40). */}
         <Eintrag nr="0.9.76" titel="Wartung" symbol={ShieldCheck}>
           <li>
@@ -249,18 +258,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           einen Fehler zu glauben, wenn ein älteres Fenster plötzlich nicht mehr
           speichert (Regel seit 0.9.40: neu wissen muss).
         */}
-        <Eintrag nr="0.9.67" titel="Nur noch ein Fenster speichert" symbol={ShieldCheck}>
-          <li>
-            <strong>Ist RV Mobil in zwei Fenstern oder Tabs gleichzeitig geöffnet, speichert nur noch das zuletzt
-            geöffnete.</strong> Das ältere zeigt den Hinweis „RV Mobil ist in einem anderen Fenster geöffnet“ und die
-            Taste „Hier weiterarbeiten“. Vorher konnten sich zwei Fenster gegenseitig Einträge überschreiben, ohne
-            jede Warnung.
-          </li>
-          <li>
-            Verbesserungen: Zeit, Archiv, Analyse, Optionen und die übrigen Ansichten tragen jetzt das neue
-            Erscheinungsbild. Hinweiskästen sind ruhiger und in größerer Schrift gesetzt.
-          </li>
-        </Eintrag>
+
 
         <p className="text-sm text-[var(--text-muted)]">
           Ältere Versionen sind hier nicht mehr aufgeführt.

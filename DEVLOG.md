@@ -10,6 +10,66 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-10-11 — v0.9.77: Befunde der Mehrfach-Prüfung — was sich im Code bestätigt hat
+
+Auftrag des Projektinhabers: den ganzen Stand mit zwölf Fach-Agenten prüfen lassen (Code-Review,
+Barrierefreiheit statisch, Datenschutz technisch und rechtlich, AppSec, Architektur, Drift,
+Belegprüfung, Tests, Performance, Abläufe, Optik, Nutzersicht), Screenreader-Durchläufe
+ausdrücklich zurückgestellt. Die Agenten haben nur gelesen; **kein Befund wurde übernommen, ohne
+ihn im Code nachzusehen.** Was sich bestätigt hat, steht hier; was nicht angefasst wurde, auch.
+
+### Bestätigt und behoben
+
+- **Summenfelder nach dem Abgleich (`merge.ts`).** `std_buero`, `std_aussendienst`, `tage_arbeit`
+  sind gewöhnliche Zähler: pro Feld gewinnt EINE Seite. Verbuchten zwei Geräte je eine Schicht,
+  standen beide in der Liste, die Summe zeigte nur eine. Nachgestellt in einem Wegwerfskript: 8 h
+  und 6 h ergaben 6 h, `tage_arbeit` 1 statt 2. Behoben ohne Neuberechnung (eine von Hand
+  korrigierte Stundenzahl ginge sonst verloren): der Wert des Gewinners wird um genau die Schichten
+  verschoben, die ihm fehlen oder die er trotz Löschmarke noch zählt. Acht neue Prüffälle in
+  `zusammenfuehren.ts`; **vier davon schlagen gegen den alten `merge.ts` fehl** (gegengeprüft
+  durch Einsetzen der alten Datei), die übrigen decken Reihenfolge, Idempotenz, Gleichstand,
+  doppelte Schicht und Altverhalten ab.
+- **Notfallkopie (`useBerichtsdaten.ts`).** Sie wurde beim Laden sofort gelöscht, noch bevor ihr
+  Inhalt regulär geschrieben war (400 ms Verzögerung, dazu `darfSchreiben()`); ein Abbruch in dem
+  Fenster verlor sie. Von zwei Agenten unabhängig gemeldet. Jetzt räumt sie nur `schreibeBericht`
+  nach bestätigtem Schreiben weg; beim Laden gelöscht wird nur eine verworfene Kopie und eine Kopie
+  in einem Fenster, das nicht schreiben darf. **Kein Prüffall** — der Hook läuft nur im Browser.
+- **Live-Sync:** Ein abgelehntes Paket setzte trotzdem die „letzte Abgleichzeit“ (der Rückgabewert
+  von `handleSyncImport` wurde verworfen). `total`/`seq` einer Kanalnachricht werden nun geprüft
+  (`kanalTeilGueltig`, Obergrenze 1000 Teile). `name`/`notes` im Paket müssen Text sein (sonst
+  stürzte `text.trim()` im Zusammenführen ab). Fünf neue Prüffälle in `sync-import.ts`.
+- **Kleinigkeiten:** Fokusring am Umschalter „Monatsziele festlegen“ (die Checkbox ist `sr-only`);
+  „Vorlage laden?“ als Gefahr-Rückfrage mit Hinweis auf die Notiz; `truncate` im Eingabe-Assistenten
+  durch Umbruch ersetzt; `onerror` beim Lesen der Sicherungsdatei.
+
+### Gemessen
+
+`npm run lint` sauber, `npm run check` **371** von 371 (358 + 13 neu), `npm run check:ui`
+**799 bestanden, 809 per Profil übersprungen, 0 Fehler**, 32,5 min, lokal und mit der lokalen
+Schrift. Das beweist nicht, dass das Deploy-Gate auf dem Linux-Läufer mit breiterer Schrift grün
+wird.
+
+### Geklärt, ohne etwas zu ändern
+
+- `npm audit` im Workflow läuft mit `|| true`; die vier Funde (`proxy-addr`, `source-map-js`,
+  `uuid`) können das Gate nicht rot machen. Der Stand 0.9.76 ist live (Bundle `index-Dqvi7v0X.js`
+  trägt die Version, gleicher Hash wie der lokale Build).
+
+### Bewusst offen
+
+- **Schicht in den falschen Monat:** `verbuche` bucht in den angezeigten Monat, nicht in den des
+  Schichtdatums. Ob das im Betrieb vorkommt, ist nicht gezeigt; die Reaktion (warnen oder in den
+  Datumsmonat buchen) ist die Entscheidung des Inhabers.
+- Nicht angefasst: Verbindungsabbruch (`disconnected` sofort als endgültig), Zeitlimit der
+  Kopplung, falsche Meldung bei teilweise gelungenem „Alles löschen“, Texte im Sync, Zwangsschrift
+  und feste Wartezeiten in den Tests, veraltete Zahlen in `CLAUDE.md` (z. B. `RUECKFRAGEN` 14,
+  `App.tsx` 3366 Zeilen), Überbleibsel im Wurzelverzeichnis.
+- Rechtlich offen (Inhaber, nicht Code): Betriebsrat/§ 87 BetrVG, Datenschutzinformation nach
+  Art. 13, Rolle des Verantwortlichen. Nicht geprüft: Screenreader, echte Geräte.
+- Das geplante Zusammenführen von `ClockInWidget` ist damit 0.9.78.
+
+---
+
 ## 2026-10-10 — v0.9.76: Verschlankung — eine Bibliothek weniger, ein Changelog mit Obergrenze
 
 Auftrag des Projektinhabers: nachsehen, ob der Code zu überladen ist, und was sich

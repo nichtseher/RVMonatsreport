@@ -210,9 +210,9 @@ export function useGeraeteSync(p: GeraeteSyncParameter): GeraeteSync {
   // Aktuelle Export-/Merge-Funktionen beim Live-Sync-Dienst hinterlegen, damit
   // der Hintergrund-Abgleich immer den aktuellen Stand sendet.
   useEffect(() => {
-    registerLiveSyncHandlers(buildSyncPayload, (dataStr) => {
-      handleSyncImport(dataStr, "merge", { silent: true });
-    });
+    registerLiveSyncHandlers(buildSyncPayload, (dataStr) =>
+      handleSyncImport(dataStr, "merge", { silent: true }),
+    );
   }, [buildSyncPayload, handleSyncImport]);
 
   // Abbruch der Live-Verbindung hoerbar UND sichtbar machen. Vorher verschwand

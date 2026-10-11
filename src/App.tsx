@@ -1141,8 +1141,9 @@ export default function App() {
     const formattedMonth = formatMonthGerman(prevRecord.month);
     setConfirmRequest({
       title: "Vorlage laden?",
-      message: `Die Zahlen und Kategorien aus „${formattedMonth}“ werden als Vorlage übernommen. Ihre aktuellen Zählerstände für diesen Monat werden dabei überschrieben.`,
+      message: `Die Zahlen und Kategorien aus „${formattedMonth}“ werden als Vorlage übernommen. Ihre aktuellen Zählerstände und die Notiz für diesen Monat werden dabei überschrieben. Das lässt sich nicht rückgängig machen.`,
       confirmLabel: "Vorlage laden",
+      tone: "danger",
       onConfirm: () => {
         setReportData((prev) => {
           if (!prev) return prev;
@@ -2613,7 +2614,7 @@ export default function App() {
                   }}
                   className="sr-only peer"
                 />
-                <span className="w-8 h-4 bg-[var(--border-color)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--card-bg)] after:border-[var(--border-color)] after:border after:rounded-full after:h-3 after:w-3.5 after:transition-all peer-checked:bg-[var(--accent)]"></span>
+                <span className="w-8 h-4 bg-[var(--border-color)] peer-focus-visible:[outline:3px_solid_var(--border-focus)] peer-focus-visible:[outline-offset:2px] peer-focus-visible:[box-shadow:0_0_0_7px_var(--focus-glow)] rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--card-bg)] after:border-[var(--border-color)] after:border after:rounded-full after:h-3 after:w-3.5 after:transition-all peer-checked:bg-[var(--accent)]"></span>
                 <span className="ml-1.5 text-[0.75rem] font-bold text-[var(--text-muted)]">
                   {goalsConfig.enabled ? "Aktiviert" : "Deaktiviert"}
                 </span>
@@ -3238,11 +3239,11 @@ export default function App() {
                 </button>
 
                 <div className="flex-1 min-w-0 text-center px-1">
-                  <span className="block text-[0.75rem] font-black text-[var(--accent)] truncate">
+                  <span className="block text-[0.75rem] font-black text-[var(--accent)] [overflow-wrap:anywhere]">
                     Bereich {secInfo.num}: {secInfo.name} ({activeIndex + 1}/
                     {visibleFields.length})
                   </span>
-                  <span className="block text-xs font-black text-[var(--text-color)] truncate">
+                  <span className="block text-xs font-black text-[var(--text-color)] [overflow-wrap:anywhere]">
                     {activeField.label}
                   </span>
                 </div>
