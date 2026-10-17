@@ -64,6 +64,14 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="space-y-6">
         {/* Eine Zeile je Kategorie (Regel seit 0.9.40): nichts, was man neu tun oder wissen muss. */}
         {/* Eine Zeile: Wartung, nichts Neues zu tun oder zu wissen (Regel seit 0.9.40). */}
+        <Eintrag nr="0.9.82" titel="Wartung" symbol={ShieldCheck}>
+          <li>
+            Der Monatsabschluss ist technisch aufgeräumt und zusätzlich abgesichert. Die Rückfrage, der Rücksprung
+            und das Archiv verhalten sich unverändert.
+          </li>
+        </Eintrag>
+
+        {/* Eine Zeile: Wartung, nichts Neues zu tun oder zu wissen (Regel seit 0.9.40). */}
         <Eintrag nr="0.9.81" titel="Wartung" symbol={ShieldCheck}>
           <li>
             Das Laden eines Monats beim Wechsel ist technisch aufgeräumt und zusätzlich abgesichert. Aussehen und
@@ -170,46 +178,6 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <li>
             Die Wahl gilt für diesen Browser und wird nicht mit anderen Geräten abgeglichen. Bis Sie etwas anderes
             wählen, ändert sich an Ihren Berichten nichts.
-          </li>
-        </Eintrag>
-
-        {/*
-          Ausgeschrieben (Regel seit 0.9.40: neu wissen muss): Löschen wandert
-          jetzt zwischen gekoppelten Geräten, die Datensicherung verlangt ein
-          längeres Passwort und hat ein neues Format, eine Schaltfläche heißt
-          anders, und der Hinweis auf eine neue Fassung erscheint einmalig.
-        */}
-        <Eintrag nr="0.9.72" titel="Eingaben und Löschungen gehen nicht mehr verloren" symbol={ShieldCheck}>
-          <li>
-            <strong>Abgleich zwischen zwei Geräten:</strong> Wer eine Notiz tippte, während das andere Gerät etwas
-            sendete, verlor die ersten Zeichen – auf beiden Geräten. Das ist behoben. Außerdem geht eine Notiz
-            nicht mehr verloren, nur weil Sie auf dem anderen Gerät einen Zähler ändern.
-          </li>
-          <li>
-            <strong>Löschen wandert mit:</strong> Eine gelöschte Schicht und ein aus dem Archiv gelöschter Monat
-            verschwinden beim Abgleich auch auf dem anderen Gerät und kommen nicht zurück. Ausnahme sind eigene
-            Kategorien: Sie kehren zurück, bis Sie sie auf beiden Geräten gelöscht haben – die Rückfrage vor dem
-            Löschen sagt das.
-          </li>
-          <li>
-            <strong>Zahlen nach einem Abbruch:</strong> Wer kurz in eine andere App gewechselt, danach
-            weitergezählt hatte und dann einen Absturz oder einen leeren Akku erlebte, fand nach dem Neustart
-            die Zahlen von vor dem Wechsel vor. Behoben.
-          </li>
-          <li>
-            <strong>Archiv bei leerem Monat:</strong> Wer den letzten Zähler wieder auf leer setzte oder die einzige
-            Schicht löschte, sah im Archiv weiter die alte Zahl. Jetzt steht dort der leere Stand.
-          </li>
-          <li>
-            <strong>Datensicherung:</strong> Das Passwort braucht mindestens 8 Zeichen. Sicherungen mit Passwort sind
-            jetzt deutlich schwerer zu knacken; Sie lassen sich nur mit dieser und neueren Fassungen der App
-            öffnen. Ältere Sicherungen öffnet weiterhin jede Fassung. „Sicher Teilen / Senden" heißt jetzt „Teilen /
-            senden" – ohne Passwort ist die Datei nicht verschlüsselt, und der Begleittext sagt das jetzt auch. Wird
-            eine Datei abgelehnt, zeigt das Fenster den Grund statt „Backup eingespielt".
-          </li>
-          <li>
-            Wartung: Die App räumt ihren Zwischenspeicher auf, der mit jeder Fassung gewachsen war. Deshalb erscheint
-            einmalig der Hinweis „Eine neue Fassung ist verfügbar" – bitte aktualisieren.
           </li>
         </Eintrag>
 

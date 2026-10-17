@@ -10,6 +10,24 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-10-17 — v0.9.82: Der Monatsabschluss in reinen Funktionen
+
+Zweiter Schnitt aus `handleMonthChange`/`handleStartNewMonth` nach dem gleichen Muster wie 0.9.81:
+was sich ohne Browser prüfen lässt, wandert in `utils/monatsstand.ts`.
+
+- `folgemonat` (Jahreswechsel), `abschlussDetails` (die Zeilen der Rückfrage, einschließlich der
+  ehrlichen Warnung „es wird nichts archiviert“) und `legeMonatsfelderAb` (der Feldstand-Block 1b,
+  jetzt ohne Veränderung der Eingabe). `App.tsx`: **3220 → 3197 Zeilen.**
+- `scripts/checks/monatsstand.ts`: vier weitere Fälle, `npm run check`: **397** statt 393.
+- **Alt gegen neu im Browser:** Monatsabschluss in zwei Fällen (leerer Monat → Rückfrage mit Warnung,
+  abgebrochen; Monat mit Inhalt → Rückfrage → Abschluss → Rückgängig), je `#root`-DOM,
+  `localStorage` und IndexedDB-Archiv — **0 Unterschiede** nach Normierung der Uhrzeiten. Zwei Läufe
+  desselben Codes waren ebenfalls gleich. Die Wegwerf-Spec ist gelöscht.
+- Der Changelog-Eintrag 0.9.72 ist mit der Zehnergrenze herausgefallen; was Nutzer daraus wissen
+  müssen („Löschen wandert mit“, Passwortlänge der Sicherung), steht in der Hilfe.
+
+---
+
 ## 2026-10-17 — v0.9.81: Der Monatsstand beim Wechsel ist eine reine Funktion
 
 Nächster Schnitt aus der Verschlankung, bewusst nach dem Prinzip „was sich messen lässt“:

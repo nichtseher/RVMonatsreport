@@ -53,7 +53,7 @@ import { farbName } from "./utils/kategorieFarbe";
 import { monthHasContent } from "./utils/monatInhalt";
 import { rueckfrageOffen } from "./utils/rueckfrage";
 import { stempeln, stempelnGeaenderte } from "./utils/zeitstempel";
-import { baueMonatsstand } from "./utils/monatsstand";
+import { baueMonatsstand, folgemonat, abschlussDetails, legeMonatsfelderAb } from "./utils/monatsstand";
 import { pruefeSyncPaket } from "./utils/syncSchema";
 import {
   sichereSpeicher,
@@ -860,10 +860,10 @@ export default function App() {
       nur die wenigen Monate an, die nie Inhalt bekommen haben.
     */
     if (currentMonth && currentMonth !== newMonth) {
-      const abgelegt = leseMonatsfelder();
-      if (imArchiv) delete abgelegt[currentMonth];
-      else abgelegt[currentMonth] = appFields;
-      safeSetItem(MONATSFELDER_SCHLUESSEL, JSON.stringify(abgelegt));
+      safeSetItem(
+        MONATSFELDER_SCHLUESSEL,
+        JSON.stringify(legeMonatsfelderAb(leseMonatsfelder(), currentMonth, imArchiv, appFields)),
+      );
     }
 
     // 2. Load the target month state from history or start fresh
@@ -1415,35 +1415,12 @@ export default function App() {
     const currentMonth = reportData?.month;
     if (!currentMonth) return;
 
-    // Calculate next month
-    const [yearStr, monthStr] = currentMonth.split("-");
-    const year = parseInt(yearStr, 10);
-    const month = parseInt(monthStr, 10);
-    let nextMonth = month + 1;
-    let nextYear = year;
-    if (nextMonth > 12) {
-      nextMonth = 1;
-      nextYear += 1;
-    }
-    const nextMonthStr = `${nextYear}-${String(nextMonth).padStart(2, "0")}`;
-
-    const zaehlungen = Object.values(reportData?.values || {}).reduce<number>(
-      (sum, v) => (typeof v === "number" ? sum + v : sum),
-      0,
+    const nextMonthStr = folgemonat(currentMonth);
+    const details = abschlussDetails(
+      reportData?.values,
+      reportData?.timeLogs?.length || 0,
+      !monthHasContent(reportData) && !history?.[currentMonth],
     );
-    const schichten = reportData?.timeLogs?.length || 0;
-    const details = [
-      `Gezählte Vorgänge: ${zaehlungen}`,
-      `Erfasste Schichten: ${schichten}`,
-      "Der Monat bleibt vollständig im Archiv und lässt sich dort jederzeit wieder laden.",
-    ];
-    // Liegt schon ein Eintrag im Archiv, wird er mit dem leeren Stand
-    // aktualisiert (0.9.72) -- dann stimmt "es wird nichts archiviert" nicht.
-    if (!monthHasContent(reportData) && !history?.[currentMonth]) {
-      details.unshift(
-        "Achtung: In diesem Monat ist noch nichts erfasst – es wird nichts archiviert.",
-      );
-    }
 
     setConfirmRequest({
       title: `${formatMonthGerman(currentMonth)} abschließen?`,

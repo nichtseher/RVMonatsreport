@@ -56,3 +56,54 @@ export function baueMonatsstand(
       : {}),
   };
 }
+
+/** "2026-12" -> "2027-01". */
+export function folgemonat(monat: string): string {
+  const [jahr, m] = monat.split("-").map((t) => parseInt(t, 10));
+  const n = m + 1;
+  return n > 12 ? `${jahr + 1}-01` : `${jahr}-${String(n).padStart(2, "0")}`;
+}
+
+/**
+ * Zeilen der Rueckfrage vor dem Monatsabschluss. `leerOhneEintrag`: Der Monat
+ * hat keinen Inhalt UND keinen Archiveintrag -- dann wird nichts archiviert.
+ * Liegt schon ein Eintrag im Archiv, wird er mit dem leeren Stand aktualisiert
+ * (0.9.72), und der Satz stimmte nicht.
+ */
+export function abschlussDetails(
+  werte: ReportData["values"] | undefined,
+  schichten: number,
+  leerOhneEintrag: boolean,
+): string[] {
+  const zaehlungen = Object.values(werte || {}).reduce<number>(
+    (summe, v) => (typeof v === "number" ? summe + v : summe),
+    0,
+  );
+  const details = [
+    `Gezählte Vorgänge: ${zaehlungen}`,
+    `Erfasste Schichten: ${schichten}`,
+    "Der Monat bleibt vollständig im Archiv und lässt sich dort jederzeit wieder laden.",
+  ];
+  if (leerOhneEintrag) {
+    details.unshift("Achtung: In diesem Monat ist noch nichts erfasst – es wird nichts archiviert.");
+  }
+  return details;
+}
+
+/**
+ * Feldstand des verlassenen Monats ablegen -- aber nur, wenn er NICHT ins
+ * Archiv gewandert ist (der Archiveintrag traegt dann den Schnappschuss und
+ * der Eintrag hier wird geloescht). Warum das noetig ist: siehe Kommentar 1b in
+ * `handleMonthChange`. Gibt eine neue Ablage zurueck.
+ */
+export function legeMonatsfelderAb<F>(
+  abgelegt: Record<string, F>,
+  verlassenerMonat: string,
+  imArchiv: boolean,
+  felder: F,
+): Record<string, F> {
+  const neu = { ...abgelegt };
+  if (imArchiv) delete neu[verlassenerMonat];
+  else neu[verlassenerMonat] = felder;
+  return neu;
+}

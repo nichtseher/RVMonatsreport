@@ -1,5 +1,5 @@
 import { gruppe, pruefe, gleich, wahr } from "../helfer";
-import { baueMonatsstand } from "../../src/utils/monatsstand";
+import { baueMonatsstand, folgemonat, abschlussDetails, legeMonatsfelderAb } from "../../src/utils/monatsstand";
 import type { HistoryRecord, ReportData } from "../../src/types";
 
 /*
@@ -83,4 +83,34 @@ pruefe("neuer Monat ohne Namen: kein Zeitpunkt aus dem Nichts", () => {
   wahr(!("nameUpdatedAt" in s), "nameUpdatedAt erfunden");
   const o = baueMonatsstand("2026-10", null, undefined);
   gleich(o.name, "");
+});
+
+gruppe("Monatsabschluss");
+
+pruefe("der Folgemonat springt über den Jahreswechsel", () => {
+  gleich(folgemonat("2026-12"), "2027-01");
+  gleich(folgemonat("2026-01"), "2026-02");
+  gleich(folgemonat("2026-09"), "2026-10");
+  gleich(folgemonat("2026-11"), "2026-12");
+});
+
+pruefe("die Rückfrage zählt nur Zahlen und nennt die Schichten", () => {
+  const d = abschlussDetails({ a: 3, b: "", c: 4 }, 2, false);
+  gleich(d[0], "Gezählte Vorgänge: 7");
+  gleich(d[1], "Erfasste Schichten: 2");
+  gleich(d.length, 3);
+});
+
+pruefe("ein leerer Monat ohne Archiveintrag wird ehrlich als nicht archiviert gemeldet", () => {
+  const d = abschlussDetails(undefined, 0, true);
+  wahr(d[0].startsWith("Achtung"), "Warnung fehlt");
+  gleich(d.length, 4);
+  gleich(abschlussDetails({}, 0, false).length, 3);
+});
+
+pruefe("der Feldstand wird abgelegt oder aufgeräumt, ohne die Ablage zu verändern", () => {
+  const ablage = { "2026-07": 1, "2026-08": 2 };
+  gleich(legeMonatsfelderAb(ablage, "2026-09", false, 9), { "2026-07": 1, "2026-08": 2, "2026-09": 9 });
+  gleich(legeMonatsfelderAb(ablage, "2026-08", true, 9), { "2026-07": 1 });
+  gleich(ablage, { "2026-07": 1, "2026-08": 2 }, "Eingabe verändert");
 });
