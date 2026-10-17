@@ -64,6 +64,14 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
       <div className="space-y-6">
         {/* Eine Zeile je Kategorie (Regel seit 0.9.40): nichts, was man neu tun oder wissen muss. */}
         {/* Eine Zeile: Wartung, nichts Neues zu tun oder zu wissen (Regel seit 0.9.40). */}
+        <Eintrag nr="0.9.81" titel="Wartung" symbol={ShieldCheck}>
+          <li>
+            Das Laden eines Monats beim Wechsel ist technisch aufgeräumt und zusätzlich abgesichert. Aussehen und
+            Bedienung bleiben gleich.
+          </li>
+        </Eintrag>
+
+        {/* Eine Zeile: Wartung, nichts Neues zu tun oder zu wissen (Regel seit 0.9.40). */}
         <Eintrag nr="0.9.80" titel="Wartung" symbol={ShieldCheck}>
           <li>
             Das Formular für die Monatsziele ist technisch aufgeräumt. Aussehen und Bedienung bleiben gleich.
@@ -202,34 +210,6 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           <li>
             Wartung: Die App räumt ihren Zwischenspeicher auf, der mit jeder Fassung gewachsen war. Deshalb erscheint
             einmalig der Hinweis „Eine neue Fassung ist verfügbar" – bitte aktualisieren.
-          </li>
-        </Eintrag>
-
-        {/*
-          Ausgeschrieben, weil Bedienelemente an neuen Stellen stehen: Wer den
-          Monat bisher im Datumsfeld gewechselt hat, muss wissen, wo er jetzt ist.
-        */}
-        <Eintrag nr="0.9.71" titel="Das neue Erscheinungsbild ist vollständig" symbol={Sparkles}>
-          <li>
-            <strong>Report:</strong> Der Monat steht groß oben und wird über eine Auswahl gewechselt
-            („Monat", zwei Jahre zurück bis drei Monate voraus). Darunter Ihr Name. Die Filter der Bereiche sind
-            schmale Knöpfe („Vorführungen 18"). Sind Monatsziele eingeschaltet, zeigt die Karte oben im Report das Ziel mit
-            Fortschrittsbalken.
-          </li>
-          <li>
-            <strong>Zeit:</strong> Die Stempeluhr ist eine große Karte mit der laufenden Arbeitszeit und der Taste
-            zum Ein- oder Ausstempeln. Darunter „Diese Woche" mit den verbuchten Stunden je Tag – der
-            Screenreader liest sie als Liste, Tag für Tag.
-          </li>
-          <li>
-            <strong>Mehr:</strong> Oben eine Karte mit Ihrem Namen, der Version und der Datenschutz-Zusage;
-            „Was gibt's Neues?" ist eine eigene Zeile.
-          </li>
-          <li>
-            Fehlerbehebungen: Tasten und Eingabefelder zeigten ihre vorgesehene Schriftgröße nicht (alle erschienen
-            gleich groß). Eingabefelder haben jetzt mindestens 16 Pixel Schrift, damit das iPhone beim Antippen
-            nicht hineinzoomt. Die Felder der Monatsziele und die Diktat-Taste haben wieder die volle
-            Tippfläche.
           </li>
         </Eintrag>
 

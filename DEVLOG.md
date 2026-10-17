@@ -10,6 +10,28 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-10-17 — v0.9.81: Der Monatsstand beim Wechsel ist eine reine Funktion
+
+Nächster Schnitt aus der Verschlankung, bewusst nach dem Prinzip „was sich messen lässt“:
+In `handleMonthChange` wurde der Stand des Zielmonats an zwei Stellen von Hand aus einem
+Archiv-Datensatz zusammengesetzt — dieselbe Fehlerklasse wie 0.9.12/0.9.13 (ein vergessenes
+optionales Feld ist typkorrekt und geht still verloren), nur in der Gegenrichtung.
+
+- `utils/monatsstand.ts`: `baueMonatsstand(zielMonat, aktuell, archiviert)`, wörtlich aus
+  `App.tsx` übernommen. `App.tsx`: **3252 → 3220 Zeilen.** `stempelNachtragen` ist dort nicht
+  mehr nötig.
+- `scripts/checks/monatsstand.ts`: sechs Fälle (alle Felder samt Zeitstempeln und Löschmarken;
+  Nachtrag mit `savedAt`; Name bleibt ohne Archivnamen samt Zeitpunkt; keine erfundenen
+  optionalen Felder; neuer Monat; neuer Monat ohne Namen). `npm run check`: **393** statt 387.
+- **Alt gegen neu im Browser:** sechs Zustände (Start mit Zahl → neuer Vormonat → Zahl dort →
+  zurück ins Archiv → Folgemonat → Vormonat aus dem Archiv), je `#root`-DOM, `localStorage`
+  und IndexedDB-Archiv — **0 Unterschiede** nach Normierung von Uhrzeiten, Millisekunden und der
+  Fenster-ID. Zwei Läufe desselben Codes waren ebenfalls gleich. Das Rohdiff zeigte vorher
+  genau diese Zeitwerte und sonst nichts.
+- **Nicht gemessen:** der volle `check:ui`-Lauf. Die Wegwerf-Spec ist gelöscht.
+
+---
+
 ## 2026-10-11 — v0.9.80: Das Zielformular aus `App.tsx` herausgelöst
 
 Ein Schnitt aus Punkt 3 der Verschlankung („`App()` in Scheiben zerlegen“). Gewählt wurde

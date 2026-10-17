@@ -52,7 +52,8 @@ import { anVorlage, feldSchluessel, ladeFelder, standardFelder } from "./utils/f
 import { farbName } from "./utils/kategorieFarbe";
 import { monthHasContent } from "./utils/monatInhalt";
 import { rueckfrageOffen } from "./utils/rueckfrage";
-import { stempeln, stempelNachtragen, stempelnGeaenderte } from "./utils/zeitstempel";
+import { stempeln, stempelnGeaenderte } from "./utils/zeitstempel";
+import { baueMonatsstand } from "./utils/monatsstand";
 import { pruefeSyncPaket } from "./utils/syncSchema";
 import {
   sichereSpeicher,
@@ -868,30 +869,7 @@ export default function App() {
     // 2. Load the target month state from history or start fresh
     const savedRecord = updatedHistory[newMonth];
     if (savedRecord) {
-      // Hat der Archivstand keinen Namen, bleibt der mitgenommene -- samt seinem
-      // Zeitpunkt (0.9.72), sonst waere er beim Abgleich "der aelteste".
-      const nameAusArchiv = !!savedRecord.name;
-      const nameUpdatedAt = nameAusArchiv ? savedRecord.nameUpdatedAt : reportData?.nameUpdatedAt;
-      setReportData({
-        month: newMonth,
-        name: nameAusArchiv ? savedRecord.name : reportData?.name || "",
-        notes: savedRecord.notes || "",
-        values: savedRecord.values || {},
-        // Zeitstempel des Archivstands mitnehmen und fehlende mit dessen
-        // Speicherzeitpunkt nachtragen -- sonst fiele das Feld später auf den
-        // dann bereits weitergewanderten Monats-Zeitstempel zurück.
-        valuesUpdatedAt: stempelNachtragen(
-          savedRecord.values,
-          savedRecord.valuesUpdatedAt,
-          savedRecord.savedAt,
-        ),
-        timeLogs: savedRecord.timeLogs || [],
-        ...(nameUpdatedAt ? { nameUpdatedAt } : {}),
-        ...(savedRecord.notesUpdatedAt ? { notesUpdatedAt: savedRecord.notesUpdatedAt } : {}),
-        ...(savedRecord.geloeschteSchichten
-          ? { geloeschteSchichten: savedRecord.geloeschteSchichten }
-          : {}),
-      });
+      setReportData(baueMonatsstand(newMonth, reportData, savedRecord));
       if (savedRecord.fieldsSnapshot) {
         setAppFields(savedRecord.fieldsSnapshot);
       }
@@ -902,17 +880,7 @@ export default function App() {
       );
     } else {
       // Start a fresh month template, but retain user name
-      setReportData({
-        month: newMonth,
-        name: reportData?.name || "",
-        notes: "",
-        values: {},
-        timeLogs: [],
-        // Der mitgenommene Name behaelt seinen Zeitpunkt (0.9.72).
-        ...(reportData?.name && reportData.nameUpdatedAt
-          ? { nameUpdatedAt: reportData.nameUpdatedAt }
-          : {}),
-      });
+      setReportData(baueMonatsstand(newMonth, reportData, undefined));
       // Kein Archiveintrag -- also den zuletzt abgelegten Feldstand dieses
       // Monats zurückholen, falls es einen gibt (siehe 1b).
       const abgelegt = leseMonatsfelder()[newMonth];

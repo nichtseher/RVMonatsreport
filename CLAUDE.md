@@ -16,7 +16,7 @@ The UI is German and addresses the user formally ("Sie"). Spoken announcements a
 npm install
 npm run dev        # tsx server.ts — dev server on http://localhost:3000 (Express + Vite middleware, HMR)
 npm run lint       # tsc --noEmit (covers src/, scripts/, tests/); no ESLint config
-npm run check      # tsx scripts/pruefen.ts — 387 checks, no test framework
+npm run check      # tsx scripts/pruefen.ts — 393 checks, no test framework
 npm run check:ui   # playwright test — 1608 UI/a11y checks over three profiles (799 run, 809 skipped by profile), ~34 min (measured 2026-10-10) (starts the dev server itself)
 npm run check:breite # the FULL responsiveness matrix (3 templates × 14 views × 6 widths × 3 font sizes, Chromium + WebKit, with content, ~37 min); the gate (check:ui) runs a slim subset of it (126 cases)
 npm run check:prod # builds, then playwright against `vite preview` of dist/ — the BUILT app, with the CSP, minified, with the service worker (4 cases, ~26 s). In the deploy workflow since 0.9.72 as the step "Gebauten Stand pruefen" between "Build Application" and "Setup Pages" (same call, without building twice).
@@ -125,7 +125,7 @@ Use the Edit/Write tools for source changes. When a bulk change is genuinely nec
 
 ## Architecture
 
-**Single monolithic state container.** `src/App.tsx` (~3250 lines at 0.9.80; ~3500 at 0.9.71) owns essentially all application state (report data, history/archive, accessibility settings, goals, carryover, quick-entry config, sync handlers, dictation, TTS) via `useState`/`useCallback`, and passes state + handlers down as props to view components in `src/components/`. There is no router — navigation is a single `activeTab` string switched by the bottom nav / sidebar, with each tab's component rendered conditionally at the bottom of `App.tsx`'s JSX. When adding a feature, the handler almost always belongs in `App.tsx` and is threaded down via props, following the existing `handleXxx` naming convention.
+**Single monolithic state container.** `src/App.tsx` (~3220 lines at 0.9.81; ~3500 at 0.9.71) owns essentially all application state (report data, history/archive, accessibility settings, goals, carryover, quick-entry config, sync handlers, dictation, TTS) via `useState`/`useCallback`, and passes state + handlers down as props to view components in `src/components/`. There is no router — navigation is a single `activeTab` string switched by the bottom nav / sidebar, with each tab's component rendered conditionally at the bottom of `App.tsx`'s JSX. When adding a feature, the handler almost always belongs in `App.tsx` and is threaded down via props, following the existing `handleXxx` naming convention.
 
 Two lists inside it are the shape everything repetitive should take: `bereiche` (the four report sections, rendered through one `BerichtsBereich`) and `hauptnavigation` (the five main views, rendered by *both* nav bars). Before 0.9.42 each of those existed as near-identical JSX — four blocks and two bars — and the navigation had already drifted apart between mobile and desktop (see 0.9.41). Put the differences in the data (`hinweis`/`fuss`, `ansage`), not in a branch inside the component, and never write the second copy.
 
