@@ -10,6 +10,38 @@ nicht die Beweggründe dahinter.
 
 ---
 
+## 2026-10-17 — v0.9.83: Die Hinweisleisten aus `App.tsx` — und zum ersten Mal wirklich gesehen
+
+Die vier Leisten oben im Formular (Speicher-Schutz, Sicherungs-Erinnerung, Speicherfehler,
+Abbruch der Live-Verbindung) waren in 0.9.80 bewusst liegen geblieben: Ihre Zustände ließen sich
+im DOM-Vergleich nicht herstellen. Sie lassen sich — **ohne** Eingriff in den Produktionscode:
+
+- Speicher-Schutz: `navigator.storage` per Init-Skript ersetzen (`persisted`/`persist` → false);
+  in WebKit auf dem Handy ergibt das die kritische Stufe (ohne „Ausblenden“), in Chromium „gefährdet“.
+- Sicherungs-Erinnerung: eine Zahl erfassen, nie gesichert.
+- Speicherfehler: `IDBObjectStore.prototype.put` wirft `QuotaExceededError`.
+- Verbindungsabbruch: ein Fake-Peer im **echten** Modul — der Dev-Server liefert dieselbe
+  Modulinstanz wie die App, `adoptPeer(fake)` und dann `connectionState = "failed"`. Die in 0.9.82
+  geplante Test-Schnittstelle war nicht nötig.
+
+- `components/Hinweisleisten.tsx`: der Block wörtlich, mit Props statt Zuständen (die Zustände bleiben
+  in `App.tsx`). `App.tsx`: **3197 → 3069 Zeilen.**
+- **DOM vorher/nachher: 4 Leisten in je 3 Profilen (handy, handy-webkit, schreibtisch), jeweils mit
+  „Ausblenden“ bzw. „Später“ — 0 Unterschiede**, zwei Läufe desselben Codes ebenfalls gleich. Vorher
+  war per Textsuche belegt, dass jede Leiste im Dump wirklich vorkommt.
+- **Gefunden, sobald die Leisten gemessen wurden:** „Jetzt Backup erstellen“ im Speicherfehler-Banner
+  war 40 px hoch (`py-2.5` ohne `min-h`) — unter der 44-px-Schwelle, die für jedes Bedienelement
+  gilt. Kein Lauf hatte das Banner je gesehen. Behoben mit `min-h-[44px]` (die einzige absichtliche
+  Änderung am Aussehen).
+- **Neu bleibend:** `tests/hinweisleisten.spec.ts` (3 Größen × 2 Profile; je Leiste: sichtbar, kein
+  Überlauf, Tasten ≥ 44 px, axe `button-name` + `color-contrast`) und
+  `scripts/checks/hinweisleisten.ts` (zählt die Leisten gegen die Schritte der Spec).
+  `npm run check`: **398**.
+- Der Changelog-Eintrag 0.9.73 ist mit der Zehnergrenze herausgefallen. Was daraus nur dort stand —
+  die Wahl der Vorlage gilt für das Gerät und wird nicht abgeglichen — steht jetzt in der Hilfe.
+
+---
+
 ## 2026-10-17 — v0.9.82: Der Monatsabschluss in reinen Funktionen
 
 Zweiter Schnitt aus `handleMonthChange`/`handleStartNewMonth` nach dem gleichen Muster wie 0.9.81:

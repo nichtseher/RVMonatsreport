@@ -63,6 +63,15 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
 
       <div className="space-y-6">
         {/* Eine Zeile je Kategorie (Regel seit 0.9.40): nichts, was man neu tun oder wissen muss. */}
+        <Eintrag nr="0.9.83" titel="Fehlerbehebungen" symbol={Bug}>
+          <li>
+            Die Taste „Jetzt Backup erstellen“ in der Warnung bei fehlgeschlagenem Speichern war bei normaler Schrift
+            4 Pixel zu niedrig und hat jetzt die volle Tippfläche. Die Hinweise oben im Formular
+            (Speicherschutz, Sicherungs-Erinnerung, Speicherfehler, unterbrochene Live-Verbindung) sind erstmals in
+            allen Schriftgrößen geprüft.
+          </li>
+        </Eintrag>
+
         {/* Eine Zeile: Wartung, nichts Neues zu tun oder zu wissen (Regel seit 0.9.40). */}
         <Eintrag nr="0.9.82" titel="Wartung" symbol={ShieldCheck}>
           <li>
@@ -149,35 +158,6 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             Außerdem wurden Hinweise in den Optionen, Notizen im Schichtprotokoll und Legenden in der Analyse mit „…“
             gekürzt, Texte in Geräte-Sync und Datensicherung verschwanden am Rand, und auf Tablets konnte die untere
             Leiste die letzte Zeile verdecken. Alles behoben: Texte brechen um, nichts wird mehr abgeschnitten.
-          </li>
-        </Eintrag>
-
-        {/*
-          Ausgeschrieben (Regel seit 0.9.40): Es gibt eine neue Wahl in den
-          Optionen. Die Vorlage heißt jetzt „Team Blindenhilfsmittel
-          Monatsinfo“, und weitere folgen.
-        */}
-        <Eintrag nr="0.9.73" titel="Berichtsvorlage wählbar" symbol={ShieldCheck}>
-          <li>
-            <strong>Eigene Vorlage:</strong> Das bisherige Formular heißt jetzt „Team Blindenhilfsmittel
-            Monatsinfo“. Unter <strong>Optionen → Berichtsvorlage</strong> sehen Sie, welche Vorlage und welche
-            Fassung Ihr Bericht verwendet. Es gibt jetzt drei: Team Blindenhilfsmittel Monatsinfo, APA Monatsinfo
-            Außendienst und Vertrieb Monatsinfo. Auch die Einrichtung beim ersten Start fragt danach.
-          </li>
-          <li>
-            <strong>Das Formular kommt unverändert beim Empfänger an:</strong> Bei „Nur Vorlage senden“ wird die
-            Originaldatei geöffnet und nur Ihre Zahlen werden eingesetzt – Schrift, Breiten, Rahmen und Druckeinstellungen
-            bleiben, wie die Firma sie vorgibt.
-          </li>
-          <li>
-            <strong>Das Formular der App passt sich an:</strong> Jedes Team erfasst andere Zahlen. Nach der Wahl zeigt die
-            App genau die Kategorien Ihres Formulars, mit den Überschriften der Bereiche, und jede Zahl landet in der
-            passenden Zeile der Excel-Datei. Beim Wechsel geht nichts verloren: Erfasste Zahlen bleiben gespeichert, und
-            beim Zurückwechseln sind auch Ihre Kategorien wieder da.
-          </li>
-          <li>
-            Die Wahl gilt für diesen Browser und wird nicht mit anderen Geräten abgeglichen. Bis Sie etwas anderes
-            wählen, ändert sich an Ihren Berichten nichts.
           </li>
         </Eintrag>
 
